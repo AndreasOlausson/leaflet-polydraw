@@ -42,6 +42,8 @@ class Polydraw extends L.Control {
   constructor(options?: L.ControlOptions & { config?: any }) {
     super(options);
     this.config = { ...defaultConfig, ...options?.config || {} };
+    this.mergePolygons = this.config.mergePolygons;
+    this.kinks = this.config.kinks;
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
@@ -340,9 +342,9 @@ class Polydraw extends L.Control {
     // Add a new polygon, potentially merging with existing ones
 
     if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
-      this.addPolygonLayer(latlngs, simplify);
-    } else {
       this.merge(latlngs);
+    } else {
+      this.addPolygonLayer(latlngs, simplify);
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
