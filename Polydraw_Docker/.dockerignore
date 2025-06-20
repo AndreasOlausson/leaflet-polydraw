@@ -5,6 +5,7 @@
 !package.json
 !public
 !run_tests.sh
+!run_tests_root.sh
 !src
 !test
 !tsconfig*.json
