@@ -1,0 +1,138 @@
+{
+  "touchSupport": true,
+  "mergePolygons": true,
+  "kinks": false,
+  "modes": {
+    "attachElbow": false,
+    "dragElbow": true
+  },
+  "markers": {
+    "deleteMarker": true,
+    "infoMarker": true,
+    "menuMarker": true,
+    "coordsTitle": true,
+    "zIndexOffset": 0,
+    "markerIcon": {
+      "styleClasses": [
+        "polygon-marker"
+      ],
+      "zIndexOffset": null
+    },
+    "holeIcon": {
+      "styleClasses": [
+        "polygon-marker",
+        "hole"
+      ],
+      "zIndexOffset": null
+    },
+    "markerInfoIcon": {
+      "position": 3,
+      "showArea": true,
+      "showPerimeter": true,
+      "useMetrics": true,
+      "usePerimeterMinValue": false,
+      "areaLabel": "Area",
+      "perimeterLabel": "Perimeter",
+      "values": {
+        "min": {
+          "metric": "50",
+          "imperial": "100"
+        },
+        "unknown": {
+          "metric": "-",
+          "imperial": "-"
+        }
+      },
+      "units": {
+        "unknownUnit": "",
+        "metric": {
+          "onlyMetrics": true,
+          "perimeter": {
+            "m": "m",
+            "km": "km"
+          },
+          "area": {
+            "m2": "m²",
+            "km2": "km²",
+            "daa": "daa",
+            "ha": "ha"
+          }
+        },
+        "imperial": {
+          "perimeter": {
+            "feet": "ft",
+            "yards": "yd",
+            "miles": "mi"
+          },
+          "area": {
+            "feet2": "ft²",
+            "yards2": "yd²",
+            "acres": "ac",
+            "miles2": "mi²"
+          }
+        }
+      },
+      "styleClasses": [
+        "polygon-marker",
+        "info"
+      ],
+      "zIndexOffset": 10000
+    },
+    "markerMenuIcon": {
+      "position": 7,
+      "styleClasses": [
+        "polygon-marker",
+        "menu"
+      ],
+      "zIndexOffset": 10000
+    },
+    "markerDeleteIcon": {
+      "position": 5,
+      "styleClasses": [
+        "polygon-marker",
+        "delete"
+      ],
+      "zIndexOffset": 10000
+    }
+  },
+  "polyLineOptions": {
+    "color": "#50622b",
+    "opacity": 1,
+    "smoothFactor": 0,
+    "noClip": true,
+    "clickable": false,
+    "weight": 2
+  },
+  "subtractLineOptions": {
+    "color": "#50622b",
+    "opacity": 1,
+    "smoothFactor": 0,
+    "noClip": true,
+    "clickable": false,
+    "weight": 2
+  },
+  "polygonOptions": {
+    "smoothFactor": 0.3,
+    "color": "#50622b",
+    "fillColor": "#b4cd8a",
+    "noClip": true
+  },
+  "simplification": {
+    "simplifyTolerance": {
+      "tolerance": 0.0001,
+      "highQuality": false,
+      "mutate": false
+    },
+    "dynamicMode": {
+      "fractionGuard": 0.9,
+      "multipiler": 2
+    }
+  },
+  "boundingBox": {
+    "addMidPointMarkers": true
+  },
+  "bezier": {
+    "resolution": 10000,
+    "sharpness": 0.75
+  }
+}

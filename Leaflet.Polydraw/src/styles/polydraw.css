@@ -1,0 +1,379 @@
+/* Add application styles & imports to this file! */
+
+
+html,
+body {
+  height: 100%;
+}
+
+#blitz-app {
+  height: 100%;
+}
+
+.polygon-marker {
+  background-color: #e0f8c5;
+  box-shadow: 0 0 0 2px #50622b, 0 0 10px rgba(0, 0, 0, 0.35);
+  width: 12px !important;
+  height: 12px !important;
+  margin-left: -6px !important;
+  margin-top: -6px !important;
+  border-radius: 50%;
+  cursor: move;
+  outline: none;
+  transition: background-color 0.25s;
+}
+
+.polygon-marker.menu {
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+  background-color: rgb(134, 162, 214);
+  background-image: url("../icons/icon-settings-white.svg");
+  -ms-background-size: 20px 20px;
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+}
+
+.polygon-marker.info {
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+  background-color: rgb(134, 162, 214);
+  background-image: url("../icons/icon-info-white.svg");
+  -ms-background-size: 24px 24px;
+  background-size: 24px 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+}
+
+.polygon-marker:hover {
+  width: 18px !important;
+  height: 18px !important;
+  margin-left: -9px !important;
+  margin-top: -9px !important;
+}
+
+.polygon-marker.menu:hover {
+  background-color: red;
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+}
+
+.polygon-marker.info:hover {
+  background-color: rgb(134, 162, 214);
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+}
+
+.polygon-marker.delete {
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+  background-color: rgb(100, 93, 93);
+  background-image: url("../icons/icon-trash-white.svg");
+  -ms-background-size: 24px 24px;
+  background-size: 24px 24px;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+}
+
+.polygon-marker.delete:hover {
+  background-color: rgb(92, 81, 81);
+  background-image: url("../icons/icon-trash-hover-white.svg");
+  width: 24px !important;
+  height: 24px !important;
+  z-index: 10000;
+  margin-left: -11px !important;
+    margin-top: -11px !important;
+}
+
+
+
+.polygon-marker.hole {
+  background-color: rgb(118, 160, 216);
+  width: 12px !important;
+  height: 12px !important;
+  z-index: 10000;
+}
+
+.polygon-marker.hole:hover {
+  background-color: rgb(118, 160, 216);
+  width: 12px !important;
+  height: 12px !important;
+  z-index: 10000;
+}
+
+.marker-menu-inner-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.marker-menu-header {
+  font-weight: 600;
+}
+
+.marker-menu-content {
+  display: flex;
+  justify-content: space-between;
+}
+
+.marker-menu-button {
+  padding: 4px;
+  border: 1px solid #aaaaaa;
+}
+
+.marker-menu-separator {
+  padding: 4px;
+}
+
+.info-marker,
+.alter-marker {
+  background-color: blue;
+  width: 100%;
+  display: flex;
+  flex-direction: row-reverse;
+
+  a.leaflet-popup-close-button {
+    top: -12px;
+    right: -12.5px;
+    z-index: 3;
+    color: #fff;
+    &:hover {
+      color: #fff;
+    }
+  }
+
+  .leaflet-popup-tip {
+    display: none;
+  }
+  .leaflet-popup-content-wrapper {
+    background: #e93434;
+    color: #ffffff;
+    .leaflet-popup-content {
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+  .leaflet-popup-content-wrapper {
+    padding: 0;
+  }
+  .leaflet-popup-tip-container {
+    width: 19px;
+    height: 19px;
+    position: absolute;
+    /* left: 50%; */
+    /* margin-left: -20px; */
+    /* overflow: hidden; */
+    /* pointer-events: none; */
+    background-color: #80be50;
+    border: 2px solid white;
+    top: -11px;
+    left: 8px;
+    /* border-top-left-radius: 50%; */
+    /* border-top-right-radius: 50%; */
+    /* border-bottom-right-radius: 50%; */
+    border-radius: 50%;
+    z-index: 1;
+  }
+}
+
+.alter-marker-outer-wrapper {
+  overflow: hidden;
+  background-color: transparent;
+  border-radius: 10px;
+}
+.alter-marker-wrapper {
+  height: 40px;
+  border: 2px solid #fff;
+  background-color: #80be50;
+  color: #fff;
+  /* border-radius: 10px; */
+  padding: 0 6px;
+  text-align: center;
+
+  -moz-border-radius: 10px 0 10px 10px;
+  -webkit-border-radius: 10px 0 10px 10px;
+  border-radius: 10px 0 10px 10px;
+  -moz-box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  -webkit-box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+
+  .inverted-corner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background-color: #80be50;
+    margin-top: -14px;
+    float: right;
+    margin-right: -20px;
+  }
+
+  .content {
+    width: 100%;
+    min-height: 40px;
+    margin-right: 12px;
+  }
+  .marker-menu-content {
+    .marker-menu-button {
+      width: 22px;
+      height: 22px;
+      background-repeat: no-repeat;
+      background-size: 22px, 22px;
+      background-position: center;
+      padding: 4px;
+      border: 1px solid #fff;
+      margin: 4px;
+      border-radius: 4px;
+      cursor: pointer;
+
+      &.simplify {
+        background-image: url("../icons/icon-simplify2.svg");
+      }
+      &.double-elbows {
+        background-image: url("../icons/icon-add-elbow.svg");
+      }
+      &.bbox {
+        background-image: url("../icons/icon-bbox.svg");
+      }
+      &.bezier {
+        background-image: url("../icons/icon-bezier.svg");
+      }
+    }
+  }
+}
+
+.alter-marker-wrapper .row.bottom-separator {
+  border-bottom: 1px dashed #fff;
+}
+.alter-marker-wrapper .row {
+  display: -webkit-box;
+  display: flex;
+  white-space: nowrap;
+}
+.alter-marker-wrapper .header {
+  padding-right: 4px;
+  width: 100%;
+  text-align: left;
+}
+.alter-marker-wrapper .area,
+.alter-marker-wrapper .header {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.alter-marker-wrapper .unit {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 20px;
+}
+.alter-marker-wrapper .unit .sup {
+  font-size: smaller;
+  font-weight: 400;
+  line-height: 20px;
+  position: relative;
+  top: -2px;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+.right-margin {
+  margin-right: 8px;
+}
+
+.info-marker-outer-wrapper {
+  overflow: hidden;
+  background-color: transparent;
+  border-radius: 10px;
+}
+.info-marker-wrapper {
+  height: 40px;
+  border: 2px solid #fff;
+  background-color: #80be50;
+  color: #fff;
+  /* border-radius: 10px; */
+  padding: 0 6px;
+  text-align: center;
+
+  -moz-border-radius: 10px 0 10px 10px;
+  -webkit-border-radius: 10px 0 10px 10px;
+  border-radius: 10px 0 10px 10px;
+  -moz-box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  -webkit-box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow: 3px 4px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.info-marker-wrapper .inverted-corner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background-color: #80be50;
+  margin-top: -14px;
+  float: right;
+  margin-right: -20px;
+}
+
+.content {
+  width: 100%;
+  min-height: 40px;
+  margin-right: 12px;
+}
+
+.info-marker-wrapper .row.bottom-separator {
+  border-bottom: 1px dashed #fff;
+}
+.info-marker-wrapper .row {
+  display: -webkit-box;
+  display: flex;
+  white-space: nowrap;
+}
+.info-marker-wrapper .header {
+  padding-right: 4px;
+  width: 100%;
+  text-align: left;
+}
+.info-marker-wrapper .area,
+.info-marker-wrapper .header {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.info-marker-wrapper .unit {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 20px;
+}
+.info-marker-wrapper .unit .sup {
+  font-size: smaller;
+  font-weight: 400;
+  line-height: 20px;
+  position: relative;
+  top: -2px;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+.right-margin {
+  margin-right: 8px;
+}

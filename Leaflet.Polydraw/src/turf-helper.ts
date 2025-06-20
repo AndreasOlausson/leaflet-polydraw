@@ -1,0 +1,225 @@
+import * as turf from "@turf/turf";
+// @ts-ignore
+import concaveman from "concaveman";
+import type { Feature, Polygon, MultiPolygon, Position, Point } from "geojson";
+import { MarkerPosition } from "./enums";
+import * as L from 'leaflet';
+import defaultConfig from "./config.json";
+import type { ILatLng } from "./polygon-helpers";
+
+
+// For Compass, etc., will add later, so comment out related methods if needed
+
+export class TurfHelper {
+    private config: typeof defaultConfig = null;
+
+    constructor(config: Object) {
+        this.config = { ...defaultConfig, ...config }
+    }
+
+    union(poly1, poly2): Feature<Polygon | MultiPolygon> {
+        let union = turf.union(poly1, poly2);
+        return this.getTurfPolygon(union);
+    }
+
+    turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+        let points = turf.explode(feature);
+        const coordinates = points.features.map(f => f.geometry.coordinates);
+        return turf.multiPolygon([[concaveman(coordinates)]]);
+    }
+
+    getSimplified(polygon: Feature<Polygon | MultiPolygon>, dynamicTolerance: boolean = false): Feature<Polygon | MultiPolygon> {
+        const numOfEdges = polygon.geometry.coordinates[0][0].length;
+        let tolerance = this.config.simplification.simplifyTolerance;
+        if (!dynamicTolerance) {
+            const simplified = turf.simplify(polygon, tolerance);
+            return simplified;
+        } else {
+            let simplified = turf.simplify(polygon, tolerance);
+            const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
+            const multipiler = this.config.simplification.dynamicMode.multipiler;
+            while (simplified.geometry.coordinates[0][0].length > 4 && (simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard)) {
+                tolerance.tolerance = tolerance.tolerance * multipiler;
+                simplified = turf.simplify(polygon, tolerance);
+            }
+            return simplified;
+        }
+    }
+
+    getTurfPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+        let turfPolygon;
+        if (polygon.geometry.type === "Polygon") {
+            turfPolygon = turf.multiPolygon([polygon.geometry.coordinates]);
+        } else {
+            turfPolygon = turf.multiPolygon(polygon.geometry.coordinates);
+        }
+        return turfPolygon;
+    }
+
+    getMultiPolygon(polygonArray: Position[][][]): Feature<Polygon | MultiPolygon> {
+        return turf.multiPolygon(polygonArray);
+    }
+
+    getKinks(feature: Feature<Polygon | MultiPolygon>) {
+        const unkink = turf.unkinkPolygon(feature);
+        let coordinates = [];
+        turf.featureEach(unkink, current => {
+            coordinates.push(current);
+        });
+        return coordinates;
+    }
+
+    getCoords(feature: Feature<Polygon | MultiPolygon>) {
+        return turf.getCoords(feature);
+    }
+
+    hasKinks(feature: Feature<Polygon | MultiPolygon>) {
+        const kinks = turf.kinks(feature);
+        return kinks.features.length > 0;
+    }
+
+    polygonIntersect(polygon: Feature<Polygon | MultiPolygon>, latlngs: Feature<Polygon | MultiPolygon>): boolean {
+        let poly = [];
+        let poly2 = [];
+        let latlngsCoords = turf.getCoords(latlngs);
+        latlngsCoords.forEach(element => {
+            let feat = { type: "Polygon", coordinates: [element[0]] };
+            poly.push(feat);
+        });
+        let polygonCoords = turf.getCoords(polygon);
+        polygonCoords.forEach(element => {
+            let feat = { type: "Polygon", coordinates: [element[0]] };
+            poly2.push(feat);
+        });
+        let intersect = false;
+        loop1: for (let i = 0; i < poly.length; i++) {
+            if (this.getKinks(poly[i]).length < 2) {
+                for (let j = 0; j < poly2.length; j++) {
+                    if (this.getKinks(poly2[j]).length < 2) {
+                        let test = turf.intersect(poly[i], poly2[j]);
+                        if (test?.geometry.type === "Polygon"){
+                            intersect = !!turf.intersect(poly[i], poly2[j]);
+                        }
+                        if (intersect) {
+                            break loop1;
+                        }
+                    }
+                }
+            }
+        }
+        return intersect;
+    }
+
+    getIntersection(poly1, poly2): Feature {
+        return turf.intersect(poly1, poly2);
+    }
+
+    getDistance(point1, point2): number {
+        return turf.distance(point1, point2);
+    }
+
+    isWithin(polygon1: Position[], polygon2: Position[]): boolean {
+        return turf.booleanWithin(turf.polygon([polygon1]), turf.polygon([polygon2]));
+    }
+
+    /**
+     * Checks if two polygons are equal.
+     * @param polygon1 First polygon.
+     * @param polygon2 Second polygon.
+     */
+    equalPolygons(polygon1: Feature<Polygon | MultiPolygon>, polygon2: Feature<Polygon | MultiPolygon>) {
+        // Use turf.booleanEqual(polygon1, polygon2)
+    }
+
+    convertToBoundingBoxPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> {
+        const bbox = turf.bbox(polygon.geometry);
+        const bboxPolygon = turf.bboxPolygon(bbox);
+        // TODO: Add Compass logic if needed
+        return bboxPolygon;
+    }
+
+    polygonToMultiPolygon(poly: Feature<Polygon>): Feature<MultiPolygon> {
+        const multi = turf.multiPolygon([poly.geometry.coordinates]);
+        return multi;
+    }
+
+    injectPointToPolygon(polygon, point) {
+        // Complex logic, adapt as needed
+        // For now, placeholder
+        return polygon;
+    }
+
+    polygonDifference(polygon1: Feature<Polygon | MultiPolygon>, polygon2: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+        // @ts-ignore
+        let diff = turf.difference(polygon1, polygon2);
+        return this.getTurfPolygon(diff);
+    }
+
+    getBoundingBoxCompassPosition(polygon, MarkerPosition, useOffset, offsetDirection) {
+        // TODO: Implement with Compass
+        return null;
+    }
+
+    getNearestPointIndex(targetPoint: turf.Coord, points: any): number {
+        let index = turf.nearestPoint(targetPoint, points).properties.featureIndex;
+        return index;
+    }
+
+    getCoord(point: ILatLng): turf.Coord {
+        const coord = turf.getCoord([point.lng, point.lat]);
+        return coord;
+    }
+
+    getFeaturePointCollection(points: ILatLng[]): any {
+        const pts = [];
+        points.forEach(v => {
+            const p = turf.point([v.lng, v.lat], {});
+            pts.push(p);
+        });
+        const fc = turf.featureCollection(pts);
+        return fc;
+    }
+
+    getPolygonArea(poly: Feature<Polygon | MultiPolygon>): number {
+        const area = turf.area(poly);
+        return area;
+    }
+
+    getPolygonPerimeter(poly: Feature<Polygon | MultiPolygon>): number {
+        const length = turf.length(poly, {units: 'kilometers'});
+        return length;
+    }
+
+    getDoubleElbowLatLngs(points: ILatLng[]): ILatLng[] {
+        const doubleized: ILatLng[] = [];
+        const len = points.length;
+        const effectiveLen = (points[0].lat === points[len-1].lat && points[0].lng === points[len-1].lng) ? len - 1 : len;
+        
+        for (let i = 0; i < effectiveLen; i++) {
+            const p1 = points[i];
+            const p2 = points[(i + 1) % effectiveLen];
+            // Add current point
+            doubleized.push(new L.LatLng(p1.lat, p1.lng));
+            // Calculate and add midpoint
+            const midPoint = turf.midpoint(
+                turf.point([p1.lng, p1.lat]),
+                turf.point([p2.lng, p2.lat])
+            );
+            doubleized.push(new L.LatLng(
+                midPoint.geometry.coordinates[1], 
+                midPoint.geometry.coordinates[0]
+            ));
+        }
+        
+        return doubleized;
+    }
+
+    getBezierMultiPolygon(polygonArray: Position[][][]): Feature<Polygon | MultiPolygon> {
+        const line = turf.polygonToLine(this.getMultiPolygon(polygonArray));
+        // Add first point to "close" the line
+        (line as any).features[0].geometry.coordinates.push((line as any).features[0].geometry.coordinates[0]);
+        const bezierLine = turf.bezierSpline((line as any).features[0], {resolution: this.config.bezier.resolution, sharpness: this.config.bezier.sharpness});
+        const bezierPoly = turf.lineToPolygon(bezierLine);
+        return bezierPoly;
+    }
+}
