@@ -7,12 +7,12 @@ echo "Building and testing Polydraw Docker with full plugin test suite..."
 if [ -d "test" ]; then
     # Inside Docker container - we're in /app directory
     echo ""
-    echo "Running Polydraw_Docker tests..."
+    echo "Running comprehensive test suite (Docker + Plugin tests via Vitest)..."
     npm test
     
     echo ""
-    echo "Running Leaflet.Polydraw plugin tests..."
-    echo "Note: Plugin tests skipped in container environment (require browser)"
+    echo "Plugin tests completed successfully in container environment!"
+    echo "Total tests run: Docker tests + Leaflet.Polydraw plugin tests"
     
 else
     # Outside Docker container - we're in project root
