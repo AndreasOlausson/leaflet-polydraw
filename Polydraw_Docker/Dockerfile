@@ -6,13 +6,15 @@ COPY Leaflet.Polydraw ./Leaflet.Polydraw
 
 # Build the plugin from source inside container
 WORKDIR /app/Leaflet.Polydraw
-RUN npm install && npm run build
+RUN npm install && \
+    chmod +x node_modules/.bin/* && \
+    npm run build
 
 # Switch to main app directory
 WORKDIR /app
 
 # Copy package files and install dependencies (without the plugin dependency)
-COPY Polydraw_Docker/package.json Polydraw_Docker/package-lock.json ./
+COPY Polydraw_Docker/package.json ./
 RUN npm install --ignore-scripts || npm install leaflet @turf/turf concaveman @types/leaflet typescript vite vitest jsdom
 
 # Copy the rest of the application

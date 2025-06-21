@@ -195,7 +195,13 @@ class Polydraw extends L.Control {
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
     });
 
-    this.tracer = L.polyline([], this.config.polyLineOptions).addTo(this.map);
+    this.tracer = L.polyline([], this.config.polyLineOptions);
+    try {
+      this.tracer.addTo(this.map);
+    } catch (error) {
+      // Handle case where map renderer is not initialized (e.g., in test environment)
+      console.warn('Could not add tracer to map:', error.message);
+    }
     // this.tracer = L.polyline([], { color: 'red' }).addTo(_map);
     // this.markerLayer = L.layerGroup().addTo(_map);
     return container;

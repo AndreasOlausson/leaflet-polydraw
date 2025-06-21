@@ -1,6 +1,7 @@
 {
   "name": "leaflet-polydraw",
   "version": "0.0.1",
+  "type": "module",
   "description": "Leaflet Polydraw plugin",
   "main": "dist/polydraw.js",
   "module": "dist/polydraw.es.js",
@@ -8,18 +9,17 @@
   "scripts": {
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "vitest"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.18",
     "@types/node": "^22.15.30",
-    "jest": "^30.0.0",
-    "jest-environment-jsdom": "^30.0.0",
-    "ts-jest": "^29.1.0",
+    "jsdom": "^25.0.1",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
-    "vite-plugin-static-copy": "^3.0.0"
+    "vite-plugin-static-copy": "^3.0.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@turf/turf": "^6.5.0",
