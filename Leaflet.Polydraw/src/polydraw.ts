@@ -47,11 +47,11 @@ class Polydraw extends L.Control {
   constructor(options?: L.ControlOptions & { config?: any }) {
     super(options);
     this.config = { ...defaultConfig, ...options?.config || {} };
-    this.mergePolygons = this.config.mergePolygons;
+    // this.mergePolygons = this.config.mergePolygons;
     
-    // FIX: Ensure kinks is always properly initialized from configuration
-    // The tests expect this.kinks to be false (from config.json), not undefined
-    this.kinks = this.config.kinks !== undefined ? this.config.kinks : false;
+    // // FIX: Ensure kinks is always properly initialized from configuration
+    // // The tests expect this.kinks to be false (from config.json), not undefined
+    // this.kinks = this.config.kinks !== undefined ? this.config.kinks : false;
     
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
@@ -375,9 +375,9 @@ class Polydraw extends L.Control {
     // Add a new polygon, potentially merging with existing ones
 
     if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
-      this.merge(latlngs);
-    } else {
       this.addPolygonLayer(latlngs, simplify);
+    } else {
+      this.merge(latlngs);
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {

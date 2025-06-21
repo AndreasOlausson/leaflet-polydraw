@@ -1,5 +1,21 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Docker Build Validation Suite > Snapshot Tests > should maintain consistent Leaflet version 1`] = `
+{
+  "hasControl": true,
+  "hasMap": true,
+  "version": "1.9.4",
+}
+`;
+
+exports[`Docker Build Validation Suite > Snapshot Tests > should maintain consistent dependency structure 1`] = `
+{
+  "concavemanIsFunction": true,
+  "turfHasPoint": true,
+  "turfHasPolygon": true,
+}
+`;
+
 exports[`suite name > snapshot 1`] = `
 {
   "foo": "bar",
