@@ -48,7 +48,11 @@ class Polydraw extends L.Control {
     super(options);
     this.config = { ...defaultConfig, ...options?.config || {} };
     this.mergePolygons = this.config.mergePolygons;
-    this.kinks = this.config.kinks;
+    
+    // FIX: Ensure kinks is always properly initialized from configuration
+    // The tests expect this.kinks to be false (from config.json), not undefined
+    this.kinks = this.config.kinks !== undefined ? this.config.kinks : false;
+    
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
