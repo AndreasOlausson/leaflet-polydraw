@@ -15,9 +15,3 @@ exports[`Docker Build Validation Suite > Snapshot Tests > should maintain consis
   "turfHasPolygon": true,
 }
 `;
-
-exports[`suite name > snapshot 1`] = `
-{
-  "foo": "bar",
-}
-`;

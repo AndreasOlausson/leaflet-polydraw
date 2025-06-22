@@ -1,3 +1,14 @@
+/**
+ * Vitest Configuration & Jest Compatibility Shim
+ * 
+ * Purpose: Enables Jest-style API calls (jest.fn, jest.mock, etc.) 
+ * to work seamlessly with Vitest test runner.
+ * 
+ * Migration Strategy: Allows gradual transition from Jest to Vitest
+ * without requiring immediate code changes in existing tests.
+ * 
+ * Usage: Tests can use either jest.fn() or vi.fn() - both work.
+ */
 import { vi } from 'vitest'
 
 // Make Jest globals available for Vitest
