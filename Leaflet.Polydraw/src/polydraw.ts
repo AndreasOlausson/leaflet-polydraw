@@ -26,7 +26,7 @@ class Polydraw extends L.Control {
   private mergePolygons: boolean;
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: ((mode: DrawMode) => void)[] = [];
-
+  private currentPolygonHasKinks: boolean = false;  
   private turfHelper: TurfHelper;
 
 
