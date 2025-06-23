@@ -24,13 +24,6 @@ class Polydraw extends L.Control {
   private arrayOfFeatureGroups: L.FeatureGroup<L.Layer>[] = [];
   private kinks: boolean;
   private mergePolygons: boolean;
-  
-  // FIX: Separate runtime state from configuration
-  // This tracks whether the current polygon being processed has kinks (self-intersections)
-  // Used during polygon validation and processing operations
-  private currentPolygonHasKinks: boolean = false;
-
-
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: ((mode: DrawMode) => void)[] = [];
 
@@ -51,13 +44,7 @@ class Polydraw extends L.Control {
 
   constructor(options?: L.ControlOptions & { config?: any }) {
     super(options);
-    this.config = { ...defaultConfig, ...options?.config || {} };
-    this.mergePolygons = this.config.mergePolygons;
-    
-    // FIX: Ensure kinks is always properly initialized from configuration
-    // The tests expect this.kinks to be false (from config.json), not undefined
-    this.kinks = this.config.kinks !== undefined ? this.config.kinks : false;
-    
+    this.config = { ...defaultConfig, ...options?.config || {} };    
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
@@ -382,9 +369,9 @@ class Polydraw extends L.Control {
     // Add a new polygon, potentially merging with existing ones
 
     if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
-      this.merge(latlngs);
-    } else {
       this.addPolygonLayer(latlngs, simplify);
+    } else {
+      this.merge(latlngs);
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
