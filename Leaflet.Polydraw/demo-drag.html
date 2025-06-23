@@ -78,6 +78,7 @@
         <button id="disableDrag">Disable Polygon Dragging</button>
         <button id="clearAll">Clear All Polygons</button>
         <button id="addSample">Add Sample Polygon</button>
+        <button id="addHole">Add Polygon with Hole</button>
     </div>
 
     <div class="event-log" id="eventLog">
@@ -284,6 +285,40 @@
             
             polygons.push(polygon);
             logEvent('Added sample polygon');
+        };
+
+        document.getElementById('addHole').onclick = function() {
+            // Create a polygon with a hole (outer ring and inner ring)
+            const outerRing = [
+                [59.3200, 18.0600],
+                [59.3400, 18.0600],
+                [59.3400, 18.0800],
+                [59.3200, 18.0800],
+                [59.3200, 18.0600]
+            ];
+            
+            const innerRing = [
+                [59.3250, 18.0650],
+                [59.3350, 18.0650],
+                [59.3350, 18.0750],
+                [59.3250, 18.0750],
+                [59.3250, 18.0650]
+            ];
+            
+            // Create polygon with hole - polygon keeps normal green colors, only markers will be red
+            const polygon = L.polygon([outerRing, innerRing], {
+                color: '#50622b',        // Normal green border
+                fillColor: '#b4cd8a',    // Normal green fill
+                fillOpacity: 0.5,
+                weight: 2
+            }).addTo(map);
+            
+            if (dragEnabled) {
+                enablePolygonDragging(polygon);
+            }
+            
+            polygons.push(polygon);
+            logEvent('Added polygon with hole (reddish styling)');
         };
 
         // Initial log

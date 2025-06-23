@@ -35,6 +35,7 @@ body {
   width: 24px !important;
   height: 24px !important;
   z-index: 10000;
+  cursor: pointer;
 }
 
 .polygon-marker.info {
@@ -49,6 +50,7 @@ body {
   width: 24px !important;
   height: 24px !important;
   z-index: 10000;
+  cursor: pointer;
 }
 
 .polygon-marker:hover {
@@ -88,6 +90,7 @@ body {
   width: 24px !important;
   height: 24px !important;
   z-index: 10000;
+  cursor: pointer;
 }
 
 .polygon-marker.delete:hover {
@@ -103,17 +106,24 @@ body {
 
 
 .polygon-marker.hole {
-  background-color: rgb(118, 160, 216);
+  background-color: #ffcccc;
+  box-shadow: 0 0 0 2px #aa0000, 0 0 10px rgba(0, 0, 0, 0.35);
   width: 12px !important;
   height: 12px !important;
-  z-index: 10000;
+  margin-left: -6px !important;
+  margin-top: -6px !important;
+  border-radius: 50%;
+  cursor: move;
+  outline: none;
+  transition: background-color 0.25s;
 }
 
 .polygon-marker.hole:hover {
-  background-color: rgb(118, 160, 216);
-  width: 12px !important;
-  height: 12px !important;
-  z-index: 10000;
+  background-color: #D4A5B8;
+  width: 18px !important;
+  height: 18px !important;
+  margin-left: -9px !important;
+  margin-top: -9px !important;
 }
 
 .marker-menu-inner-wrapper {

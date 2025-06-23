@@ -61,12 +61,20 @@ export class TurfHelper {
     }
 
     getKinks(feature: Feature<Polygon | MultiPolygon>) {
-        const unkink = turf.unkinkPolygon(feature);
-        let coordinates = [];
-        turf.featureEach(unkink, current => {
-            coordinates.push(current);
-        });
-        return coordinates;
+        try {
+            // Remove duplicate vertices before processing
+            const cleanedFeature = this.removeDuplicateVertices(feature);
+            const unkink = turf.unkinkPolygon(cleanedFeature);
+            let coordinates = [];
+            turf.featureEach(unkink, current => {
+                coordinates.push(current);
+            });
+            return coordinates;
+        } catch (error) {
+            console.warn('Error processing kinks:', error.message);
+            // Return the original feature as a fallback
+            return [feature];
+        }
     }
 
     getCoords(feature: Feature<Polygon | MultiPolygon>) {
@@ -262,5 +270,66 @@ export class TurfHelper {
         const bezierLine = turf.bezierSpline((line as any).features[0], {resolution: this.config.bezier.resolution, sharpness: this.config.bezier.sharpness});
         const bezierPoly = turf.lineToPolygon(bezierLine);
         return bezierPoly;
+    }
+
+    /**
+     * Remove duplicate vertices from a polygon to prevent turf errors
+     */
+    removeDuplicateVertices(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+        const cleanCoordinates = (coords: Position[]): Position[] => {
+            const cleaned: Position[] = [];
+            const tolerance = 0.000001; // Very small tolerance for coordinate comparison
+            
+            for (let i = 0; i < coords.length; i++) {
+                const current = coords[i];
+                const next = coords[(i + 1) % coords.length];
+                
+                // Check if current point is significantly different from next point
+                const latDiff = Math.abs(current[1] - next[1]);
+                const lngDiff = Math.abs(current[0] - next[0]);
+                
+                if (latDiff > tolerance || lngDiff > tolerance) {
+                    cleaned.push(current);
+                }
+            }
+            
+            // Ensure polygon is closed (first and last point are the same)
+            if (cleaned.length > 0) {
+                const first = cleaned[0];
+                const last = cleaned[cleaned.length - 1];
+                const latDiff = Math.abs(first[1] - last[1]);
+                const lngDiff = Math.abs(first[0] - last[0]);
+                
+                if (latDiff > tolerance || lngDiff > tolerance) {
+                    cleaned.push([first[0], first[1]]);
+                }
+            }
+            
+            return cleaned;
+        };
+
+        if (feature.geometry.type === 'Polygon') {
+            const cleanedCoords = feature.geometry.coordinates.map(ring => cleanCoordinates(ring));
+            return {
+                ...feature,
+                geometry: {
+                    ...feature.geometry,
+                    coordinates: cleanedCoords
+                }
+            };
+        } else if (feature.geometry.type === 'MultiPolygon') {
+            const cleanedCoords = feature.geometry.coordinates.map(polygon => 
+                polygon.map(ring => cleanCoordinates(ring))
+            );
+            return {
+                ...feature,
+                geometry: {
+                    ...feature.geometry,
+                    coordinates: cleanedCoords
+                }
+            };
+        }
+        
+        return feature;
     }
 }
