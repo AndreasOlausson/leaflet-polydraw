@@ -14,7 +14,10 @@
     "dragCursor": "move",
     "hoverCursor": "grab",
     "markerBehavior": "hide",
-    "markerAnimationDuration": 200
+    "markerAnimationDuration": 200,
+    "autoMergeOnIntersect": true,
+    "autoHoleOnContained": true,
+    "dragInteractionBehavior": "auto"
   },
   "markers": {
     "deleteMarker": true,

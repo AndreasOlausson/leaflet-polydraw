@@ -123,6 +123,47 @@ export class TurfHelper {
     }
 
     /**
+     * Check if one polygon is completely within another polygon
+     */
+    isPolygonCompletelyWithin(innerPolygon: Feature<Polygon | MultiPolygon>, outerPolygon: Feature<Polygon | MultiPolygon>): boolean {
+        try {
+            return turf.booleanWithin(innerPolygon, outerPolygon);
+        } catch (error) {
+            // Fallback: check if all vertices of inner polygon are within outer polygon
+            const innerCoords = turf.getCoords(innerPolygon);
+            const outerCoords = turf.getCoords(outerPolygon);
+            
+            // For each ring in the inner polygon
+            for (const innerRing of innerCoords) {
+                for (const ring of innerRing) {
+                    for (const coord of ring) {
+                        const point = turf.point(coord);
+                        let isInside = false;
+                        
+                        // Check against each ring in the outer polygon
+                        for (const outerRing of outerCoords) {
+                            for (const outerRingCoords of outerRing) {
+                                const outerPoly = turf.polygon([outerRingCoords]);
+                                if (turf.booleanPointInPolygon(point, outerPoly)) {
+                                    isInside = true;
+                                    break;
+                                }
+                            }
+                            if (isInside) break;
+                        }
+                        
+                        if (!isInside) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            
+            return true;
+        }
+    }
+
+    /**
      * Checks if two polygons are equal.
      * @param polygon1 First polygon.
      * @param polygon2 Second polygon.
