@@ -2,6 +2,7 @@ import Polydraw from '../src/polydraw';
 import * as L from 'leaflet';
 import { DrawMode } from '../src/enums';
 import { vi } from 'vitest';
+import {Feature, Polygon} from 'geojson';
 
 // Mock the CSS import to avoid issues
 vi.mock('../src/styles/polydraw.css', () => ({}));
@@ -54,6 +55,41 @@ vi.mock('../src/turf-helper', () => {
       }),
       getNearestPointIndex: vi.fn().mockReturnValue(0)
     }))
+  };
+});
+
+// Mock Leaflet's GeoJSON.geometryToLayer to return a proper polygon mock
+vi.mock('leaflet', async () => {
+  const actual = await vi.importActual('leaflet') as any;
+  return {
+    ...actual,
+    GeoJSON: {
+      ...actual.GeoJSON,
+      geometryToLayer: vi.fn().mockReturnValue({
+        setStyle: vi.fn(),
+        getLatLngs: vi.fn().mockReturnValue([
+          [
+            { lat: 0, lng: 0 },
+            { lat: 1, lng: 0 },
+            { lat: 1, lng: 1 },
+            { lat: 0, lng: 1 },
+            { lat: 0, lng: 0 }
+          ]
+        ]),
+        addTo: vi.fn().mockReturnThis(),
+        on: vi.fn(),
+        addEventParent: vi.fn(),
+        removeEventParent: vi.fn(),
+        toGeoJSON: vi.fn().mockReturnValue({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          },
+          properties: {}
+        })
+      })
+    }
   };
 });
 
@@ -590,6 +626,63 @@ describe('Draw Polygon Functionality', () => {
       //     expect(unionResult.geometry.type).toBe('Polygon');
       //   }
       // });
+
+      it('should merge two overlapping polygons when mergePolygons is enabled', () => {
+        const control = mergingEnabledControl as any;
+        
+        // Setup: Start with 1 existing polygon (real-world scenario after first draw)
+        control.arrayOfFeatureGroups = [{}]; // Mock 1 existing polygon
+        expect(control.arrayOfFeatureGroups.length).toBe(1);
+        
+        // Ensure merging is enabled and properties are set correctly
+        control.mergePolygons = true;
+        control.kinks = false;
+        
+        // Mock addPolygonLayer to simulate adding without merging (buggy behavior)
+        const originalAddPolygonLayer = control.addPolygonLayer;
+        control.addPolygonLayer = vi.fn((feature) => {
+          // Simulate adding a polygon to the array (no merging)
+          control.arrayOfFeatureGroups.push({}); // Add another polygon
+        });
+        
+        // Mock merge to simulate proper merging behavior
+        const originalMerge = control.merge;
+        control.merge = vi.fn((feature) => {
+          // Simulate proper merging - merge existing polygons into one
+          // In real merge, this would combine overlapping polygons
+          // Keep the array at 1 polygon (merged result)
+          control.arrayOfFeatureGroups = [{}]; // Result: 1 merged polygon
+        });
+        
+        // Draw second polygon that intersects with the first
+        const polygon2: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0.5, 0.5], [1.5, 0.5], [1.5, 1.5], [0.5, 1.5], [0.5, 0.5]]]
+          },
+          properties: {}
+        };
+        
+        // This should trigger merge because:
+        // - mergePolygons = true
+        // - arrayOfFeatureGroups.length > 0 (we have 1 polygon)
+        // - kinks = false
+        control.addPolygon(polygon2, false, false);
+        
+        // VERIFICATION: With correct logic, merge should be called
+        // Result: 1 existing + 1 new intersecting polygon = 1 merged polygon
+        expect(control.arrayOfFeatureGroups.length).toBe(1); // Still 1 polygon (merged)
+        
+        // When logic is BUGGY (if/else flipped):
+        // - addPolygonLayer would be called instead of merge
+        // - Result would be 2 separate polygons
+        // - This assertion would fail: expect(2).toBe(1)
+        
+        // Restore original methods
+        control.addPolygonLayer = originalAddPolygonLayer;
+        control.merge = originalMerge;
+      });
 
       it('p2p - should verify intersecting polygons meet merge prerequisites', () => {
         // Test the concept of point-to-point polygon merging

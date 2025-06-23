@@ -384,3 +384,24 @@ Before submitting a pull request, make sure to:
 - Initial release
 - Ported from Angular service to native Leaflet plugin
 - Full feature parity with original implementation
+
+## Planned Work
+
+### Type System Improvements
+- **Replace custom ILatLng** - Use Leaflet's native `LatLngLiteral` type
+- **Smart coordinate detection** - Auto-detect and convert `[lng,lat]` ↔ `[lat,lng]` formats
+- **Flexible input handling** - Accept GeoJSON, Leaflet, or custom coordinate formats
+
+### Bug Fixes
+- **Draw mode switching error** - Console error when switching from draw to subtract mode (single point polygon creation)
+- **Complex polygon merging** - Handle merging of multiple polygons with holes
+- **Crosshair cursor** - Missing crosshair cursor in draw mode
+
+### Performance Optimizations
+- **Reduce type conversions** - Minimize coordinate format switching overhead
+- **Memory usage** - Optimize polygon storage and processing
+
+### Developer Experience
+- **Better TypeScript support** - Enhanced type safety and IntelliSense
+- **Coordinate format flexibility** - Automatic format detection and conversion
+- **Improved documentation** - More examples and use cases
