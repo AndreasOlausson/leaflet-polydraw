@@ -4,7 +4,17 @@
   "kinks": false,
   "modes": {
     "attachElbow": false,
-    "dragElbow": true
+    "dragElbow": true,
+    "dragPolygons": true
+  },
+  "dragPolygons": {
+    "realTimeUpdate": false,
+    "showDragHandle": false,
+    "opacity": 0.7,
+    "dragCursor": "move",
+    "hoverCursor": "grab",
+    "markerBehavior": "hide",
+    "markerAnimationDuration": 200
   },
   "markers": {
     "deleteMarker": true,

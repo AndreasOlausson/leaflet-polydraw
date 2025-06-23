@@ -950,6 +950,120 @@ Allow users to choose algorithm via configuration for quality vs. dependency tra
 
 ---
 
+## Polygon Drag Feature
+
+### Status: ✅ **Completed**
+### Priority: 🟢 **New Feature**
+### Estimated Effort: 1-2 days
+
+### Overview
+
+Enable users to drag entire polygons to new locations on the map while maintaining their shape and properties. This feature will enhance user experience by allowing easy repositioning of drawn polygons without redrawing.
+
+### Current Implementation Status
+
+**Phase 1: Core Drag Functionality** ✅ **Planned**
+- Native Leaflet dragging integration
+- Basic drag event handlers
+- Coordinate state management
+
+### Technical Approach
+
+#### **Option 1: Native Leaflet Dragging (Selected)**
+Leverage Leaflet's built-in dragging capabilities for optimal performance.
+
+**Benefits:**
+- ✅ Smooth, native performance
+- ✅ Built-in event handling  
+- ✅ Automatic map integration
+- ✅ Minimal code complexity
+
+#### **Implementation Strategy**
+
+**1. Enable Dragging on Polygon Layers**
+```typescript
+// Enable dragging when creating polygon layers
+if (this.config.modes.dragPolygons) {
+    layer.dragging.enable();
+    layer.on('dragstart', this.onPolygonDragStart.bind(this));
+    layer.on('drag', this.onPolygonDrag.bind(this));
+    layer.on('dragend', this.onPolygonDragEnd.bind(this));
+}
+```
+
+**2. Coordinate State Management**
+```typescript
+private updatePolygonCoordinates(layer: any) {
+    const newLatLngs = layer.getLatLngs();
+    const featureGroup = this.findFeatureGroupByLayer(layer);
+    // Update internal state and feature groups
+}
+```
+
+**3. Configuration Integration**
+```typescript
+// Add to config.json
+{
+  "modes": {
+    "dragPolygons": true
+  },
+  "dragPolygons": {
+    "realTimeUpdate": false,
+    "showDragHandle": true,
+    "opacity": 0.7
+  }
+}
+```
+
+### Implementation Checklist
+
+#### Phase 1: Core Functionality
+- [ ] Add drag enable/disable to polygon layers
+- [ ] Implement drag event handlers (dragstart, drag, dragend)
+- [ ] Update internal coordinate tracking
+- [ ] Test with simple and complex polygons
+
+#### Phase 2: State Management  
+- [ ] Handle feature group updates during drag
+- [ ] Preserve polygon properties
+- [ ] Integrate with existing polygon operations
+- [ ] Add drag mode toggle functionality
+
+#### Phase 3: User Experience
+- [ ] Add visual feedback during drag
+- [ ] Implement drag constraints (bounds, grid snap)
+- [ ] Add undo/redo support for drag operations
+- [ ] Mobile touch support optimization
+
+#### Phase 4: Integration & Polish
+- [ ] Coordinate with drawing/editing modes
+- [ ] Event system integration
+- [ ] Performance optimization for large polygons
+- [ ] Comprehensive testing
+
+### Event System
+```typescript
+// New events
+'polygon:dragstart' // When drag begins
+'polygon:drag'      // During drag (optional)  
+'polygon:dragend'   // When drag completes
+'polygon:dragcancel' // If drag is cancelled
+```
+
+### Risk Assessment
+
+#### Low Risk
+- Leverages native Leaflet functionality
+- Non-breaking addition to existing API
+- Can be disabled via configuration
+
+#### Mitigation
+- Thorough testing with various polygon types
+- Performance testing with large/complex polygons
+- Fallback mechanisms for edge cases
+
+---
+
 ## Future Plans Template
 
 ### Status: 📋 **Template**
