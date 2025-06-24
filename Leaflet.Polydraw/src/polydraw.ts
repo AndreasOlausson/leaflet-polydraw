@@ -44,7 +44,9 @@ class Polydraw extends L.Control {
 
   constructor(options?: L.ControlOptions & { config?: any }) {
     super(options);
-    this.config = { ...defaultConfig, ...options?.config || {} };    
+    this.config = { ...defaultConfig, ...options?.config || {} };
+    this.mergePolygons = this.config.mergePolygons ?? true;
+    this.kinks = this.config.kinks ?? false;    
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
@@ -346,6 +348,10 @@ class Polydraw extends L.Control {
     let geoPos: Feature<Polygon | MultiPolygon> = this.turfHelper.turfConcaveman(this.tracer.toGeoJSON() as any);
     // Drawn geometry
     this.stopDraw();
+    
+    // Reset kinks state for new polygon
+    this.currentPolygonHasKinks = false;
+    
     switch (this.getDrawMode()) {
       case DrawMode.Add:
         this.addPolygon(geoPos, true);
@@ -367,11 +373,13 @@ class Polydraw extends L.Control {
   //fine
   private addPolygon(latlngs: Feature<Polygon | MultiPolygon>, simplify: boolean, noMerge: boolean = false) {
     // Add a new polygon, potentially merging with existing ones
+    // Use currentPolygonHasKinks for runtime state, fallback to global kinks config
+    const hasKinks = this.currentPolygonHasKinks || this.kinks;
 
-    if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
-      this.addPolygonLayer(latlngs, simplify);
-    } else {
+    if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !hasKinks) {
       this.merge(latlngs);
+    } else {
+      this.addPolygonLayer(latlngs, simplify);
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
