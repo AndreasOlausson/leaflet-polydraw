@@ -244,9 +244,8 @@ describe('Polygon Drag Feature', () => {
         setLatLngs: vi.fn()
       };
 
-      // Mock console.warn to prevent stderr output
-      const originalConsoleWarn = console.warn;
-      console.warn = vi.fn();
+      // Mock console.warn to capture and verify the error message
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       (polydraw as any).dragStartPosition = [[[{ lat: 0, lng: 0 }]]];
 
@@ -257,10 +256,14 @@ describe('Polygon Drag Feature', () => {
         });
       }).not.toThrow();
 
+      // Verify that the error was properly logged
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Failed to update polygon coordinates:', 'Test error');
+      
+      // Verify that fallback behavior occurred
       expect(mockPolygonWithError.setLatLngs).toHaveBeenCalledWith([[[{ lat: 0, lng: 0 }]]]);
       
       // Restore console.warn
-      console.warn = originalConsoleWarn;
+      consoleWarnSpy.mockRestore();
     });
   });
 });
