@@ -31,6 +31,7 @@ const mockPolygon = {
   getLatLngs: vi.fn(() => [[[{ lat: 0, lng: 0 }, { lat: 1, lng: 0 }, { lat: 1, lng: 1 }, { lat: 0, lng: 1 }]]]),
   setLatLngs: vi.fn(),
   setStyle: vi.fn(),
+  getElement: vi.fn(() => null), // Mock getElement to return null instead of undefined
   toGeoJSON: vi.fn(() => ({
     type: 'Feature',
     geometry: {
@@ -149,6 +150,10 @@ describe('Polygon Drag Feature', () => {
         }
       };
 
+      // Mock the updatePolygonCoordinates method to prevent DOM operations
+      const mockUpdatePolygonCoordinates = vi.fn();
+      (polydraw as any).updatePolygonCoordinates = mockUpdatePolygonCoordinates;
+
       // Set up drag start position
       (polydraw as any).dragStartPosition = [[[{ lat: 0, lng: 0 }]]];
 
@@ -160,6 +165,7 @@ describe('Polygon Drag Feature', () => {
       expect(mockMap.dragging.enable).toHaveBeenCalled();
       expect(mockEvent.target.setStyle).toHaveBeenCalledWith({ opacity: 1.0 });
       expect(mockMap.fire).toHaveBeenCalledWith('polygon:dragend', expect.any(Object));
+      expect(mockUpdatePolygonCoordinates).toHaveBeenCalled();
     });
   });
 
@@ -206,9 +212,20 @@ describe('Polygon Drag Feature', () => {
         createPolygonInformationStorage: vi.fn()
       };
       const mockAddPolygonLayer = vi.fn();
+      const mockTurfHelper = {
+        getTurfPolygon: vi.fn(() => ({ type: 'Feature', geometry: { type: 'Polygon' } })),
+      };
+      const mockCheckDragInteractions = vi.fn(() => ({
+        shouldMerge: false,
+        shouldCreateHole: false,
+        intersectingFeatureGroups: [],
+        containingFeatureGroup: null
+      }));
 
       (polydraw as any).polygonInformation = mockPolygonInformation;
       (polydraw as any).addPolygonLayer = mockAddPolygonLayer;
+      (polydraw as any).turfHelper = mockTurfHelper;
+      (polydraw as any).checkDragInteractions = mockCheckDragInteractions;
 
       updatePolygonCoordinates.call(polydraw, mockPolygon, mockFeatureGroup, {
         type: 'Feature',
@@ -227,6 +244,10 @@ describe('Polygon Drag Feature', () => {
         setLatLngs: vi.fn()
       };
 
+      // Mock console.warn to prevent stderr output
+      const originalConsoleWarn = console.warn;
+      console.warn = vi.fn();
+
       (polydraw as any).dragStartPosition = [[[{ lat: 0, lng: 0 }]]];
 
       expect(() => {
@@ -237,6 +258,9 @@ describe('Polygon Drag Feature', () => {
       }).not.toThrow();
 
       expect(mockPolygonWithError.setLatLngs).toHaveBeenCalledWith([[[{ lat: 0, lng: 0 }]]]);
+      
+      // Restore console.warn
+      console.warn = originalConsoleWarn;
     });
   });
 });
