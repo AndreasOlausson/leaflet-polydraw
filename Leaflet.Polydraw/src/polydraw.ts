@@ -252,14 +252,13 @@ class Polydraw extends L.Control {
           L.DomUtil.removeClass(this.map.getContainer(), "crosshair-cursor-enabled");
           this.events(false);
           this.stopDraw();
-          // FIX: Handle tracer setStyle errors in test environment
+          // Handle tracer setStyle errors in test environment
           try {
             this.tracer.setStyle({
               color: ""
             });
           } catch (error) {
             // Handle case where tracer renderer is not initialized (e.g., in test environment)
-            console.warn('Could not set tracer style:', error.message);
           }
           this.setLeafletMapEvents(true, true, true);
           isActiveDrawMode = false;
@@ -267,28 +266,26 @@ class Polydraw extends L.Control {
         case DrawMode.Add:
           L.DomUtil.addClass(this.map.getContainer(), "crosshair-cursor-enabled");
           this.events(true);
-          // FIX: Handle tracer setStyle errors in test environment
+          // Handle tracer setStyle errors in test environment
           try {
             this.tracer.setStyle({
               color: defaultConfig.polyLineOptions.color
             });
           } catch (error) {
             // Handle case where tracer renderer is not initialized (e.g., in test environment)
-            console.warn('Could not set tracer style:', error.message);
           }
           this.setLeafletMapEvents(false, false, false);
           break;
         case DrawMode.Subtract:
           L.DomUtil.addClass(this.map.getContainer(), "crosshair-cursor-enabled");
           this.events(true);
-          // FIX: Handle tracer setStyle errors in test environment
+          // Handle tracer setStyle errors in test environment
           try {
             this.tracer.setStyle({
               color: "#D9460F"
             });
           } catch (error) {
             // Handle case where tracer renderer is not initialized (e.g., in test environment)
-            console.warn('Could not set tracer style:', error.message);
           }
           this.setLeafletMapEvents(false, false, false);
           break;
