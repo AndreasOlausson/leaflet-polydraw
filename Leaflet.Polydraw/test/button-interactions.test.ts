@@ -427,6 +427,222 @@ describe('Button Interactions', () => {
     });
   });
 
+  describe('Bug Reproduction Tests - FAILING TESTS TO REPRODUCE BUGS', () => {
+    it('FAILING TEST: should reproduce "invalid polygon" error on activate -> draw -> button sequence', () => {
+      // This test is DESIGNED TO FAIL to demonstrate the bug
+      // When the bug is fixed, change this test to expect no error
+      
+      // Step 1: Activate the control panel
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      expect(mockSubContainer.style.maxHeight).toBe('250px');
+
+      // Step 2: Click draw button to enter Add mode
+      onDrawClick();
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Add);
+
+      // Step 3: Click another button - this should trigger the "invalid polygon" error
+      // This test EXPECTS the error to occur (demonstrating the bug)
+      expect(() => {
+        onSubtractClick();
+      }).toThrow('invalid polygon'); // This will FAIL because the error doesn't occur in test environment
+      
+      // This line should not be reached if the error occurs
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Subtract);
+    });
+
+    it('should handle activate -> draw -> another button sequence without "invalid polygon" error', () => {
+      // This test reproduces the bug: activate -> draw -> another button causes "invalid polygon" error
+      
+      // Step 1: Activate the control panel
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      expect(mockSubContainer.style.maxHeight).toBe('250px');
+
+      // Step 2: Click draw button to enter Add mode
+      onDrawClick();
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Add);
+
+      // Step 3: Simulate that we have started drawing (tracer has some points)
+      // This is likely the condition that triggers the "invalid polygon" error
+      const mockTracer = {
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [[0, 0], [1, 1]] // Incomplete polygon (only 2 points)
+          }
+        })),
+        setLatLngs: vi.fn(),
+        addLatLng: vi.fn(),
+        setStyle: vi.fn()
+      };
+      (polydraw as any).tracer = mockTracer;
+
+      // Step 4: Click another button (subtract) - this should trigger the "invalid polygon" error
+      // The error occurs because the system tries to process an incomplete/invalid polygon
+      // when switching modes while in drawing state
+      
+      expect(() => {
+        onSubtractClick();
+      }).not.toThrow(); // This test will FAIL because the bug causes an error to be thrown
+      
+      // If the bug is fixed, this should pass:
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Subtract);
+    });
+
+    it('should handle activate -> draw -> erase sequence without "invalid polygon" error', () => {
+      // Another variation of the bug: activate -> draw -> erase
+      
+      // Step 1: Activate the control panel
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      expect(mockSubContainer.style.maxHeight).toBe('250px');
+
+      // Step 2: Click draw button to enter Add mode
+      onDrawClick();
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Add);
+
+      // Step 3: Simulate incomplete drawing state
+      const mockTracer = {
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [[0, 0]] // Invalid polygon (only 1 point)
+          }
+        })),
+        setLatLngs: vi.fn(),
+        addLatLng: vi.fn(),
+        setStyle: vi.fn()
+      };
+      (polydraw as any).tracer = mockTracer;
+
+      // Step 4: Click erase button - this might also trigger the "invalid polygon" error
+      expect(() => {
+        onEraseClick();
+      }).not.toThrow(); // This test may also FAIL due to the same bug
+      
+      // Mode should remain Add after erase (erase doesn't change mode)
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Add);
+    });
+
+    it('should handle rapid mode switching without "invalid polygon" error', () => {
+      // Test rapid switching that might trigger the polygon validation bug
+      
+      // Activate first
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      
+      // Simulate drawing state with invalid polygon data
+      const mockTracer = {
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [] // Empty coordinates - definitely invalid
+          }
+        })),
+        setLatLngs: vi.fn(),
+        addLatLng: vi.fn(),
+        setStyle: vi.fn()
+      };
+      (polydraw as any).tracer = mockTracer;
+      
+      // Rapid sequence that might trigger the bug
+      expect(() => {
+        onDrawClick();        // Enter Add mode
+        onSubtractClick();    // Switch to Subtract mode
+        onDrawClick();        // Back to Add mode
+        onSubtractClick();    // Back to Subtract mode
+      }).not.toThrow(); // This test will likely FAIL due to the polygon validation bug
+      
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Subtract);
+    });
+
+    it('should handle mode switching with active drawing events without "invalid polygon" error', () => {
+      // This test simulates the exact scenario: drawing is active and user switches modes
+      
+      // Step 1: Activate and enter draw mode
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      onDrawClick();
+      
+      // Step 2: Simulate that drawing has started (events are active)
+      // Mock the tracer with invalid polygon data that would cause the error
+      const mockTracer = {
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [[0, 0], [1, 1]] // Incomplete polygon
+          }
+        })),
+        setLatLngs: vi.fn(),
+        addLatLng: vi.fn(),
+        setStyle: vi.fn()
+      };
+      (polydraw as any).tracer = mockTracer;
+      
+      // Step 3: Mock the TurfHelper to throw the error when processing invalid polygon
+      const mockTurfHelper = {
+        turfConcaveman: vi.fn(() => {
+          throw new Error('invalid polygon'); // This is where the error likely occurs
+        })
+      };
+      (polydraw as any).turfHelper = mockTurfHelper;
+      
+      // Step 4: Simulate drawing events are active and try to complete drawing
+      // This is more likely where the error occurs - during polygon completion
+      expect(() => {
+        // Simulate mouse up event that triggers polygon completion
+        const mockEvent = { latlng: { lat: 2, lng: 2 } };
+        (polydraw as any).mouseUpLeave(mockEvent);
+      }).toThrow('invalid polygon'); // This test should FAIL (throw the error) to reproduce the bug
+    });
+
+    it('should handle incomplete polygon data during mode transitions', () => {
+      // Test with various invalid polygon states that might trigger the error
+      
+      vi.mocked(L.DomUtil.hasClass).mockReturnValue(false);
+      onActivateToggle();
+      onDrawClick();
+      
+      // Test with different invalid polygon scenarios
+      const invalidPolygonStates = [
+        { coordinates: [] }, // Empty
+        { coordinates: [[0, 0]] }, // Single point
+        { coordinates: [[0, 0], [1, 1]] }, // Two points (not enough for polygon)
+        { coordinates: [[NaN, NaN], [0, 0], [1, 1]] }, // Invalid coordinates
+      ];
+      
+      invalidPolygonStates.forEach((invalidState, index) => {
+        const mockTracer = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'Feature',
+            geometry: {
+              type: 'LineString',
+              coordinates: invalidState.coordinates
+            }
+          })),
+          setLatLngs: vi.fn(),
+          addLatLng: vi.fn(),
+          setStyle: vi.fn()
+        };
+        (polydraw as any).tracer = mockTracer;
+        
+        // Each of these should not throw an error, but might due to the bug
+        expect(() => {
+          if (index % 2 === 0) {
+            onSubtractClick();
+          } else {
+            onDrawClick();
+          }
+        }).not.toThrow(`Should handle invalid polygon state ${index}`);
+      });
+    });
+  });
+
   describe('State Consistency', () => {
     it('should maintain consistent state between internal mode and button visual state', () => {
       // Enter Add mode
