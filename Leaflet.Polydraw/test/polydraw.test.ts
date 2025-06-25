@@ -6,6 +6,28 @@ import { vi } from 'vitest';
 // Mock the CSS import to avoid issues
 vi.mock('../src/styles/polydraw.css', () => ({}));
 
+// Mock Leaflet polyline to include all necessary methods
+vi.mock('leaflet', async () => {
+  const actual = await vi.importActual('leaflet') as any;
+  return {
+    ...actual,
+    polyline: vi.fn(() => ({
+      addTo: vi.fn().mockReturnThis(),
+      setStyle: vi.fn().mockReturnThis(),
+      setLatLngs: vi.fn().mockReturnThis(),
+      addLatLng: vi.fn().mockReturnThis(),
+      toGeoJSON: vi.fn(() => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [[0, 0], [1, 1], [2, 2]]
+        },
+        properties: {}
+      }))
+    }))
+  };
+});
+
 // Mock TurfHelper methods that are used in polygon drawing
 vi.mock('../src/turf-helper', () => {
   return {
@@ -153,6 +175,9 @@ describe('Polydraw', () => {
   });
 
   it('can set draw mode', () => {
+    // Add control to map first to initialize tracer
+    control.onAdd(map);
+    
     control.setDrawMode(DrawMode.Add);
     expect(control.getDrawMode()).toBe(DrawMode.Add);
     
