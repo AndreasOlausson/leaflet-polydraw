@@ -339,14 +339,13 @@ class Polydraw extends L.Control {
     }
   }
   private mouseUpLeave(event) {
-    // Finalize the drawn shape on mouse up
     this.polygonInformation.deletePolygonInformationStorage();
-    //console.log("------------------------------Delete trashcans", null);
-    let geoPos: Feature<Polygon | MultiPolygon> = this.turfHelper.turfConcaveman(this.tracer.toGeoJSON() as any);
-    // Drawn geometry
+    
+    const tracerGeoJSON = this.tracer.toGeoJSON() as any;
+    
+    let geoPos: Feature<Polygon | MultiPolygon> = this.turfHelper.turfConcaveman(tracerGeoJSON);
     this.stopDraw();
     
-    // Reset kinks state for new polygon
     this.currentPolygonHasKinks = false;
     
     switch (this.getDrawMode()) {
@@ -361,7 +360,6 @@ class Polydraw extends L.Control {
         break;
     }
     this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-    //console.log("------------------------------create trashcans", null);
   }
 
   private subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
