@@ -17,7 +17,16 @@
     "markerAnimationDuration": 200,
     "autoMergeOnIntersect": true,
     "autoHoleOnContained": true,
-    "dragInteractionBehavior": "auto"
+    "dragInteractionBehavior": "auto",
+    "modifierSubtract": {
+      "enabled": true,
+      "keys": {
+        "windows": "ctrlKey",
+        "mac": "metaKey",
+        "linux": "ctrlKey"
+      },
+      "subtractColor": "#D9460F"
+    }
   },
   "markers": {
     "deleteMarker": true,

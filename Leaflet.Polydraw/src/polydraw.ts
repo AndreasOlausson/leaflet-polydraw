@@ -42,6 +42,10 @@ class Polydraw extends L.Control {
   private isDragging: boolean = false;
   private currentDragPolygon: any = null;
 
+  // Modifier key drag state management
+  private isModifierKeyHeld: boolean = false;
+  private currentModifierDragMode: boolean = false;
+
   constructor(options?: L.ControlOptions & { config?: any }) {
     super(options);
     this.config = { ...defaultConfig, ...options?.config || {} };
@@ -1852,6 +1856,47 @@ class Polydraw extends L.Control {
 
   getDrawMode(): DrawMode {
     return this.drawMode;
+  }
+
+  /**
+   * Modifier key drag functionality - Method stubs for TDD
+   */
+
+  /**
+   * Detect if modifier key is pressed during drag operation
+   */
+  private detectModifierKey(event: MouseEvent): boolean {
+    // TODO: Implement modifier key detection based on platform
+    return false;
+  }
+
+  /**
+   * Set visual feedback for subtract mode during drag
+   */
+  private setSubtractVisualMode(polygon: any, enabled: boolean): void {
+    // TODO: Implement visual feedback (color change to subtract color)
+  }
+
+  /**
+   * Perform subtract operation when modifier key is held during drag
+   */
+  private performModifierSubtract(draggedPolygon: Feature<Polygon | MultiPolygon>, intersectingPolygons: L.FeatureGroup[]): void {
+    // TODO: Implement modifier-based subtract operation
+  }
+
+  /**
+   * Check if modifier drag mode is currently active
+   */
+  private isModifierDragActive(): boolean {
+    // TODO: Implement modifier drag state checking
+    return false;
+  }
+
+  /**
+   * Handle modifier key toggle during active drag operation
+   */
+  private handleModifierToggleDuringDrag(event: MouseEvent): void {
+    // TODO: Implement mid-drag modifier key toggle handling
   }
 
 

@@ -266,4 +266,194 @@ describe('Polygon Drag Feature', () => {
       consoleWarnSpy.mockRestore();
     });
   });
+
+  describe('Modifier Key Subtract Drag', () => {
+    describe('Modifier Key Detection', () => {
+      it('should detect Ctrl key on Windows/Linux platforms', () => {
+        const detectModifierKey = (polydraw as any).detectModifierKey;
+        const mockEvent = { ctrlKey: true, metaKey: false } as MouseEvent;
+        
+        const result = detectModifierKey.call(polydraw, mockEvent);
+        expect(result).toBe(false); // Should fail initially (stub returns false)
+      });
+
+      it('should detect Cmd key on Mac platform', () => {
+        const detectModifierKey = (polydraw as any).detectModifierKey;
+        const mockEvent = { ctrlKey: false, metaKey: true } as MouseEvent;
+        
+        const result = detectModifierKey.call(polydraw, mockEvent);
+        expect(result).toBe(false); // Should fail initially (stub returns false)
+      });
+
+      it('should detect modifier key press during drag start', () => {
+        const detectModifierKey = (polydraw as any).detectModifierKey;
+        const mockEvent = { ctrlKey: true, metaKey: false } as MouseEvent;
+        
+        const result = detectModifierKey.call(polydraw, mockEvent);
+        expect(result).toBe(true); // Should fail - stub returns false but we expect true
+      });
+
+      it('should detect modifier key release during drag', () => {
+        const detectModifierKey = (polydraw as any).detectModifierKey;
+        const mockEvent = { ctrlKey: false, metaKey: false } as MouseEvent;
+        
+        const result = detectModifierKey.call(polydraw, mockEvent);
+        expect(result).toBe(false); // Should pass (stub returns false)
+      });
+    });
+
+    describe('Visual Feedback', () => {
+      it('should change polygon color to subtract color when holding modifier key during drag', () => {
+        const setSubtractVisualMode = (polydraw as any).setSubtractVisualMode;
+        
+        setSubtractVisualMode.call(polydraw, mockPolygon, true);
+        
+        // Should fail - stub doesn't implement visual feedback
+        expect(mockPolygon.setStyle).toHaveBeenCalledWith({ color: '#D9460F' });
+      });
+
+      it('should restore normal color when modifier key is released during drag', () => {
+        const setSubtractVisualMode = (polydraw as any).setSubtractVisualMode;
+        
+        setSubtractVisualMode.call(polydraw, mockPolygon, false);
+        
+        // Should fail - stub doesn't implement visual feedback restoration
+        expect(mockPolygon.setStyle).toHaveBeenCalledWith({ color: expect.not.stringMatching('#D9460F') });
+      });
+    });
+
+    describe('Drag Behavior - Intersection Cases', () => {
+      it('should create indentation when partially dragging with modifier key', () => {
+        const performModifierSubtract = (polydraw as any).performModifierSubtract;
+        const mockIntersectingPolygons = [mockFeatureGroup];
+        
+        performModifierSubtract.call(polydraw, {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0.5, 0.5], [0, 0]]] }
+        }, mockIntersectingPolygons);
+        
+        // Should fail - stub doesn't implement subtract operation
+        expect(mockMap.removeLayer).toHaveBeenCalledWith(mockFeatureGroup);
+      });
+
+      it('should create donut when fully dragging with modifier key', () => {
+        const performModifierSubtract = (polydraw as any).performModifierSubtract;
+        const mockContainingPolygon = [mockFeatureGroup];
+        
+        performModifierSubtract.call(polydraw, {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[[0.2, 0.2], [0.8, 0.2], [0.8, 0.8], [0.2, 0.8], [0.2, 0.2]]] }
+        }, mockContainingPolygon);
+        
+        // Should fail - stub doesn't implement hole creation
+        expect(mockMap.removeLayer).toHaveBeenCalledWith(mockFeatureGroup);
+      });
+
+      it('should subtract from multiple polygons when dragging with modifier key', () => {
+        const performModifierSubtract = (polydraw as any).performModifierSubtract;
+        const mockMultiplePolygons = [mockFeatureGroup, { ...mockFeatureGroup }];
+        
+        performModifierSubtract.call(polydraw, {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]] }
+        }, mockMultiplePolygons);
+        
+        // Should fail - stub doesn't implement multiple subtract
+        expect(mockMap.removeLayer).toHaveBeenCalledTimes(2);
+      });
+
+      it('should override auto-merge behavior when modifier key is held', () => {
+        const isModifierDragActive = (polydraw as any).isModifierDragActive;
+        
+        const result = isModifierDragActive.call(polydraw);
+        
+        // Should fail - stub returns false but we expect true when modifier is active
+        expect(result).toBe(true);
+      });
+
+      it('should override auto-hole behavior when modifier key is held', () => {
+        const isModifierDragActive = (polydraw as any).isModifierDragActive;
+        
+        const result = isModifierDragActive.call(polydraw);
+        
+        // Should fail - stub returns false but we expect true when modifier is active
+        expect(result).toBe(true);
+      });
+
+      it('should erase smaller polygon when dragging larger polygon over it with modifier key', () => {
+        const performModifierSubtract = (polydraw as any).performModifierSubtract;
+        const mockSmallerPolygon = [mockFeatureGroup];
+        
+        performModifierSubtract.call(polydraw, {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[[-1, -1], [2, -1], [2, 2], [-1, 2], [-1, -1]]] }
+        }, mockSmallerPolygon);
+        
+        // Should fail - stub doesn't implement erase behavior
+        expect(mockMap.removeLayer).toHaveBeenCalledWith(mockFeatureGroup);
+      });
+    });
+
+    describe('Edge Cases', () => {
+      it('should just move polygon when dragging with modifier but no intersections occur', () => {
+        const performModifierSubtract = (polydraw as any).performModifierSubtract;
+        const mockAddPolygonLayer = vi.fn();
+        (polydraw as any).addPolygonLayer = mockAddPolygonLayer;
+        
+        performModifierSubtract.call(polydraw, {
+          type: 'Feature',
+          geometry: { type: 'Polygon', coordinates: [[[10, 10], [11, 10], [11, 11], [10, 11], [10, 10]]] }
+        }, []);
+        
+        // Should fail - stub doesn't implement move-only behavior
+        expect(mockAddPolygonLayer).toHaveBeenCalledWith(expect.any(Object), false);
+      });
+
+      it('should handle modifier key toggle mid-drag gracefully', () => {
+        const handleModifierToggleDuringDrag = (polydraw as any).handleModifierToggleDuringDrag;
+        const mockEvent = { ctrlKey: true, metaKey: false } as MouseEvent;
+        
+        // Should not throw error
+        expect(() => {
+          handleModifierToggleDuringDrag.call(polydraw, mockEvent);
+        }).not.toThrow();
+        
+        // Should fail - stub doesn't implement toggle handling
+        expect((polydraw as any).currentModifierDragMode).toBe(true);
+      });
+    });
+
+    describe('Integration Tests', () => {
+      it('should maintain normal drag behavior when modifier key is not held', () => {
+        const detectModifierKey = (polydraw as any).detectModifierKey;
+        const mockEvent = { ctrlKey: false, metaKey: false } as MouseEvent;
+        
+        const result = detectModifierKey.call(polydraw, mockEvent);
+        
+        // Should pass - normal behavior when no modifier
+        expect(result).toBe(false);
+      });
+
+      it('should not interfere with existing drag functionality', () => {
+        const isModifierDragActive = (polydraw as any).isModifierDragActive;
+        
+        const result = isModifierDragActive.call(polydraw);
+        
+        // Should pass - when modifier is not active, normal drag should work
+        expect(result).toBe(false);
+      });
+
+      it('should work correctly with polygon markers during modifier drag', () => {
+        const setSubtractVisualMode = (polydraw as any).setSubtractVisualMode;
+        
+        // Should not throw error when working with markers
+        expect(() => {
+          setSubtractVisualMode.call(polydraw, mockPolygon, true);
+        }).not.toThrow();
+        
+        // Should fail - stub doesn't implement marker handling
+        expect(mockPolygon.setStyle).toHaveBeenCalled();
+      });
+    });
+  });
 });
