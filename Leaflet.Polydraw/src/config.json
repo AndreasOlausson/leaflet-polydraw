@@ -16,7 +16,7 @@
     "markerBehavior": "hide",
     "markerAnimationDuration": 200,
     "autoMergeOnIntersect": true,
-    "autoHoleOnContained": true,
+    "autoHoleOnContained": false,
     "dragInteractionBehavior": "auto",
     "modifierSubtract": {
       "enabled": true,

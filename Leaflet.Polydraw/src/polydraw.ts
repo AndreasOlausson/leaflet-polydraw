@@ -1342,6 +1342,11 @@ class Polydraw extends L.Control {
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
 
+    // Detect modifier key state at drag start
+    const isModifierPressed = this.detectModifierKey(e.originalEvent || e);
+    this.currentModifierDragMode = isModifierPressed;
+    this.isModifierKeyHeld = isModifierPressed;
+
     // Initialize drag
     polygon._polydrawDragData.isDragging = true;
     polygon._polydrawDragData.startPosition = e.latlng;
@@ -1352,10 +1357,13 @@ class Polydraw extends L.Control {
       this.map.dragging.disable();
     }
 
-    // Visual feedback
+    // Visual feedback - use subtract color if modifier is held
     if (this.config.dragPolygons.opacity < 1) {
       polygon.setStyle({ opacity: this.config.dragPolygons.opacity });
     }
+
+    // Apply modifier visual feedback
+    this.setSubtractVisualMode(polygon, isModifierPressed);
 
     // Set drag cursor
     if (this.config.dragPolygons.dragCursor) {
@@ -1400,6 +1408,12 @@ class Polydraw extends L.Control {
 
     const polygon = this.currentDragPolygon;
     const dragData = polygon._polydrawDragData;
+
+    // Check for modifier key changes during drag
+    const currentModifierState = this.detectModifierKey(e.originalEvent || e);
+    if (currentModifierState !== this.currentModifierDragMode) {
+      this.handleModifierToggleDuringDrag(e.originalEvent || e);
+    }
 
     // Calculate offset
     const startPos = dragData.startPosition;
@@ -1614,36 +1628,44 @@ class Polydraw extends L.Control {
         return;
       }
 
-      // Check for drag interactions with other polygons
-      let interactionResult = {
-        shouldMerge: false,
-        shouldCreateHole: false,
-        intersectingFeatureGroups: [] as L.FeatureGroup[],
-        containingFeatureGroup: null as L.FeatureGroup | null
-      };
-
-      try {
-        const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
-        interactionResult = this.checkDragInteractions(draggedPolygonFeature, featureGroup);
-      } catch (turfError) {
-        console.warn('Turf operations not available:', turfError.message);
-      }
-
       // Remove the old feature group
       if (this.map && this.map.removeLayer) {
         this.map.removeLayer(featureGroup);
       }
       this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
 
-      if (interactionResult.shouldMerge) {
-        // Merge with intersecting polygons
-        this.performDragMerge(this.turfHelper.getTurfPolygon(newGeoJSON), interactionResult.intersectingFeatureGroups);
-      } else if (interactionResult.shouldCreateHole) {
-        // Create hole in containing polygon
-        this.performDragHole(this.turfHelper.getTurfPolygon(newGeoJSON), interactionResult.containingFeatureGroup);
+      // Check if modifier key was held during drag
+      if (this.isModifierDragActive()) {
+        // Modifier key held - perform subtract operation
+        const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
+        const intersectingFeatureGroups = this.findIntersectingPolygons(draggedPolygonFeature, featureGroup);
+        this.performModifierSubtract(draggedPolygonFeature, intersectingFeatureGroups);
       } else {
-        // No interaction - just update position
-        this.addPolygonLayer(newGeoJSON, false);
+        // Normal drag behavior - check for auto-interactions
+        let interactionResult = {
+          shouldMerge: false,
+          shouldCreateHole: false,
+          intersectingFeatureGroups: [] as L.FeatureGroup[],
+          containingFeatureGroup: null as L.FeatureGroup | null
+        };
+
+        try {
+          const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
+          interactionResult = this.checkDragInteractions(draggedPolygonFeature, featureGroup);
+        } catch (turfError) {
+          console.warn('Turf operations not available:', turfError.message);
+        }
+
+        if (interactionResult.shouldMerge) {
+          // Merge with intersecting polygons
+          this.performDragMerge(this.turfHelper.getTurfPolygon(newGeoJSON), interactionResult.intersectingFeatureGroups);
+        } else if (interactionResult.shouldCreateHole) {
+          // Create hole in containing polygon
+          this.performDragHole(this.turfHelper.getTurfPolygon(newGeoJSON), interactionResult.containingFeatureGroup);
+        } else {
+          // No interaction - just update position
+          this.addPolygonLayer(newGeoJSON, false);
+        }
       }
 
       // Update polygon information storage
@@ -1866,37 +1888,128 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed during drag operation
    */
   private detectModifierKey(event: MouseEvent): boolean {
-    // TODO: Implement modifier key detection based on platform
-    return false;
+    if (!this.config.dragPolygons.modifierSubtract.enabled) {
+      return false;
+    }
+
+    // Detect platform and check appropriate modifier key
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+    
+    if (isMac) {
+      // Mac: Use Cmd key (metaKey)
+      return event.metaKey;
+    } else {
+      // Windows/Linux: Use Ctrl key (ctrlKey)
+      return event.ctrlKey;
+    }
   }
 
   /**
    * Set visual feedback for subtract mode during drag
    */
   private setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    // TODO: Implement visual feedback (color change to subtract color)
+    if (!polygon || !polygon.setStyle) {
+      return;
+    }
+
+    try {
+      if (enabled) {
+        // Change to subtract color when modifier is held
+        polygon.setStyle({ 
+          color: this.config.dragPolygons.modifierSubtract.subtractColor 
+        });
+      } else {
+        // Restore normal polygon color
+        polygon.setStyle({ 
+          color: this.config.polygonOptions.color 
+        });
+      }
+    } catch (error) {
+      // Handle DOM errors in test environment
+      console.warn('Could not set polygon visual mode:', error.message);
+    }
   }
 
   /**
    * Perform subtract operation when modifier key is held during drag
    */
   private performModifierSubtract(draggedPolygon: Feature<Polygon | MultiPolygon>, intersectingPolygons: L.FeatureGroup[]): void {
-    // TODO: Implement modifier-based subtract operation
+    if (intersectingPolygons.length === 0) {
+      // No intersections - just move the polygon
+      this.addPolygonLayer(draggedPolygon, false);
+      return;
+    }
+
+    // Subtract the dragged polygon from all intersecting polygons
+    intersectingPolygons.forEach(featureGroup => {
+      const featureCollection = featureGroup.toGeoJSON() as any;
+      const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+      // Perform difference operation (subtract dragged polygon from existing polygon)
+      const differenceResult = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+
+      // Remove the original polygon
+      this.map.removeLayer(featureGroup);
+      const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+      if (index > -1) {
+        this.arrayOfFeatureGroups.splice(index, 1);
+      }
+
+      // Add the result if it exists (polygon with hole or remaining parts)
+      if (differenceResult) {
+        this.addPolygonLayer(differenceResult, false);
+      }
+    });
   }
 
   /**
    * Check if modifier drag mode is currently active
    */
   private isModifierDragActive(): boolean {
-    // TODO: Implement modifier drag state checking
-    return false;
+    return this.currentModifierDragMode;
   }
 
   /**
    * Handle modifier key toggle during active drag operation
    */
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
-    // TODO: Implement mid-drag modifier key toggle handling
+    const isModifierPressed = this.detectModifierKey(event);
+    
+    // Update the modifier drag mode state
+    this.currentModifierDragMode = isModifierPressed;
+    this.isModifierKeyHeld = isModifierPressed;
+
+    // If we have a current drag polygon, update its visual feedback
+    if (this.currentDragPolygon) {
+      this.setSubtractVisualMode(this.currentDragPolygon, isModifierPressed);
+    }
+  }
+
+  /**
+   * Find all polygons that intersect with the dragged polygon
+   */
+  private findIntersectingPolygons(draggedPolygon: Feature<Polygon | MultiPolygon>, excludeFeatureGroup: L.FeatureGroup): L.FeatureGroup[] {
+    const intersectingFeatureGroups: L.FeatureGroup[] = [];
+
+    // Check interactions with all other polygons
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      if (featureGroup === excludeFeatureGroup) continue;
+
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+        // Check if polygons intersect
+        if (this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon)) {
+          intersectingFeatureGroups.push(featureGroup);
+        }
+      } catch (error) {
+        console.warn('Error checking polygon intersection:', error.message);
+      }
+    }
+
+    return intersectingFeatureGroups;
   }
 
 
