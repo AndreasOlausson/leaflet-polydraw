@@ -57,7 +57,19 @@ describe('Polygon Drag Feature', () => {
         dragPolygons: {
           realTimeUpdate: false,
           opacity: 0.7,
-          dragCursor: 'move'
+          dragCursor: 'move',
+          modifierSubtract: {
+            enabled: true,
+            keys: {
+              windows: "ctrlKey",
+              mac: "metaKey",
+              linux: "ctrlKey"
+            },
+            subtractColor: "#D9460F"
+          }
+        },
+        polygonOptions: {
+          color: "#50622b"
         }
       }
     });
@@ -65,6 +77,42 @@ describe('Polygon Drag Feature', () => {
     // Mock the map property
     (polydraw as any).map = mockMap;
     (polydraw as any).arrayOfFeatureGroups = [mockFeatureGroup];
+    
+    // Mock the tracer to prevent setLatLngs errors
+    (polydraw as any).tracer = {
+      setLatLngs: vi.fn(),
+      addLatLng: vi.fn(),
+      toGeoJSON: vi.fn(() => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [[0, 0], [1, 1], [2, 2]]
+        }
+      })),
+      setStyle: vi.fn(),
+      addTo: vi.fn()
+    };
+
+    // Mock the turfHelper to prevent null geometry errors
+    (polydraw as any).turfHelper = {
+      getTurfPolygon: vi.fn((feature) => feature || {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+        }
+      }),
+      polygonDifference: vi.fn(() => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+        }
+      }))
+    };
+
+    // Mock addPolygonLayer to prevent complex polygon processing in tests
+    (polydraw as any).addPolygonLayer = vi.fn();
   });
 
   describe('Configuration', () => {
@@ -274,7 +322,7 @@ describe('Polygon Drag Feature', () => {
         const mockEvent = { ctrlKey: true, metaKey: false } as MouseEvent;
         
         const result = detectModifierKey.call(polydraw, mockEvent);
-        expect(result).toBe(false); // Should fail initially (stub returns false)
+        expect(result).toBe(true); // Should pass - Ctrl key detected on non-Mac platform
       });
 
       it('should detect Cmd key on Mac platform', () => {
@@ -363,20 +411,24 @@ describe('Polygon Drag Feature', () => {
       });
 
       it('should override auto-merge behavior when modifier key is held', () => {
-        const isModifierDragActive = (polydraw as any).isModifierDragActive;
+        // Set modifier drag mode to active
+        (polydraw as any).currentModifierDragMode = true;
         
+        const isModifierDragActive = (polydraw as any).isModifierDragActive;
         const result = isModifierDragActive.call(polydraw);
         
-        // Should fail - stub returns false but we expect true when modifier is active
+        // Should pass - modifier is active
         expect(result).toBe(true);
       });
 
       it('should override auto-hole behavior when modifier key is held', () => {
-        const isModifierDragActive = (polydraw as any).isModifierDragActive;
+        // Set modifier drag mode to active
+        (polydraw as any).currentModifierDragMode = true;
         
+        const isModifierDragActive = (polydraw as any).isModifierDragActive;
         const result = isModifierDragActive.call(polydraw);
         
-        // Should fail - stub returns false but we expect true when modifier is active
+        // Should pass - modifier is active
         expect(result).toBe(true);
       });
 
