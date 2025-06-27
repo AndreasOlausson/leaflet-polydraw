@@ -8,7 +8,9 @@ const mockMap = {
   getContainer: vi.fn(() => ({ style: {} })),
   fire: vi.fn(),
   removeLayer: vi.fn(),
-  addLayer: vi.fn()
+  addLayer: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn()
 } as any;
 
 const mockFeatureGroup = {
@@ -162,56 +164,74 @@ describe('Polygon Drag Feature', () => {
   });
 
   describe('Drag Event Handlers', () => {
-    it('should handle drag start correctly', () => {
-      const onPolygonDragStart = (polydraw as any).onPolygonDragStart;
+    it('should handle mouse down drag start correctly', () => {
+      const onPolygonMouseDown = (polydraw as any).onPolygonMouseDown;
       const mockEvent = {
-        target: {
-          getLatLngs: vi.fn(() => [[[{ lat: 0, lng: 0 }]]]),
-          setStyle: vi.fn()
+        originalEvent: { ctrlKey: false, metaKey: false },
+        latlng: { lat: 0, lng: 0 }
+      };
+      const mockPolygon = {
+        _polydrawDragData: { 
+          isDragging: false,
+          startPosition: null,
+          startLatLngs: null
+        },
+        _polydrawFeatureGroup: mockFeatureGroup,
+        _polydrawLatLngs: { type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: [] } },
+        setStyle: vi.fn(),
+        getElement: vi.fn(() => null),
+        getLatLngs: vi.fn(() => [[[{ lat: 0, lng: 0 }]]])
+      };
+
+      // Mock L.DomEvent methods
+      const mockStopPropagation = vi.fn();
+      const mockPreventDefault = vi.fn();
+      (global as any).L = {
+        DomEvent: {
+          stopPropagation: mockStopPropagation,
+          preventDefault: mockPreventDefault
         }
       };
 
-      onPolygonDragStart.call(polydraw, mockEvent, mockFeatureGroup, {
-        type: 'Feature',
-        geometry: { type: 'MultiPolygon', coordinates: [] }
-      });
+      // Ensure drag polygons is enabled and draw mode is off
+      (polydraw as any).config.modes.dragPolygons = true;
+      (polydraw as any).drawMode = 0; // DrawMode.Off
 
+      onPolygonMouseDown.call(polydraw, mockEvent, mockPolygon);
+
+      // Verify that the polygon drag data was updated
+      expect(mockPolygon._polydrawDragData.isDragging).toBe(true);
+      expect(mockPolygon._polydrawDragData.startPosition).toEqual({ lat: 0, lng: 0 });
       expect(mockMap.dragging.disable).toHaveBeenCalled();
-      expect(mockEvent.target.setStyle).toHaveBeenCalledWith({ opacity: 0.7 });
       expect(mockMap.fire).toHaveBeenCalledWith('polygon:dragstart', expect.any(Object));
     });
 
-    it('should handle drag end correctly', () => {
-      const onPolygonDragEnd = (polydraw as any).onPolygonDragEnd;
+    it('should handle mouse up drag end correctly', () => {
+      const onPolygonMouseUp = (polydraw as any).onPolygonMouseUp;
       const mockEvent = {
-        target: {
-          getLatLngs: vi.fn(() => [[[{ lat: 1, lng: 1 }]]]),
-          setLatLngs: vi.fn(),
-          setStyle: vi.fn(),
-          toGeoJSON: vi.fn(() => ({
-            type: 'Feature',
-            geometry: {
-              type: 'MultiPolygon',
-              coordinates: [[[[1, 1], [2, 1], [2, 2], [1, 2], [1, 1]]]]
-            }
-          }))
-        }
+        latlng: { lat: 1, lng: 1 }
       };
+      
+      // Set up current drag polygon
+      const mockPolygon = {
+        _polydrawDragData: {
+          isDragging: true,
+          startLatLngs: [[[{ lat: 0, lng: 0 }]]]
+        },
+        _polydrawFeatureGroup: mockFeatureGroup,
+        setStyle: vi.fn(),
+        getLatLngs: vi.fn(() => [[[{ lat: 1, lng: 1 }]]])
+      };
+      (polydraw as any).currentDragPolygon = mockPolygon;
 
       // Mock the updatePolygonCoordinates method to prevent DOM operations
       const mockUpdatePolygonCoordinates = vi.fn();
       (polydraw as any).updatePolygonCoordinates = mockUpdatePolygonCoordinates;
 
-      // Set up drag start position
-      (polydraw as any).dragStartPosition = [[[{ lat: 0, lng: 0 }]]];
-
-      onPolygonDragEnd.call(polydraw, mockEvent, mockFeatureGroup, {
-        type: 'Feature',
-        geometry: { type: 'MultiPolygon', coordinates: [] }
-      });
+      onPolygonMouseUp.call(polydraw, mockEvent);
 
       expect(mockMap.dragging.enable).toHaveBeenCalled();
-      expect(mockEvent.target.setStyle).toHaveBeenCalledWith({ opacity: 1.0 });
+      expect(mockPolygon.setStyle).toHaveBeenCalledWith({ opacity: 1.0 });
       expect(mockMap.fire).toHaveBeenCalledWith('polygon:dragend', expect.any(Object));
       expect(mockUpdatePolygonCoordinates).toHaveBeenCalled();
     });
