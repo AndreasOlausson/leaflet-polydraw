@@ -556,6 +556,9 @@ class Polydraw extends L.Control {
 
     // Add red polylines for hole rings and markers
     let markerLatlngs = polygon.getLatLngs();
+
+    // DEBUG: Output polygon coordinates in the format for autoAdd methods
+    this.debugOutputPolygonCoordinates(markerLatlngs);
     markerLatlngs.forEach(polygonRings => {
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
         // Ring 0 = outer ring (green markers, green lines)
@@ -1029,6 +1032,58 @@ class Polydraw extends L.Control {
       return feature.geometry.coordinates.some(polygon => polygon.length > 1);
     }
     return false;
+  }
+
+  /**
+   * Debug output polygon coordinates
+   * TODO Remove for production
+   */
+  private debugOutputPolygonCoordinates(markerLatlngs: any): void {
+    try {
+      // Convert to simple [lat,lng] format
+      const simpleFormat = this.convertToSimpleFormat(markerLatlngs);
+      
+      console.log('DEBUG: Polygon coordinates:');
+      console.log(JSON.stringify(simpleFormat));
+      
+    } catch (error) {
+      console.warn('Failed to output debug coordinates:', error.message);
+    }
+  }
+
+  /**
+   * Convert Leaflet LatLng format to simple [lat,lng]
+   */
+  private convertToSimpleFormat(markerLatlngs: any): any {
+    if (!markerLatlngs || !Array.isArray(markerLatlngs)) {
+      return [];
+    }
+
+    // Handle different polygon structures
+    if (markerLatlngs.length === 1 && Array.isArray(markerLatlngs[0])) {
+      // Single polygon with potential holes
+      const rings = markerLatlngs[0];
+      const convertedRings = rings.map((ring: any) => {
+        if (Array.isArray(ring)) {
+          return ring.map((point: any) => [point.lat, point.lng]);
+        }
+        return [];
+      });
+      return [convertedRings];
+    } else {
+      // Multiple polygons or simple structure
+      return markerLatlngs.map((polygon: any) => {
+        if (Array.isArray(polygon)) {
+          return polygon.map((ring: any) => {
+            if (Array.isArray(ring)) {
+              return ring.map((point: any) => [point.lat, point.lng]);
+            }
+            return [];
+          });
+        }
+        return [];
+      });
+    }
   }
   private polygonClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
     if (this.config.modes.attachElbow) {
