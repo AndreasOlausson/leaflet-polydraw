@@ -14,6 +14,7 @@ import { Compass, PolyDrawUtil, Perimeter, Area } from "./utils";
 import { IconFactory } from "./icon-factory";
 import { PolygonUtil } from "./polygon.util";
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import * as turf from '@turf/turf';
 // @ts-ignore
 import './styles/polydraw.css';
 
@@ -1042,24 +1043,56 @@ class Polydraw extends L.Control {
         console.log('DEBUG: Difference operation failed:', error.message);
       }
 
-      // Check if this is a complex cutting scenario (like C-shaped polygon being cut through)
-      // Only use difference for complex shapes with many vertices
-      const existingCoords = existingPolygon.geometry.type === 'Polygon' 
-        ? existingPolygon.geometry.coordinates[0] 
-        : existingPolygon.geometry.coordinates[0][0];
-      
-      if (existingCoords.length > 10) { // Complex shape with many vertices
-        try {
-          const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-          if (difference && difference.geometry.type === 'MultiPolygon') {
-            // For complex shapes, if difference operation succeeds and creates a valid result,
-            // it's likely a cut-through scenario that should create holes
-            console.log('DEBUG: Complex cut-through detected - should create holes');
-            return 'should_create_holes';
+      // Check if this is a complex cutting scenario using proper geometric analysis
+      // instead of arbitrary vertex count
+      try {
+        // Method 1: Check convexity - complex shapes are usually non-convex
+        const convexHull = turf.convex(turf.featureCollection([existingPolygon]));
+        if (convexHull) {
+          const convexArea = turf.area(convexHull);
+          const actualArea = turf.area(existingPolygon);
+          const convexityRatio = actualArea / convexArea;
+          
+          // If shape is significantly non-convex (< 0.7), it might be complex
+          if (convexityRatio < 0.7) {
+            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+            if (difference && difference.geometry.type === 'MultiPolygon') {
+              console.log('DEBUG: Complex non-convex shape cut-through detected - should create holes');
+              return 'should_create_holes';
+            }
           }
-        } catch (error) {
-          console.log('DEBUG: Complex difference check failed:', error.message);
         }
+        
+        // Method 2: Check intersection complexity
+        const intersection = this.turfHelper.getIntersection(newPolygon, existingPolygon);
+        if (intersection && intersection.geometry.type === 'MultiPolygon') {
+          // Multiple intersection areas = complex cut-through scenario
+          console.log('DEBUG: Multiple intersection areas detected - should create holes');
+          return 'should_create_holes';
+        }
+        
+        // Method 3: Area ratio analysis for partial overlaps
+        if (intersection) {
+          const intersectionArea = turf.area(intersection);
+          const newArea = turf.area(newPolygon);
+          const existingArea = turf.area(existingPolygon);
+          
+          // Check if it's a significant but partial overlap (not full containment)
+          const overlapRatioExisting = intersectionArea / existingArea;
+          const overlapRatioNew = intersectionArea / newArea;
+          
+          if (overlapRatioExisting > 0.1 && overlapRatioExisting < 0.9 && 
+              overlapRatioNew > 0.1 && overlapRatioNew < 0.9) {
+            // Significant partial overlap might indicate cut-through
+            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+            if (difference && difference.geometry.type === 'MultiPolygon') {
+              console.log('DEBUG: Partial overlap cut-through detected - should create holes');
+              return 'should_create_holes';
+            }
+          }
+        }
+      } catch (error) {
+        console.log('DEBUG: Geometric analysis failed:', error.message);
       }
 
       // Default to standard union for normal merging cases

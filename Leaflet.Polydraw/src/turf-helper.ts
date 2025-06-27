@@ -18,8 +18,16 @@ export class TurfHelper {
     }
 
     union(poly1, poly2): Feature<Polygon | MultiPolygon> {
-        let union = turf.union(poly1, poly2);
-        return this.getTurfPolygon(union);
+        try {
+            // In Turf 7.x, union expects a FeatureCollection with multiple features
+            const featureCollection = turf.featureCollection([poly1, poly2]);
+            // @ts-ignore
+            let union = turf.union(featureCollection);
+            return union ? this.getTurfPolygon(union) : null;
+        } catch (error) {
+            console.warn('Error in union:', error.message);
+            return null;
+        }
     }
 
     turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
@@ -152,12 +160,20 @@ export class TurfHelper {
                         }
                         
                         if (this.getKinks(poly2[j]).length < 2) {
-                            let test = turf.intersect(poly[i], poly2[j]);
-                            if (test?.geometry.type === "Polygon"){
-                                intersect = !!turf.intersect(poly[i], poly2[j]);
-                            }
-                            if (intersect) {
-                                break loop1;
+                            try {
+                                // Use the new FeatureCollection API for intersect
+                                const featureCollection = turf.featureCollection([poly[i], poly2[j]]);
+                                // @ts-ignore
+                                let test = turf.intersect(featureCollection);
+                                if (test?.geometry.type === "Polygon"){
+                                    intersect = true;
+                                }
+                                if (intersect) {
+                                    break loop1;
+                                }
+                            } catch (error) {
+                                // Continue to next iteration if intersect fails
+                                continue;
                             }
                         }
                     }
@@ -171,7 +187,15 @@ export class TurfHelper {
     }
 
     getIntersection(poly1, poly2): Feature {
-        return turf.intersect(poly1, poly2);
+        try {
+            // In Turf 7.x, intersect expects a FeatureCollection with multiple features
+            const featureCollection = turf.featureCollection([poly1, poly2]);
+            // @ts-ignore
+            return turf.intersect(featureCollection);
+        } catch (error) {
+            console.warn('Error in getIntersection:', error.message);
+            return null;
+        }
     }
 
     getDistance(point1, point2): number {
@@ -251,9 +275,16 @@ export class TurfHelper {
     }
 
     polygonDifference(polygon1: Feature<Polygon | MultiPolygon>, polygon2: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
-        // @ts-ignore
-        let diff = turf.difference(polygon1, polygon2);
-        return this.getTurfPolygon(diff);
+        try {
+            // In Turf 7.x, difference expects a FeatureCollection with multiple features
+            const featureCollection = turf.featureCollection([polygon1, polygon2]);
+            // @ts-ignore
+            let diff = turf.difference(featureCollection);
+            return diff ? this.getTurfPolygon(diff) : null;
+        } catch (error) {
+            console.warn('Error in polygonDifference:', error.message);
+            return null;
+        }
     }
 
     getBoundingBoxCompassPosition(polygon, MarkerPosition, useOffset, offsetDirection) {
