@@ -299,6 +299,70 @@ class Polydraw extends L.Control {
       }
     }
   }
+  deletePolygon(polygon: ILatLng[][]) {
+    // Delete a specific polygon from the map
+    if (this.arrayOfFeatureGroups.length > 0) {
+      this.arrayOfFeatureGroups.forEach(featureGroup => {
+        let layer = featureGroup.getLayers()[0] as any;
+        let latlngs = layer.getLatLngs();
+        let length = latlngs.length;
+        //  = []
+        latlngs.forEach((latlng, index) => {
+          let polygon3;
+          let test = [...latlng];
+
+          // latlng
+          if (latlng.length > 1) {
+            if (latlng[0][0] !== latlng[0][latlng[0].length - 1]) {
+              test[0].push(latlng[0][0]);
+            }
+            polygon3 = [test[0]];
+          } else {
+            if (latlng[0] !== latlng[latlng.length - 1]) {
+              test.push(latlng[0]);
+            }
+            polygon3 = test;
+          }
+
+          // Test polygon3
+
+          // polygon
+
+          const equals = this.polygonArrayEquals(polygon3, polygon);
+          // Check if polygons match for deletion
+          if (equals && length === 1) {
+            this.polygonInformation.deleteTrashcan(polygon);
+
+            this.removeFeatureGroup(featureGroup);
+            // featureGroup layers
+          } else if (equals && length > 1) {
+            this.polygonInformation.deleteTrashCanOnMulti([polygon]);
+            latlngs.splice(index, 1);
+            layer.setLatLngs(latlngs);
+            this.removeFeatureGroup(featureGroup);
+            this.addPolygonLayer(layer.toGeoJSON(), false);
+          }
+        });
+      });
+    }
+  }
+
+  removeAllFeatureGroups() {
+    // Clear all feature groups and reset state
+    this.arrayOfFeatureGroups.forEach(featureGroups => {
+      this.map.removeLayer(featureGroups);
+    });
+
+    this.arrayOfFeatureGroups = [];
+    this.polygonInformation.deletePolygonInformationStorage();
+    // this.polygonDrawStates.reset();
+    this.polygonInformation.updatePolygons();
+  }
+
+    getDrawMode(): DrawMode {
+    return this.drawMode;
+  }
+
   private stopDraw() {
     // Stop the drawing process and reset tracers
 
@@ -459,53 +523,7 @@ class Polydraw extends L.Control {
       this.map.removeLayer(featureGroup);
     }
   }
-  deletePolygon(polygon: ILatLng[][]) {
-    // Delete a specific polygon from the map
-    if (this.arrayOfFeatureGroups.length > 0) {
-      this.arrayOfFeatureGroups.forEach(featureGroup => {
-        let layer = featureGroup.getLayers()[0] as any;
-        let latlngs = layer.getLatLngs();
-        let length = latlngs.length;
-        //  = []
-        latlngs.forEach((latlng, index) => {
-          let polygon3;
-          let test = [...latlng];
 
-          // latlng
-          if (latlng.length > 1) {
-            if (latlng[0][0] !== latlng[0][latlng[0].length - 1]) {
-              test[0].push(latlng[0][0]);
-            }
-            polygon3 = [test[0]];
-          } else {
-            if (latlng[0] !== latlng[latlng.length - 1]) {
-              test.push(latlng[0]);
-            }
-            polygon3 = test;
-          }
-
-          // Test polygon3
-
-          // polygon
-
-          const equals = this.polygonArrayEquals(polygon3, polygon);
-          // Check if polygons match for deletion
-          if (equals && length === 1) {
-            this.polygonInformation.deleteTrashcan(polygon);
-
-            this.removeFeatureGroup(featureGroup);
-            // featureGroup layers
-          } else if (equals && length > 1) {
-            this.polygonInformation.deleteTrashCanOnMulti([polygon]);
-            latlngs.splice(index, 1);
-            layer.setLatLngs(latlngs);
-            this.removeFeatureGroup(featureGroup);
-            this.addPolygonLayer(layer.toGeoJSON(), false);
-          }
-        });
-      });
-    }
-  }
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
     // Remove a feature group from the map
 
@@ -514,17 +532,7 @@ class Polydraw extends L.Control {
     // this.updatePolygons();
     this.map.removeLayer(featureGroup);
   }
-  removeAllFeatureGroups() {
-    // Clear all feature groups and reset state
-    this.arrayOfFeatureGroups.forEach(featureGroups => {
-      this.map.removeLayer(featureGroups);
-    });
 
-    this.arrayOfFeatureGroups = [];
-    this.polygonInformation.deletePolygonInformationStorage();
-    // this.polygonDrawStates.reset();
-    this.polygonInformation.updatePolygons();
-  }
   private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
     return poly1.toString() === poly2.toString();
   }
@@ -557,8 +565,6 @@ class Polydraw extends L.Control {
     // Add red polylines for hole rings and markers
     let markerLatlngs = polygon.getLatLngs();
 
-    // DEBUG: Output polygon coordinates in the format for autoAdd methods
-    this.debugOutputPolygonCoordinates(markerLatlngs);
     markerLatlngs.forEach(polygonRings => {
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
         // Ring 0 = outer ring (green markers, green lines)
@@ -1021,15 +1027,10 @@ class Polydraw extends L.Control {
    */
   private analyzeIntersectionType(newPolygon: Feature<Polygon | MultiPolygon>, existingPolygon: Feature<Polygon | MultiPolygon>): string {
     try {
-      console.log('DEBUG: Analyzing intersection type...');
-      console.log('DEBUG: New polygon:', JSON.stringify(newPolygon.geometry.coordinates));
-      console.log('DEBUG: Existing polygon:', JSON.stringify(existingPolygon.geometry.coordinates));
-      
       // Check if the new polygon is completely contained within the existing polygon
       // This is the primary case where we want to create holes
       try {
         const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-        console.log('DEBUG: Difference result:', difference ? JSON.stringify(difference.geometry) : 'null');
         
         if (difference && difference.geometry.type === 'Polygon' && 
             difference.geometry.coordinates.length > 1) {
@@ -1062,7 +1063,6 @@ class Polydraw extends L.Control {
       }
 
       // Default to standard union for normal merging cases
-      console.log('DEBUG: Using standard union');
       return 'standard_union';
     } catch (error) {
       console.warn('Error analyzing intersection type:', error.message);
@@ -1070,59 +1070,7 @@ class Polydraw extends L.Control {
     }
   }
 
-  /**
-   * Check if a polygon has a complex shape (like C-shaped)
-   */
-  private isComplexShape(polygon: Feature<Polygon | MultiPolygon>): boolean {
-    try {
-      // Simple heuristic: complex shapes tend to have more vertices and irregular perimeter-to-area ratios
-      const coordinates = polygon.geometry.type === 'Polygon' 
-        ? polygon.geometry.coordinates[0] 
-        : polygon.geometry.coordinates[0][0];
-      
-      // If the polygon has many vertices, it's likely complex
-      return coordinates.length > 8;
-    } catch (error) {
-      return false;
-    }
-  }
 
-  /**
-   * Check if the new polygon cuts through the existing polygon (intersects at multiple points)
-   */
-  private cutsThroughShape(newPolygon: Feature<Polygon | MultiPolygon>, existingPolygon: Feature<Polygon | MultiPolygon>): boolean {
-    try {
-      // Check if the new polygon intersects the boundary of the existing polygon at multiple points
-      // This is a simplified check - a full implementation would use more sophisticated geometry analysis
-      
-      // Get the difference between existing and new polygon
-      const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-      
-      // If the difference results in multiple separate polygons, it indicates a cut-through
-      if (difference && difference.geometry.type === 'MultiPolygon') {
-        return difference.geometry.coordinates.length > 1;
-      }
-      
-      return false;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  /**
-   * Create a polygon with holes by subtracting the new polygon from the existing one
-   */
-  private createPolygonWithHoles(existingPolygon: Feature<Polygon | MultiPolygon>, newPolygon: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
-    try {
-      // Use difference operation to create holes
-      const result = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-      return result || existingPolygon;
-    } catch (error) {
-      console.warn('Error creating polygon with holes:', error.message);
-      // Fallback to union if difference fails
-      return this.turfHelper.union(existingPolygon, newPolygon) || existingPolygon;
-    }
-  }
   private deletePolygonOnMerge(polygon) {
     // Delete polygon during merge
     let polygon2 = [];
@@ -1188,57 +1136,6 @@ class Polydraw extends L.Control {
     return false;
   }
 
-  /**
-   * Debug output polygon coordinates
-   * TODO Remove for production
-   */
-  private debugOutputPolygonCoordinates(markerLatlngs: any): void {
-    try {
-      // Convert to simple [lat,lng] format
-      const simpleFormat = this.convertToSimpleFormat(markerLatlngs);
-      
-      console.log('DEBUG: Polygon coordinates:');
-      console.log(JSON.stringify(simpleFormat));
-      
-    } catch (error) {
-      console.warn('Failed to output debug coordinates:', error.message);
-    }
-  }
-
-  /**
-   * Convert Leaflet LatLng format to simple [lat,lng]
-   */
-  private convertToSimpleFormat(markerLatlngs: any): any {
-    if (!markerLatlngs || !Array.isArray(markerLatlngs)) {
-      return [];
-    }
-
-    // Handle different polygon structures
-    if (markerLatlngs.length === 1 && Array.isArray(markerLatlngs[0])) {
-      // Single polygon with potential holes
-      const rings = markerLatlngs[0];
-      const convertedRings = rings.map((ring: any) => {
-        if (Array.isArray(ring)) {
-          return ring.map((point: any) => [point.lat, point.lng]);
-        }
-        return [];
-      });
-      return [convertedRings];
-    } else {
-      // Multiple polygons or simple structure
-      return markerLatlngs.map((polygon: any) => {
-        if (Array.isArray(polygon)) {
-          return polygon.map((ring: any) => {
-            if (Array.isArray(ring)) {
-              return ring.map((point: any) => [point.lat, point.lng]);
-            }
-            return [];
-          });
-        }
-        return [];
-      });
-    }
-  }
   private polygonClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
     if (this.config.modes.attachElbow) {
       const newPoint = e.latlng;
@@ -2001,9 +1898,7 @@ class Polydraw extends L.Control {
     });
   }
 
-  getDrawMode(): DrawMode {
-    return this.drawMode;
-  }
+
 
   /**
    * Modifier key drag functionality - Method stubs for TDD
