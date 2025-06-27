@@ -527,5 +527,47 @@ describe('Polygon Drag Feature', () => {
         expect(mockPolygon.setStyle).toHaveBeenCalled();
       });
     });
+
+    describe('Complex Polygon Merge Scenarios', () => {
+      it('should create one polygon with holes when cutting through C-shaped polygon tips', () => {
+        // Test the actual analyzeIntersectionType logic with real coordinates
+        
+        // Create a test instance with real TurfHelper
+        const testPolydraw = new Polydraw({
+          config: {
+            mergePolygons: true,
+            modes: { dragPolygons: true }
+          }
+        });
+
+        // Real C-shaped polygon coordinates
+        const cShapeFeature = {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'MultiPolygon' as const,
+            coordinates: [[[[58.421134,15.589085],[58.421135,15.594878],[58.421135,15.600672],[58.421135,15.606466],[58.420505,15.668049],[58.425359,15.595264],[58.428774,15.595093],[58.432279,15.595093],[58.435514,15.668221],[58.435785,15.606466],[58.435785,15.600672],[58.435785,15.594878],[58.435784,15.589085],[58.432122,15.589085],[58.428459,15.589085],[58.424797,15.589085]]]]
+          }
+        };
+
+        // Real cutting polygon that goes through both tips
+        const cuttingFeature = {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'MultiPolygon' as const,
+            coordinates: [[[[58.409986,15.647106],[58.409986,15.677147],[58.44405,15.677147],[58.44405,15.647106],[58.409986,15.647106]]]]
+          }
+        };
+
+        // Convert to proper format for analyzeIntersectionType
+        const cShapePolygon = (testPolydraw as any).turfHelper.getTurfPolygon(cShapeFeature);
+        const cuttingPolygon = (testPolydraw as any).turfHelper.getTurfPolygon(cuttingFeature);
+
+        // Test the actual analyzeIntersectionType method
+        const result = (testPolydraw as any).analyzeIntersectionType(cuttingPolygon, cShapePolygon);
+        
+        // This should detect that it's a complex cut-through scenario
+        expect(result).toBe('should_create_holes');
+      });
+    });
   });
 });
