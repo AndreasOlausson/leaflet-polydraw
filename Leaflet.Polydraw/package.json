@@ -22,7 +22,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@turf/turf": "^6.5.0",
+    "@turf/turf": "^7.2.0",
     "concaveman": "^1.1.0",
     "leaflet": "^1.9.4"
   },
