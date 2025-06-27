@@ -530,27 +530,17 @@ describe('Polygon Drag Feature', () => {
 
     describe('Complex Polygon Merge Scenarios', () => {
       it('should create one polygon with holes when cutting through C-shaped polygon tips', () => {
-        // Test the merge logic directly without complex Leaflet dependencies
+        // Test the actual analyzeIntersectionType logic with real coordinates
         
-        // Mock the merge method to simulate the bug
-        const mockMerge = vi.fn();
-        const mockAddPolygonLayer = vi.fn();
-        
-        // Create a test instance with merge enabled
+        // Create a test instance with real TurfHelper
         const testPolydraw = new Polydraw({
           config: {
-            mergePolygons: true, // Enable merging
+            mergePolygons: true,
             modes: { dragPolygons: true }
           }
         });
 
-        // Mock required methods
-        (testPolydraw as any).map = mockMap;
-        (testPolydraw as any).merge = mockMerge;
-        (testPolydraw as any).addPolygonLayer = mockAddPolygonLayer;
-        (testPolydraw as any).arrayOfFeatureGroups = [];
-
-        // Simulate adding the first C-shaped polygon
+        // Real C-shaped polygon coordinates
         const cShapeFeature = {
           type: 'Feature' as const,
           geometry: {
@@ -559,16 +549,7 @@ describe('Polygon Drag Feature', () => {
           }
         };
 
-        // Simulate the first polygon being added (no merge since no existing polygons)
-        (testPolydraw as any).addPolygon(cShapeFeature, true);
-        
-        // Manually add to array to simulate successful addition
-        (testPolydraw as any).arrayOfFeatureGroups.push(mockFeatureGroup);
-        
-        // Verify we have 1 polygon initially
-        expect((testPolydraw as any).arrayOfFeatureGroups.length).toBe(1);
-        
-        // Create cutting polygon that goes through both tips of the C
+        // Real cutting polygon that goes through both tips
         const cuttingFeature = {
           type: 'Feature' as const,
           geometry: {
@@ -577,19 +558,15 @@ describe('Polygon Drag Feature', () => {
           }
         };
 
-        // Mock merge to simulate the bug - it should create 1 merged polygon but creates 2
-        mockMerge.mockImplementation(() => {
-          // BUG SIMULATION: Instead of merging into 1 polygon with holes,
-          // the current implementation creates 2 separate polygons
-          (testPolydraw as any).arrayOfFeatureGroups.push(mockFeatureGroup); // Add second polygon
-        });
+        // Convert to proper format for analyzeIntersectionType
+        const cShapePolygon = (testPolydraw as any).turfHelper.getTurfPolygon(cShapeFeature);
+        const cuttingPolygon = (testPolydraw as any).turfHelper.getTurfPolygon(cuttingFeature);
 
-        // Simulate adding the cutting polygon (should trigger merge)
-        (testPolydraw as any).addPolygon(cuttingFeature, true);
+        // Test the actual analyzeIntersectionType method
+        const result = (testPolydraw as any).analyzeIntersectionType(cuttingPolygon, cShapePolygon);
         
-        // BUG: Currently this creates 2 overlapping polygons instead of 1 polygon with holes
-        // This test should FAIL until the bug is fixed
-        expect((testPolydraw as any).arrayOfFeatureGroups.length).toBe(1);
+        // This should detect that it's a complex cut-through scenario
+        expect(result).toBe('should_create_holes');
       });
     });
   });

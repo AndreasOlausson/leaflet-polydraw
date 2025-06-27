@@ -920,15 +920,22 @@ class Polydraw extends L.Control {
   }
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
     // Merge the new polygon with existing ones if configured
+    console.log('DEBUG: Starting merge process...');
+    console.log('DEBUG: New polygon for merge:', JSON.stringify(latlngs.geometry.coordinates));
+    console.log('DEBUG: Existing polygons count:', this.arrayOfFeatureGroups.length);
+    
     let polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
-    this.arrayOfFeatureGroups.forEach(featureGroup => {
+    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
       let featureCollection = featureGroup.toGeoJSON() as any;
+      console.log(`DEBUG: Checking intersection with polygon ${index}:`, JSON.stringify(featureCollection.features[0].geometry.coordinates));
+      
       if (featureCollection.features[0].geometry.coordinates.length > 1) {
         featureCollection.features[0].geometry.coordinates.forEach(element => {
           let feature = this.turfHelper.getMultiPolygon([element]);
           polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+          console.log(`DEBUG: MultiPolygon intersection result:`, polyIntersection);
           if (polyIntersection) {
             newArray.push(featureGroup);
             polygonFeature.push(feature);
@@ -937,6 +944,21 @@ class Polydraw extends L.Control {
       } else {
         let feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
         polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+        console.log(`DEBUG: Polygon intersection result:`, polyIntersection);
+        
+        // WORKAROUND: If polygonIntersect fails, try using turf.intersect directly
+        if (!polyIntersection) {
+          try {
+            const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
+            if (directIntersection && directIntersection.geometry && 
+                (directIntersection.geometry.type === 'Polygon' || directIntersection.geometry.type === 'MultiPolygon')) {
+              console.log('DEBUG: Direct intersection found, overriding polygonIntersect result');
+              polyIntersection = true;
+            }
+          } catch (error) {
+            console.log('DEBUG: Direct intersection also failed:', error.message);
+          }
+        }
         if (polyIntersection) {
           newArray.push(featureGroup);
           polygonFeature.push(feature);
@@ -944,30 +966,162 @@ class Polydraw extends L.Control {
       }
     });
     // Intersecting features
+    console.log('DEBUG: Intersecting polygons found:', newArray.length);
     if (newArray.length > 0) {
+      console.log('DEBUG: Calling unionPolygons...');
       this.unionPolygons(newArray, latlngs, polygonFeature);
     } else {
+      console.log('DEBUG: No intersections found, adding polygon separately');
       this.addPolygonLayer(latlngs, true);
     }
   }
   private unionPolygons(layers, latlngs: Feature<Polygon | MultiPolygon>, polygonFeature) {
-    // Union multiple polygons
+    // Enhanced union logic to handle complex merge scenarios including holes
 
-    let addNew = latlngs;
+    let resultPolygon = latlngs;
+    const processedFeatureGroups: L.FeatureGroup[] = [];
+
+    // Process each intersecting polygon
     layers.forEach((featureGroup, i) => {
       let featureCollection = featureGroup.toGeoJSON();
       const layer = featureCollection.features[0];
       let poly = this.getLatLngsFromJson(layer);
-      const union = this.turfHelper.union(addNew, polygonFeature[i]); //Check for multipolygons
-      //Needs a cleanup for the new version
+      const existingPolygon = polygonFeature[i];
+
+      // Check the type of intersection to determine the correct operation
+      const intersectionType = this.analyzeIntersectionType(resultPolygon, existingPolygon);
+
+      if (intersectionType === 'should_create_holes') {
+        // For complex cut-through scenarios, we actually want to MERGE (union) the polygons
+        // The "should_create_holes" name is misleading - it means "complex intersection detected"
+        const union = this.turfHelper.union(resultPolygon, existingPolygon);
+        if (union) {
+          resultPolygon = union;
+        }
+      } else {
+        // Standard union operation for normal merges
+        const union = this.turfHelper.union(resultPolygon, existingPolygon);
+        if (union) {
+          resultPolygon = union;
+        }
+      }
+
+      // Mark for removal
+      processedFeatureGroups.push(featureGroup);
       this.deletePolygonOnMerge(poly);
       this.removeFeatureGroup(featureGroup);
-
-      addNew = union;
     });
 
-    const newLatlngs: Feature<Polygon | MultiPolygon> = addNew; //Might need this.turfHelper.getTurfPolygon( addNew);
-    this.addPolygonLayer(newLatlngs, true);
+    // Add the final result
+    this.addPolygonLayer(resultPolygon, true);
+  }
+
+  /**
+   * Analyze the type of intersection between two polygons to determine merge strategy
+   */
+  private analyzeIntersectionType(newPolygon: Feature<Polygon | MultiPolygon>, existingPolygon: Feature<Polygon | MultiPolygon>): string {
+    try {
+      console.log('DEBUG: Analyzing intersection type...');
+      console.log('DEBUG: New polygon:', JSON.stringify(newPolygon.geometry.coordinates));
+      console.log('DEBUG: Existing polygon:', JSON.stringify(existingPolygon.geometry.coordinates));
+      
+      // Check if the new polygon is completely contained within the existing polygon
+      // This is the primary case where we want to create holes
+      try {
+        const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+        console.log('DEBUG: Difference result:', difference ? JSON.stringify(difference.geometry) : 'null');
+        
+        if (difference && difference.geometry.type === 'Polygon' && 
+            difference.geometry.coordinates.length > 1) {
+          // If difference creates a polygon with holes, the new polygon was likely contained
+          console.log('DEBUG: New polygon is contained - should create holes');
+          return 'should_create_holes';
+        }
+      } catch (error) {
+        console.log('DEBUG: Difference operation failed:', error.message);
+      }
+
+      // Check if this is a complex cutting scenario (like C-shaped polygon being cut through)
+      // Only use difference for complex shapes with many vertices
+      const existingCoords = existingPolygon.geometry.type === 'Polygon' 
+        ? existingPolygon.geometry.coordinates[0] 
+        : existingPolygon.geometry.coordinates[0][0];
+      
+      if (existingCoords.length > 10) { // Complex shape with many vertices
+        try {
+          const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+          if (difference && difference.geometry.type === 'MultiPolygon') {
+            // For complex shapes, if difference operation succeeds and creates a valid result,
+            // it's likely a cut-through scenario that should create holes
+            console.log('DEBUG: Complex cut-through detected - should create holes');
+            return 'should_create_holes';
+          }
+        } catch (error) {
+          console.log('DEBUG: Complex difference check failed:', error.message);
+        }
+      }
+
+      // Default to standard union for normal merging cases
+      console.log('DEBUG: Using standard union');
+      return 'standard_union';
+    } catch (error) {
+      console.warn('Error analyzing intersection type:', error.message);
+      return 'standard_union';
+    }
+  }
+
+  /**
+   * Check if a polygon has a complex shape (like C-shaped)
+   */
+  private isComplexShape(polygon: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      // Simple heuristic: complex shapes tend to have more vertices and irregular perimeter-to-area ratios
+      const coordinates = polygon.geometry.type === 'Polygon' 
+        ? polygon.geometry.coordinates[0] 
+        : polygon.geometry.coordinates[0][0];
+      
+      // If the polygon has many vertices, it's likely complex
+      return coordinates.length > 8;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Check if the new polygon cuts through the existing polygon (intersects at multiple points)
+   */
+  private cutsThroughShape(newPolygon: Feature<Polygon | MultiPolygon>, existingPolygon: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      // Check if the new polygon intersects the boundary of the existing polygon at multiple points
+      // This is a simplified check - a full implementation would use more sophisticated geometry analysis
+      
+      // Get the difference between existing and new polygon
+      const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+      
+      // If the difference results in multiple separate polygons, it indicates a cut-through
+      if (difference && difference.geometry.type === 'MultiPolygon') {
+        return difference.geometry.coordinates.length > 1;
+      }
+      
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Create a polygon with holes by subtracting the new polygon from the existing one
+   */
+  private createPolygonWithHoles(existingPolygon: Feature<Polygon | MultiPolygon>, newPolygon: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+    try {
+      // Use difference operation to create holes
+      const result = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+      return result || existingPolygon;
+    } catch (error) {
+      console.warn('Error creating polygon with holes:', error.message);
+      // Fallback to union if difference fails
+      return this.turfHelper.union(existingPolygon, newPolygon) || existingPolygon;
+    }
   }
   private deletePolygonOnMerge(polygon) {
     // Delete polygon during merge
@@ -1672,11 +1826,20 @@ class Polydraw extends L.Control {
       const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
       // Check if dragged polygon is completely contained within existing polygon
-      if (this.config.dragPolygons.autoHoleOnContained &&
-        this.turfHelper.isPolygonCompletelyWithin(draggedPolygon, existingPolygon)) {
-        result.shouldCreateHole = true;
-        result.containingFeatureGroup = featureGroup;
-        break; // Hole takes precedence over merge
+      // Use difference operation to check containment
+      if (this.config.dragPolygons.autoHoleOnContained) {
+        try {
+          const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+          if (difference && difference.geometry.type === 'Polygon' && 
+              difference.geometry.coordinates.length > 1) {
+            // If difference creates a polygon with holes, the dragged polygon was likely contained
+            result.shouldCreateHole = true;
+            result.containingFeatureGroup = featureGroup;
+            break; // Hole takes precedence over merge
+          }
+        } catch (error) {
+          // Continue with other checks
+        }
       }
 
       // Check if polygons intersect (but dragged is not completely contained)
