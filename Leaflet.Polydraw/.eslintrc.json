@@ -7,8 +7,9 @@
     "project": "./tsconfig.json"
   },
   "plugins": [
-    "@typescript-eslint",
-    "import"
+  "@typescript-eslint",
+  "import",
+  "vitest"
   ],
   "extends": [
     "eslint:recommended",
@@ -21,10 +22,20 @@
     "semi": ["error", "always"],
     "quotes": ["error", "single"],
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": ["warn"],
+    "@typescript-eslint/no-unused-vars": ["warn", {}],
     "import/order": ["warn", {
       "alphabetize": { "order": "asc", "caseInsensitive": true },
       "groups": ["builtin", "external", "internal", "parent", "sibling", "index"]
     }]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.test.ts", "*.spec.ts"],
+      "env": {
+        "vitest/globals": true
+      },
+      "plugins": ["vitest"],
+      "extends": ["plugin:vitest/recommended"]
+    }
+  ]
 }
