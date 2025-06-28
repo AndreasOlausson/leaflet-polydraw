@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import eslintPlugin from 'vite-plugin-eslint';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import path from 'path';
 import { fileURLToPath, URL } from 'node:url';
@@ -23,6 +24,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    eslintPlugin(),
     viteStaticCopy({
       targets: [
         {
