@@ -1,5 +1,4 @@
 import * as turf from '@turf/turf';
-// @ts-ignore
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import { MarkerPosition } from './enums';
@@ -12,7 +11,7 @@ import type { ILatLng } from './polygon-helpers';
 export class TurfHelper {
   private config: typeof defaultConfig = null;
 
-  constructor(config: Object) {
+  constructor(config: object) {
     this.config = { ...defaultConfig, ...config };
   }
 
@@ -20,8 +19,8 @@ export class TurfHelper {
     try {
       // In Turf 7.x, union expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([poly1, poly2]);
-      // @ts-ignore
-      let union = turf.union(featureCollection);
+      // @ts-expect-error Just ignore...
+      const union = turf.union(featureCollection);
       return union ? this.getTurfPolygon(union) : null;
     } catch (error) {
       console.warn('Error in union:', error.message);
@@ -30,7 +29,7 @@ export class TurfHelper {
   }
 
   turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
-    let points = turf.explode(feature);
+    const points = turf.explode(feature);
     const coordinates = points.features.map((f) => f.geometry.coordinates);
     return turf.multiPolygon([[concaveman(coordinates)]]);
   }
@@ -40,7 +39,7 @@ export class TurfHelper {
     dynamicTolerance: boolean = false,
   ): Feature<Polygon | MultiPolygon> {
     const numOfEdges = polygon.geometry.coordinates[0][0].length;
-    let tolerance = this.config.simplification.simplifyTolerance;
+    const tolerance = this.config.simplification.simplifyTolerance;
     if (!dynamicTolerance) {
       const simplified = turf.simplify(polygon, tolerance);
       return simplified;
@@ -91,7 +90,7 @@ export class TurfHelper {
       }
 
       const unkink = turf.unkinkPolygon(cleanedFeature);
-      let coordinates = [];
+      const coordinates = [];
       turf.featureEach(unkink, (current) => {
         coordinates.push(current);
       });
@@ -130,12 +129,12 @@ export class TurfHelper {
         return false;
       }
 
-      let poly = [];
-      let poly2 = [];
-      let latlngsCoords = turf.getCoords(latlngs);
+      const poly = [];
+      const poly2 = [];
+      const latlngsCoords = turf.getCoords(latlngs);
       latlngsCoords.forEach((element) => {
         // Create proper GeoJSON Feature
-        let feat: Feature<Polygon> = {
+        const feat: Feature<Polygon> = {
           type: 'Feature',
           geometry: {
             type: 'Polygon',
@@ -145,10 +144,10 @@ export class TurfHelper {
         };
         poly.push(feat);
       });
-      let polygonCoords = turf.getCoords(polygon);
+      const polygonCoords = turf.getCoords(polygon);
       polygonCoords.forEach((element) => {
         // Create proper GeoJSON Feature
-        let feat: Feature<Polygon> = {
+        const feat: Feature<Polygon> = {
           type: 'Feature',
           geometry: {
             type: 'Polygon',
@@ -177,8 +176,8 @@ export class TurfHelper {
               try {
                 // Use the new FeatureCollection API for intersect
                 const featureCollection = turf.featureCollection([poly[i], poly2[j]]);
-                // @ts-ignore
-                let test = turf.intersect(featureCollection);
+                // @ts-expect-error Just ignore...
+                const test = turf.intersect(featureCollection);
                 if (test?.geometry.type === 'Polygon') {
                   intersect = true;
                 }
@@ -204,7 +203,7 @@ export class TurfHelper {
     try {
       // In Turf 7.x, intersect expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([poly1, poly2]);
-      // @ts-ignore
+      // @ts-expect-error Just ignore...
       return turf.intersect(featureCollection);
     } catch (error) {
       console.warn('Error in getIntersection:', error.message);
@@ -301,8 +300,8 @@ export class TurfHelper {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([polygon1, polygon2]);
-      // @ts-ignore
-      let diff = turf.difference(featureCollection);
+
+      const diff = turf.difference(featureCollection);
       return diff ? this.getTurfPolygon(diff) : null;
     } catch (error) {
       console.warn('Error in polygonDifference:', error.message);
@@ -316,7 +315,7 @@ export class TurfHelper {
   }
 
   getNearestPointIndex(targetPoint: turf.Coord, points: any): number {
-    let index = turf.nearestPoint(targetPoint, points).properties.featureIndex;
+    const index = turf.nearestPoint(targetPoint, points).properties.featureIndex;
     return index;
   }
 

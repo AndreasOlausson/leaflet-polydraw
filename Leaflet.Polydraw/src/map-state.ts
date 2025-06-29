@@ -1,4 +1,4 @@
-import * as L from "leaflet";
+import * as L from 'leaflet';
 import { type ILatLng } from './polygon-helpers';
 
 /**

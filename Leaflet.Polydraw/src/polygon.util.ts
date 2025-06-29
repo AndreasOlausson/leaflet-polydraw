@@ -117,6 +117,7 @@ export class PolygonUtil {
 
     polygon.forEach((ll) => {
       if (isNaN(ll.lat) || isNaN(ll.lng)) {
+        /* empty */
       }
       tmpLatLng.push(ll as L.LatLng);
     });

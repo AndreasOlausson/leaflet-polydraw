@@ -15,7 +15,7 @@ import { IconFactory } from './icon-factory';
 import { PolygonUtil } from './polygon.util';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import * as turf from '@turf/turf';
-// @ts-ignore
+// @ts-expect-error Just ignore for now
 import './styles/polydraw.css';
 
 class Polydraw extends L.Control {
@@ -199,8 +199,8 @@ class Polydraw extends L.Control {
       onDrawClick,
       onSubtractClick,
       onEraseClick,
-      null,
-      null,
+      // null,
+      // null,
     );
 
     // Add listener to update button active states based on draw mode
@@ -225,14 +225,14 @@ class Polydraw extends L.Control {
 
   addAutoPolygon(geographicBorders: L.LatLng[][][]): void {
     geographicBorders.forEach((group) => {
-      let featureGroup: L.FeatureGroup = new L.FeatureGroup();
+      const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
-      let polygon2 = this.turfHelper.getMultiPolygon(this.convertToCoords(group));
+      const polygon2 = this.turfHelper.getMultiPolygon(this.convertToCoords(group));
       // Processed polygon
-      let polygon = this.getPolygon(polygon2);
+      const polygon = this.getPolygon(polygon2);
 
       featureGroup.addLayer(polygon);
-      let markerLatlngs = polygon.getLatLngs();
+      const markerLatlngs = polygon.getLatLngs();
       // Marker positions
       markerLatlngs.forEach((polygon) => {
         polygon.forEach((polyElement, i) => {
@@ -260,7 +260,7 @@ class Polydraw extends L.Control {
     // Always stop any current drawing when changing modes
     this.stopDraw();
 
-    if (!!this.map) {
+    if (this.map) {
       let isActiveDrawMode = true;
       switch (mode) {
         case DrawMode.Off:
@@ -310,13 +310,13 @@ class Polydraw extends L.Control {
     // Delete a specific polygon from the map
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
-        let layer = featureGroup.getLayers()[0] as any;
-        let latlngs = layer.getLatLngs();
-        let length = latlngs.length;
+        const layer = featureGroup.getLayers()[0] as any;
+        const latlngs = layer.getLatLngs();
+        const length = latlngs.length;
         //  = []
         latlngs.forEach((latlng, index) => {
           let polygon3;
-          let test = [...latlng];
+          const test = [...latlng];
 
           // latlng
           if (latlng.length > 1) {
@@ -483,14 +483,14 @@ class Polydraw extends L.Control {
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    let addHole = latlngs;
-    let newPolygons = [];
+    const addHole = latlngs;
+    const newPolygons = [];
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      let featureCollection = featureGroup.toGeoJSON() as any;
+      const featureCollection = featureGroup.toGeoJSON() as any;
       const layer = featureCollection.features[0];
-      let poly = this.getLatLngsFromJson(layer);
-      let feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-      let newPolygon = this.turfHelper.polygonDifference(feature, addHole);
+      const poly = this.getLatLngsFromJson(layer);
+      const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+      const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
       if (newPolygon) {
         newPolygons.push(newPolygon);
       }
@@ -523,9 +523,9 @@ class Polydraw extends L.Control {
   private removeFeatureGroupOnMerge(featureGroup: L.FeatureGroup) {
     // Remove a feature group during merge operations
 
-    let newArray = [];
+    const newArray = [];
     if (featureGroup.getLayers()[0]) {
-      let polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
+      const polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
       this.polygonInformation.polygonInformationStorage.forEach((v) => {
         if (
           v.polygon.toString() !== polygon[0].toString() &&
@@ -583,11 +583,11 @@ class Polydraw extends L.Control {
     simplify: boolean,
     dynamicTolerance: boolean = false,
   ) {
-    let featureGroup: L.FeatureGroup = new L.FeatureGroup();
+    const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
     // Create and add a new polygon layer
-    let polygon = this.getPolygon(latLngs);
+    const polygon = this.getPolygon(latLngs);
     featureGroup.addLayer(polygon);
 
     // Enable polygon dragging if configured
@@ -596,7 +596,7 @@ class Polydraw extends L.Control {
     }
 
     // Add red polylines for hole rings and markers
-    let markerLatlngs = polygon.getLatLngs();
+    const markerLatlngs = polygon.getLatLngs();
 
     markerLatlngs.forEach((polygonRings) => {
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
@@ -716,7 +716,7 @@ class Polydraw extends L.Control {
       }
       if (i === infoMarkerIdx && this.config.markers.infoMarker) {
         // Ensure the polygon is closed for accurate calculation
-        let closedLatlngs = [...latlngs];
+        const closedLatlngs = [...latlngs];
         if (latlngs.length > 0) {
           const first = latlngs[0];
           const last = latlngs[latlngs.length - 1];
@@ -742,8 +742,6 @@ class Polydraw extends L.Control {
     //markers.addTo(this.map)
   }
   private generateMenuMarkerPopup(latLngs: ILatLng[]): any {
-    const self = this;
-
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
 
@@ -790,33 +788,29 @@ class Polydraw extends L.Control {
     markerContentWrapper.appendChild(separator);
     markerContentWrapper.appendChild(bezier);
 
-    simplify.onclick = function () {
-      self.convertToSimplifiedPolygon(latLngs);
-      // do whatever else you want to do - open accordion etc
+    simplify.onclick = () => {
+      this.convertToSimplifiedPolygon(latLngs);
     };
-    bbox.onclick = function () {
-      self.convertToBoundsPolygon(latLngs);
-      // do whatever else you want to do - open accordion etc
+    bbox.onclick = () => {
+      this.convertToBoundsPolygon(latLngs);
     };
 
-    doubleElbows.onclick = function () {
-      self.doubleElbows(latLngs);
-      // do whatever else you want to do - open accordion etc
+    doubleElbows.onclick = () => {
+      this.doubleElbows(latLngs);
     };
-    bezier.onclick = function () {
-      self.bezierify(latLngs);
-      // do whatever else you want to do - open accordion etc
+    bezier.onclick = () => {
+      this.bezierify(latLngs);
     };
 
     return outerWrapper;
   }
   private convertToCoords(latlngs: ILatLng[][]) {
-    let coords = [];
+    const coords = [];
     // latlngs length
     if (latlngs.length > 1 && latlngs.length < 3) {
-      let coordinates = [];
+      const coordinates = [];
       // Coords of last polygon
-      let within = this.turfHelper.isWithin(
+      const within = this.turfHelper.isWithin(
         L.GeoJSON.latLngsToCoords(latlngs[latlngs.length - 1]),
         L.GeoJSON.latLngsToCoords(latlngs[0]),
       );
@@ -834,9 +828,9 @@ class Polydraw extends L.Control {
       }
       // Within result
     } else if (latlngs.length > 2) {
-      let coordinates = [];
+      const coordinates = [];
       for (let index = 1; index < latlngs.length - 1; index++) {
-        let within = this.turfHelper.isWithin(
+        const within = this.turfHelper.isWithin(
           L.GeoJSON.latLngsToCoords(latlngs[index]),
           L.GeoJSON.latLngsToCoords(latlngs[0]),
         );
@@ -859,31 +853,30 @@ class Polydraw extends L.Control {
   }
   private convertToBoundsPolygon(latlngs: ILatLng[]) {
     this.deletePolygon([latlngs]);
-    let polygon = this.turfHelper.getMultiPolygon(this.convertToCoords([latlngs]));
-    let newPolygon = this.turfHelper.convertToBoundingBoxPolygon(polygon);
+    const polygon = this.turfHelper.getMultiPolygon(this.convertToCoords([latlngs]));
+    const newPolygon = this.turfHelper.convertToBoundingBoxPolygon(polygon);
 
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
   }
   private convertToSimplifiedPolygon(latlngs: ILatLng[]) {
     this.deletePolygon([latlngs]);
-    let newPolygon = this.turfHelper.getMultiPolygon(this.convertToCoords([latlngs]));
+    const newPolygon = this.turfHelper.getMultiPolygon(this.convertToCoords([latlngs]));
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), true, true);
   }
   private doubleElbows(latlngs: ILatLng[]) {
     this.deletePolygon([latlngs]);
     const doubleLatLngs: ILatLng[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
-    let newPolygon = this.turfHelper.getMultiPolygon(this.convertToCoords([doubleLatLngs]));
+    const newPolygon = this.turfHelper.getMultiPolygon(this.convertToCoords([doubleLatLngs]));
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
   private bezierify(latlngs: ILatLng[]) {
     this.deletePolygon([latlngs]);
-    let newPolygon = this.turfHelper.getBezierMultiPolygon(this.convertToCoords([latlngs]));
+    const newPolygon = this.turfHelper.getBezierMultiPolygon(this.convertToCoords([latlngs]));
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
   private generateInfoMarkerPopup(area: number, perimeter: number): any {
     const _perimeter = new Perimeter(perimeter, this.config);
     const _area = new Area(area, this.config);
-    const self = this;
 
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('info-marker-outer-wrapper');
@@ -902,7 +895,7 @@ class Polydraw extends L.Control {
 
     const perimeterHeader: HTMLDivElement = document.createElement('div');
     perimeterHeader.classList.add('header');
-    perimeterHeader.innerText = self.config.markers.markerInfoIcon.perimeterLabel;
+    perimeterHeader.innerText = this.config.markers.markerInfoIcon.perimeterLabel;
 
     const emptyDiv: HTMLDivElement = document.createElement('div');
 
@@ -924,7 +917,7 @@ class Polydraw extends L.Control {
 
     const areaHeader: HTMLDivElement = document.createElement('div');
     areaHeader.classList.add('header');
-    areaHeader.innerText = self.config.markers.markerInfoIcon.areaLabel;
+    areaHeader.innerText = this.config.markers.markerInfoIcon.areaLabel;
 
     const rightRow: HTMLDivElement = document.createElement('div');
     row.classList.add('right-margin');
@@ -963,7 +956,7 @@ class Polydraw extends L.Control {
   private addHoleMarker(latlngs: ILatLng[], FeatureGroup: L.FeatureGroup) {
     latlngs.forEach((latlng, i) => {
       // Use hole-specific icon classes for markers on holes
-      let iconClasses = this.config.markers.holeIcon.styleClasses;
+      const iconClasses = this.config.markers.holeIcon.styleClasses;
       const marker = new L.Marker(latlng, {
         icon: IconFactory.createDivIcon(iconClasses),
         draggable: true,
@@ -986,11 +979,11 @@ class Polydraw extends L.Control {
     console.log('DEBUG: New polygon for merge:', JSON.stringify(latlngs.geometry.coordinates));
     console.log('DEBUG: Existing polygons count:', this.arrayOfFeatureGroups.length);
 
-    let polygonFeature = [];
+    const polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
     this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
-      let featureCollection = featureGroup.toGeoJSON() as any;
+      const featureCollection = featureGroup.toGeoJSON() as any;
       console.log(
         `DEBUG: Checking intersection with polygon ${index}:`,
         JSON.stringify(featureCollection.features[0].geometry.coordinates),
@@ -998,7 +991,7 @@ class Polydraw extends L.Control {
 
       if (featureCollection.features[0].geometry.coordinates.length > 1) {
         featureCollection.features[0].geometry.coordinates.forEach((element) => {
-          let feature = this.turfHelper.getMultiPolygon([element]);
+          const feature = this.turfHelper.getMultiPolygon([element]);
           polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
           console.log(`DEBUG: MultiPolygon intersection result:`, polyIntersection);
           if (polyIntersection) {
@@ -1007,7 +1000,7 @@ class Polydraw extends L.Control {
           }
         });
       } else {
-        let feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
         polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
         console.log(`DEBUG: Polygon intersection result:`, polyIntersection);
 
@@ -1052,9 +1045,9 @@ class Polydraw extends L.Control {
 
     // Process each intersecting polygon
     layers.forEach((featureGroup, i) => {
-      let featureCollection = featureGroup.toGeoJSON();
+      const featureCollection = featureGroup.toGeoJSON();
       const layer = featureCollection.features[0];
-      let poly = this.getLatLngsFromJson(layer);
+      const poly = this.getLatLngsFromJson(layer);
       const existingPolygon = polygonFeature[i];
 
       // Check the type of intersection to determine the correct operation
@@ -1182,8 +1175,8 @@ class Polydraw extends L.Control {
     let polygon2 = [];
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
-        let layer = featureGroup.getLayers()[0] as any;
-        let latlngs = layer.getLatLngs()[0];
+        const layer = featureGroup.getLayers()[0] as any;
+        const latlngs = layer.getLatLngs()[0];
         polygon2 = [...latlngs[0]];
         if (latlngs[0][0] !== latlngs[0][latlngs[0].length - 1]) {
           polygon2.push(latlngs[0][0]);
@@ -1202,7 +1195,7 @@ class Polydraw extends L.Control {
   }
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
     // Create a Leaflet polygon from GeoJSON
-    let polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
+    const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
 
     // Always use normal green polygon styling for the main polygon
     polygon.setStyle(this.config.polygonOptions);
@@ -1246,7 +1239,7 @@ class Polydraw extends L.Control {
     if (this.config.modes.attachElbow) {
       const newPoint = e.latlng;
       if (poly.geometry.type === 'MultiPolygon') {
-        let newPolygon = this.turfHelper.injectPointToPolygon(poly, [newPoint.lng, newPoint.lat]);
+        const newPolygon = this.turfHelper.injectPointToPolygon(poly, [newPoint.lng, newPoint.lat]);
         this.deletePolygon(this.getLatLngsFromJson(poly));
         this.addPolygonLayer(newPolygon, false);
       }
@@ -1326,7 +1319,7 @@ class Polydraw extends L.Control {
 
     if (!polygon) return;
 
-    let posarrays = polygon.getLatLngs();
+    const posarrays = polygon.getLatLngs();
     // position arrays
     let markerIndex = 0;
 
@@ -1425,22 +1418,22 @@ class Polydraw extends L.Control {
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
     this.polygonInformation.deletePolygonInformationStorage();
-    let featureCollection = FeatureGroup.toGeoJSON() as any;
+    const featureCollection = FeatureGroup.toGeoJSON() as any;
     // Handle end of marker drag, check for kinks and update polygons
     this.removeFeatureGroup(FeatureGroup);
 
     if (featureCollection.features[0].geometry.coordinates.length > 1) {
       featureCollection.features[0].geometry.coordinates.forEach((element) => {
-        let feature = this.turfHelper.getMultiPolygon([element]);
+        const feature = this.turfHelper.getMultiPolygon([element]);
 
         // FIX: Use separate runtime state instead of overriding configuration
         // Check if the current polygon has kinks (self-intersections) after marker drag
         if (this.turfHelper.hasKinks(feature)) {
           // Set runtime state: current polygon has kinks
           this.currentPolygonHasKinks = true;
-          let unkink = this.turfHelper.getKinks(feature);
+          const unkink = this.turfHelper.getKinks(feature);
           // Handle unkinked polygons - split kinked polygon into valid parts
-          let testCoord = [];
+          const testCoord = [];
           unkink.forEach((polygon) => {
             // Use addPolygon instead of direct addPolygonLayer to enable merging
             this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false);
@@ -1453,7 +1446,7 @@ class Polydraw extends L.Control {
         }
       });
     } else {
-      let feature = this.turfHelper.getMultiPolygon(
+      const feature = this.turfHelper.getMultiPolygon(
         featureCollection.features[0].geometry.coordinates,
       );
       // Markerdragend
@@ -1461,9 +1454,9 @@ class Polydraw extends L.Control {
         // FIX: Use separate runtime state instead of overriding configuration
         // Set runtime state: current polygon has kinks
         this.currentPolygonHasKinks = true;
-        let unkink = this.turfHelper.getKinks(feature);
+        const unkink = this.turfHelper.getKinks(feature);
         // Unkink - split kinked polygon into valid parts
-        let testCoord = [];
+        const testCoord = [];
         unkink.forEach((polygon) => {
           // Use addPolygon instead of direct addPolygonLayer to enable merging
           this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false);
