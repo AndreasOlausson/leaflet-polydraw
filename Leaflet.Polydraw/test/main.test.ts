@@ -109,6 +109,80 @@ describe('Dependency validation for Polydraw plugin', () => {
         expect(allDeps[dep]).toBeUndefined();
       });
     }
+
+    it('should NOT contain "@turf/turf" in source files', () => {
+      const basePath = './src';
+      const sourceFiles = readdirSync(basePath);
+      for (const file of sourceFiles) {
+        const fullPath = `${basePath}/${file}`;
+        if (statSync(fullPath).isDirectory()) continue;
+        const content = readFileSync(fullPath, 'utf8');
+        expect(content.includes('@turf/turf')).toBe(false);
+      }
+    });
+    it('should NOT use concaveman in source files', () => {
+      const basePath = './src';
+      const sourceFiles = readdirSync(basePath);
+      for (const file of sourceFiles) {
+        const fullPath = `${basePath}/${file}`;
+        if (statSync(fullPath).isDirectory()) continue;
+        const content = readFileSync(fullPath, 'utf8');
+        expect(content.includes('concaveman')).toBe(false);
+      }
+    });
+    it('should import geojson types using "import type"', () => {
+      const basePath = './src';
+      const sourceFiles = readdirSync(basePath);
+      const regex =
+        /import\s+type\s+{[^}]*\bFeature\b[^}]*\bPolygon\b[^}]*\bMultiPolygon\b[^}]*\bPosition\b[^}]*\bPoint\b[^}]*}\s+from\s+['"]geojson['"]/s;
+      let found = false;
+
+      for (const file of sourceFiles) {
+        const fullPath = `${basePath}/${file}`;
+        if (statSync(fullPath).isDirectory()) continue;
+        const content = readFileSync(fullPath, 'utf8');
+        if (regex.test(content)) {
+          found = true;
+          break;
+        }
+      }
+
+      expect(found).toBe(true);
+    });
+    it('should NOT import geojson types from "@turf/turf"', () => {
+      const basePath = './src';
+      const sourceFiles = readdirSync(basePath);
+      const regex =
+        /import\s+type?\s+{[^}]*\b(Feature|Polygon|MultiPolygon|Position|Point)\b(\s+as\s+\w+)?[^}]*}\s+from\s+['"]@turf\/turf['"]/s;
+      for (const file of sourceFiles) {
+        const fullPath = `${basePath}/${file}`;
+        if (statSync(fullPath).isDirectory()) continue;
+        const content = readFileSync(fullPath, 'utf8');
+        expect(regex.test(content)).toBe(false);
+      }
+    });
+    it('should use modular turf imports with alias', () => {
+      const basePath = './src';
+      const sourceFiles = readdirSync(basePath);
+      const modularImportRegex =
+        /import\s+{\s*\w+\s+as\s+turf[A-Z]\w*\s*}\s+from\s+['"]@turf\/[\w-]+['"]/g;
+      const turfImportRegex = /from\s+['"]@turf\/turf['"]/;
+
+      for (const file of sourceFiles) {
+        const fullPath = `${basePath}/${file}`;
+        if (statSync(fullPath).isDirectory()) continue;
+        const content = readFileSync(fullPath, 'utf8');
+
+        // Fail if legacy turf import is found
+        expect(turfImportRegex.test(content)).toBe(false);
+
+        // Require modular imports with alias (if turf module is imported)
+        const usesTurfModule = /from\s+['"]@turf\/[\w-]+['"]/.test(content);
+        if (usesTurfModule) {
+          expect(modularImportRegex.test(content)).toBe(true);
+        }
+      }
+    });
   });
 
   describe('Required types are importable', () => {
