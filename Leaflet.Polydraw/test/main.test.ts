@@ -41,6 +41,46 @@ describe('TurfHelper', () => {
     expect(result.geometry.coordinates.length).toBe(1);
     expect(result.geometry.coordinates[0][0].length).toBeGreaterThanOrEqual(3);
   });
+
+  it('can generate a concave polygon from a highly complex shape', () => {
+    const complexFeature: Feature<Polygon> = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [4, 10],
+            [5, 2],
+            [10, 10],
+            [8, 0],
+            [12, -4],
+            [7, -6],
+            [10, -12],
+            [4, -10],
+            [0, -15],
+            [-4, -10],
+            [-10, -12],
+            [-7, -6],
+            [-12, -4],
+            [-8, 0],
+            [-10, 10],
+            [-5, 2],
+            [-4, 10],
+            [0, 0], // closed loop
+          ],
+        ],
+      },
+      properties: {},
+    };
+
+    const result = turfHelper.turfConcaveman(complexFeature);
+
+    expect(result.type).toBe('Feature');
+    expect(result.geometry.type).toBe('MultiPolygon');
+    expect(result.geometry.coordinates.length).toBe(1);
+    expect(result.geometry.coordinates[0][0].length).toBeGreaterThanOrEqual(3);
+  });
 });
 
 describe('Dependency validation for Polydraw plugin', () => {
