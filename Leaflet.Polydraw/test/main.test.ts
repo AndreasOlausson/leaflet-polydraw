@@ -2,6 +2,7 @@ import { TurfHelper } from '../src/turf-helper';
 import defaultConfig from '../src/config.json';
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { Feature, MultiPolygon, Point, Polygon, Position } from 'geojson';
 
 describe('TurfHelper', () => {
   let turfHelper: TurfHelper;
@@ -67,6 +68,7 @@ describe('TurfHelper', () => {
 
 describe('Dependency validation for Polydraw plugin', () => {
   const bannedModules = ['@turf/turf', 'this_package_does_not_exist_and_should_pass'];
+  const requiredModules = ['@types/geojson'];
 
   describe('1. Disallowed node_modules folders', () => {
     for (const mod of bannedModules) {
@@ -103,7 +105,48 @@ describe('Dependency validation for Polydraw plugin', () => {
       }
     });
   });
+  describe('4. Required development dependencies in package.json', () => {
+    const pkg = JSON.parse(readFileSync('package.json', 'utf8'));
+    for (const dep of requiredModules) {
+      it(`should declare "${dep}" as a development dependency`, () => {
+        expect(pkg.devDependencies?.[dep]).toBeDefined();
+      });
+    }
+  });
 
+  describe('5. Required types are importable', () => {
+    it('should allow importing required geojson types', async () => {
+      // This test is mostly symbolic – it confirms that the import does not crash
+      const typesUsed: [Feature, Polygon, MultiPolygon, Position, Point] = [
+        { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} },
+        {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [1, 1],
+                [0, 0],
+              ],
+            ],
+          ],
+        },
+        [0, 0],
+        { type: 'Point', coordinates: [0, 0] },
+      ];
+      expect(typesUsed.length).toBe(5);
+    });
+  });
   //   describe('4. Bundle size check (UMD)', () => {
   //     it('should keep UMD bundle size under 100 KB (gzipped)', () => {
   //       const path = 'dist/polydraw.umd.js';
