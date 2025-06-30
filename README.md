@@ -5,71 +5,103 @@ This repository contains the complete Polydraw ecosystem with Docker deployment 
 ## Project Structure
 
 ```
-polydraw/
-├── run_tests.sh          # Root wrapper - runs all tests (validator compatible)
-├── build_docker.sh       # Root wrapper - builds Docker image (validator compatible)
-├── Polydraw_Docker/      # Main Docker application
-│   ├── run_tests.sh      # Full test suite (92 tests)
+
+POLYDRAW/ (root)
+├── leaflet-base/
+    └── ...               # Basic Leaflet setup
+├── Leaflet.Polydraw
+│   ├── src/              # Plugin TypeScript source
+│   ├── test/             # Plugin tests
+│   └── ...               # Plugin files
+├── Polydraw_Docker
+│   ├── run_tests.sh      # Full test suite
 │   ├── build_docker.sh   # Docker build script
 │   └── ...               # Docker application files
-├── Leaflet.Polydraw/     # Plugin source code
-│   ├── src/              # Plugin TypeScript source
-│   ├── test/             # Plugin tests (86 tests)
-│   └── ...               # Plugin files
-└── leaflet-base/         # Development test environment
-    └── ...               # Basic Leaflet setup
+├── build_docker.sh
+├── clean_docker.sh
+├── README.md
+└── run_tests.sh
 ```
 
 ## Quick Start
 
+### 0. Install dependencies
+
+Before running any development server, tests, or Docker scripts, make sure all dependencies are installed:
+
+```bash
+# Plugin
+cd Leaflet.Polydraw
+npm install
+
+# Browser test project
+cd ../leaflet-base
+npm install
+
+# Docker wrapper project
+cd ../Polydraw_Docker
+npm install  # Also runs automatically when building via ./build_docker.sh
+```
+
+You only need to run this once (or when dependencies change).
+
 ### For Development:
+
 ```bash
 cd Polydraw_Docker
-npm run dev              # Starts development server with plugin
+npm run dev              # Builds a fresh plugin and starts the development server
 ```
 
-### For Testing:
+- A fresh build of the Leaflet.Polydraw plugin is generated before launching the Vite dev server
+
+### Plugin Tests (Leaflet.Polydraw)
+
+To run unit and integration tests for the Leaflet.Polydraw plugin in isolation:
+
 ```bash
-# For local development (recommended):
-cd Polydraw_Docker && ./run_tests.sh  # Run all 92 tests (plugin + Docker)
-
-# For validator/CI (works both locally and in container):
-./run_tests.sh          # Run all 92 tests locally, 6 tests in container
+cd Leaflet.Polydraw
+npm test
 ```
+
+- Uses [Vitest](https://vitest.dev/)
 
 ### For Docker Build:
+
 ```bash
-./build_docker.sh       # Build Docker image (from root)
-# OR  
-cd Polydraw_Docker && ./build_docker.sh  # Same thing
+# Must be run from project root
+./build_docker.sh       # Builds Docker image with compiled plugin
 ```
+
+### For Docker Testing
+
+Run the full test suite:
+
+```bash
+# Must be run from project root
+./run_tests.sh
+```
+
+### Aggressive Docker Cleanup
+
+A helper script is included to **aggressively remove all Docker-related data** (containers, images, volumes, caches, etc).  
+This is **potentially destructive** and must be used with care.
+
+```bash
+# Must be run from project root
+./clean_docker.sh wipe
+```
+
+- The script only executes if run with the `wipe` argument
+- Without the argument, it does nothing and prints a warning
+- Intended for complete cleanup before rebuilding or diagnosing Docker issues
+- Note: `build_docker.sh` does **not** call this script, even with arguments — cleanup must be run manually if needed.
 
 ## Distribution
 
 This structure works for both:
 
 ### ✅ Validators
+
 - Root-level scripts (`./run_tests.sh`, `./build_docker.sh`) work as expected
-- All tests run and pass (92 total)
+- All tests run and pass
 - Docker builds successfully
-
-### ✅ Friends/Collaborators  
-- Complete project with all dependencies included
-- `Leaflet.Polydraw` plugin source available for modifications
-- All relative paths work correctly
-- Can zip entire folder and share
-
-## Test Coverage
-
-- **Polydraw_Docker**: 6 integration tests (Docker container functionality)
-- **Leaflet.Polydraw**: 86 comprehensive tests (plugin functionality)
-- **Total**: 92 tests covering complete system
-
-## Workflow
-
-1. Make changes to plugin in `Leaflet.Polydraw/`
-2. Test: `./run_tests.sh` (builds plugin + runs all tests)
-3. Build: `./build_docker.sh` (creates Docker image)
-4. Deploy: Use Docker image
-
-The build process automatically handles plugin compilation and dependency management.
