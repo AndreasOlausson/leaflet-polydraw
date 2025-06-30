@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -6,7 +6,18 @@
     <title>Vite + TS</title>
   </head>
   <body>
-    <div id="map" style="height: 100vh;"></div>
+    <div id="map" style="height: 100vh"></div>
     <script type="module" src="/src/main.ts"></script>
+    <div
+      style="
+        position: absolute;
+        z-index: 10000;
+        background-color: aquamarine;
+        top: 10px;
+        left: 100px;
+      "
+    >
+      <button id="addDebugPoly">click</button>
+    </div>
   </body>
 </html>
