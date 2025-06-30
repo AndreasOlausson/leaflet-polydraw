@@ -8,6 +8,7 @@
   "types": "dist/polydraw.d.ts",
   "scripts": {
     "build": "tsc && vite build",
+    "build:types": "tsc --project tsconfig.build.json",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint ./src --ext .ts"

@@ -35,16 +35,11 @@
     "coordsTitle": true,
     "zIndexOffset": 0,
     "markerIcon": {
-      "styleClasses": [
-        "polygon-marker"
-      ],
+      "styleClasses": ["polygon-marker"],
       "zIndexOffset": null
     },
     "holeIcon": {
-      "styleClasses": [
-        "polygon-marker",
-        "hole"
-      ],
+      "styleClasses": ["polygon-marker", "hole"],
       "zIndexOffset": null
     },
     "markerInfoIcon": {
@@ -94,27 +89,26 @@
           }
         }
       },
-      "styleClasses": [
-        "polygon-marker",
-        "info"
-      ],
+      "styleClasses": ["polygon-marker", "info"],
       "zIndexOffset": 10000
     },
     "markerMenuIcon": {
       "position": 7,
-      "styleClasses": [
-        "polygon-marker",
-        "menu"
-      ],
+      "styleClasses": ["polygon-marker", "menu"],
       "zIndexOffset": 10000
     },
     "markerDeleteIcon": {
       "position": 5,
-      "styleClasses": [
-        "polygon-marker",
-        "delete"
-      ],
+      "styleClasses": ["polygon-marker", "delete"],
       "zIndexOffset": 10000
+    },
+    "visualOptimization": {
+      "sharpAngleThreshold": 30,
+      "thresholdBoundingBox": 0.05,
+      "thresholdDistance": 0.05,
+      "useDistance": true,
+      "useBoundingBox": false,
+      "useAngles": false
     }
   },
   "polyLineOptions": {

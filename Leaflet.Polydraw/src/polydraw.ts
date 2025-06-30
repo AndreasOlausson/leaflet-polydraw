@@ -223,7 +223,7 @@ class Polydraw extends L.Control {
     return container;
   }
 
-  addAutoPolygon(geographicBorders: L.LatLng[][][]): void {
+  public addAutoPolygon(geographicBorders: L.LatLng[][][]): void {
     geographicBorders.forEach((group) => {
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
