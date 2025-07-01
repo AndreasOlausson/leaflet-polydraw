@@ -3,9 +3,9 @@
   "version": "0.0.1",
   "type": "module",
   "description": "Leaflet Polydraw plugin",
-  "main": "dist/polydraw.js",
+  "main": "dist/polydraw.es.js",
   "module": "dist/polydraw.es.js",
-  "types": "dist/polydraw.d.ts",
+  "types": "dist/types/polydraw.d.ts",
   "scripts": {
     "build": "tsc && vite build",
     "build:types": "tsc --project tsconfig.build.json",
@@ -15,7 +15,6 @@
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",
-    "@types/leaflet": "^1.9.18",
     "@types/node": "^22.15.30",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",

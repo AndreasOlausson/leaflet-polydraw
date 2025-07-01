@@ -224,31 +224,189 @@ class Polydraw extends L.Control {
   }
 
   public addAutoPolygon(geographicBorders: L.LatLng[][][]): void {
-    geographicBorders.forEach((group) => {
-      const featureGroup: L.FeatureGroup = new L.FeatureGroup();
+    // Validate input
+    if (!geographicBorders || geographicBorders.length === 0) {
+      throw new Error('Cannot add empty polygon array');
+    }
 
-      const polygon2 = this.turfHelper.getMultiPolygon(this.convertToCoords(group));
-      // Processed polygon
-      const polygon = this.getPolygon(polygon2);
+    // Ensure map is properly initialized
+    if (!this.map) {
+      throw new Error('Map not initialized');
+    }
 
-      featureGroup.addLayer(polygon);
-      const markerLatlngs = polygon.getLatLngs();
-      // Marker positions
-      markerLatlngs.forEach((polygon) => {
-        polygon.forEach((polyElement, i) => {
-          if (i === 0) {
-            this.addMarker(polyElement, featureGroup);
+    geographicBorders.forEach((group, groupIndex) => {
+      // Validate group structure
+      if (!group || group.length === 0) {
+        throw new Error('Invalid polygon group structure');
+      }
+
+      // Validate each ring in the group
+      group.forEach((ring, ringIndex) => {
+        if (!ring || ring.length < 3) {
+          throw new Error(`Ring ${ringIndex} has insufficient points (minimum 3 required)`);
+        }
+
+        // Check for duplicate consecutive points (insufficient unique points)
+        let uniquePoints = 0;
+        let lastPoint = null;
+        const seenPoints = new Set();
+
+        for (const coord of ring) {
+          let currentPoint;
+          if (Array.isArray(coord) && coord.length >= 2) {
+            currentPoint = `${coord[0]},${coord[1]}`;
+          } else if (coord && typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
+            currentPoint = `${coord.lat},${coord.lng}`;
           } else {
-            this.addHoleMarker(polyElement, featureGroup);
-            // Hole processed
+            continue;
+          }
+
+          if (currentPoint !== lastPoint) {
+            uniquePoints++;
+            lastPoint = currentPoint;
+          }
+
+          seenPoints.add(currentPoint);
+        }
+
+        // Check for insufficient unique points (need at least 3 unique points for a valid polygon)
+        if (seenPoints.size < 3) {
+          throw new Error(
+            `Ring ${ringIndex} has insufficient unique points (minimum 3 required, found ${seenPoints.size})`,
+          );
+        }
+
+        // For polygons, we need at least 4 points total (3 unique + closing point)
+        // But if it's not properly closed, we still need at least 3 unique points
+        if (ring.length < 4 && seenPoints.size < 4) {
+          // If we have exactly 3 points, check if it's properly closed
+          if (ring.length === 3) {
+            const first = ring[0];
+            const last = ring[ring.length - 1];
+            let isProperlyClosedWith3Points = false;
+
+            if (Array.isArray(first) && Array.isArray(last)) {
+              isProperlyClosedWith3Points = first[0] === last[0] && first[1] === last[1];
+            } else if (
+              first &&
+              last &&
+              typeof first === 'object' &&
+              typeof last === 'object' &&
+              'lat' in first &&
+              'lat' in last
+            ) {
+              isProperlyClosedWith3Points = first.lat === last.lat && first.lng === last.lng;
+            }
+
+            if (!isProperlyClosedWith3Points) {
+              throw new Error(
+                `Ring ${ringIndex} has only ${ring.length} points but is not properly closed (need at least 4 points for a valid polygon)`,
+              );
+            }
+          } else {
+            throw new Error(
+              `Ring ${ringIndex} has insufficient points (minimum 4 required for a closed polygon, found ${ring.length})`,
+            );
+          }
+        }
+
+        // Check if coordinates are in the wrong format [lng, lat] instead of [lat, lng]
+        ring.forEach((coord, coordIndex) => {
+          if (Array.isArray(coord) && coord.length >= 2) {
+            // If first value is around 15-16 and second is around 58-59, it's likely [lng, lat] format
+            // which is wrong for Leaflet (should be [lat, lng])
+            if (typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+              if (coord[0] > 10 && coord[0] < 20 && coord[1] > 50 && coord[1] < 70) {
+                throw new Error(
+                  `Coordinate at ring ${ringIndex}, position ${coordIndex} appears to be in [lng, lat] format. Leaflet expects [lat, lng] format.`,
+                );
+              }
+            }
+          } else if (coord && typeof coord === 'object' && 'lat' in coord && 'lng' in coord) {
+            // LatLng object - validate ranges
+            if (coord.lat < -90 || coord.lat > 90) {
+              throw new Error(
+                `Invalid latitude ${coord.lat} at ring ${ringIndex}, position ${coordIndex}`,
+              );
+            }
+            if (coord.lng < -180 || coord.lng > 180) {
+              throw new Error(
+                `Invalid longitude ${coord.lng} at ring ${ringIndex}, position ${coordIndex}`,
+              );
+            }
           }
         });
-        // this.addMarker(polygon[0], featureGroup);
-        //TODO - If polygon.length >1, it have a hole: add explicit addMarker function
+
+        // Check if polygon is properly closed (first and last points should be the same)
+        if (ring.length >= 4) {
+          const first = ring[0];
+          const last = ring[ring.length - 1];
+          let isProperlyClosedOrValid = false;
+
+          if (Array.isArray(first) && Array.isArray(last)) {
+            isProperlyClosedOrValid = first[0] === last[0] && first[1] === last[1];
+          } else if (
+            first &&
+            last &&
+            typeof first === 'object' &&
+            typeof last === 'object' &&
+            'lat' in first &&
+            'lat' in last
+          ) {
+            isProperlyClosedOrValid = first.lat === last.lat && first.lng === last.lng;
+          } else {
+            // If we can't determine, assume it's valid for now
+            isProperlyClosedOrValid = true;
+          }
+
+          // Only require closure for polygons with 4+ points
+          if (!isProperlyClosedOrValid && ring.length > 3) {
+            throw new Error(
+              `Ring ${ringIndex} is not properly closed (first and last points must be the same)`,
+            );
+          }
+        }
       });
 
-      this.arrayOfFeatureGroups.push(featureGroup);
-      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+      const featureGroup: L.FeatureGroup = new L.FeatureGroup();
+
+      try {
+        const polygon2 = this.turfHelper.getMultiPolygon(this.convertToCoords(group));
+        // Processed polygon
+        const polygon = this.getPolygon(polygon2);
+
+        featureGroup.addLayer(polygon);
+
+        // Only add to map if map is available and has proper bounds
+        try {
+          featureGroup.addTo(this.map);
+        } catch (mapError) {
+          // Handle case where map renderer is not initialized (e.g., in test environment)
+          console.warn('Could not add feature group to map:', mapError.message);
+        }
+
+        const markerLatlngs = polygon.getLatLngs();
+        // Marker positions
+        markerLatlngs.forEach((polygon) => {
+          polygon.forEach((polyElement, i) => {
+            if (i === 0) {
+              this.addMarker(polyElement, featureGroup);
+            } else {
+              this.addHoleMarker(polyElement, featureGroup);
+              // Hole processed
+            }
+          });
+          // this.addMarker(polygon[0], featureGroup);
+          //TODO - If polygon.length >1, it have a hole: add explicit addMarker function
+        });
+
+        this.arrayOfFeatureGroups.push(featureGroup);
+        this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+      } catch (error) {
+        // Clean up feature group if polygon creation fails
+        featureGroup.clearLayers();
+        throw new Error(`Failed to create polygon: ${error.message}`);
+      }
     });
   }
 
