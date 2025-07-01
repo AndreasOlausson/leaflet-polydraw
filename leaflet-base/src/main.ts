@@ -71,7 +71,7 @@ const polydraw = new Polydraw();
 polydraw.addTo(map);
 
 document.getElementById("addDebugPoly")?.addEventListener("click", () => {
-  polydraw.addAutoPolygon(overlappingSquares);
+  polydraw.addAutoPolygon(linkoping);
   console.log("Polydraw:", polydraw);
 });
 

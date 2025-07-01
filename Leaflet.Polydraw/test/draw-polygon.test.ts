@@ -2,7 +2,7 @@ import Polydraw from '../src/polydraw';
 import * as L from 'leaflet';
 import { DrawMode } from '../src/enums';
 import { vi } from 'vitest';
-import {Feature, Polygon} from 'geojson';
+import { Feature, Polygon } from 'geojson';
 
 // Mock the CSS import to avoid issues
 vi.mock('../src/styles/polydraw.css', () => ({}));
@@ -15,25 +15,51 @@ vi.mock('../src/turf-helper', () => {
         type: 'Feature',
         geometry: {
           type: 'Polygon',
-          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getMultiPolygon: vi.fn().mockReturnValue({
         type: 'Feature',
         geometry: {
           type: 'MultiPolygon',
-          coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]]
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getTurfPolygon: vi.fn().mockReturnValue({
         type: 'Feature',
         geometry: {
           type: 'Polygon',
-          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getSimplified: vi.fn().mockImplementation((feature) => feature),
       polygonIntersect: vi.fn().mockReturnValue(false),
@@ -49,18 +75,18 @@ vi.mock('../src/turf-helper', () => {
           {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [0, 0] },
-            properties: { featureIndex: 0 }
-          }
-        ]
+            properties: { featureIndex: 0 },
+          },
+        ],
       }),
-      getNearestPointIndex: vi.fn().mockReturnValue(0)
-    }))
+      getNearestPointIndex: vi.fn().mockReturnValue(0),
+    })),
   };
 });
 
 // Mock Leaflet's GeoJSON.geometryToLayer to return a proper polygon mock
 vi.mock('leaflet', async () => {
-  const actual = await vi.importActual('leaflet') as any;
+  const actual = (await vi.importActual('leaflet')) as any;
   return {
     ...actual,
     GeoJSON: {
@@ -73,8 +99,8 @@ vi.mock('leaflet', async () => {
             { lat: 1, lng: 0 },
             { lat: 1, lng: 1 },
             { lat: 0, lng: 1 },
-            { lat: 0, lng: 0 }
-          ]
+            { lat: 0, lng: 0 },
+          ],
         ]),
         addTo: vi.fn().mockReturnThis(),
         on: vi.fn(),
@@ -84,12 +110,20 @@ vi.mock('leaflet', async () => {
           type: 'Feature',
           geometry: {
             type: 'Polygon',
-            coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
           },
-          properties: {}
-        })
-      })
-    }
+          properties: {},
+        }),
+      }),
+    },
   };
 });
 
@@ -101,22 +135,22 @@ vi.mock('../src/utils', () => {
         getSouth: () => 0,
         getWest: () => 0,
         getNorth: () => 1,
-        getEast: () => 1
-      })
+        getEast: () => 1,
+      }),
     },
     Compass: vi.fn().mockImplementation(() => ({
-      getDirection: vi.fn().mockReturnValue({ lat: 0, lng: 0 })
+      getDirection: vi.fn().mockReturnValue({ lat: 0, lng: 0 }),
     })),
     Perimeter: vi.fn().mockImplementation((value, config) => ({
       value,
       config,
-      toString: () => `${value} m`
+      toString: () => `${value} m`,
     })),
     Area: vi.fn().mockImplementation((value, config) => ({
       value,
       config,
-      toString: () => `${value} m²`
-    }))
+      toString: () => `${value} m²`,
+    })),
   };
 });
 
@@ -131,8 +165,8 @@ vi.mock('../src/polygon-information.service', () => {
       updatePolygons: vi.fn(),
       deleteTrashcan: vi.fn(),
       deleteTrashCanOnMulti: vi.fn(),
-      polygonInformationStorage: []
-    }))
+      polygonInformationStorage: [],
+    })),
   };
 });
 
@@ -141,7 +175,7 @@ vi.mock('../src/map-state', () => {
   return {
     MapStateService: vi.fn().mockImplementation(() => ({
       // Add any methods that might be called
-    }))
+    })),
   };
 });
 
@@ -153,14 +187,14 @@ describe('Draw Polygon Functionality', () => {
     // Create a mock map for testing
     map = L.map(document.createElement('div'), {
       center: [51.505, -0.09],
-      zoom: 13
+      zoom: 13,
     });
-    
+
     // Create the control with minimal options
     control = new Polydraw({
-      position: 'topleft'
+      position: 'topleft',
     });
-    
+
     // Add control to map for drawing tests
     control.onAdd(map);
   });
@@ -200,7 +234,7 @@ describe('Draw Polygon Functionality', () => {
   describe('Map Interaction Control', () => {
     it('should disable map interactions when entering Add mode', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       expect(map.dragging.enabled()).toBe(false);
       expect(map.doubleClickZoom.enabled()).toBe(false);
       expect(map.scrollWheelZoom.enabled()).toBe(false);
@@ -208,7 +242,7 @@ describe('Draw Polygon Functionality', () => {
 
     it('should disable map interactions when entering Subtract mode', () => {
       control.setDrawMode(DrawMode.Subtract);
-      
+
       expect(map.dragging.enabled()).toBe(false);
       expect(map.doubleClickZoom.enabled()).toBe(false);
       expect(map.scrollWheelZoom.enabled()).toBe(false);
@@ -217,7 +251,7 @@ describe('Draw Polygon Functionality', () => {
     it('should re-enable map interactions when returning to Off mode', () => {
       control.setDrawMode(DrawMode.Add);
       control.setDrawMode(DrawMode.Off);
-      
+
       expect(map.dragging.enabled()).toBe(true);
       expect(map.doubleClickZoom.enabled()).toBe(true);
       expect(map.scrollWheelZoom.enabled()).toBe(true);
@@ -245,12 +279,12 @@ describe('Draw Polygon Functionality', () => {
   describe('Drawing Events', () => {
     it('should handle mouse down event to start drawing', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       const mouseEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
-      
+
       expect(() => {
         map.fire('mousedown', mouseEvent);
       }).not.toThrow();
@@ -258,20 +292,20 @@ describe('Draw Polygon Functionality', () => {
 
     it('should handle mouse move events during drawing', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Start drawing
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Move mouse
       const mouseMoveEvent = {
         originalEvent: new MouseEvent('mousemove'),
-        latlng: L.latLng(51.51, -0.11)
+        latlng: L.latLng(51.51, -0.11),
       };
-      
+
       expect(() => {
         map.fire('mousemove', mouseMoveEvent);
       }).not.toThrow();
@@ -279,20 +313,20 @@ describe('Draw Polygon Functionality', () => {
 
     it('should complete drawing on mouse up', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Start drawing
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Complete drawing
       const mouseUpEvent = {
         originalEvent: new MouseEvent('mouseup'),
-        latlng: L.latLng(51.52, -0.12)
+        latlng: L.latLng(51.52, -0.12),
       };
-      
+
       // The drawing completion might fail due to complex polygon processing,
       // but we can test that the events are handled
       try {
@@ -300,7 +334,7 @@ describe('Draw Polygon Functionality', () => {
       } catch (error) {
         // Expected due to mocked polygon structure
       }
-      
+
       // The draw mode might not change due to mocked environment
       // but we've verified the event handling works
       expect([DrawMode.Off, DrawMode.Add]).toContain(control.getDrawMode());
@@ -310,14 +344,14 @@ describe('Draw Polygon Functionality', () => {
   describe('Touch Events', () => {
     it('should handle touch start events', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       const container = map.getContainer();
       const touchEvent = new Event('touchstart');
       Object.defineProperty(touchEvent, 'touches', {
         value: [{ clientX: 100, clientY: 100 }],
-        writable: false
+        writable: false,
       });
-      
+
       expect(() => {
         container.dispatchEvent(touchEvent);
       }).not.toThrow();
@@ -325,23 +359,23 @@ describe('Draw Polygon Functionality', () => {
 
     it('should handle touch move events', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Start with touch
       const container = map.getContainer();
       const touchStartEvent = new Event('touchstart');
       Object.defineProperty(touchStartEvent, 'touches', {
         value: [{ clientX: 100, clientY: 100 }],
-        writable: false
+        writable: false,
       });
       container.dispatchEvent(touchStartEvent);
-      
+
       // Move touch
       const touchMoveEvent = new Event('touchmove');
       Object.defineProperty(touchMoveEvent, 'touches', {
         value: [{ clientX: 110, clientY: 110 }],
-        writable: false
+        writable: false,
       });
-      
+
       expect(() => {
         container.dispatchEvent(touchMoveEvent);
       }).not.toThrow();
@@ -349,14 +383,14 @@ describe('Draw Polygon Functionality', () => {
 
     it('should handle touch end events', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       const container = map.getContainer();
       const touchEndEvent = new Event('touchend');
       Object.defineProperty(touchEndEvent, 'touches', {
         value: [{ clientX: 120, clientY: 120 }],
-        writable: false
+        writable: false,
       });
-      
+
       expect(() => {
         container.dispatchEvent(touchEndEvent);
       }).not.toThrow();
@@ -372,11 +406,11 @@ describe('Draw Polygon Functionality', () => {
           kinks: false,
           polyLineOptions: {
             color: '#ff0000',
-            weight: 3
-          }
-        }
+            weight: 3,
+          },
+        },
       });
-      
+
       expect(customControl).toBeInstanceOf(Polydraw);
       expect(customControl.getDrawMode()).toBe(DrawMode.Off);
     });
@@ -391,19 +425,19 @@ describe('Draw Polygon Functionality', () => {
   describe('Event Listeners', () => {
     it('should emit draw mode change events', () => {
       const mockCallback = vi.fn();
-      
+
       // Access private drawModeListeners array
       (control as any).drawModeListeners.push(mockCallback);
-      
+
       control.setDrawMode(DrawMode.Add);
       expect(mockCallback).toHaveBeenCalledWith(DrawMode.Add);
-      
+
       control.setDrawMode(DrawMode.Subtract);
       expect(mockCallback).toHaveBeenCalledWith(DrawMode.Subtract);
-      
+
       control.setDrawMode(DrawMode.Off);
       expect(mockCallback).toHaveBeenCalledWith(DrawMode.Off);
-      
+
       expect(mockCallback).toHaveBeenCalledTimes(3);
     });
   });
@@ -417,20 +451,20 @@ describe('Draw Polygon Functionality', () => {
 
     it('should handle subtract mode drawing', () => {
       control.setDrawMode(DrawMode.Subtract);
-      
+
       // Start drawing in subtract mode
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Complete subtract drawing
       const mouseUpEvent = {
         originalEvent: new MouseEvent('mouseup'),
-        latlng: L.latLng(51.52, -0.12)
+        latlng: L.latLng(51.52, -0.12),
       };
-      
+
       // The subtract operation might fail due to complex polygon processing,
       // but we can test that the events are handled
       try {
@@ -438,7 +472,7 @@ describe('Draw Polygon Functionality', () => {
       } catch (error) {
         // Expected due to mocked polygon structure
       }
-      
+
       // The draw mode might not change due to mocked environment
       // but we've verified the event handling works
       expect([DrawMode.Off, DrawMode.Subtract]).toContain(control.getDrawMode());
@@ -452,30 +486,34 @@ describe('Draw Polygon Functionality', () => {
           mergePolygons: true,
           kinks: false,
           modes: {
-            dragElbow: true
-          }
-        }
+            dragElbow: true,
+          },
+        },
       });
       mergingControl.onAdd(map);
 
       // Test that the control is properly configured for merging
       expect((mergingControl as any).config.mergePolygons).toBe(true);
       expect((mergingControl as any).config.kinks).toBe(false);
-      
+
       // Verify the control has the necessary methods for polygon management
       expect(typeof (mergingControl as any).addAutoPolygon).toBe('function');
       expect(typeof (mergingControl as any).markerDragEnd).toBe('function');
-      
+
       // Test that the control can handle polygon operations without throwing
       expect(() => {
         try {
-          const polygon1 = [[[
-            L.latLng(51.5, -0.1),
-            L.latLng(51.51, -0.1),
-            L.latLng(51.51, -0.11),
-            L.latLng(51.5, -0.11),
-            L.latLng(51.5, -0.1)
-          ]]];
+          const polygon1 = [
+            [
+              [
+                L.latLng(51.5, -0.1),
+                L.latLng(51.51, -0.1),
+                L.latLng(51.51, -0.11),
+                L.latLng(51.5, -0.11),
+                L.latLng(51.5, -0.1),
+              ],
+            ],
+          ];
           mergingControl.addAutoPolygon(polygon1 as any);
         } catch (error) {
           // Expected in test environment due to map renderer limitations
@@ -487,7 +525,7 @@ describe('Draw Polygon Functionality', () => {
   describe('UI Control Creation', () => {
     it('should create control container with proper classes', () => {
       const container = control.onAdd(map);
-      
+
       expect(container).toBeInstanceOf(HTMLElement);
       expect(container.className).toContain('leaflet-control');
       expect(container.className).toContain('leaflet-bar');
@@ -496,7 +534,7 @@ describe('Draw Polygon Functionality', () => {
     it('should create sub-container for buttons', () => {
       const container = control.onAdd(map);
       const subContainer = container.querySelector('.sub-buttons');
-      
+
       expect(subContainer).toBeInstanceOf(HTMLElement);
     });
   });
@@ -512,9 +550,9 @@ describe('Draw Polygon Functionality', () => {
             mergePolygons: true,
             kinks: false,
             modes: {
-              dragElbow: true
-            }
-          }
+              dragElbow: true,
+            },
+          },
         });
         mergingEnabledControl.onAdd(map);
       });
@@ -522,7 +560,7 @@ describe('Draw Polygon Functionality', () => {
       it('should read mergePolygons config and store it correctly', () => {
         // Test that the configuration actually flows through to the instance
         expect((mergingEnabledControl as any).config.mergePolygons).toBe(true);
-        
+
         // If the property exists, it should be true
         const mergePolygonsValue = (mergingEnabledControl as any).mergePolygons;
         if (mergePolygonsValue !== undefined) {
@@ -533,63 +571,66 @@ describe('Draw Polygon Functionality', () => {
       it('should call merge logic when mergePolygons is true and conditions are met', () => {
         // Test the conditional logic in addPolygon method
         // Line 349: if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks)
-        
+
         // Verify configuration and test the conditional logic
         expect((mergingEnabledControl as any).config.mergePolygons).toBe(true);
         expect((mergingEnabledControl as any).kinks).toBe(false);
 
         // Test the conditional logic: should merge when all conditions are met
         // Simulate the condition check with arrayOfFeatureGroups.length > 0
-        const shouldMerge = (mergingEnabledControl as any).config.mergePolygons && 
-                           !(false) && // noMerge = false
-                           true && // arrayOfFeatureGroups.length > 0 (simulated)
-                           !(mergingEnabledControl as any).kinks;
-        
+        const shouldMerge =
+          (mergingEnabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingEnabledControl as any).kinks;
+
         expect(shouldMerge).toBe(true);
       });
 
       it('should bypass merge when noMerge parameter is true', () => {
         // Test the noMerge parameter functionality by testing the conditional logic
         // Line 349: if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks)
-        
+
         // Verify configuration and test the conditional logic
         expect((mergingEnabledControl as any).config.mergePolygons).toBe(true);
         expect((mergingEnabledControl as any).kinks).toBe(false);
 
         // When noMerge is true, the entire condition should be false
-        const shouldMergeWithNoMerge = (mergingEnabledControl as any).config.mergePolygons && 
-                                      !(true) && // noMerge = true
-                                      true && // arrayOfFeatureGroups.length > 0 (simulated)
-                                      !(mergingEnabledControl as any).kinks;
-        
+        const shouldMergeWithNoMerge =
+          (mergingEnabledControl as any).config.mergePolygons &&
+          !true && // noMerge = true
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingEnabledControl as any).kinks;
+
         expect(shouldMergeWithNoMerge).toBe(false);
 
         // When noMerge is false, the condition should be true
-        const shouldMergeWithoutNoMerge = (mergingEnabledControl as any).config.mergePolygons && 
-                                         !(false) && // noMerge = false
-                                         true && // arrayOfFeatureGroups.length > 0 (simulated)
-                                         !(mergingEnabledControl as any).kinks;
-        
+        const shouldMergeWithoutNoMerge =
+          (mergingEnabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingEnabledControl as any).kinks;
+
         expect(shouldMergeWithoutNoMerge).toBe(true);
       });
 
       it('should not merge non-overlapping polygons even when merging is enabled', () => {
         // Test the merging logic configuration
         expect((mergingEnabledControl as any).config.mergePolygons).toBe(true);
-        
+
         // Test that the control has the necessary methods for polygon management
         expect(typeof (mergingEnabledControl as any).addAutoPolygon).toBe('function');
         expect(typeof (mergingEnabledControl as any).markerDragEnd).toBe('function');
-        
+
         // Test the conditional logic for non-overlapping polygons
         // When polygons don't intersect, merging should not occur
         const mockTurfHelper = (mergingEnabledControl as any).turfHelper;
         mockTurfHelper.polygonIntersect.mockReturnValue(false);
-        
+
         // Verify that when polygons don't intersect, union is not called
         const intersects = mockTurfHelper.polygonIntersect();
         expect(intersects).toBe(false);
-        
+
         // In the actual implementation, if polygonIntersect returns false,
         // the union operation should not be performed
         if (!intersects) {
@@ -601,7 +642,7 @@ describe('Draw Polygon Functionality', () => {
       it('should handle complex polygon shapes during merging', () => {
         // Test that the control is configured for merging
         expect((mergingEnabledControl as any).config.mergePolygons).toBe(true);
-        
+
         // Test the TurfHelper mock for complex polygon operations
         const mockTurfHelper = (mergingEnabledControl as any).turfHelper;
         mockTurfHelper.polygonIntersect.mockReturnValue(true);
@@ -609,15 +650,23 @@ describe('Draw Polygon Functionality', () => {
           type: 'Feature',
           geometry: {
             type: 'Polygon',
-            coordinates: [[[51.495, -0.095], [51.522, -0.095], [51.522, -0.118], [51.495, -0.118], [51.495, -0.095]]]
+            coordinates: [
+              [
+                [51.495, -0.095],
+                [51.522, -0.095],
+                [51.522, -0.118],
+                [51.495, -0.118],
+                [51.495, -0.095],
+              ],
+            ],
           },
-          properties: {}
+          properties: {},
         });
 
         // Test that complex polygon operations work with the mocked TurfHelper
         const intersects = mockTurfHelper.polygonIntersect();
         expect(intersects).toBe(true);
-        
+
         // When polygons intersect, union should be available
         if (intersects) {
           const unionResult = mockTurfHelper.union();
@@ -629,22 +678,22 @@ describe('Draw Polygon Functionality', () => {
 
       it('should merge two overlapping polygons when mergePolygons is enabled', () => {
         const control = mergingEnabledControl as any;
-        
+
         // Setup: Start with 1 existing polygon (real-world scenario after first draw)
         control.arrayOfFeatureGroups = [{}]; // Mock 1 existing polygon
         expect(control.arrayOfFeatureGroups.length).toBe(1);
-        
+
         // Ensure merging is enabled and properties are set correctly
         control.mergePolygons = true;
         control.kinks = false;
-        
+
         // Mock addPolygonLayer to simulate adding without merging (buggy behavior)
         const originalAddPolygonLayer = control.addPolygonLayer;
         control.addPolygonLayer = vi.fn((feature) => {
           // Simulate adding a polygon to the array (no merging)
           control.arrayOfFeatureGroups.push({}); // Add another polygon
         });
-        
+
         // Mock merge to simulate proper merging behavior
         const originalMerge = control.merge;
         control.merge = vi.fn((feature) => {
@@ -653,32 +702,40 @@ describe('Draw Polygon Functionality', () => {
           // Keep the array at 1 polygon (merged result)
           control.arrayOfFeatureGroups = [{}]; // Result: 1 merged polygon
         });
-        
+
         // Draw second polygon that intersects with the first
         const polygon2: Feature<Polygon> = {
           type: 'Feature',
           geometry: {
             type: 'Polygon',
-            coordinates: [[[0.5, 0.5], [1.5, 0.5], [1.5, 1.5], [0.5, 1.5], [0.5, 0.5]]]
+            coordinates: [
+              [
+                [0.5, 0.5],
+                [1.5, 0.5],
+                [1.5, 1.5],
+                [0.5, 1.5],
+                [0.5, 0.5],
+              ],
+            ],
           },
-          properties: {}
+          properties: {},
         };
-        
+
         // This should trigger merge because:
         // - mergePolygons = true
         // - arrayOfFeatureGroups.length > 0 (we have 1 polygon)
         // - kinks = false
         control.addPolygon(polygon2, false, false);
-        
+
         // VERIFICATION: With correct logic, merge should be called
         // Result: 1 existing + 1 new intersecting polygon = 1 merged polygon
         expect(control.arrayOfFeatureGroups.length).toBe(1); // Still 1 polygon (merged)
-        
+
         // When logic is BUGGY (if/else flipped):
         // - addPolygonLayer would be called instead of merge
         // - Result would be 2 separate polygons
         // - This assertion would fail: expect(2).toBe(1)
-        
+
         // Restore original methods
         control.addPolygonLayer = originalAddPolygonLayer;
         control.merge = originalMerge;
@@ -687,14 +744,30 @@ describe('Draw Polygon Functionality', () => {
       it('p2p - should verify intersecting polygons meet merge prerequisites', () => {
         // Test the concept of point-to-point polygon merging
         // This test verifies the theoretical scenario where two polygons would intersect
-        
+
         // Mock TurfHelper to simulate two intersecting polygons
         const mockTurfHelper = (mergingEnabledControl as any).turfHelper;
         mockTurfHelper.polygonIntersect.mockReturnValue(true);
 
         // Create mock polygon data that would represent overlapping polygons
-        const polygon1Coords = [[[51.5, -0.1], [51.51, -0.1], [51.51, -0.11], [51.5, -0.11], [51.5, -0.1]]];
-        const polygon2Coords = [[[51.505, -0.105], [51.515, -0.105], [51.515, -0.115], [51.505, -0.115], [51.505, -0.105]]];
+        const polygon1Coords = [
+          [
+            [51.5, -0.1],
+            [51.51, -0.1],
+            [51.51, -0.11],
+            [51.5, -0.11],
+            [51.5, -0.1],
+          ],
+        ];
+        const polygon2Coords = [
+          [
+            [51.505, -0.105],
+            [51.515, -0.105],
+            [51.515, -0.115],
+            [51.505, -0.115],
+            [51.505, -0.105],
+          ],
+        ];
 
         // Test that the polygons would intersect (share area) if checked
         const wouldIntersect = mockTurfHelper.polygonIntersect();
@@ -727,9 +800,9 @@ describe('Draw Polygon Functionality', () => {
             mergePolygons: false, // Explicitly disable merging
             kinks: false,
             modes: {
-              dragElbow: true
-            }
-          }
+              dragElbow: true,
+            },
+          },
         });
         mergingDisabledControl.onAdd(map);
       });
@@ -742,21 +815,22 @@ describe('Draw Polygon Functionality', () => {
       it('should NOT call merge logic when mergePolygons is false', () => {
         // Test the conditional logic in addPolygon method when mergePolygons is false
         // Line 349: if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks)
-        
+
         // Verify configuration
         expect((mergingDisabledControl as any).config.mergePolygons).toBe(false);
         expect((mergingDisabledControl as any).kinks).toBe(false);
 
         // Test the conditional logic: should NOT merge when mergePolygons is false
         // Simulate having polygons (arrayOfFeatureGroups.length > 0)
-        const shouldMerge = (mergingDisabledControl as any).config.mergePolygons && 
-                           !(false) && // noMerge = false
-                           true && // arrayOfFeatureGroups.length > 0 (simulated)
-                           !(mergingDisabledControl as any).kinks;
-        
+        const shouldMerge =
+          (mergingDisabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingDisabledControl as any).kinks;
+
         expect(shouldMerge).toBe(false);
-        
-        // The key point is that when mergePolygons is false, 
+
+        // The key point is that when mergePolygons is false,
         // the entire condition evaluates to false regardless of other conditions
         expect((mergingDisabledControl as any).config.mergePolygons).toBe(false);
       });
@@ -764,36 +838,38 @@ describe('Draw Polygon Functionality', () => {
       it('should verify the actual addPolygon method logic respects mergePolygons config', () => {
         // This test verifies the actual conditional logic in addPolygon method
         // Line 349: if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks)
-        
+
         // Verify conditions for the if statement
         expect((mergingDisabledControl as any).config.mergePolygons).toBe(false); // This should make the condition false
         expect((mergingDisabledControl as any).kinks).toBe(false);
 
         // Since mergePolygons is false, the entire condition should be false
-        const shouldMerge = (mergingDisabledControl as any).config.mergePolygons && 
-                           !(false) && // noMerge = false
-                           true && // arrayOfFeatureGroups.length > 0 (simulated)
-                           !(mergingDisabledControl as any).kinks;
-        
+        const shouldMerge =
+          (mergingDisabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingDisabledControl as any).kinks;
+
         expect(shouldMerge).toBe(false);
       });
 
       it('should NOT merge overlapping polygons when merging is disabled', () => {
         // Test the configuration and logic without calling addAutoPolygon
         expect((mergingDisabledControl as any).config.mergePolygons).toBe(false);
-        
+
         // Mock TurfHelper - even if polygons overlap, merging should not occur
         const mockTurfHelper = (mergingDisabledControl as any).turfHelper;
         mockTurfHelper.polygonIntersect.mockReturnValue(true);
 
         // Test the conditional logic: when mergePolygons is false, no merging should occur
-        const shouldMerge = (mergingDisabledControl as any).config.mergePolygons && 
-                           !(false) && // noMerge = false
-                           true && // arrayOfFeatureGroups.length > 0 (simulated)
-                           !(mergingDisabledControl as any).kinks;
-        
+        const shouldMerge =
+          (mergingDisabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingDisabledControl as any).kinks;
+
         expect(shouldMerge).toBe(false);
-        
+
         // Verify NO merging occurs despite overlap
         expect(mockTurfHelper.union).not.toHaveBeenCalled();
       });
@@ -807,16 +883,17 @@ describe('Draw Polygon Functionality', () => {
         mockTurfHelper.polygonIntersect.mockReturnValue(true);
 
         // Test the conditional logic for multiple overlapping polygons
-        const shouldMerge = (mergingDisabledControl as any).config.mergePolygons && 
-                           !(false) && // noMerge = false
-                           true && // arrayOfFeatureGroups.length > 0 (simulated)
-                           !(mergingDisabledControl as any).kinks;
-        
+        const shouldMerge =
+          (mergingDisabledControl as any).config.mergePolygons &&
+          !false && // noMerge = false
+          true && // arrayOfFeatureGroups.length > 0 (simulated)
+          !(mergingDisabledControl as any).kinks;
+
         expect(shouldMerge).toBe(false);
 
         // Verify NO merging occurs for any polygons
         expect(mockTurfHelper.union).not.toHaveBeenCalled();
-        
+
         // The configuration ensures all polygons remain separate
         expect((mergingDisabledControl as any).config.mergePolygons).toBe(false);
       });
@@ -826,12 +903,12 @@ describe('Draw Polygon Functionality', () => {
       it('should respect the mergePolygons configuration setting', () => {
         // Test with merging enabled
         const enabledControl = new Polydraw({
-          config: { mergePolygons: true }
+          config: { mergePolygons: true },
         });
-        
+
         // Test with merging disabled
         const disabledControl = new Polydraw({
-          config: { mergePolygons: false }
+          config: { mergePolygons: false },
         });
 
         // Both controls should be created successfully
@@ -845,11 +922,11 @@ describe('Draw Polygon Functionality', () => {
 
       it('should use default configuration when mergePolygons is not specified', () => {
         const defaultControl = new Polydraw({
-          position: 'topleft'
+          position: 'topleft',
         });
 
         expect(defaultControl).toBeInstanceOf(Polydraw);
-        
+
         // Default behavior should follow the config.json setting (mergePolygons: true)
         // This is verified through the behavior in other tests
         expect(true).toBe(true);
@@ -859,28 +936,32 @@ describe('Draw Polygon Functionality', () => {
     describe('Edge Cases and Error Handling', () => {
       it('should handle empty polygon arrays gracefully', () => {
         const testControl = new Polydraw({
-          config: { mergePolygons: true }
+          config: { mergePolygons: true },
         });
         testControl.onAdd(map);
 
-        // Try to add empty polygon
+        // Try to add empty polygon - should throw error for empty arrays
         expect(() => {
           testControl.addAutoPolygon([] as any);
-        }).not.toThrow();
+        }).toThrow('Cannot add empty polygon array');
       });
 
       it('should handle invalid polygon coordinates', () => {
         const testControl = new Polydraw({
-          config: { mergePolygons: true }
+          config: { mergePolygons: true },
         });
         testControl.onAdd(map);
 
         // Try to add polygon with invalid coordinates
-        const invalidPolygon = [[[
-          { lat: NaN, lng: NaN },
-          { lat: 51.5, lng: -0.1 },
-          { lat: 51.51, lng: -0.11 }
-        ]]];
+        const invalidPolygon = [
+          [
+            [
+              { lat: NaN, lng: NaN },
+              { lat: 51.5, lng: -0.1 },
+              { lat: 51.51, lng: -0.11 },
+            ],
+          ],
+        ];
 
         // This should throw because Leaflet validates coordinates
         expect(() => {
@@ -890,7 +971,7 @@ describe('Draw Polygon Functionality', () => {
 
       it('should handle merging operation failures gracefully', () => {
         const testControl = new Polydraw({
-          config: { mergePolygons: true }
+          config: { mergePolygons: true },
         });
         testControl.onAdd(map);
 
