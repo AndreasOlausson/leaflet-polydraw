@@ -60,7 +60,7 @@ const overlappingSquares: L.LatLng[][][] = [
   ],
 ];
 
-const map = L.map("map").setView([58.402514, 15.606188], 13);
+const map = L.map("map").setView([58.402514, 15.606188], 10);
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution:

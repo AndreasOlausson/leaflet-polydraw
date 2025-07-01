@@ -65,6 +65,21 @@ npm test
 
 - Uses [Vitest](https://vitest.dev/)
 
+### Build Type Definitions
+
+To generate `.d.ts` files for the plugin:
+
+```bash
+cd Leaflet.Polydraw
+npm run build:types
+```
+
+- This uses the script:
+
+```json
+"build:types": "tsc --project tsconfig.build.json"
+```
+
 ### For Docker Build:
 
 ```bash
