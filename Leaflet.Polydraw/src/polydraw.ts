@@ -222,6 +222,21 @@ class Polydraw extends L.Control {
     return container;
   }
 
+  /**
+   * Explicitly expose the addTo method from L.Control parent class.
+   *
+   * This is needed because TypeScript's declaration generation doesn't always
+   * properly expose inherited methods from parent classes in the generated .d.ts files.
+   * Without this explicit declaration, consumers of the library would get a
+   * TypeScript error: "Property 'addTo' does not exist on type 'Polydraw'".
+   *
+   * @param map The Leaflet map instance to add this control to
+   * @returns this control instance for method chaining
+   */
+  public addTo(map: L.Map): this {
+    return super.addTo(map);
+  }
+
   public addAutoPolygon(geographicBorders: L.LatLng[][][]): void {
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {

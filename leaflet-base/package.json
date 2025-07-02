@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cd ../Leaflet.Polydraw && npm run build && cd ../leaflet-base && vite",
+    "dev": "cd ../Leaflet.Polydraw && npm run build && npm run build:types && cd ../leaflet-base && vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
