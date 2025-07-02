@@ -71,7 +71,8 @@ const polydraw = new Polydraw();
 polydraw.addTo(map);
 
 document.getElementById("addDebugPoly")?.addEventListener("click", () => {
-  polydraw.addAutoPolygon(linkoping);
+  // Example with visual optimization level 5 (moderate simplification)
+  polydraw.addAutoPolygon(linkoping, { visualOptimizationLevel: 10 });
   console.log("Polydraw:", polydraw);
 });
 

@@ -1,6 +1,5 @@
 /* Add application styles & imports to this file! */
 
-
 html,
 body {
   height: 100%;
@@ -12,7 +11,9 @@ body {
 
 .polygon-marker {
   background-color: #e0f8c5;
-  box-shadow: 0 0 0 2px #50622b, 0 0 10px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 0 0 2px #50622b,
+    0 0 10px rgba(0, 0, 0, 0.35);
   width: 12px !important;
   height: 12px !important;
   margin-left: -6px !important;
@@ -25,9 +26,9 @@ body {
 
 .polygon-marker.menu {
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
   background-color: rgb(134, 162, 214);
-  background-image: url("../icons/icon-settings-white.svg");
+  background-image: url('../icons/icon-settings-white.svg');
   -ms-background-size: 20px 20px;
   background-size: 20px 20px;
   background-repeat: no-repeat;
@@ -40,9 +41,9 @@ body {
 
 .polygon-marker.info {
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
   background-color: rgb(134, 162, 214);
-  background-image: url("../icons/icon-info-white.svg");
+  background-image: url('../icons/icon-info-white.svg');
   -ms-background-size: 24px 24px;
   background-size: 24px 24px;
   background-repeat: no-repeat;
@@ -66,7 +67,7 @@ body {
   height: 24px !important;
   z-index: 10000;
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
 }
 
 .polygon-marker.info:hover {
@@ -75,14 +76,14 @@ body {
   height: 24px !important;
   z-index: 10000;
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
 }
 
 .polygon-marker.delete {
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
   background-color: rgb(100, 93, 93);
-  background-image: url("../icons/icon-trash-white.svg");
+  background-image: url('../icons/icon-trash-white.svg');
   -ms-background-size: 24px 24px;
   background-size: 24px 24px;
   background-repeat: no-repeat;
@@ -95,19 +96,19 @@ body {
 
 .polygon-marker.delete:hover {
   background-color: rgb(92, 81, 81);
-  background-image: url("../icons/icon-trash-hover-white.svg");
+  background-image: url('../icons/icon-trash-hover-white.svg');
   width: 24px !important;
   height: 24px !important;
   z-index: 10000;
   margin-left: -11px !important;
-    margin-top: -11px !important;
+  margin-top: -11px !important;
 }
-
-
 
 .polygon-marker.hole {
   background-color: #ffcccc;
-  box-shadow: 0 0 0 2px #aa0000, 0 0 10px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 0 0 2px #aa0000,
+    0 0 10px rgba(0, 0, 0, 0.35);
   width: 12px !important;
   height: 12px !important;
   margin-left: -6px !important;
@@ -119,7 +120,7 @@ body {
 }
 
 .polygon-marker.hole:hover {
-  background-color: #D4A5B8;
+  background-color: #d4a5b8;
   width: 18px !important;
   height: 18px !important;
   margin-left: -9px !important;
@@ -252,16 +253,16 @@ body {
       cursor: pointer;
 
       &.simplify {
-        background-image: url("../icons/icon-simplify2.svg");
+        background-image: url('../icons/icon-simplify2.svg');
       }
       &.double-elbows {
-        background-image: url("../icons/icon-add-elbow.svg");
+        background-image: url('../icons/icon-add-elbow.svg');
       }
       &.bbox {
-        background-image: url("../icons/icon-bbox.svg");
+        background-image: url('../icons/icon-bbox.svg');
       }
       &.bezier {
-        background-image: url("../icons/icon-bezier.svg");
+        background-image: url('../icons/icon-bezier.svg');
       }
     }
   }
@@ -386,4 +387,33 @@ body {
 
 .right-margin {
   margin-right: 8px;
+}
+
+/* Hidden marker styles */
+.polydraw-hidden-marker {
+  opacity: 0.2;
+  transform: scale(0.5);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  background-color: #e0f8c5 !important;
+  box-shadow: none !important;
+  border: none !important;
+  z-index: 1;
+}
+
+.polydraw-hidden-marker:hover {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  background-color: #e0f8c5 !important;
+  box-shadow:
+    0 0 0 2px #50622b,
+    0 0 10px rgba(0, 0, 0, 0.35) !important;
+  border-radius: 50% !important;
+  z-index: 10000 !important;
+}
+
+/* Ensure hidden markers are still draggable */
+.polydraw-hidden-marker.leaflet-marker-draggable {
+  cursor: move !important;
 }
