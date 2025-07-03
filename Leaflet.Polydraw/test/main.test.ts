@@ -48,9 +48,12 @@ describe('Dependency validation for Polydraw plugin', () => {
         const hasWildcardImport = /import\s+\*\s+as\s+turf\s+from/.test(content);
         const hasSpecificImports = /import\s+\{[^}]+\}\s+from\s+['"]@turf\//.test(content);
 
-        if (content.includes('turf')) {
+        // Check for direct Turf library usage (not TurfHelper usage)
+        const hasDirectTurfUsage = /\bturf\.[a-zA-Z]/.test(content);
+
+        if (hasDirectTurfUsage) {
           expect(hasWildcardImport).toBe(false);
-          // If using turf, should use specific imports
+          // If using turf directly, should use specific imports
           expect(hasSpecificImports).toBe(true);
         }
       }
