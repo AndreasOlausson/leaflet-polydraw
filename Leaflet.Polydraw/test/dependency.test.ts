@@ -101,6 +101,21 @@ describe('Dependency validation for Polydraw plugin', () => {
         }
       }
     });
+
+    it('should validate that turf-helper.ts correctly imports * as turf', () => {
+      const turfHelperPath = 'src/turf-helper.ts';
+
+      // Ensure turf-helper.ts exists
+      expect(existsSync(turfHelperPath)).toBe(true);
+
+      const content = readFileSync(turfHelperPath, 'utf8');
+      const hasWildcardTurfImport = /import\s+\*\s+as\s+turf\s+from\s+['"]@turf\/turf['"]/.test(
+        content,
+      );
+
+      // turf-helper.ts SHOULD have the wildcard import
+      expect(hasWildcardTurfImport).toBe(true);
+    });
   });
 
   //   describe('5. Bundle size check (UMD)', () => {
