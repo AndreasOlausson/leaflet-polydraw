@@ -18,6 +18,11 @@ import * as turf from '@turf/turf';
 // @ts-expect-error Just ignore for now
 import './styles/polydraw.css';
 
+// Import new utility classes
+import { PolygonValidator } from './core/validation';
+import { CoordinateConverter } from './core/coordinate-converter';
+import { EventManager } from './core/event-manager';
+
 // Add this interface near the top of the file after imports
 interface AutoPolygonOptions {
   visualOptimizationLevel?: number; // 0-10, where 0 = no optimization, 10 = maximum optimization
@@ -254,12 +259,13 @@ class Polydraw extends L.Control {
       throw new Error('Map not initialized');
     }
 
+    // Validate polygon structure and coordinates
+    this.validatePolygonInput(geographicBorders);
+
     // Extract options with defaults
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
 
     geographicBorders.forEach((group, groupIndex) => {
-      // ... existing validation code remains the same ...
-
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
       try {
@@ -294,8 +300,16 @@ class Polydraw extends L.Control {
         this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
       } catch (error) {
         console.error('Error adding auto polygon:', error);
+        throw error; // Re-throw to make tests pass
       }
     });
+  }
+
+  /**
+   * Validate polygon input structure and coordinates using utility class
+   */
+  private validatePolygonInput(geographicBorders: L.LatLng[][][]): void {
+    PolygonValidator.validatePolygonInput(geographicBorders);
   }
 
   setDrawMode(mode: DrawMode) {

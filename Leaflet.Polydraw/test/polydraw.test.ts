@@ -8,7 +8,7 @@ vi.mock('../src/styles/polydraw.css', () => ({}));
 
 // Mock Leaflet polyline to include all necessary methods
 vi.mock('leaflet', async () => {
-  const actual = await vi.importActual('leaflet') as any;
+  const actual = (await vi.importActual('leaflet')) as any;
   return {
     ...actual,
     polyline: vi.fn(() => ({
@@ -20,11 +20,15 @@ vi.mock('leaflet', async () => {
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: [[0, 0], [1, 1], [2, 2]]
+          coordinates: [
+            [0, 0],
+            [1, 1],
+            [2, 2],
+          ],
         },
-        properties: {}
-      }))
-    }))
+        properties: {},
+      })),
+    })),
   };
 });
 
@@ -36,25 +40,51 @@ vi.mock('../src/turf-helper', () => {
         type: 'Feature',
         geometry: {
           type: 'Polygon',
-          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getMultiPolygon: vi.fn().mockReturnValue({
         type: 'Feature',
         geometry: {
           type: 'MultiPolygon',
-          coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]]
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getTurfPolygon: vi.fn().mockReturnValue({
         type: 'Feature',
         geometry: {
           type: 'Polygon',
-          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
       getSimplified: vi.fn().mockImplementation((feature) => feature),
       polygonIntersect: vi.fn().mockReturnValue(false),
@@ -70,9 +100,9 @@ vi.mock('../src/turf-helper', () => {
           {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [0, 0] },
-            properties: { featureIndex: 0 }
-          }
-        ]
+            properties: { featureIndex: 0 },
+          },
+        ],
       }),
       getNearestPointIndex: vi.fn().mockReturnValue(0),
       getDoubleElbowLatLngs: vi.fn().mockImplementation((points) => points),
@@ -80,20 +110,28 @@ vi.mock('../src/turf-helper', () => {
         type: 'Feature',
         geometry: {
           type: 'MultiPolygon',
-          coordinates: coords
+          coordinates: coords,
         },
-        properties: {}
+        properties: {},
       })),
       convertToBoundingBoxPolygon: vi.fn().mockReturnValue({
         type: 'Feature',
         geometry: {
           type: 'Polygon',
-          coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]]
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
         },
-        properties: {}
+        properties: {},
       }),
-      injectPointToPolygon: vi.fn().mockImplementation((polygon, point) => polygon)
-    }))
+      injectPointToPolygon: vi.fn().mockImplementation((polygon, point) => polygon),
+    })),
   };
 });
 
@@ -105,12 +143,24 @@ vi.mock('../src/utils', () => {
         getSouth: () => 0,
         getWest: () => 0,
         getNorth: () => 1,
-        getEast: () => 1
-      })
+        getEast: () => 1,
+      }),
     },
     Compass: vi.fn().mockImplementation(() => ({
-      getDirection: vi.fn().mockReturnValue({ lat: 0, lng: 0 })
-    }))
+      getDirection: vi.fn().mockReturnValue({ lat: 0, lng: 0 }),
+    })),
+    Perimeter: vi.fn().mockImplementation(() => ({
+      metricLength: '100',
+      metricUnit: 'm',
+      imperialLength: '328',
+      imperialUnit: 'ft',
+    })),
+    Area: vi.fn().mockImplementation(() => ({
+      metricArea: '1000',
+      metricUnit: 'm²',
+      imperialArea: '10764',
+      imperialUnit: 'ft²',
+    })),
   };
 });
 
@@ -125,8 +175,8 @@ vi.mock('../src/polygon-information.service', () => {
       updatePolygons: vi.fn(),
       deleteTrashcan: vi.fn(),
       deleteTrashCanOnMulti: vi.fn(),
-      polygonInformationStorage: []
-    }))
+      polygonInformationStorage: [],
+    })),
   };
 });
 
@@ -135,7 +185,7 @@ vi.mock('../src/map-state', () => {
   return {
     MapStateService: vi.fn().mockImplementation(() => ({
       // Add any methods that might be called
-    }))
+    })),
   };
 });
 
@@ -147,12 +197,12 @@ describe('Polydraw', () => {
     // Create a mock map for testing
     map = L.map(document.createElement('div'), {
       center: [51.505, -0.09],
-      zoom: 13
+      zoom: 13,
     });
-    
+
     // Create the control with minimal options
     control = new Polydraw({
-      position: 'topleft'
+      position: 'topleft',
     });
   });
 
@@ -177,13 +227,13 @@ describe('Polydraw', () => {
   it('can set draw mode', () => {
     // Add control to map first to initialize tracer
     control.onAdd(map);
-    
+
     control.setDrawMode(DrawMode.Add);
     expect(control.getDrawMode()).toBe(DrawMode.Add);
-    
+
     control.setDrawMode(DrawMode.Subtract);
     expect(control.getDrawMode()).toBe(DrawMode.Subtract);
-    
+
     control.setDrawMode(DrawMode.Off);
     expect(control.getDrawMode()).toBe(DrawMode.Off);
   });
@@ -197,14 +247,14 @@ describe('Polydraw', () => {
   it('can be added and removed from map', () => {
     const container = control.onAdd(map);
     map.addControl(control);
-    
+
     // Test that the control is properly added
     expect(container).toBeInstanceOf(HTMLElement);
     expect(container.className).toContain('leaflet-control');
-    
+
     // Remove the control from the map
     map.removeControl(control);
-    
+
     // Should not throw an error
     expect(true).toBe(true);
   });
@@ -217,7 +267,7 @@ describe('Polydraw', () => {
 
     it('should enable drawing mode when setDrawMode is called with Add', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       expect(control.getDrawMode()).toBe(DrawMode.Add);
       // Check if crosshair cursor is enabled
       expect(map.getContainer().className).toContain('crosshair-cursor-enabled');
@@ -225,7 +275,7 @@ describe('Polydraw', () => {
 
     it('should disable map interactions when in Add draw mode', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Map interactions should be disabled during drawing
       expect(map.dragging.enabled()).toBe(false);
       expect(map.doubleClickZoom.enabled()).toBe(false);
@@ -236,7 +286,7 @@ describe('Polydraw', () => {
       // First enable drawing
       control.setDrawMode(DrawMode.Add);
       expect(map.dragging.enabled()).toBe(false);
-      
+
       // Then turn off drawing
       control.setDrawMode(DrawMode.Off);
       expect(map.dragging.enabled()).toBe(true);
@@ -246,70 +296,70 @@ describe('Polydraw', () => {
 
     it('should handle mouse down event to start drawing', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Simulate mouse down event
       const mouseEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
-      
+
       // Trigger mousedown event
       map.fire('mousedown', mouseEvent);
-      
+
       // Should not throw an error
       expect(true).toBe(true);
     });
 
     it('should handle mouse move events during drawing', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Start drawing
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Simulate mouse move
       const mouseMoveEvent = {
         originalEvent: new MouseEvent('mousemove'),
-        latlng: L.latLng(51.51, -0.11)
+        latlng: L.latLng(51.51, -0.11),
       };
       map.fire('mousemove', mouseMoveEvent);
-      
+
       // Should not throw an error
       expect(true).toBe(true);
     });
 
     it('should complete polygon drawing on mouse up', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Start drawing
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.5, -0.1)
+        latlng: L.latLng(51.5, -0.1),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Add some points
       const mouseMoveEvent1 = {
         originalEvent: new MouseEvent('mousemove'),
-        latlng: L.latLng(51.51, -0.11)
+        latlng: L.latLng(51.51, -0.11),
       };
       map.fire('mousemove', mouseMoveEvent1);
-      
+
       const mouseMoveEvent2 = {
         originalEvent: new MouseEvent('mousemove'),
-        latlng: L.latLng(51.52, -0.12)
+        latlng: L.latLng(51.52, -0.12),
       };
       map.fire('mousemove', mouseMoveEvent2);
-      
+
       // Complete drawing
       const mouseUpEvent = {
         originalEvent: new MouseEvent('mouseup'),
-        latlng: L.latLng(51.52, -0.12)
+        latlng: L.latLng(51.52, -0.12),
       };
-      
+
       // The drawing completion might fail due to complex polygon processing,
       // but we can test that the events are handled
       try {
@@ -317,7 +367,7 @@ describe('Polydraw', () => {
       } catch (error) {
         // Expected due to mocked polygon structure
       }
-      
+
       // The draw mode might not change due to mocked environment
       // but we've verified the event handling works
       expect([DrawMode.Off, DrawMode.Add]).toContain(control.getDrawMode());
@@ -325,20 +375,20 @@ describe('Polydraw', () => {
 
     it('should handle touch events for mobile drawing', () => {
       control.setDrawMode(DrawMode.Add);
-      
+
       // Create mock touch event
       const touchStartEvent = {
-        touches: [{ clientX: 100, clientY: 100 }]
+        touches: [{ clientX: 100, clientY: 100 }],
       };
-      
+
       // Simulate touch start
       const container = map.getContainer();
       const touchEvent = new Event('touchstart');
       Object.defineProperty(touchEvent, 'touches', {
         value: touchStartEvent.touches,
-        writable: false
+        writable: false,
       });
-      
+
       // Should handle touch events without throwing
       expect(() => {
         container.dispatchEvent(touchEvent);
@@ -346,14 +396,18 @@ describe('Polydraw', () => {
     });
 
     it('should add auto polygon with predefined coordinates', () => {
-      const testPolygon = [[[
-        L.latLng(51.5, -0.1),
-        L.latLng(51.51, -0.1),
-        L.latLng(51.51, -0.11),
-        L.latLng(51.5, -0.11),
-        L.latLng(51.5, -0.1)
-      ]]];
-      
+      const testPolygon = [
+        [
+          [
+            L.latLng(51.5, -0.1),
+            L.latLng(51.51, -0.1),
+            L.latLng(51.51, -0.11),
+            L.latLng(51.5, -0.11),
+            L.latLng(51.5, -0.1),
+          ],
+        ],
+      ];
+
       // In test environment, this may fail due to map renderer issues
       // but we can test that the method exists and handles the call
       try {
@@ -366,23 +420,25 @@ describe('Polydraw', () => {
     });
 
     it('should handle polygon with holes', () => {
-      const polygonWithHole = [[
+      const polygonWithHole = [
         [
-          L.latLng(51.5, -0.1),
-          L.latLng(51.52, -0.1),
-          L.latLng(51.52, -0.12),
-          L.latLng(51.5, -0.12),
-          L.latLng(51.5, -0.1)
+          [
+            L.latLng(51.5, -0.1),
+            L.latLng(51.52, -0.1),
+            L.latLng(51.52, -0.12),
+            L.latLng(51.5, -0.12),
+            L.latLng(51.5, -0.1),
+          ],
+          [
+            L.latLng(51.505, -0.105),
+            L.latLng(51.515, -0.105),
+            L.latLng(51.515, -0.115),
+            L.latLng(51.505, -0.115),
+            L.latLng(51.505, -0.105),
+          ],
         ],
-        [
-          L.latLng(51.505, -0.105),
-          L.latLng(51.515, -0.105),
-          L.latLng(51.515, -0.115),
-          L.latLng(51.505, -0.115),
-          L.latLng(51.505, -0.105)
-        ]
-      ]];
-      
+      ];
+
       // This may throw due to complex polygon structure in mocked environment
       try {
         control.addAutoPolygon([polygonWithHole] as any);
@@ -394,20 +450,24 @@ describe('Polydraw', () => {
 
     it('should clear all polygons when removeAllFeatureGroups is called', () => {
       // Add a test polygon first
-      const testPolygon = [[[
-        L.latLng(51.5, -0.1),
-        L.latLng(51.51, -0.1),
-        L.latLng(51.51, -0.11),
-        L.latLng(51.5, -0.11),
-        L.latLng(51.5, -0.1)
-      ]]];
-      
+      const testPolygon = [
+        [
+          [
+            L.latLng(51.5, -0.1),
+            L.latLng(51.51, -0.1),
+            L.latLng(51.51, -0.11),
+            L.latLng(51.5, -0.11),
+            L.latLng(51.5, -0.1),
+          ],
+        ],
+      ];
+
       try {
         control.addAutoPolygon(testPolygon as any);
       } catch (error) {
         // Expected in test environment due to map renderer limitations
       }
-      
+
       // Clear all polygons
       expect(() => {
         control.removeAllFeatureGroups();
@@ -416,43 +476,47 @@ describe('Polydraw', () => {
 
     it('should handle subtract mode for polygon drawing', () => {
       control.setDrawMode(DrawMode.Subtract);
-      
+
       expect(control.getDrawMode()).toBe(DrawMode.Subtract);
       expect(map.getContainer().className).toContain('crosshair-cursor-enabled');
     });
 
     it('should complete subtract operation on mouse up', () => {
       // First add a polygon to subtract from
-      const basePolygon = [[[
-        L.latLng(51.5, -0.1),
-        L.latLng(51.52, -0.1),
-        L.latLng(51.52, -0.12),
-        L.latLng(51.5, -0.12),
-        L.latLng(51.5, -0.1)
-      ]]];
-      
+      const basePolygon = [
+        [
+          [
+            L.latLng(51.5, -0.1),
+            L.latLng(51.52, -0.1),
+            L.latLng(51.52, -0.12),
+            L.latLng(51.5, -0.12),
+            L.latLng(51.5, -0.1),
+          ],
+        ],
+      ];
+
       try {
         control.addAutoPolygon(basePolygon as any);
       } catch (error) {
         // Expected in test environment due to map renderer limitations
       }
-      
+
       // Set to subtract mode
       control.setDrawMode(DrawMode.Subtract);
-      
+
       // Simulate drawing a subtraction area
       const mouseDownEvent = {
         originalEvent: new MouseEvent('mousedown'),
-        latlng: L.latLng(51.505, -0.105)
+        latlng: L.latLng(51.505, -0.105),
       };
       map.fire('mousedown', mouseDownEvent);
-      
+
       // Complete subtraction
       const mouseUpEvent = {
         originalEvent: new MouseEvent('mouseup'),
-        latlng: L.latLng(51.515, -0.115)
+        latlng: L.latLng(51.515, -0.115),
       };
-      
+
       // The subtract operation might fail due to complex polygon processing,
       // but we can test that the events are handled
       try {
@@ -460,7 +524,7 @@ describe('Polydraw', () => {
       } catch (error) {
         // Expected due to mocked environment
       }
-      
+
       // The draw mode might not change due to mocked environment
       // but we've verified the event handling works
       expect([DrawMode.Off, DrawMode.Subtract]).toContain(control.getDrawMode());
@@ -473,24 +537,24 @@ describe('Polydraw', () => {
           mergePolygons: true,
           kinks: false,
           polyLineOptions: {
-            color: '#ff0000'
-          }
-        }
+            color: '#ff0000',
+          },
+        },
       });
-      
+
       expect(configuredControl).toBeInstanceOf(Polydraw);
       expect(configuredControl.getDrawMode()).toBe(DrawMode.Off);
     });
 
     it('should emit draw mode change events', () => {
       const mockCallback = vi.fn();
-      
+
       // Access private drawModeListeners array through the control
       (control as any).drawModeListeners.push(mockCallback);
-      
+
       control.setDrawMode(DrawMode.Add);
       expect(mockCallback).toHaveBeenCalledWith(DrawMode.Add);
-      
+
       control.setDrawMode(DrawMode.Off);
       expect(mockCallback).toHaveBeenCalledWith(DrawMode.Off);
     });
