@@ -22,56 +22,94 @@ describe('Dependency validation for Polydraw plugin', () => {
       return files;
     };
 
-    it('should only allow turf-helper.ts to import * as turf', () => {
+    it('should only allow turf-helper.ts to import any Turf packages', () => {
       const allSourceFiles = getAllSourceFiles('src');
 
       for (const file of allSourceFiles) {
         const content = readFileSync(file, 'utf8');
-        const hasWildcardTurfImport = /import\s+\*\s+as\s+turf\s+from/.test(content);
+
+        // Detect ANY @turf/ import (wildcard, specific, default, multi-line)
+        const hasTurfImport = /import[\s\S]*?from\s+['"]@turf\//.test(content);
 
         if (allowedFiles.includes(file)) {
-          // turf-helper.ts is allowed to import * as turf
-          expect(hasWildcardTurfImport).toBe(true);
+          // turf-helper.ts is allowed to import from @turf/
+          // (We'll validate it has imports in a separate test)
         } else {
-          // ALL other files should NOT import * as turf
-          expect(hasWildcardTurfImport).toBe(false);
+          // ALL other files should NOT import from @turf/
+          expect(hasTurfImport).toBe(false);
         }
       }
     });
 
-    it('should use specific turf imports in non-helper files', () => {
+    it('should not have any Turf library references in non-helper files', () => {
       const allSourceFiles = getAllSourceFiles('src');
       const restrictedFiles = allSourceFiles.filter((file) => !allowedFiles.includes(file));
 
       for (const file of restrictedFiles) {
         const content = readFileSync(file, 'utf8');
-        const hasWildcardImport = /import\s+\*\s+as\s+turf\s+from/.test(content);
-        const hasSpecificImports = /import\s+\{[^}]+\}\s+from\s+['"]@turf\//.test(content);
 
-        // Check for direct Turf library usage (not TurfHelper usage)
+        // Check for any @turf/ imports
+        const hasTurfImport = /import[\s\S]*?from\s+['"]@turf\//.test(content);
+
+        // Check for legitimate turf imports (from turf-helper or similar)
+        const hasLegitTurfImport = /import[\s\S]*?turf[\s\S]*?from\s+['"]\.\//.test(content);
+
+        // Check for direct turf.* calls
         const hasDirectTurfUsage = /\bturf\.[a-zA-Z]/.test(content);
 
-        if (hasDirectTurfUsage) {
-          expect(hasWildcardImport).toBe(false);
-          // If using turf directly, should use specific imports
-          expect(hasSpecificImports).toBe(true);
+        // Extract imported Turf function names to check for direct calls
+        const turfImportMatches = content.match(/import\s+\{([^}]+)\}\s+from\s+['"]@turf\//g);
+        const importedTurfFunctions: string[] = [];
+
+        if (turfImportMatches) {
+          turfImportMatches.forEach((match) => {
+            const functionsMatch = match.match(/\{([^}]+)\}/);
+            if (functionsMatch) {
+              const functions = functionsMatch[1]
+                .split(',')
+                .map((f) => f.trim().split(' as ')[0].trim())
+                .filter((f) => f.length > 0);
+              importedTurfFunctions.push(...functions);
+            }
+          });
         }
+
+        // Check for calls to imported Turf functions
+        let hasImportedTurfFunctionCalls = false;
+        for (const funcName of importedTurfFunctions) {
+          const funcCallRegex = new RegExp(`\\b${funcName}\\s*\\(`, 'g');
+          if (funcCallRegex.test(content)) {
+            hasImportedTurfFunctionCalls = true;
+            break;
+          }
+        }
+
+        // No Turf imports should exist in non-helper files
+        expect(hasTurfImport).toBe(false);
+
+        // Only block direct turf.* calls if there's no legitimate turf import
+        if (hasDirectTurfUsage && !hasLegitTurfImport) {
+          expect(hasDirectTurfUsage).toBe(false);
+        }
+
+        // No calls to imported Turf functions should exist
+        expect(hasImportedTurfFunctionCalls).toBe(false);
       }
     });
 
-    it('should validate that turf-helper.ts correctly imports * as turf', () => {
+    it('should validate that turf-helper.ts imports Turf somehow', () => {
       const turfHelperPath = 'src/turf-helper.ts';
 
       // Ensure turf-helper.ts exists
       expect(existsSync(turfHelperPath)).toBe(true);
 
       const content = readFileSync(turfHelperPath, 'utf8');
-      const hasWildcardTurfImport = /import\s+\*\s+as\s+turf\s+from\s+['"]@turf\/turf['"]/.test(
-        content,
-      );
 
-      // turf-helper.ts SHOULD have the wildcard import
-      expect(hasWildcardTurfImport).toBe(true);
+      // Check for ANY @turf/ import (flexible - allows any import style)
+      const hasTurfImport = /import[\s\S]*?from\s+['"]@turf\//.test(content);
+
+      // turf-helper.ts SHOULD have some kind of Turf import
+      expect(hasTurfImport).toBe(true);
     });
   });
 });
