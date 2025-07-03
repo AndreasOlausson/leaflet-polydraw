@@ -68,7 +68,7 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 const polydraw = new Polydraw();
-polydraw.addTo(map);
+polydraw.addTo(map as any);
 
 document.getElementById("addDebugPoly")?.addEventListener("click", () => {
   // Example with visual optimization level 5 (moderate simplification)
