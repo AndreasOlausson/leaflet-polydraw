@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc && vite build",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default } from \"./polydraw\";' > dist/types/index.d.ts",
+    "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",
     "lint": "eslint ./src --ext .ts"

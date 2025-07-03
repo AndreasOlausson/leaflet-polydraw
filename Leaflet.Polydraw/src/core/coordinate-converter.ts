@@ -1,5 +1,6 @@
 import * as L from 'leaflet';
-import type { ILatLng } from '../polygon-helpers';
+import type { ILatLng, IBounds } from '../types/polydraw-interfaces';
+import type { Feature, Polygon, MultiPolygon } from 'geojson';
 
 /**
  * Coordinate conversion utilities following single responsibility principle
@@ -67,19 +68,19 @@ export class CoordinateConverter {
    * @param feature GeoJSON feature to extract coordinates from
    * @returns Array of LatLng coordinates
    */
-  static getLatLngsFromJson(feature: any): ILatLng[][] {
-    let coord: ILatLng[][];
+  static getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
+    let coord: ILatLng[][] = [];
 
-    if (feature) {
+    if (feature && feature.geometry) {
       if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]);
+        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
       } else if (
-        feature.geometry.coordinates[0].length > 1 &&
-        feature.geometry.type === 'Polygon'
+        feature.geometry.type === 'Polygon' &&
+        feature.geometry.coordinates[0].length > 1
       ) {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]);
-      } else {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]);
+        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
+      } else if (feature.geometry.type === 'Polygon') {
+        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
       }
     }
 
@@ -88,29 +89,59 @@ export class CoordinateConverter {
 
   /**
    * Apply offset to polygon coordinates for dragging operations
-   * @param latLngs Original coordinates
+   * @param latLngs Original coordinates (can be nested arrays or single coordinates)
    * @param offsetLat Latitude offset
    * @param offsetLng Longitude offset
-   * @returns Offset coordinates
+   * @returns Offset coordinates with same structure as input
    */
-  static offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
+  static offsetPolygonCoordinates(
+    latLngs: ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][],
+    offsetLat: number,
+    offsetLng: number,
+  ): ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][] {
     if (!latLngs) return latLngs;
 
-    if (Array.isArray(latLngs[0])) {
-      // Multi-dimensional array (polygon with holes or multipolygon)
-      return latLngs.map((ring: any) => this.offsetPolygonCoordinates(ring, offsetLat, offsetLng));
-    } else if (latLngs.lat !== undefined && latLngs.lng !== undefined) {
-      // Single coordinate
+    // Check if it's a single coordinate object
+    if (this.isLatLngObject(latLngs)) {
+      const coord = latLngs as ILatLng;
       return {
-        lat: latLngs.lat + offsetLat,
-        lng: latLngs.lng + offsetLng,
+        lat: coord.lat + offsetLat,
+        lng: coord.lng + offsetLng,
       };
-    } else {
-      // Array of coordinates
-      return latLngs.map((coord: any) =>
-        this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
-      );
     }
+
+    // Check if it's an array
+    if (Array.isArray(latLngs)) {
+      if (latLngs.length === 0) return latLngs;
+
+      // Check if first element is also an array (nested structure)
+      if (Array.isArray(latLngs[0])) {
+        return (latLngs as (ILatLng[] | ILatLng[][])[]).map((ring) =>
+          this.offsetPolygonCoordinates(ring, offsetLat, offsetLng),
+        ) as ILatLng[][] | ILatLng[][][];
+      } else {
+        // Array of coordinates
+        return (latLngs as ILatLng[]).map((coord) =>
+          this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
+        ) as ILatLng[];
+      }
+    }
+
+    return latLngs;
+  }
+
+  /**
+   * Type guard to check if an object is a LatLng coordinate
+   */
+  private static isLatLngObject(obj: unknown): obj is ILatLng {
+    return (
+      typeof obj === 'object' &&
+      obj !== null &&
+      'lat' in obj &&
+      'lng' in obj &&
+      typeof (obj as ILatLng).lat === 'number' &&
+      typeof (obj as ILatLng).lng === 'number'
+    );
   }
 
   /**

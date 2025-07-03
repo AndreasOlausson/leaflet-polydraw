@@ -1,12 +1,19 @@
 import * as L from 'leaflet';
 import { DrawMode } from '../enums';
+import type {
+  DrawModeChangeHandler,
+  MouseEventHandler,
+  TouchEventHandler,
+  MarkerEventHandler,
+  PolygonEventHandler,
+} from '../types/polydraw-interfaces';
 
 /**
  * Event management utilities following single responsibility principle
  */
 export class EventManager {
   private map: L.Map;
-  private drawModeListeners: ((mode: DrawMode) => void)[] = [];
+  private drawModeListeners: DrawModeChangeHandler[] = [];
 
   constructor(map: L.Map) {
     this.map = map;
@@ -16,7 +23,7 @@ export class EventManager {
    * Add draw mode change listener
    * @param callback Function to call when draw mode changes
    */
-  addDrawModeListener(callback: (mode: DrawMode) => void): void {
+  addDrawModeListener(callback: DrawModeChangeHandler): void {
     this.drawModeListeners.push(callback);
   }
 
@@ -24,7 +31,7 @@ export class EventManager {
    * Remove draw mode change listener
    * @param callback Function to remove
    */
-  removeDrawModeListener(callback: (mode: DrawMode) => void): void {
+  removeDrawModeListener(callback: DrawModeChangeHandler): void {
     const index = this.drawModeListeners.indexOf(callback);
     if (index > -1) {
       this.drawModeListeners.splice(index, 1);
@@ -54,9 +61,9 @@ export class EventManager {
    */
   setupDrawingEvents(
     enable: boolean,
-    mouseDown?: (event: any) => void,
-    mouseMove?: (event: any) => void,
-    mouseUp?: (event: any) => void,
+    mouseDown?: MouseEventHandler,
+    mouseMove?: MouseEventHandler,
+    mouseUp?: MouseEventHandler,
   ): void {
     const action = enable ? 'on' : 'off';
 
