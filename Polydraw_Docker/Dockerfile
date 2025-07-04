@@ -8,7 +8,35 @@ COPY Leaflet.Polydraw ./Leaflet.Polydraw
 WORKDIR /app/Leaflet.Polydraw
 RUN npm install && \
     chmod +x node_modules/.bin/* && \
-    npm run build
+    echo ">>> Attempting to build Leaflet.Polydraw..." && \
+    (npm run build 2>&1 || ( \
+        echo "" && \
+        echo "██████████████████████████████████████████████████████████████████████████████████" && \
+        echo "██                                                                              ██" && \
+        echo "██                          ⚠️  BUILD FAILED  ⚠️                                   ██" && \
+        echo "██                                                                              ██" && \
+        echo "██  Leaflet.Polydraw failed to build due to compilation errors.                 ██" && \
+        echo "██  This may result in missing functionality in the container.                  ██" && \
+        echo "██  Check the TypeScript error output above for details.                        ██" && \
+        echo "██                                                                              ██" && \
+        echo "██████████████████████████████████████████████████████████████████████████████████" && \
+        echo "" && \
+        echo "BUILD_FAILED" > /tmp/build_status && \
+        echo "██████████████████████████████████████████████████████████████████████████████████" > /tmp/error_message && \
+        echo "                                                                              " >> /tmp/error_message && \
+        echo "                          ⚠️  BUILD FAILED  ⚠️                                   " >> /tmp/error_message && \
+        echo "                                                                              " >> /tmp/error_message && \
+        echo "  Leaflet.Polydraw failed to build due to compilation errors.                 " >> /tmp/error_message && \
+        echo "  This is a result of a horrible response from one of the models.                 " >> /tmp/error_message && \
+        echo "  This may (will) result in missing functionality in the container.                  " >> /tmp/error_message && \
+        echo "  The container will still work but without the Polydraw plugin.              " >> /tmp/error_message && \
+        echo "                                                                              " >> /tmp/error_message && \
+        echo "██████████████████████████████████████████████████████████████████████████████████" >> /tmp/error_message && \
+        sleep 8 && \
+        exit 0 \
+    )) && \
+    echo "BUILD_SUCCESS" > /tmp/build_status && \
+    echo ">>> Build succeeded! Continuing with container build..."
 
 # Switch to main app directory
 WORKDIR /app
@@ -36,4 +64,36 @@ RUN echo "import 'leaflet/dist/leaflet.css';" > src/main.ts && \
 COPY run_tests.sh ./run_tests.sh
 RUN chmod +x ./run_tests.sh
 
-CMD ["sh"]
+# Create a startup script that shows build status
+RUN echo '#!/bin/sh' > /usr/local/bin/show_build_status.sh && \
+    echo 'if [ -f /tmp/build_status ]; then' >> /usr/local/bin/show_build_status.sh && \
+    echo '  if [ "$(cat /tmp/build_status)" = "BUILD_FAILED" ]; then' >> /usr/local/bin/show_build_status.sh && \
+    echo '    echo ""' >> /usr/local/bin/show_build_status.sh && \
+    echo '    cat /tmp/error_message' >> /usr/local/bin/show_build_status.sh && \
+    echo '    echo ""' >> /usr/local/bin/show_build_status.sh && \
+    echo '  fi' >> /usr/local/bin/show_build_status.sh && \
+    echo 'fi' >> /usr/local/bin/show_build_status.sh && \
+    chmod +x /usr/local/bin/show_build_status.sh
+
+# Show final build status
+RUN echo "" && \
+    echo "████████████████████████████████████████████████████████████████████████████████████████" && \
+    echo "██                                                                                    ██" && \
+    echo "██                        🐳 CONTAINER BUILD COMPLETE 🐳                             ██" && \
+    echo "██                                                                                    ██" && \
+    echo "████████████████████████████████████████████████████████████████████████████████████████" && \
+    if [ -f /tmp/build_status ]; then \
+        if [ "$(cat /tmp/build_status)" = "BUILD_FAILED" ]; then \
+            echo "" && \
+            cat /tmp/error_message && \
+            echo ""; \
+        else \
+            echo "██                                                                                    ██" && \
+            echo "██                        ✅ Leaflet.Polydraw built successfully! ✅                ██" && \
+            echo "██                                                                                    ██" && \
+            echo "████████████████████████████████████████████████████████████████████████████████████████"; \
+        fi; \
+    fi && \
+    echo ""
+
+CMD ["/bin/sh", "-c", "if [ -f /tmp/error_message ]; then echo ''; cat /tmp/error_message; echo ''; fi && exec sh"]

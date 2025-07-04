@@ -14,6 +14,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
+    "noEmitOnError": true,
     "resolveJsonModule": true,
     "declaration": true,
     "emitDeclarationOnly": true,
