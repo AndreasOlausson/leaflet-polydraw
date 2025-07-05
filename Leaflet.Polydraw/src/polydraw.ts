@@ -13,7 +13,6 @@ import { Compass, PolyDrawUtil, Perimeter, Area } from './utils';
 import { IconFactory } from './icon-factory';
 import { PolygonUtil } from './polygon.util';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-// @ts-expect-error Just ignore for now
 import './styles/polydraw.css';
 
 // Import new utility classes

@@ -15,11 +15,13 @@ export class TurfHelper {
     this.config = { ...defaultConfig, ...config };
   }
 
-  union(poly1, poly2): Feature<Polygon | MultiPolygon> {
+  union(
+    poly1: Feature<Polygon | MultiPolygon>,
+    poly2: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> {
     try {
       // In Turf 7.x, union expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([poly1, poly2]);
-      // @ts-expect-error Just ignore...
       const union = turf.union(featureCollection);
       return union ? this.getTurfPolygon(union) : null;
     } catch (error) {
