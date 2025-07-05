@@ -1,11 +1,14 @@
 import * as L from 'leaflet';
-import * as turf from '@turf/turf';
 import { type ILatLng } from './polygon-helpers';
+import { TurfHelper } from './turf-helper';
+import defaultConfig from './config.json';
 
 /**
  * Utility class for polygon calculations.
  */
 export class PolygonUtil {
+  private static turfHelper = new TurfHelper(defaultConfig);
+
   /**
    * Calculates the center of the polygon.
    * @param polygon Array of LatLng points.
@@ -77,7 +80,7 @@ export class PolygonUtil {
     const poly: L.Polygon = new L.Polygon(polygon);
     const geoJsonPoly = poly.toGeoJSON();
 
-    const area = turf.area(geoJsonPoly as any);
+    const area = this.turfHelper.getPolygonArea(geoJsonPoly as any);
 
     return area;
   }
@@ -85,9 +88,9 @@ export class PolygonUtil {
     const poly: L.Polygon = new L.Polygon(polygon);
     const geoJsonPoly = poly.toGeoJSON();
 
-    const perimeter = turf.length(geoJsonPoly as any, { units: 'meters' });
+    const perimeter = this.turfHelper.getPolygonPerimeter(geoJsonPoly as any);
 
-    return perimeter;
+    return perimeter * 1000; // Convert from kilometers to meters to match original behavior
   }
   static getPolygonChecksum(polygon: ILatLng[]): number {
     const uniqueLatLngs = polygon.filter((v, i, a) => {
@@ -100,14 +103,11 @@ export class PolygonUtil {
     );
   }
   static getMidPoint(point1: ILatLng, point2: ILatLng): ILatLng {
-    const p1 = turf.point([point1.lng, point1.lat]);
-    const p2 = turf.point([point2.lng, point2.lat]);
-
-    const midpoint = turf.midpoint(p1, p2);
+    const midpoint = this.turfHelper.getMidpoint(point1, point2);
 
     const returnPoint: ILatLng = {
-      lat: midpoint.geometry.coordinates[1],
-      lng: midpoint.geometry.coordinates[0],
+      lat: midpoint.lat,
+      lng: midpoint.lng,
     };
 
     return returnPoint;

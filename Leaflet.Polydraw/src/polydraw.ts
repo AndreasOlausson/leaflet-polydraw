@@ -13,7 +13,6 @@ import { Compass, PolyDrawUtil, Perimeter, Area } from './utils';
 import { IconFactory } from './icon-factory';
 import { PolygonUtil } from './polygon.util';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import * as turf from '@turf/turf';
 // @ts-expect-error Just ignore for now
 import './styles/polydraw.css';
 
@@ -1207,10 +1206,10 @@ class Polydraw extends L.Control {
       // instead of arbitrary vertex count
       try {
         // Method 1: Check convexity - complex shapes are usually non-convex
-        const convexHull = turf.convex(turf.featureCollection([existingPolygon]));
+        const convexHull = this.turfHelper.getConvexHull(existingPolygon);
         if (convexHull) {
-          const convexArea = turf.area(convexHull);
-          const actualArea = turf.area(existingPolygon);
+          const convexArea = this.turfHelper.getPolygonArea(convexHull);
+          const actualArea = this.turfHelper.getPolygonArea(existingPolygon);
           const convexityRatio = actualArea / convexArea;
 
           // If shape is significantly non-convex (< 0.7), it might be complex
@@ -1231,9 +1230,9 @@ class Polydraw extends L.Control {
 
         // Method 3: Area ratio analysis for partial overlaps
         if (intersection) {
-          const intersectionArea = turf.area(intersection);
-          const newArea = turf.area(newPolygon);
-          const existingArea = turf.area(existingPolygon);
+          const intersectionArea = this.turfHelper.getPolygonArea(intersection);
+          const newArea = this.turfHelper.getPolygonArea(newPolygon);
+          const existingArea = this.turfHelper.getPolygonArea(existingPolygon);
 
           // Check if it's a significant but partial overlap (not full containment)
           const overlapRatioExisting = intersectionArea / existingArea;

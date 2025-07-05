@@ -4,6 +4,9 @@ WORKDIR /app
 # Copy the Leaflet.Polydraw plugin source first
 COPY Leaflet.Polydraw ./Leaflet.Polydraw
 
+# Copy turf-helper.ts to /app/src so test can find it
+COPY Leaflet.Polydraw/src/turf-helper.ts ./src/turf-helper.ts
+
 # Build the plugin from source inside container
 WORKDIR /app/Leaflet.Polydraw
 RUN npm install && \

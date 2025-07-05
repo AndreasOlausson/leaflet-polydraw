@@ -111,6 +111,34 @@ export class TurfHelper {
     return kinks.features.length > 0;
   }
 
+  /**
+   * Get the convex hull of a polygon
+   */
+  getConvexHull(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> | null {
+    try {
+      const featureCollection = turf.featureCollection([polygon]);
+      return turf.convex(featureCollection);
+    } catch (error) {
+      console.warn('Error in getConvexHull:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Calculate midpoint between two ILatLng points
+   */
+  getMidpoint(point1: ILatLng, point2: ILatLng): ILatLng {
+    const p1 = turf.point([point1.lng, point1.lat]);
+    const p2 = turf.point([point2.lng, point2.lat]);
+
+    const midpoint = turf.midpoint(p1, p2);
+
+    return {
+      lat: midpoint.geometry.coordinates[1],
+      lng: midpoint.geometry.coordinates[0],
+    };
+  }
+
   polygonIntersect(
     polygon: Feature<Polygon | MultiPolygon>,
     latlngs: Feature<Polygon | MultiPolygon>,
@@ -174,10 +202,8 @@ export class TurfHelper {
 
             if (this.getKinks(poly2[j]).length < 2) {
               try {
-                // Use the new FeatureCollection API for intersect
-                const featureCollection = turf.featureCollection([poly[i], poly2[j]]);
-                // @ts-expect-error Just ignore...
-                const test = turf.intersect(featureCollection);
+                // Use individual polygon features for intersect
+                const test = turf.intersect(poly[i], poly2[j]);
                 if (test?.geometry.type === 'Polygon') {
                   intersect = true;
                 }
@@ -199,12 +225,26 @@ export class TurfHelper {
     }
   }
 
-  getIntersection(poly1, poly2): Feature {
+  getIntersection(
+    poly1: Feature<Polygon | MultiPolygon>,
+    poly2: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> | null {
     try {
       // In Turf 7.x, intersect expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([poly1, poly2]);
-      // @ts-expect-error Just ignore...
-      return turf.intersect(featureCollection);
+      const result = turf.intersect(featureCollection);
+
+      // Validate that the result is actually a polygon or multipolygon
+      if (
+        result &&
+        result.geometry &&
+        (result.geometry.type === 'Polygon' || result.geometry.type === 'MultiPolygon')
+      ) {
+        return result as Feature<Polygon | MultiPolygon>;
+      }
+
+      // Return null if intersection doesn't result in a polygon
+      return null;
     } catch (error) {
       console.warn('Error in getIntersection:', error.message);
       return null;
@@ -300,7 +340,6 @@ export class TurfHelper {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([polygon1, polygon2]);
-
       const diff = turf.difference(featureCollection);
       return diff ? this.getTurfPolygon(diff) : null;
     } catch (error) {
@@ -319,9 +358,19 @@ export class TurfHelper {
     return index;
   }
 
+  /**
+   * Convert ILatLng object to Turf.js coordinate array format.
+   *
+   * This method serves as a semantic interface for coordinate conversion,
+   * ensuring consistent lng/lat order when interfacing with Turf.js functions.
+   * While simple, it provides a clear contract and future-proofing for any
+   * coordinate validation or transformation that might be needed later.
+   *
+   * @param point - ILatLng object with lat/lng properties
+   * @returns Turf.js coordinate array in [lng, lat] format
+   */
   getCoord(point: ILatLng): turf.Coord {
-    const coord = turf.getCoord([point.lng, point.lat]);
-    return coord;
+    return [point.lng, point.lat];
   }
 
   getFeaturePointCollection(points: ILatLng[]): any {
