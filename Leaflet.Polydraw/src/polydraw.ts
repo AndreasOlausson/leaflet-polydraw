@@ -18,6 +18,7 @@ import './styles/polydraw.css';
 // Import new utility classes
 import { PolygonValidator } from './core/validation';
 import { GeometryUtils } from './geometry-utils';
+import { CoordinateUtils } from './coordinate-utils';
 
 // Import comprehensive type definitions
 import type {
@@ -703,7 +704,7 @@ class Polydraw extends L.Control {
     return nearestPointIdx;
   }
   private getLatLngInfoString(latlng: ILatLng): string {
-    return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
+    return CoordinateUtils.getLatLngInfoString(latlng);
   }
   // Update addMarker method to include visual optimization
   private addMarker(
