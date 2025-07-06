@@ -24,6 +24,7 @@ export enum MarkerPosition {
   North = 5,
   NorthWest = 6,
   West = 7,
-  // CenterOfMass = 8,
-  // BoundingBoxCenter = 9
+  Hole = 8,
+  // CenterOfMass = 9,
+  // BoundingBoxCenter = 10
 }

@@ -22,6 +22,7 @@ import { PolygonValidator } from './core/validation';
 import { MarkerManager } from './managers/marker-manager';
 import { PolygonDragManager } from './managers/polygon-drag-manager';
 import { DrawingEventsManager } from './managers/drawing-events-manager';
+import { PolygonOperationsManager } from './managers/polygon-operations-manager';
 
 // Import comprehensive type definitions
 import type {
@@ -55,6 +56,7 @@ class Polydraw extends L.Control {
   private markerManager: MarkerManager;
   private polygonDragManager: PolygonDragManager;
   private drawingEventsManager: DrawingEventsManager;
+  private polygonOperationsManager: PolygonOperationsManager;
 
   // Drag state management
   private dragStartPosition: ILatLng | null = null;
@@ -98,6 +100,16 @@ class Polydraw extends L.Control {
       this.tracer,
       () => this.getDrawMode(),
       (geoPos) => this.handlePolygonComplete(geoPos),
+    );
+    this.polygonOperationsManager = new PolygonOperationsManager(
+      this.config,
+      this.turfHelper,
+      this.map,
+      this.arrayOfFeatureGroups,
+      (geoJSON, simplify, noMerge) => this.addPolygonLayer(geoJSON, simplify, false, 0),
+      (polygon) => this.deletePolygon(polygon),
+      (featureGroup) => this.removeFeatureGroup(featureGroup),
+      (feature) => this.getLatLngsFromJson(feature),
     );
   }
 
@@ -592,35 +604,13 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    // Add a new polygon, potentially merging with existing ones
-    // Use currentPolygonHasKinks for runtime state, fallback to global kinks config
+    // Delegate to PolygonOperationsManager
     const hasKinks = this.currentPolygonHasKinks || this.kinks;
-
-    if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !hasKinks) {
-      this.merge(latlngs);
-    } else {
-      this.addPolygonLayer(latlngs, simplify);
-    }
+    this.polygonOperationsManager.addPolygon(latlngs, simplify, noMerge, hasKinks);
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    const addHole = latlngs;
-    const newPolygons = [];
-    this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJson(layer);
-      const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-      const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
-      if (newPolygon) {
-        newPolygons.push(newPolygon);
-      }
-      this.deletePolygon(poly);
-      this.removeFeatureGroupOnMerge(featureGroup);
-    });
-    // After subtracting from all, add the remaining polygons
-    newPolygons.forEach((np) => {
-      this.addPolygon(np, true, true);
-    });
+    // Delegate to PolygonOperationsManager
+    this.polygonOperationsManager.subtract(latlngs);
   }
   private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
     // Extract LatLng coordinates from GeoJSON feature
@@ -840,221 +830,6 @@ class Polydraw extends L.Control {
     const newPolygon = this.turfHelper.getBezierMultiPolygon(this.convertToCoords([latlngs]));
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
-  private merge(latlngs: Feature<Polygon | MultiPolygon>) {
-    const polygonFeature = [];
-    const newArray: L.FeatureGroup[] = [];
-    let polyIntersection: boolean = false;
-    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-
-      if (featureCollection.features[0].geometry.coordinates.length > 1) {
-        featureCollection.features[0].geometry.coordinates.forEach((element) => {
-          const feature = this.turfHelper.getMultiPolygon([element]);
-          polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-          if (polyIntersection) {
-            newArray.push(featureGroup);
-            polygonFeature.push(feature);
-          }
-        });
-      } else {
-        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-        polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-
-        if (!polyIntersection) {
-          try {
-            const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
-            if (
-              directIntersection &&
-              directIntersection.geometry &&
-              (directIntersection.geometry.type === 'Polygon' ||
-                directIntersection.geometry.type === 'MultiPolygon')
-            ) {
-              polyIntersection = true;
-            }
-          } catch (error) {
-            // Silently handle intersection errors
-          }
-        }
-        if (polyIntersection) {
-          newArray.push(featureGroup);
-          polygonFeature.push(feature);
-        }
-      }
-    });
-
-    if (newArray.length > 0) {
-      this.unionPolygons(newArray, latlngs, polygonFeature);
-    } else {
-      this.addPolygonLayer(latlngs, true);
-    }
-  }
-  private unionPolygons(
-    layers: L.FeatureGroup[],
-    latlngs: Feature<Polygon | MultiPolygon>,
-    polygonFeature: Feature<Polygon | MultiPolygon>[],
-  ) {
-    // Enhanced union logic to handle complex merge scenarios including holes
-
-    let resultPolygon = latlngs;
-    const processedFeatureGroups: L.FeatureGroup[] = [];
-
-    // Process each intersecting polygon
-    layers.forEach((featureGroup, i) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJson(layer);
-      const existingPolygon = polygonFeature[i];
-
-      // Check the type of intersection to determine the correct operation
-      const intersectionType = this.analyzeIntersectionType(resultPolygon, existingPolygon);
-
-      if (intersectionType === 'should_create_holes') {
-        // For complex cut-through scenarios, we actually want to MERGE (union) the polygons
-        // The "should_create_holes" name is misleading - it means "complex intersection detected"
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-      } else {
-        // Standard union operation for normal merges
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-      }
-
-      // Mark for removal
-      processedFeatureGroups.push(featureGroup);
-      try {
-        this.deletePolygonOnMerge(poly);
-      } catch (error) {
-        // Silently handle polygon deletion errors in test environment
-      }
-      try {
-        this.removeFeatureGroup(featureGroup);
-      } catch (error) {
-        // Silently handle feature group removal errors in test environment
-      }
-    });
-
-    // Add the final result
-    try {
-      this.addPolygonLayer(resultPolygon, true);
-    } catch (error) {
-      // In test environment, still add to array even if map rendering fails
-      this.arrayOfFeatureGroups.push(new L.FeatureGroup());
-    }
-  }
-
-  /**
-   * Analyze the type of intersection between two polygons to determine merge strategy
-   */
-  private analyzeIntersectionType(
-    newPolygon: Feature<Polygon | MultiPolygon>,
-    existingPolygon: Feature<Polygon | MultiPolygon>,
-  ): string {
-    try {
-      // Check if the new polygon is completely contained within the existing polygon
-      // This is the primary case where we want to create holes
-      try {
-        const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-
-        if (
-          difference &&
-          difference.geometry.type === 'Polygon' &&
-          difference.geometry.coordinates.length > 1
-        ) {
-          // If difference creates a polygon with holes, the new polygon was likely contained
-          return 'should_create_holes';
-        }
-      } catch (error) {
-        // Silently handle difference operation errors
-      }
-
-      // Check if this is a complex cutting scenario using proper geometric analysis
-      // instead of arbitrary vertex count
-      try {
-        // Method 1: Check convexity - complex shapes are usually non-convex
-        const convexHull = this.turfHelper.getConvexHull(existingPolygon);
-        if (convexHull) {
-          const convexArea = this.turfHelper.getPolygonArea(convexHull);
-          const actualArea = this.turfHelper.getPolygonArea(existingPolygon);
-          const convexityRatio = actualArea / convexArea;
-
-          // If shape is significantly non-convex (< 0.7), it might be complex
-          if (convexityRatio < 0.7) {
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
-
-        // Method 2: Check intersection complexity
-        const intersection = this.turfHelper.getIntersection(newPolygon, existingPolygon);
-        if (intersection && intersection.geometry.type === 'MultiPolygon') {
-          // Multiple intersection areas = complex cut-through scenario
-          return 'should_create_holes';
-        }
-
-        // Method 3: Area ratio analysis for partial overlaps
-        if (intersection) {
-          const intersectionArea = this.turfHelper.getPolygonArea(intersection);
-          const newArea = this.turfHelper.getPolygonArea(newPolygon);
-          const existingArea = this.turfHelper.getPolygonArea(existingPolygon);
-
-          // Check if it's a significant but partial overlap (not full containment)
-          const overlapRatioExisting = intersectionArea / existingArea;
-          const overlapRatioNew = intersectionArea / newArea;
-
-          if (
-            overlapRatioExisting > 0.1 &&
-            overlapRatioExisting < 0.9 &&
-            overlapRatioNew > 0.1 &&
-            overlapRatioNew < 0.9
-          ) {
-            // Significant partial overlap might indicate cut-through
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
-      } catch (error) {
-        // Silently handle geometric analysis errors
-      }
-
-      // Default to standard union for normal merging cases
-      return 'standard_union';
-    } catch (error) {
-      // Silently handle intersection analysis errors
-      return 'standard_union';
-    }
-  }
-
-  private deletePolygonOnMerge(polygon: any) {
-    // Delete polygon during merge
-    let polygon2 = [];
-    if (this.arrayOfFeatureGroups.length > 0) {
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
-        const layer = featureGroup.getLayers()[0] as any;
-        const latlngs = layer.getLatLngs()[0];
-        polygon2 = [...latlngs[0]];
-        if (latlngs[0][0] !== latlngs[0][latlngs[0].length - 1]) {
-          polygon2.push(latlngs[0][0]);
-        }
-        const equals = this.polygonArrayEqualsMerge(polygon2, polygon);
-
-        if (equals) {
-          // console.log("EQUALS", polygon);
-          this.removeFeatureGroupOnMerge(featureGroup);
-          this.deletePolygon(polygon);
-          this.polygonInformation.deleteTrashcan(polygon);
-          // this.updatePolygons();
-        }
-      });
-    }
-  }
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
     // Create a Leaflet polygon from GeoJSON
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
@@ -1170,191 +945,20 @@ class Polydraw extends L.Control {
     this.drawStartedEvents(true);
   }
   private markerDrag(FeatureGroup: L.FeatureGroup) {
-    const newPos = [];
-    let testarray = [];
-    let hole = [];
-    const allLayers = FeatureGroup.getLayers() as L.Layer[];
-
-    const polygon = allLayers.find((layer) => layer instanceof L.Polygon) as any;
-    const markers = allLayers.filter((layer) => layer instanceof L.Marker);
-
-    if (!polygon) return;
-
-    const posarrays = polygon.getLatLngs();
-    let markerIndex = 0;
-
-    if (posarrays.length > 1) {
-      for (let index = 0; index < posarrays.length; index++) {
-        testarray = [];
-        hole = [];
-
-        if (index === 0) {
-          if (posarrays[0].length > 1) {
-            for (let i = 0; i < posarrays[0].length; i++) {
-              for (let j = 0; j < posarrays[0][i].length; j++) {
-                if (markerIndex < markers.length) {
-                  testarray.push(markers[markerIndex].getLatLng());
-                  markerIndex++;
-                }
-              }
-              hole.push(testarray);
-            }
-          } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-            hole.push(testarray);
-          }
-          newPos.push(hole);
-        } else {
-          for (let j = 0; j < posarrays[index][0].length; j++) {
-            if (markerIndex < markers.length) {
-              testarray.push(markers[markerIndex].getLatLng());
-              markerIndex++;
-            }
-          }
-          hole.push(testarray);
-          newPos.push(hole);
-        }
-      }
-    } else {
-      hole = [];
-      for (let index = 0; index < posarrays[0].length; index++) {
-        testarray = [];
-
-        if (index === 0) {
-          if (posarrays[0][index].length > 1) {
-            for (let j = 0; j < posarrays[0][index].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-          } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-          }
-        } else {
-          for (let j = 0; j < posarrays[0][index].length; j++) {
-            if (markerIndex < markers.length) {
-              testarray.push(markers[markerIndex].getLatLng());
-              markerIndex++;
-            }
-          }
-        }
-        hole.push(testarray);
-      }
-      newPos.push(hole);
-    }
-
-    (polygon as any).setLatLngs(newPos);
-
-    const polylines = allLayers.filter(
-      (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
-    );
-    let polylineIndex = 0;
-
-    for (let ringIndex = 0; ringIndex < newPos[0].length; ringIndex++) {
-      const isHoleRing = ringIndex > 0;
-      if (isHoleRing && polylineIndex < polylines.length) {
-        (polylines[polylineIndex] as any).setLatLngs(newPos[0][ringIndex][0]);
-        polylineIndex++;
-      }
-    }
+    // Delegate to MarkerManager
+    this.markerManager.handleMarkerDrag(FeatureGroup);
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    this.polygonInformation.deletePolygonInformationStorage();
-    const featureCollection = FeatureGroup.toGeoJSON() as any;
-
-    // Retrieve optimization level from the original polygon before removing it
-    let optimizationLevel = 0;
-    const allLayers = FeatureGroup.getLayers() as any;
-    const polygon = allLayers.find((layer) => layer instanceof L.Polygon);
-    if (polygon && (polygon as any)._polydrawOptimizationLevel !== undefined) {
-      optimizationLevel = (polygon as any)._polydrawOptimizationLevel;
-    }
-
-    // Handle end of marker drag, check for kinks and update polygons
-    this.removeFeatureGroup(FeatureGroup);
-
-    if (featureCollection.features[0].geometry.coordinates.length > 1) {
-      featureCollection.features[0].geometry.coordinates.forEach((element) => {
-        const feature = this.turfHelper.getMultiPolygon([element]);
-
-        // FIX: Use separate runtime state instead of overriding configuration
-        // Check if the current polygon has kinks (self-intersections) after marker drag
-        if (this.turfHelper.hasKinks(feature)) {
-          // Set runtime state: current polygon has kinks
-          this.currentPolygonHasKinks = true;
-          const unkink = this.turfHelper.getKinks(feature);
-          // Handle unkinked polygons - split kinked polygon into valid parts
-          const testCoord = [];
-          unkink.forEach((polygon) => {
-            // Use addPolygonLayer directly to preserve optimization level
-            this.addPolygonLayer(
-              this.turfHelper.getTurfPolygon(polygon),
-              false,
-              false,
-              optimizationLevel,
-            );
-          });
-        } else {
-          // Set runtime state: current polygon is valid (no kinks)
-          this.currentPolygonHasKinks = false;
-          // Use addPolygonLayer directly to preserve optimization level
-          this.addPolygonLayer(
-            this.turfHelper.getTurfPolygon(feature),
-            false,
-            false,
-            optimizationLevel,
-          );
-        }
-      });
-    } else {
-      const feature = this.turfHelper.getMultiPolygon(
-        featureCollection.features[0].geometry.coordinates,
-      );
-      // Markerdragend
-      if (this.turfHelper.hasKinks(feature)) {
-        // FIX: Use separate runtime state instead of overriding configuration
-        // Set runtime state: current polygon has kinks
-        this.currentPolygonHasKinks = true;
-        const unkink = this.turfHelper.getKinks(feature);
-        // Unkink - split kinked polygon into valid parts
-        const testCoord = [];
-        unkink.forEach((polygon) => {
-          // Use addPolygonLayer directly to preserve optimization level
-          this.addPolygonLayer(
-            this.turfHelper.getTurfPolygon(polygon),
-            false,
-            false,
-            optimizationLevel,
-          );
-        });
-        // Test coordinates after processing
-      } else {
-        // FIX: Use separate runtime state instead of overriding configuration
-        // Set runtime state: current polygon is valid (no kinks)
-        this.currentPolygonHasKinks = false;
-        // Use addPolygonLayer directly to preserve optimization level
-        this.addPolygonLayer(
-          this.turfHelper.getTurfPolygon(feature),
-          false,
-          false,
-          optimizationLevel,
-        );
-      }
-    }
-    // Updated feature groups after drag
-    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    // Delegate to MarkerManager
+    this.markerManager.handleMarkerDragEnd(
+      FeatureGroup,
+      () => this.polygonInformation.deletePolygonInformationStorage(),
+      (featureGroup) => this.removeFeatureGroup(featureGroup),
+      (geoJSON, simplify, dynamicTolerance, optimizationLevel) =>
+        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, optimizationLevel),
+      () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
+    );
   }
 
   private emitDrawModeChanged(): void {

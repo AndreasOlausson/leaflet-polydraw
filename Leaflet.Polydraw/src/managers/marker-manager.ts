@@ -47,7 +47,7 @@ export class MarkerManager {
   }
 
   /**
-   * Add markers for polygon vertices with visual optimization
+   * Add markers for polygon vertices with visual optimization and special markers
    */
   addMarker(
     latlngs: ILatLng[],
@@ -61,12 +61,6 @@ export class MarkerManager {
     onDoubleElbows?: (latlngs: ILatLng[]) => void,
     onBezier?: (latlngs: ILatLng[]) => void,
   ) {
-    // Ensure latlngs is an array
-    if (!Array.isArray(latlngs)) {
-      console.warn('addMarker: latlngs is not an array:', latlngs);
-      return;
-    }
-
     // Calculate which markers should be visually hidden
     const markerVisibility = this.calculateMarkerVisibility(latlngs, visualOptimizationLevel);
 
@@ -114,7 +108,10 @@ export class MarkerManager {
 
       // Apply visual optimization (hide less important markers)
       if (!isSpecialMarker && !markerVisibility[i]) {
-        this.hideMarkerVisually(marker);
+        // Use setTimeout to ensure the marker element is available in the DOM
+        setTimeout(() => {
+          this.hideMarkerVisually(marker);
+        }, 0);
       }
 
       // Set high z-index for special markers
@@ -180,50 +177,263 @@ export class MarkerManager {
   }
 
   /**
-   * Add markers for hole vertices with visual optimization
+   * Add a hole marker (red marker for polygon holes)
    */
   addHoleMarker(
-    latlngs: ILatLng[],
+    polyElement: ILatLng[],
     featureGroup: L.FeatureGroup,
-    visualOptimizationLevel: number = 0,
-    onMarkerDrag?: (featureGroup: L.FeatureGroup) => void,
-    onMarkerDragEnd?: (featureGroup: L.FeatureGroup) => void,
+    visualOptimizationLevel: number,
+    onMarkerDrag: (featureGroup: L.FeatureGroup) => void,
+    onMarkerDragEnd: (featureGroup: L.FeatureGroup) => void,
   ) {
-    // Ensure latlngs is an array
-    if (!Array.isArray(latlngs)) {
-      console.warn('addHoleMarker: latlngs is not an array:', latlngs);
-      return;
-    }
-
-    const markerVisibility = this.calculateMarkerVisibility(latlngs, visualOptimizationLevel);
-
-    latlngs.forEach((latlng, i) => {
-      const iconClasses = this.config.markers.holeIcon.styleClasses;
-
-      // Handle both array and string formats for iconClasses
-      const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
-
-      const marker = new L.Marker(latlng, {
-        icon: IconFactory.createDivIcon(processedClasses),
-        draggable: true,
-        title: this.getLatLngInfoString(latlng),
-        zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
-      });
-      featureGroup.addLayer(marker).addTo(this.map);
-
-      // Apply visual optimization for hole markers
-      if (!markerVisibility[i]) {
-        this.hideMarkerVisually(marker);
-        this.addHiddenMarkerHoverEvents(marker);
+    polyElement.forEach((latlng, index) => {
+      if (this.shouldSkipMarker(index, polyElement.length, visualOptimizationLevel)) {
+        return;
       }
 
-      marker.on('drag', (e) => {
-        if (onMarkerDrag) onMarkerDrag(featureGroup);
-      });
-      marker.on('dragend', (e) => {
-        if (onMarkerDragEnd) onMarkerDragEnd(featureGroup);
-      });
+      const marker = this.createMarker(latlng, MarkerPosition.Hole);
+      this.setupMarkerDragEvents(marker, featureGroup, onMarkerDrag, onMarkerDragEnd);
+      featureGroup.addLayer(marker);
     });
+  }
+
+  /**
+   * Handle marker drag operations - update polygon coordinates based on marker positions
+   */
+  handleMarkerDrag(featureGroup: L.FeatureGroup) {
+    const newPos = [];
+    let testarray = [];
+    let hole = [];
+    const allLayers = featureGroup.getLayers() as L.Layer[];
+
+    const polygon = allLayers.find((layer) => layer instanceof L.Polygon) as any;
+    const markers = allLayers.filter((layer) => layer instanceof L.Marker);
+
+    if (!polygon) return;
+
+    const posarrays = polygon.getLatLngs();
+    let markerIndex = 0;
+
+    if (posarrays.length > 1) {
+      for (let index = 0; index < posarrays.length; index++) {
+        testarray = [];
+        hole = [];
+
+        if (index === 0) {
+          if (posarrays[0].length > 1) {
+            for (let i = 0; i < posarrays[0].length; i++) {
+              for (let j = 0; j < posarrays[0][i].length; j++) {
+                if (markerIndex < markers.length) {
+                  testarray.push(markers[markerIndex].getLatLng());
+                  markerIndex++;
+                }
+              }
+              hole.push(testarray);
+            }
+          } else {
+            for (let j = 0; j < posarrays[0][0].length; j++) {
+              if (markerIndex < markers.length) {
+                testarray.push(markers[markerIndex].getLatLng());
+                markerIndex++;
+              }
+            }
+            hole.push(testarray);
+          }
+          newPos.push(hole);
+        } else {
+          for (let j = 0; j < posarrays[index][0].length; j++) {
+            if (markerIndex < markers.length) {
+              testarray.push(markers[markerIndex].getLatLng());
+              markerIndex++;
+            }
+          }
+          hole.push(testarray);
+          newPos.push(hole);
+        }
+      }
+    } else {
+      hole = [];
+      for (let index = 0; index < posarrays[0].length; index++) {
+        testarray = [];
+
+        if (index === 0) {
+          if (posarrays[0][index].length > 1) {
+            for (let j = 0; j < posarrays[0][index].length; j++) {
+              if (markerIndex < markers.length) {
+                testarray.push(markers[markerIndex].getLatLng());
+                markerIndex++;
+              }
+            }
+          } else {
+            for (let j = 0; j < posarrays[0][0].length; j++) {
+              if (markerIndex < markers.length) {
+                testarray.push(markers[markerIndex].getLatLng());
+                markerIndex++;
+              }
+            }
+          }
+        } else {
+          for (let j = 0; j < posarrays[0][index].length; j++) {
+            if (markerIndex < markers.length) {
+              testarray.push(markers[markerIndex].getLatLng());
+              markerIndex++;
+            }
+          }
+        }
+        hole.push(testarray);
+      }
+      newPos.push(hole);
+    }
+
+    (polygon as any).setLatLngs(newPos);
+
+    const polylines = allLayers.filter(
+      (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
+    );
+    let polylineIndex = 0;
+
+    for (let ringIndex = 0; ringIndex < newPos[0].length; ringIndex++) {
+      const isHoleRing = ringIndex > 0;
+      if (isHoleRing && polylineIndex < polylines.length) {
+        (polylines[polylineIndex] as any).setLatLngs(newPos[0][ringIndex][0]);
+        polylineIndex++;
+      }
+    }
+  }
+
+  /**
+   * Handle marker drag end operations - process polygon after marker drag completion
+   */
+  handleMarkerDragEnd(
+    featureGroup: L.FeatureGroup,
+    onPolygonInfoDelete: () => void,
+    onFeatureGroupRemove: (featureGroup: L.FeatureGroup) => void,
+    onPolygonLayerAdd: (
+      geoJSON: any,
+      simplify: boolean,
+      dynamicTolerance: boolean,
+      optimizationLevel: number,
+    ) => void,
+    onPolygonInfoCreate: () => void,
+  ) {
+    onPolygonInfoDelete();
+    const featureCollection = featureGroup.toGeoJSON() as any;
+
+    // Retrieve optimization level from the original polygon before removing it
+    let optimizationLevel = 0;
+    const allLayers = featureGroup.getLayers() as any;
+    const polygon = allLayers.find((layer) => layer instanceof L.Polygon);
+    if (polygon && (polygon as any)._polydrawOptimizationLevel !== undefined) {
+      optimizationLevel = (polygon as any)._polydrawOptimizationLevel;
+    }
+
+    // Handle end of marker drag, check for kinks and update polygons
+    onFeatureGroupRemove(featureGroup);
+
+    if (featureCollection.features[0].geometry.coordinates.length > 1) {
+      featureCollection.features[0].geometry.coordinates.forEach((element) => {
+        const feature = this.turfHelper.getMultiPolygon([element]);
+
+        // Check if the current polygon has kinks (self-intersections) after marker drag
+        if (this.turfHelper.hasKinks(feature)) {
+          const unkink = this.turfHelper.getKinks(feature);
+          // Handle unkinked polygons - split kinked polygon into valid parts
+          unkink.forEach((polygon) => {
+            // Use addPolygonLayer directly to preserve optimization level
+            onPolygonLayerAdd(
+              this.turfHelper.getTurfPolygon(polygon),
+              false,
+              false,
+              optimizationLevel,
+            );
+          });
+        } else {
+          // Use addPolygonLayer directly to preserve optimization level
+          onPolygonLayerAdd(
+            this.turfHelper.getTurfPolygon(feature),
+            false,
+            false,
+            optimizationLevel,
+          );
+        }
+      });
+    } else {
+      const feature = this.turfHelper.getMultiPolygon(
+        featureCollection.features[0].geometry.coordinates,
+      );
+      // Markerdragend
+      if (this.turfHelper.hasKinks(feature)) {
+        const unkink = this.turfHelper.getKinks(feature);
+        // Unkink - split kinked polygon into valid parts
+        unkink.forEach((polygon) => {
+          // Use addPolygonLayer directly to preserve optimization level
+          onPolygonLayerAdd(
+            this.turfHelper.getTurfPolygon(polygon),
+            false,
+            false,
+            optimizationLevel,
+          );
+        });
+        // Test coordinates after processing
+      } else {
+        // Use addPolygonLayer directly to preserve optimization level
+        onPolygonLayerAdd(this.turfHelper.getTurfPolygon(feature), false, false, optimizationLevel);
+      }
+    }
+    // Updated feature groups after drag
+    onPolygonInfoCreate();
+  }
+
+  /**
+   * Helper method to determine if a marker should be skipped based on optimization
+   */
+  private shouldSkipMarker(
+    index: number,
+    totalMarkers: number,
+    optimizationLevel: number,
+  ): boolean {
+    if (optimizationLevel === 0) return false;
+
+    // Skip every nth marker based on optimization level
+    const skipRatio = Math.min(optimizationLevel / 10, 0.8);
+    const skipInterval = Math.max(1, Math.floor(1 / skipRatio));
+
+    return index % skipInterval !== 0;
+  }
+
+  /**
+   * Create a marker with the specified position type
+   */
+  private createMarker(latlng: ILatLng, position: MarkerPosition): L.Marker {
+    const iconClasses =
+      position === MarkerPosition.Hole
+        ? this.config.markers.holeIcon.styleClasses
+        : this.config.markers.markerIcon.styleClasses;
+
+    const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+
+    return new L.Marker(latlng, {
+      icon: IconFactory.createDivIcon(processedClasses),
+      draggable: true,
+      title: this.getLatLngInfoString(latlng),
+      zIndexOffset:
+        position === MarkerPosition.Hole
+          ? (this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset)
+          : (this.config.markers.markerIcon.zIndexOffset ?? this.config.markers.zIndexOffset),
+    });
+  }
+
+  /**
+   * Setup drag events for a marker
+   */
+  private setupMarkerDragEvents(
+    marker: L.Marker,
+    featureGroup: L.FeatureGroup,
+    onMarkerDrag: (featureGroup: L.FeatureGroup) => void,
+    onMarkerDragEnd: (featureGroup: L.FeatureGroup) => void,
+  ) {
+    marker.on('drag', () => onMarkerDrag(featureGroup));
+    marker.on('dragend', () => onMarkerDragEnd(featureGroup));
   }
 
   /**
@@ -380,36 +590,42 @@ export class MarkerManager {
    * Calculate which markers should be visible based on their importance
    */
   calculateMarkerVisibility(latlngs: ILatLng[], optimizationLevel: number): boolean[] {
+    // For optimization level 0 or very few points, show all markers
     if (optimizationLevel === 0 || latlngs.length <= 3) {
-      // No optimization or too few points - show all markers
       return new Array(latlngs.length).fill(true);
     }
 
-    // Calculate importance scores for each point
-    const importanceScores = this.calculatePointImportance(latlngs);
+    // For optimization levels 1-10, hide markers based on importance
+    if (optimizationLevel > 0 && optimizationLevel <= 10) {
+      // Calculate importance scores for each point
+      const importanceScores = this.calculatePointImportance(latlngs);
 
-    // Determine how many points to hide based on optimization level
-    const hideRatio = Math.min(optimizationLevel / 10, 0.8); // Max 80% can be hidden
-    const pointsToHide = Math.floor(latlngs.length * hideRatio);
+      // Determine how many points to hide based on optimization level
+      const hideRatio = Math.min(optimizationLevel / 10, 0.8); // Max 80% can be hidden
+      const pointsToHide = Math.floor(latlngs.length * hideRatio);
 
-    // Sort points by importance (lowest first)
-    const sortedIndices = importanceScores
-      .map((score, index) => ({ score, index }))
-      .sort((a, b) => a.score - b.score);
+      // Sort points by importance (lowest first)
+      const sortedIndices = importanceScores
+        .map((score, index) => ({ score, index }))
+        .sort((a, b) => a.score - b.score);
 
-    // Create visibility array - start with all visible
-    const visibility = new Array(latlngs.length).fill(true);
+      // Create visibility array - start with all visible
+      const visibility = new Array(latlngs.length).fill(true);
 
-    // Hide the least important points
-    for (let i = 0; i < pointsToHide && i < sortedIndices.length; i++) {
-      const pointIndex = sortedIndices[i].index;
-      // Don't hide if it would create too large gaps
-      if (this.canHidePoint(latlngs, pointIndex, visibility)) {
-        visibility[pointIndex] = false;
+      // Hide the least important points
+      for (let i = 0; i < pointsToHide && i < sortedIndices.length; i++) {
+        const pointIndex = sortedIndices[i].index;
+        // Don't hide if it would create too large gaps
+        if (this.canHidePoint(latlngs, pointIndex, visibility)) {
+          visibility[pointIndex] = false;
+        }
       }
+
+      return visibility;
     }
 
-    return visibility;
+    // For any other case, show all markers
+    return new Array(latlngs.length).fill(true);
   }
 
   /**
@@ -522,11 +738,11 @@ export class MarkerManager {
       maxLng = current.lng;
 
     for (let i = 1; i <= windowSize; i++) {
-      const prevIndex = (index - i + len) % len;
-      const nextIndex = (index + i) % len;
+      const prevIdx = (index - i + len) % len;
+      const nextIdx = (index + i) % len;
 
-      const prev = latlngs[prevIndex];
-      const next = latlngs[nextIndex];
+      const prev = latlngs[prevIdx];
+      const next = latlngs[nextIdx];
 
       minLat = Math.min(minLat, prev.lat, next.lat);
       maxLat = Math.max(maxLat, prev.lat, next.lat);
@@ -534,7 +750,7 @@ export class MarkerManager {
       maxLng = Math.max(maxLng, prev.lng, next.lng);
     }
 
-    // If current point is at the extreme, it's important
+    // Check if current point is at the extreme
     if (current.lat === minLat || current.lat === maxLat) importance += 1;
     if (current.lng === minLng || current.lng === maxLng) importance += 1;
 
@@ -545,15 +761,15 @@ export class MarkerManager {
    * Calculate centroid of polygon
    */
   private calculateCentroid(latlngs: ILatLng[]): ILatLng {
-    let sumLat = 0,
-      sumLng = 0;
-    for (const point of latlngs) {
-      sumLat += point.lat;
-      sumLng += point.lng;
-    }
+    let lat = 0,
+      lng = 0;
+    latlngs.forEach((point) => {
+      lat += point.lat;
+      lng += point.lng;
+    });
     return {
-      lat: sumLat / latlngs.length,
-      lng: sumLng / latlngs.length,
+      lat: lat / latlngs.length,
+      lng: lng / latlngs.length,
     };
   }
 
@@ -561,22 +777,47 @@ export class MarkerManager {
    * Calculate distance between two points
    */
   private calculateDistance(p1: ILatLng, p2: ILatLng): number {
-    const dx = p1.lng - p2.lng;
-    const dy = p1.lat - p2.lat;
-    return Math.sqrt(dx * dx + dy * dy);
+    const dlat = p1.lat - p2.lat;
+    const dlng = p1.lng - p2.lng;
+    return Math.sqrt(dlat * dlat + dlng * dlng);
   }
 
   /**
-   * Check if a point can be hidden without creating too large visual gaps
+   * Check if a point can be hidden without creating too large gaps
    */
   private canHidePoint(latlngs: ILatLng[], index: number, currentVisibility: boolean[]): boolean {
     return true;
+    // // Don't hide if it would create a gap larger than 3 consecutive hidden points
+    // const len = latlngs.length;
+    // let consecutiveHidden = 0;
+
+    // // Check backwards
+    // for (let i = 1; i <= 3; i++) {
+    //   const checkIdx = (index - i + len) % len;
+    //   if (!currentVisibility[checkIdx]) {
+    //     consecutiveHidden++;
+    //   } else {
+    //     break;
+    //   }
+    // }
+
+    // // Check forwards
+    // for (let i = 1; i <= 3; i++) {
+    //   const checkIdx = (index + i) % len;
+    //   if (!currentVisibility[checkIdx]) {
+    //     consecutiveHidden++;
+    //   } else {
+    //     break;
+    //   }
+    // }
+
+    // return consecutiveHidden < 2; // Allow hiding if it won't create 3+ consecutive hidden
   }
 
   /**
-   * Hide a marker visually while keeping it functional
+   * Hide marker visually while keeping it functional
    */
-  hideMarkerVisually(marker: L.Marker): void {
+  private hideMarkerVisually(marker: L.Marker): void {
     const element = marker.getElement();
     if (element) {
       element.classList.add('polydraw-hidden-marker');
@@ -584,9 +825,9 @@ export class MarkerManager {
   }
 
   /**
-   * Show a hidden marker
+   * Show marker visually
    */
-  showMarkerVisually(marker: L.Marker): void {
+  private showMarkerVisually(marker: L.Marker): void {
     const element = marker.getElement();
     if (element) {
       element.classList.remove('polydraw-hidden-marker');
@@ -594,18 +835,15 @@ export class MarkerManager {
   }
 
   /**
-   * Add hover events to hidden markers to make them visible when needed
+   * Add hover events for hidden markers
    */
-  addHiddenMarkerHoverEvents(marker: L.Marker): void {
+  private addHiddenMarkerHoverEvents(marker: L.Marker): void {
     marker.on('mouseover', () => {
       this.showMarkerVisually(marker);
     });
 
     marker.on('mouseout', () => {
-      // Only hide again if not currently being dragged
-      if (!marker.dragging || !(marker.dragging as any)._dragging) {
-        this.hideMarkerVisually(marker);
-      }
+      this.hideMarkerVisually(marker);
     });
 
     marker.on('dragstart', () => {
@@ -613,39 +851,7 @@ export class MarkerManager {
     });
 
     marker.on('dragend', () => {
-      // Hide again after a short delay
-      setTimeout(() => {
-        this.hideMarkerVisually(marker);
-      }, 1000);
+      this.hideMarkerVisually(marker);
     });
-  }
-
-  /**
-   * Optimize marker visibility for a given feature group based on visual optimization level
-   */
-  optimizeMarkerVisibility(latlngs: ILatLng[], featureGroup: L.FeatureGroup): void {
-    const level = this.config?.visualOptimizationLevel ?? 0;
-    const visibility = this.calculateMarkerVisibility(latlngs, level);
-    const markers: L.Marker[] = [];
-
-    featureGroup.eachLayer((layer: L.Layer) => {
-      if (layer instanceof L.Marker) {
-        markers.push(layer);
-      }
-    });
-
-    if (latlngs.length !== markers.length) {
-      console.warn('Mismatch between latlngs and markers count:', latlngs.length, markers.length);
-      return;
-    }
-
-    for (let i = 0; i < markers.length; i++) {
-      const marker = markers[i];
-      if (!visibility[i]) {
-        this.hideMarkerVisually(marker);
-      } else {
-        this.showMarkerVisually(marker);
-      }
-    }
   }
 }
