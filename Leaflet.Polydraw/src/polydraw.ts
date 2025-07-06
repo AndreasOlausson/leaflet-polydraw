@@ -740,12 +740,10 @@ class Polydraw extends L.Control {
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
         iconClasses = this.config.markers.markerMenuIcon.styleClasses;
         isSpecialMarker = true;
-      }
-      if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+      } else if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
         iconClasses = this.config.markers.markerDeleteIcon.styleClasses;
         isSpecialMarker = true;
-      }
-      if (i === infoMarkerIdx && this.config.markers.infoMarker) {
+      } else if (i === infoMarkerIdx && this.config.markers.infoMarker) {
         iconClasses = this.config.markers.markerInfoIcon.styleClasses;
         isSpecialMarker = true;
       }
