@@ -473,7 +473,7 @@ export class PolygonDragManager {
   }
 
   /**
-   * Update polygon coordinates after drag
+   * Update polygon coordinates after drag - THE BIG ONE!
    *
    * TODO - FUTURE IMPROVEMENTS:
    * 1. Split into smaller methods:
@@ -490,7 +490,7 @@ export class PolygonDragManager {
     polygon: any,
     featureGroup: L.FeatureGroup,
     originalLatLngs: Feature<Polygon | MultiPolygon>,
-  ): void {
+  ) {
     try {
       // Get new coordinates from dragged polygon
       const newLatLngs = polygon.getLatLngs();
@@ -594,42 +594,279 @@ export class PolygonDragManager {
     }
   }
 
-  // TODO: Add remaining supporting methods
+  /**
+   * Check if modifier drag mode is currently active
+   */
   private isModifierDragActive(): boolean {
     return this.currentModifierDragMode;
   }
 
+  /**
+   * Find all polygons that intersect with the dragged polygon
+   */
   private findIntersectingPolygons(
-    draggedPolygon: any,
+    draggedPolygon: Feature<Polygon | MultiPolygon>,
     excludeFeatureGroup: L.FeatureGroup,
   ): L.FeatureGroup[] {
-    // Placeholder - will be implemented next
-    return [];
+    const intersectingFeatureGroups: L.FeatureGroup[] = [];
+
+    // Check interactions with all other polygons
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      if (featureGroup === excludeFeatureGroup) {
+        continue;
+      }
+
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+        let intersects = false;
+
+        // Method 1: Try direct intersection check first (most reliable for partial overlaps)
+        try {
+          const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
+          if (intersection && intersection.geometry) {
+            // Any intersection geometry means they overlap
+            intersects = true;
+          }
+        } catch (error) {
+          // Method 1 failed, try other methods
+        }
+
+        // Method 2: If no intersection found, try the polygonIntersect method
+        if (!intersects) {
+          try {
+            intersects = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+          } catch (error) {
+            // Method 2 failed, try containment check
+          }
+        }
+
+        // Method 3: If still no intersection, check for containment (one polygon inside another)
+        if (!intersects) {
+          try {
+            // Check if dragged polygon is completely inside existing polygon
+            // Handle both Polygon and MultiPolygon coordinate structures
+            const draggedCoords =
+              draggedPolygon.geometry.type === 'Polygon'
+                ? (draggedPolygon.geometry.coordinates[0] as any[])
+                : (draggedPolygon.geometry.coordinates[0][0] as any[]);
+            const existingCoords =
+              existingPolygon.geometry.type === 'Polygon'
+                ? (existingPolygon.geometry.coordinates[0] as any[])
+                : (existingPolygon.geometry.coordinates[0][0] as any[]);
+
+            const draggedInside = this.turfHelper.isWithin(draggedCoords, existingCoords);
+
+            // Check if existing polygon is completely inside dragged polygon
+            const existingInside = this.turfHelper.isWithin(existingCoords, draggedCoords);
+
+            intersects = draggedInside || existingInside;
+          } catch (error) {
+            console.warn('Error checking containment:', error.message);
+          }
+        }
+
+        if (intersects) {
+          intersectingFeatureGroups.push(featureGroup);
+        }
+      } catch (error) {
+        console.warn('Error checking polygon intersection:', error.message);
+      }
+    }
+
+    return intersectingFeatureGroups;
   }
 
+  /**
+   * Perform subtract operation when modifier key is held during drag
+   */
   private performModifierSubtract(
-    draggedPolygon: any,
-    intersectingFeatureGroups: L.FeatureGroup[],
+    draggedPolygon: Feature<Polygon | MultiPolygon>,
+    intersectingPolygons: L.FeatureGroup[],
   ): void {
-    // Placeholder - will be implemented next
+    if (intersectingPolygons.length === 0) {
+      // No intersections - just move the polygon
+      this.addPolygonLayer(draggedPolygon, false);
+      return;
+    }
+
+    // Subtract the dragged polygon from all intersecting polygons
+    intersectingPolygons.forEach((featureGroup) => {
+      const featureCollection = featureGroup.toGeoJSON() as any;
+      const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+      // Perform difference operation (subtract dragged polygon from existing polygon)
+      const differenceResult = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+
+      // Remove the original polygon
+      this.map.removeLayer(featureGroup);
+      const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+      if (index > -1) {
+        this.arrayOfFeatureGroups.splice(index, 1);
+      }
+
+      // Add the result if it exists (polygon with hole or remaining parts)
+      if (differenceResult) {
+        this.addPolygonLayer(differenceResult, false);
+      }
+    });
+
+    // Don't add the dragged polygon back - it was used for subtraction
   }
 
-  private checkDragInteractions(draggedPolygon: any, excludeFeatureGroup: L.FeatureGroup): any {
-    // Placeholder - will be implemented next
-    return {
+  /**
+   * Check for interactions between dragged polygon and existing polygons
+   */
+  private checkDragInteractions(
+    draggedPolygon: Feature<Polygon | MultiPolygon>,
+    excludeFeatureGroup: L.FeatureGroup,
+  ) {
+    const result = {
       shouldMerge: false,
       shouldCreateHole: false,
-      intersectingFeatureGroups: [],
-      containingFeatureGroup: null,
+      intersectingFeatureGroups: [] as L.FeatureGroup[],
+      containingFeatureGroup: null as L.FeatureGroup | null,
     };
+
+    if (
+      !this.config.dragPolygons.autoMergeOnIntersect &&
+      !this.config.dragPolygons.autoHoleOnContained
+    ) {
+      return result;
+    }
+
+    // Check interactions with all other polygons
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      if (featureGroup === excludeFeatureGroup) continue;
+
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+        // Check if dragged polygon is completely contained within existing polygon
+        // Use difference operation to check containment
+        if (this.config.dragPolygons.autoHoleOnContained) {
+          try {
+            const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+            if (
+              difference &&
+              difference.geometry.type === 'Polygon' &&
+              difference.geometry.coordinates.length > 1
+            ) {
+              // If difference creates a polygon with holes, the dragged polygon was likely contained
+              result.shouldCreateHole = true;
+              result.containingFeatureGroup = featureGroup;
+              break; // Hole takes precedence over merge
+            }
+          } catch (error) {
+            // Continue with other checks
+          }
+        }
+
+        // Check if polygons intersect (but dragged is not completely contained)
+        if (this.config.dragPolygons.autoMergeOnIntersect) {
+          // Use multiple intersection detection methods for better reliability
+          let hasIntersection = false;
+
+          try {
+            // Method 1: Use the existing polygonIntersect method
+            hasIntersection = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+          } catch (error) {
+            // Method 1 failed, try alternative
+          }
+
+          if (!hasIntersection) {
+            try {
+              // Method 2: Use direct intersection check
+              const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
+              hasIntersection =
+                intersection &&
+                intersection.geometry &&
+                (intersection.geometry.type === 'Polygon' ||
+                  intersection.geometry.type === 'MultiPolygon');
+            } catch (error) {
+              // Method 2 failed, continue
+            }
+          }
+
+          if (hasIntersection) {
+            result.shouldMerge = true;
+            result.intersectingFeatureGroups.push(featureGroup);
+          }
+        }
+      } catch (error) {
+        console.warn('Error checking drag interactions:', error.message);
+        continue;
+      }
+    }
+
+    return result;
   }
 
-  private performDragMerge(draggedPolygon: any, intersectingFeatureGroups: L.FeatureGroup[]): void {
-    // Placeholder - will be implemented next
+  /**
+   * Perform merge operation when dragged polygon intersects with others
+   */
+  private performDragMerge(
+    draggedPolygon: Feature<Polygon | MultiPolygon>,
+    intersectingFeatureGroups: L.FeatureGroup[],
+  ) {
+    let mergedPolygon = draggedPolygon;
+
+    // Merge with all intersecting polygons
+    for (const featureGroup of intersectingFeatureGroups) {
+      const featureCollection = featureGroup.toGeoJSON() as any;
+      const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+      // Perform union operation
+      const unionResult = this.turfHelper.union(mergedPolygon, existingPolygon);
+      if (unionResult) {
+        mergedPolygon = unionResult;
+
+        // Remove the merged feature group
+        try {
+          this.map.removeLayer(featureGroup);
+        } catch (error) {
+          // Silently handle layer removal errors in test environment
+        }
+        const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        if (index > -1) {
+          this.arrayOfFeatureGroups.splice(index, 1);
+        }
+      }
+    }
+
+    // Add the final merged polygon
+    this.addPolygonLayer(mergedPolygon, false);
   }
 
-  private performDragHole(draggedPolygon: any, containingFeatureGroup: L.FeatureGroup): void {
-    // Placeholder - will be implemented next
+  /**
+   * Perform hole creation when dragged polygon is completely within another
+   */
+  private performDragHole(
+    draggedPolygon: Feature<Polygon | MultiPolygon>,
+    containingFeatureGroup: L.FeatureGroup,
+  ) {
+    const featureCollection = containingFeatureGroup.toGeoJSON() as any;
+    const containingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+    // Perform difference operation (subtract dragged polygon from containing polygon)
+    const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
+
+    if (differenceResult) {
+      // Remove the original containing polygon
+      this.map.removeLayer(containingFeatureGroup);
+      const index = this.arrayOfFeatureGroups.indexOf(containingFeatureGroup);
+      if (index > -1) {
+        this.arrayOfFeatureGroups.splice(index, 1);
+      }
+
+      // Add the polygon with the new hole
+      this.addPolygonLayer(differenceResult, false);
+    } else {
+      // Fallback: just add the dragged polygon normally
+      this.addPolygonLayer(draggedPolygon, false);
+    }
   }
 
   private addPolygonLayer(geoJSON: any, simplify: boolean): void {
