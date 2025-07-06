@@ -2395,10 +2395,29 @@ class Polydraw extends L.Control {
         const featureCollection = featureGroup.toGeoJSON() as any;
         const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
-        // Check if polygons intersect OR if one is contained within the other
-        let intersects = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+        let intersects = false;
 
-        // If no intersection detected, check for containment (one polygon inside another)
+        // Method 1: Try direct intersection check first (most reliable for partial overlaps)
+        try {
+          const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
+          if (intersection && intersection.geometry) {
+            // Any intersection geometry means they overlap
+            intersects = true;
+          }
+        } catch (error) {
+          // Method 1 failed, try other methods
+        }
+
+        // Method 2: If no intersection found, try the polygonIntersect method
+        if (!intersects) {
+          try {
+            intersects = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+          } catch (error) {
+            // Method 2 failed, try containment check
+          }
+        }
+
+        // Method 3: If still no intersection, check for containment (one polygon inside another)
         if (!intersects) {
           try {
             // Check if dragged polygon is completely inside existing polygon
