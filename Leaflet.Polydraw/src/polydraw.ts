@@ -18,6 +18,11 @@ import './styles/polydraw.css';
 // Import new utility classes
 import { PolygonValidator } from './core/validation';
 
+// Import managers
+import { MarkerManager } from './managers/marker-manager';
+import { PolygonDragManager } from './managers/polygon-drag-manager';
+import { DrawingEventsManager } from './managers/drawing-events-manager';
+
 // Import comprehensive type definitions
 import type {
   AutoPolygonOptions,
@@ -46,6 +51,11 @@ class Polydraw extends L.Control {
 
   private polygonInformation: PolygonInformationService;
 
+  // Manager instances
+  private markerManager: MarkerManager;
+  private polygonDragManager: PolygonDragManager;
+  private drawingEventsManager: DrawingEventsManager;
+
   // Drag state management
   private dragStartPosition: ILatLng | null = null;
   private isDragging: boolean = false;
@@ -66,6 +76,46 @@ class Polydraw extends L.Control {
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       // Handle polygon info update
     });
+  }
+
+  /**
+   * Initialize managers after map is available
+   */
+  private initializeManagers() {
+    this.markerManager = new MarkerManager(this.config, this.turfHelper, this.map);
+    this.polygonDragManager = new PolygonDragManager(
+      this.config,
+      this.turfHelper,
+      this.map,
+      () => this.getDrawMode(),
+      this.arrayOfFeatureGroups,
+    );
+    this.drawingEventsManager = new DrawingEventsManager(
+      this.config,
+      this.map,
+      this.tracer,
+      () => this.getDrawMode(),
+      (geoPos) => this.handlePolygonComplete(geoPos),
+    );
+  }
+
+  /**
+   * Handle polygon completion from drawing events manager
+   */
+  private handlePolygonComplete(geoPos: Feature<Polygon | MultiPolygon>) {
+    this.currentPolygonHasKinks = false;
+
+    switch (this.getDrawMode()) {
+      case DrawMode.Add:
+        this.addPolygon(geoPos, true);
+        break;
+      case DrawMode.Subtract:
+        this.subtractPolygon(geoPos);
+        break;
+      default:
+        break;
+    }
+    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
   configurate(config: Partial<PolydrawConfig>) {
@@ -227,8 +277,10 @@ class Polydraw extends L.Control {
     } catch (error) {
       // Silently handle tracer initialization in test environment
     }
-    // this.tracer = L.polyline([], { color: 'red' }).addTo(_map);
-    // this.markerLayer = L.layerGroup().addTo(_map);
+
+    // Initialize managers now that map is available
+    this.initializeManagers();
+
     return container;
   }
 

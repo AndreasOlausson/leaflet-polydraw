@@ -1,34 +1,68 @@
 import * as L from 'leaflet';
 import { MarkerPosition } from '../enums';
-import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
 import { IconFactory } from '../icon-factory';
 import { PolygonUtil } from '../polygon.util';
+import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
+import type { ILatLng, PolydrawConfig } from '../types/polydraw-interfaces';
 import { TurfHelper } from '../turf-helper';
-import type { ILatLng } from '../polygon-helpers';
-import type { MarkerVisibilityResult, PointImportance } from '../core/polydraw-types';
 
 /**
- * Manages all marker-related functionality including creation, optimization, and interactions
+ * Manages marker creation, positioning, and optimization for polygons
  */
 export class MarkerManager {
-  private map: L.Map;
-  private config: any;
-  private turfHelper: TurfHelper;
+  constructor(
+    private config: PolydrawConfig,
+    private turfHelper: TurfHelper,
+    private map: L.Map,
+  ) {}
 
-  constructor(map: L.Map, config: any, turfHelper: TurfHelper) {
-    this.map = map;
-    this.config = config;
-    this.turfHelper = turfHelper;
+  /**
+   * Get marker index based on position configuration
+   */
+  getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
+    const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
+    const compass = new Compass(
+      bounds.getSouth(),
+      bounds.getWest(),
+      bounds.getNorth(),
+      bounds.getEast(),
+    );
+    const compassDirection = compass.getDirection(position);
+    const latLngPoint: ILatLng = {
+      lat: compassDirection.lat,
+      lng: compassDirection.lng,
+    };
+    const targetPoint = this.turfHelper.getCoord(latLngPoint);
+    const fc = this.turfHelper.getFeaturePointCollection(latlngs);
+    const nearestPointIdx = this.turfHelper.getNearestPointIndex(targetPoint, fc as any);
+
+    return nearestPointIdx;
   }
 
   /**
-   * Add markers to a polygon with visual optimization
+   * Generate coordinate info string for marker tooltips
+   */
+  getLatLngInfoString(latlng: ILatLng): string {
+    return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
+  }
+
+  /**
+   * Add markers for polygon vertices with visual optimization
    */
   addMarker(
     latlngs: ILatLng[],
     featureGroup: L.FeatureGroup,
     visualOptimizationLevel: number = 0,
-  ): void {
+    onMarkerDrag?: (featureGroup: L.FeatureGroup) => void,
+    onMarkerDragEnd?: (featureGroup: L.FeatureGroup) => void,
+    onDeletePolygon?: (polygon: ILatLng[][]) => void,
+  ) {
+    // Ensure latlngs is an array
+    if (!Array.isArray(latlngs)) {
+      console.warn('addMarker: latlngs is not an array:', latlngs);
+      return;
+    }
+
     // Calculate which markers should be visually hidden
     const markerVisibility = this.calculateMarkerVisibility(latlngs, visualOptimizationLevel);
 
@@ -53,18 +87,19 @@ export class MarkerManager {
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
         iconClasses = this.config.markers.markerMenuIcon.styleClasses;
         isSpecialMarker = true;
-      }
-      if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+      } else if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
         iconClasses = this.config.markers.markerDeleteIcon.styleClasses;
         isSpecialMarker = true;
-      }
-      if (i === infoMarkerIdx && this.config.markers.infoMarker) {
+      } else if (i === infoMarkerIdx && this.config.markers.infoMarker) {
         iconClasses = this.config.markers.markerInfoIcon.styleClasses;
         isSpecialMarker = true;
       }
 
+      // Handle both array and string formats for iconClasses
+      const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+
       const marker = new L.Marker(latlng, {
-        icon: IconFactory.createDivIcon(iconClasses),
+        icon: IconFactory.createDivIcon(processedClasses),
         draggable: this.config.modes.dragElbow,
         title: this.config.markers.coordsTitle ? this.getLatLngInfoString(latlng) : '',
         zIndexOffset:
@@ -74,7 +109,7 @@ export class MarkerManager {
       featureGroup.addLayer(marker).addTo(this.map);
 
       // Apply visual optimization (hide less important markers)
-      if (!isSpecialMarker && !markerVisibility.visibility[i]) {
+      if (!isSpecialMarker && !markerVisibility[i]) {
         this.hideMarkerVisually(marker);
       }
 
@@ -88,12 +123,15 @@ export class MarkerManager {
 
       // Add drag event handlers
       if (this.config.modes.dragElbow) {
-        // These will be handled by external drag handlers
-        // marker.on('drag', (e) => this.markerDrag(featureGroup));
-        // marker.on('dragend', (e) => this.markerDragEnd(featureGroup));
+        marker.on('drag', (e) => {
+          if (onMarkerDrag) onMarkerDrag(featureGroup);
+        });
+        marker.on('dragend', (e) => {
+          if (onMarkerDragEnd) onMarkerDragEnd(featureGroup);
+        });
 
         // Add hover events for hidden markers
-        if (!isSpecialMarker && !markerVisibility.visibility[i]) {
+        if (!isSpecialMarker && !markerVisibility[i]) {
           this.addHiddenMarkerHoverEvents(marker);
         }
       }
@@ -124,25 +162,39 @@ export class MarkerManager {
       if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
-        // Delete click handler will be attached externally
+        marker.on('click', (e) => {
+          if (onDeletePolygon) onDeletePolygon([latlngs]);
+        });
       }
     });
   }
 
   /**
-   * Add hole markers with visual optimization
+   * Add markers for hole vertices with visual optimization
    */
   addHoleMarker(
     latlngs: ILatLng[],
     featureGroup: L.FeatureGroup,
     visualOptimizationLevel: number = 0,
-  ): void {
+    onMarkerDrag?: (featureGroup: L.FeatureGroup) => void,
+    onMarkerDragEnd?: (featureGroup: L.FeatureGroup) => void,
+  ) {
+    // Ensure latlngs is an array
+    if (!Array.isArray(latlngs)) {
+      console.warn('addHoleMarker: latlngs is not an array:', latlngs);
+      return;
+    }
+
     const markerVisibility = this.calculateMarkerVisibility(latlngs, visualOptimizationLevel);
 
     latlngs.forEach((latlng, i) => {
       const iconClasses = this.config.markers.holeIcon.styleClasses;
+
+      // Handle both array and string formats for iconClasses
+      const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+
       const marker = new L.Marker(latlng, {
-        icon: IconFactory.createDivIcon(iconClasses),
+        icon: IconFactory.createDivIcon(processedClasses),
         draggable: true,
         title: this.getLatLngInfoString(latlng),
         zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
@@ -150,30 +202,177 @@ export class MarkerManager {
       featureGroup.addLayer(marker).addTo(this.map);
 
       // Apply visual optimization for hole markers
-      if (!markerVisibility.visibility[i]) {
+      if (!markerVisibility[i]) {
         this.hideMarkerVisually(marker);
         this.addHiddenMarkerHoverEvents(marker);
       }
 
-      // Drag handlers will be attached externally
+      marker.on('drag', (e) => {
+        if (onMarkerDrag) onMarkerDrag(featureGroup);
+      });
+      marker.on('dragend', (e) => {
+        if (onMarkerDragEnd) onMarkerDragEnd(featureGroup);
+      });
     });
+  }
+
+  /**
+   * Generate menu popup for marker interactions
+   */
+  generateMenuMarkerPopup(
+    latLngs: ILatLng[],
+    onSimplify?: (latlngs: ILatLng[]) => void,
+    onBbox?: (latlngs: ILatLng[]) => void,
+    onDoubleElbows?: (latlngs: ILatLng[]) => void,
+    onBezier?: (latlngs: ILatLng[]) => void,
+  ): HTMLDivElement {
+    const outerWrapper: HTMLDivElement = document.createElement('div');
+    outerWrapper.classList.add('alter-marker-outer-wrapper');
+
+    const wrapper: HTMLDivElement = document.createElement('div');
+    wrapper.classList.add('alter-marker-wrapper');
+
+    const invertedCorner: HTMLElement = document.createElement('i');
+    invertedCorner.classList.add('inverted-corner');
+
+    const markerContent: HTMLDivElement = document.createElement('div');
+    markerContent.classList.add('content');
+
+    const markerContentWrapper: HTMLDivElement = document.createElement('div');
+    markerContentWrapper.classList.add('marker-menu-content');
+
+    const simplify: HTMLDivElement = document.createElement('div');
+    simplify.classList.add('marker-menu-button', 'simplify');
+    simplify.title = 'Simplify';
+
+    const doubleElbows: HTMLDivElement = document.createElement('div');
+    doubleElbows.classList.add('marker-menu-button', 'double-elbows');
+    doubleElbows.title = 'DoubleElbows';
+
+    const bbox: HTMLDivElement = document.createElement('div');
+    bbox.classList.add('marker-menu-button', 'bbox');
+    bbox.title = 'Bounding box';
+
+    const bezier: HTMLDivElement = document.createElement('div');
+    bezier.classList.add('marker-menu-button', 'bezier');
+    bezier.title = 'Curve';
+
+    const separator: HTMLDivElement = document.createElement('div');
+    separator.classList.add('separator');
+
+    outerWrapper.appendChild(wrapper);
+    wrapper.appendChild(invertedCorner);
+    wrapper.appendChild(markerContent);
+    markerContent.appendChild(markerContentWrapper);
+    markerContentWrapper.appendChild(simplify);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(doubleElbows);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bbox);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bezier);
+
+    simplify.onclick = () => {
+      if (onSimplify) onSimplify(latLngs);
+    };
+    bbox.onclick = () => {
+      if (onBbox) onBbox(latLngs);
+    };
+    doubleElbows.onclick = () => {
+      if (onDoubleElbows) onDoubleElbows(latLngs);
+    };
+    bezier.onclick = () => {
+      if (onBezier) onBezier(latLngs);
+    };
+
+    return outerWrapper;
+  }
+
+  /**
+   * Generate info popup showing area and perimeter
+   */
+  generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
+    const _perimeter = new Perimeter(perimeter, this.config as any);
+    const _area = new Area(area, this.config as any);
+
+    const outerWrapper: HTMLDivElement = document.createElement('div');
+    outerWrapper.classList.add('info-marker-outer-wrapper');
+
+    const wrapper: HTMLDivElement = document.createElement('div');
+    wrapper.classList.add('info-marker-wrapper');
+
+    const invertedCorner: HTMLElement = document.createElement('i');
+    invertedCorner.classList.add('inverted-corner');
+
+    const markerContent: HTMLDivElement = document.createElement('div');
+    markerContent.classList.add('content');
+
+    const rowWithSeparator: HTMLDivElement = document.createElement('div');
+    rowWithSeparator.classList.add('row', 'bottom-separator');
+
+    const perimeterHeader: HTMLDivElement = document.createElement('div');
+    perimeterHeader.classList.add('header');
+    perimeterHeader.innerText = this.config.markers.markerInfoIcon.perimeterLabel;
+
+    const emptyDiv: HTMLDivElement = document.createElement('div');
+
+    const perimeterArea: HTMLSpanElement = document.createElement('span');
+    perimeterArea.classList.add('area');
+    perimeterArea.innerText = this.config.markers.markerInfoIcon.useMetrics
+      ? _perimeter.metricLength
+      : _perimeter.imperialLength;
+    const perimeterUnit: HTMLSpanElement = document.createElement('span');
+    perimeterUnit.classList.add('unit');
+    perimeterUnit.innerText =
+      ' ' +
+      (this.config.markers.markerInfoIcon.useMetrics
+        ? _perimeter.metricUnit
+        : _perimeter.imperialUnit);
+
+    const row: HTMLDivElement = document.createElement('div');
+    row.classList.add('row');
+
+    const areaHeader: HTMLDivElement = document.createElement('div');
+    areaHeader.classList.add('header');
+    areaHeader.innerText = this.config.markers.markerInfoIcon.areaLabel;
+
+    const rightRow: HTMLDivElement = document.createElement('div');
+    row.classList.add('right-margin');
+
+    const areaArea: HTMLSpanElement = document.createElement('span');
+    areaArea.classList.add('area');
+    areaArea.innerText = this.config.markers.markerInfoIcon.useMetrics
+      ? _area.metricArea
+      : _area.imperialArea;
+    const areaUnit: HTMLSpanElement = document.createElement('span');
+    areaUnit.classList.add('unit');
+    areaUnit.innerText =
+      ' ' + (this.config.markers.markerInfoIcon.useMetrics ? _area.metricUnit : _area.imperialUnit);
+
+    outerWrapper.appendChild(wrapper);
+    wrapper.appendChild(invertedCorner);
+    wrapper.appendChild(markerContent);
+    markerContent.appendChild(rowWithSeparator);
+    rowWithSeparator.appendChild(perimeterHeader);
+    rowWithSeparator.appendChild(emptyDiv);
+    emptyDiv.appendChild(perimeterArea);
+    emptyDiv.appendChild(perimeterUnit);
+    markerContent.appendChild(row);
+    row.appendChild(areaHeader);
+    row.appendChild(rightRow);
+    rightRow.appendChild(areaArea);
+    rightRow.appendChild(areaUnit);
+
+    return outerWrapper;
   }
 
   /**
    * Calculate which markers should be visible based on their importance
    */
-  private calculateMarkerVisibility(
-    latlngs: ILatLng[],
-    optimizationLevel: number,
-  ): MarkerVisibilityResult {
+  calculateMarkerVisibility(latlngs: ILatLng[], optimizationLevel: number): boolean[] {
     if (optimizationLevel === 0 || latlngs.length <= 3) {
       // No optimization or too few points - show all markers
-      const visibility = new Array(latlngs.length).fill(true);
-      return {
-        visibility,
-        hiddenCount: 0,
-        totalCount: latlngs.length,
-      };
+      return new Array(latlngs.length).fill(true);
     }
 
     // Calculate importance scores for each point
@@ -192,21 +391,15 @@ export class MarkerManager {
     const visibility = new Array(latlngs.length).fill(true);
 
     // Hide the least important points
-    let hiddenCount = 0;
     for (let i = 0; i < pointsToHide && i < sortedIndices.length; i++) {
       const pointIndex = sortedIndices[i].index;
       // Don't hide if it would create too large gaps
       if (this.canHidePoint(latlngs, pointIndex, visibility)) {
         visibility[pointIndex] = false;
-        hiddenCount++;
       }
     }
 
-    return {
-      visibility,
-      hiddenCount,
-      totalCount: latlngs.length,
-    };
+    return visibility;
   }
 
   /**
@@ -367,13 +560,13 @@ export class MarkerManager {
    * Check if a point can be hidden without creating too large visual gaps
    */
   private canHidePoint(latlngs: ILatLng[], index: number, currentVisibility: boolean[]): boolean {
-    return true; // Simplified for now - could add more sophisticated logic
+    return true;
   }
 
   /**
    * Hide a marker visually while keeping it functional
    */
-  private hideMarkerVisually(marker: L.Marker): void {
+  hideMarkerVisually(marker: L.Marker): void {
     const element = marker.getElement();
     if (element) {
       element.classList.add('polydraw-hidden-marker');
@@ -383,7 +576,7 @@ export class MarkerManager {
   /**
    * Show a hidden marker
    */
-  private showMarkerVisually(marker: L.Marker): void {
+  showMarkerVisually(marker: L.Marker): void {
     const element = marker.getElement();
     if (element) {
       element.classList.remove('polydraw-hidden-marker');
@@ -393,7 +586,7 @@ export class MarkerManager {
   /**
    * Add hover events to hidden markers to make them visible when needed
    */
-  private addHiddenMarkerHoverEvents(marker: L.Marker): void {
+  addHiddenMarkerHoverEvents(marker: L.Marker): void {
     marker.on('mouseover', () => {
       this.showMarkerVisually(marker);
     });
@@ -418,169 +611,31 @@ export class MarkerManager {
   }
 
   /**
-   * Get marker index based on position
+   * Optimize marker visibility for a given feature group based on visual optimization level
    */
-  private getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
-    const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
-    const compass = new Compass(
-      bounds.getSouth(),
-      bounds.getWest(),
-      bounds.getNorth(),
-      bounds.getEast(),
-    );
-    const compassDirection = compass.getDirection(position);
-    const latLngPoint: ILatLng = {
-      lat: compassDirection.lat,
-      lng: compassDirection.lng,
-    };
-    const targetPoint = this.turfHelper.getCoord(latLngPoint);
-    const fc = this.turfHelper.getFeaturePointCollection(latlngs);
-    const nearestPointIdx = this.turfHelper.getNearestPointIndex(targetPoint, fc as any);
+  optimizeMarkerVisibility(latlngs: ILatLng[], featureGroup: L.FeatureGroup): void {
+    const level = this.config?.visualOptimizationLevel ?? 0;
+    const visibility = this.calculateMarkerVisibility(latlngs, level);
+    const markers: L.Marker[] = [];
 
-    return nearestPointIdx;
-  }
+    featureGroup.eachLayer((layer: L.Layer) => {
+      if (layer instanceof L.Marker) {
+        markers.push(layer);
+      }
+    });
 
-  /**
-   * Get lat/lng info string for marker title
-   */
-  private getLatLngInfoString(latlng: ILatLng): string {
-    return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
-  }
+    if (latlngs.length !== markers.length) {
+      console.warn('Mismatch between latlngs and markers count:', latlngs.length, markers.length);
+      return;
+    }
 
-  /**
-   * Generate menu marker popup
-   */
-  private generateMenuMarkerPopup(latLngs: ILatLng[]): HTMLElement {
-    const outerWrapper: HTMLDivElement = document.createElement('div');
-    outerWrapper.classList.add('alter-marker-outer-wrapper');
-
-    const wrapper: HTMLDivElement = document.createElement('div');
-    wrapper.classList.add('alter-marker-wrapper');
-
-    const invertedCorner: HTMLElement = document.createElement('i');
-    invertedCorner.classList.add('inverted-corner');
-
-    const markerContent: HTMLDivElement = document.createElement('div');
-    markerContent.classList.add('content');
-
-    const markerContentWrapper: HTMLDivElement = document.createElement('div');
-    markerContentWrapper.classList.add('marker-menu-content');
-
-    const simplify: HTMLDivElement = document.createElement('div');
-    simplify.classList.add('marker-menu-button', 'simplify');
-    simplify.title = 'Simplify';
-
-    const doubleElbows: HTMLDivElement = document.createElement('div');
-    doubleElbows.classList.add('marker-menu-button', 'double-elbows');
-    doubleElbows.title = 'DoubleElbows';
-
-    const bbox: HTMLDivElement = document.createElement('div');
-    bbox.classList.add('marker-menu-button', 'bbox');
-    bbox.title = 'Bounding box';
-
-    const bezier: HTMLDivElement = document.createElement('div');
-    bezier.classList.add('marker-menu-button', 'bezier');
-    bezier.title = 'Curve';
-
-    const separator: HTMLDivElement = document.createElement('div');
-    separator.classList.add('separator');
-
-    outerWrapper.appendChild(wrapper);
-    wrapper.appendChild(invertedCorner);
-    wrapper.appendChild(markerContent);
-    markerContent.appendChild(markerContentWrapper);
-    markerContentWrapper.appendChild(simplify);
-    markerContentWrapper.appendChild(separator);
-    markerContentWrapper.appendChild(doubleElbows);
-    markerContentWrapper.appendChild(separator);
-    markerContentWrapper.appendChild(bbox);
-    markerContentWrapper.appendChild(separator);
-    markerContentWrapper.appendChild(bezier);
-
-    // Event handlers will be attached externally
-    // simplify.onclick = () => this.convertToSimplifiedPolygon(latLngs);
-    // bbox.onclick = () => this.convertToBoundsPolygon(latLngs);
-    // doubleElbows.onclick = () => this.doubleElbows(latLngs);
-    // bezier.onclick = () => this.bezierify(latLngs);
-
-    return outerWrapper;
-  }
-
-  /**
-   * Generate info marker popup
-   */
-  private generateInfoMarkerPopup(area: number, perimeter: number): HTMLElement {
-    const _perimeter = new Perimeter(perimeter, this.config);
-    const _area = new Area(area, this.config);
-
-    const outerWrapper: HTMLDivElement = document.createElement('div');
-    outerWrapper.classList.add('info-marker-outer-wrapper');
-
-    const wrapper: HTMLDivElement = document.createElement('div');
-    wrapper.classList.add('info-marker-wrapper');
-
-    const invertedCorner: HTMLElement = document.createElement('i');
-    invertedCorner.classList.add('inverted-corner');
-
-    const markerContent: HTMLDivElement = document.createElement('div');
-    markerContent.classList.add('content');
-
-    const rowWithSeparator: HTMLDivElement = document.createElement('div');
-    rowWithSeparator.classList.add('row', 'bottom-separator');
-
-    const perimeterHeader: HTMLDivElement = document.createElement('div');
-    perimeterHeader.classList.add('header');
-    perimeterHeader.innerText = this.config.markers.markerInfoIcon.perimeterLabel;
-
-    const emptyDiv: HTMLDivElement = document.createElement('div');
-
-    const perimeterArea: HTMLSpanElement = document.createElement('span');
-    perimeterArea.classList.add('area');
-    perimeterArea.innerText = this.config.markers.markerInfoIcon.useMetrics
-      ? _perimeter.metricLength
-      : _perimeter.imperialLength;
-    const perimeterUnit: HTMLSpanElement = document.createElement('span');
-    perimeterUnit.classList.add('unit');
-    perimeterUnit.innerText =
-      ' ' +
-      (this.config.markers.markerInfoIcon.useMetrics
-        ? _perimeter.metricUnit
-        : _perimeter.imperialUnit);
-
-    const row: HTMLDivElement = document.createElement('div');
-    row.classList.add('row');
-
-    const areaHeader: HTMLDivElement = document.createElement('div');
-    areaHeader.classList.add('header');
-    areaHeader.innerText = this.config.markers.markerInfoIcon.areaLabel;
-
-    const rightRow: HTMLDivElement = document.createElement('div');
-    row.classList.add('right-margin');
-
-    const areaArea: HTMLSpanElement = document.createElement('span');
-    areaArea.classList.add('area');
-    areaArea.innerText = this.config.markers.markerInfoIcon.useMetrics
-      ? _area.metricArea
-      : _area.imperialArea;
-    const areaUnit: HTMLSpanElement = document.createElement('span');
-    areaUnit.classList.add('unit');
-    areaUnit.innerText =
-      ' ' + (this.config.markers.markerInfoIcon.useMetrics ? _area.metricUnit : _area.imperialUnit);
-
-    outerWrapper.appendChild(wrapper);
-    wrapper.appendChild(invertedCorner);
-    wrapper.appendChild(markerContent);
-    markerContent.appendChild(rowWithSeparator);
-    rowWithSeparator.appendChild(perimeterHeader);
-    rowWithSeparator.appendChild(emptyDiv);
-    emptyDiv.appendChild(perimeterArea);
-    emptyDiv.appendChild(perimeterUnit);
-    markerContent.appendChild(row);
-    row.appendChild(areaHeader);
-    row.appendChild(rightRow);
-    rightRow.appendChild(areaArea);
-    rightRow.appendChild(areaUnit);
-
-    return outerWrapper;
+    for (let i = 0; i < markers.length; i++) {
+      const marker = markers[i];
+      if (!visibility[i]) {
+        this.hideMarkerVisually(marker);
+      } else {
+        this.showMarkerVisually(marker);
+      }
+    }
   }
 }
