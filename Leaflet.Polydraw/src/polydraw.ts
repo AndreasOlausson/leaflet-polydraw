@@ -89,6 +89,8 @@ class Polydraw extends L.Control {
       this.map,
       () => this.getDrawMode(),
       this.arrayOfFeatureGroups,
+      (geoJSON, simplify) => this.addPolygonLayer(geoJSON, simplify),
+      () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
     );
     this.drawingEventsManager = new DrawingEventsManager(
       this.config,
@@ -1362,139 +1364,23 @@ class Polydraw extends L.Control {
   }
 
   /**
-   * Enable polygon dragging functionality on a polygon layer
+   * Enable polygon dragging functionality - wrapper for PolygonDragManager
    */
   private enablePolygonDragging(
     polygon: any,
     featureGroup: L.FeatureGroup,
     latLngs: Feature<Polygon | MultiPolygon>,
   ) {
-    try {
-      // Store references for drag handling
-      polygon._polydrawFeatureGroup = featureGroup;
-      polygon._polydrawLatLngs = latLngs;
-      polygon._polydrawDragData = {
-        isDragging: false,
-        startPosition: null,
-        startLatLngs: null,
-      };
-
-      // Add custom mouse event handlers for dragging
-      polygon.on('mousedown', (e: any) => this.onPolygonMouseDown(e, polygon));
-
-      // Set cursor to indicate draggable (only when not in draw/subtract mode)
-      polygon.on('mouseover', () => {
-        if (
-          !polygon._polydrawDragData.isDragging &&
-          this.config.dragPolygons.hoverCursor &&
-          this.drawMode === DrawMode.Off
-        ) {
-          try {
-            const container = this.map.getContainer();
-            container.style.cursor = this.config.dragPolygons.hoverCursor;
-            // Also set on the polygon element itself
-            if (polygon.getElement) {
-              const element = polygon.getElement();
-              if (element) {
-                element.style.cursor = this.config.dragPolygons.hoverCursor;
-              }
-            }
-          } catch (domError) {
-            // Handle DOM errors in test environment
-          }
-        }
-      });
-
-      polygon.on('mouseout', () => {
-        if (!polygon._polydrawDragData.isDragging && this.drawMode === DrawMode.Off) {
-          try {
-            const container = this.map.getContainer();
-            container.style.cursor = '';
-            // Also reset on the polygon element itself
-            if (polygon.getElement) {
-              const element = polygon.getElement();
-              if (element) {
-                element.style.cursor = '';
-              }
-            }
-          } catch (domError) {
-            // Handle DOM errors in test environment
-          }
-        }
-      });
-    } catch (error) {
-      console.warn('Could not enable polygon dragging:', error.message);
-    }
+    this.polygonDragManager.enablePolygonDragging(polygon, featureGroup, latLngs);
   }
 
   /**
-   * Handle mouse down on polygon to start dragging
-   *
-   * Note: Probobly need to detact modifier key state at the drag start? This might be a good place to control the color of the polygon when the modifier key is held?
+   * Handle mouse down on polygon to start dragging - wrapper for PolygonDragManager
    */
   private onPolygonMouseDown(e: any, polygon: any) {
-    if (!this.config.modes.dragPolygons || this.drawMode !== DrawMode.Off) return;
-
-    // Prevent event bubbling to map
-    L.DomEvent.stopPropagation(e);
-    L.DomEvent.preventDefault(e);
-
-    // Detect modifier key state at drag start
-    const isModifierPressed = this.detectModifierKey(e.originalEvent || e);
-    this.currentModifierDragMode = isModifierPressed;
-    this.isModifierKeyHeld = isModifierPressed;
-
-    // Initialize drag
-    polygon._polydrawDragData.isDragging = true;
-    polygon._polydrawDragData.startPosition = e.latlng;
-    polygon._polydrawDragData.startLatLngs = polygon.getLatLngs();
-
-    // Disable map dragging
-    if (this.map.dragging) {
-      this.map.dragging.disable();
-    }
-
-    // Visual feedback - use subtract color if modifier is held
-    if (this.config.dragPolygons.opacity < 1) {
-      polygon.setStyle({ opacity: this.config.dragPolygons.opacity });
-    }
-
-    // Apply modifier visual feedback
-    this.setSubtractVisualMode(polygon, isModifierPressed);
-
-    // Set drag cursor
-    if (this.config.dragPolygons.dragCursor) {
-      try {
-        const container = this.map.getContainer();
-        container.style.cursor = this.config.dragPolygons.dragCursor;
-        // Also set on the polygon element itself
-        if (polygon.getElement) {
-          const element = polygon.getElement();
-          if (element) {
-            element.style.cursor = this.config.dragPolygons.dragCursor;
-          }
-        }
-      } catch (domError) {
-        // Handle DOM errors in test environment
-      }
-    }
-
-    // Add global mouse move and up handlers
-    this.map.on('mousemove', this.onPolygonMouseMove, this);
-    this.map.on('mouseup', this.onPolygonMouseUp, this);
-
-    // Store current polygon being dragged
-    this.currentDragPolygon = polygon;
-
-    // Handle marker behavior during drag
-    this.handleMarkersDuringDrag(polygon._polydrawFeatureGroup, 'start');
-
-    // Emit custom event
-    this.map.fire('polygon:dragstart', {
-      polygon: polygon,
-      featureGroup: polygon._polydrawFeatureGroup,
-      originalLatLngs: polygon._polydrawLatLngs,
-    });
+    // This method is now handled by PolygonDragManager.onPolygonMouseDown
+    // Called automatically when enablePolygonDragging sets up event handlers
+    console.warn('onPolygonMouseDown called directly - should be handled by PolygonDragManager');
   }
 
   /**
