@@ -17,8 +17,6 @@ import './styles/polydraw.css';
 
 // Import new utility classes
 import { PolygonValidator } from './core/validation';
-import { GeometryUtils } from './geometry-utils';
-import { CoordinateUtils } from './coordinate-utils';
 
 // Import comprehensive type definitions
 import type {
@@ -704,7 +702,7 @@ class Polydraw extends L.Control {
     return nearestPointIdx;
   }
   private getLatLngInfoString(latlng: ILatLng): string {
-    return CoordinateUtils.getLatLngInfoString(latlng);
+    return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
   // Update addMarker method to include visual optimization
   private addMarker(
@@ -1868,30 +1866,56 @@ class Polydraw extends L.Control {
       // Convert to GeoJSON format
       const newGeoJSON = polygon.toGeoJSON();
 
-      // Find the index of this feature group
-      const featureGroupIndex = this.arrayOfFeatureGroups.indexOf(featureGroup);
-      if (featureGroupIndex === -1) {
-        console.warn('Feature group not found in array');
-        return;
-      }
-
-      // Remove the old feature group
-      if (this.map && this.map.removeLayer) {
-        this.map.removeLayer(featureGroup);
-      }
-      this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
-
-      // Check if modifier key was held during drag
+      // Check if modifier key was held during drag FIRST (before removing from array)
       if (this.isModifierDragActive()) {
         // Modifier key held - perform subtract operation
-        const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
-        const intersectingFeatureGroups = this.findIntersectingPolygons(
-          draggedPolygonFeature,
-          featureGroup,
-        );
+        let draggedPolygonFeature;
+        try {
+          draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
+        } catch (error) {
+          console.error('Error creating dragged polygon feature:', error);
+          // Fallback: just add the polygon normally
+          this.addPolygonLayer(newGeoJSON, false);
+          return;
+        }
+
+        let intersectingFeatureGroups;
+        try {
+          intersectingFeatureGroups = this.findIntersectingPolygons(
+            draggedPolygonFeature,
+            featureGroup,
+          );
+        } catch (error) {
+          console.error('Error in findIntersectingPolygons:', error);
+          return;
+        }
+
+        // NOW remove the old feature group
+        if (this.map && this.map.removeLayer) {
+          this.map.removeLayer(featureGroup);
+        }
+        const featureGroupIndex = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        if (featureGroupIndex !== -1) {
+          this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
+        }
+
         this.performModifierSubtract(draggedPolygonFeature, intersectingFeatureGroups);
+
+        // Reset modifier state after operation
+        this.currentModifierDragMode = false;
+        this.isModifierKeyHeld = false;
+        return; // Exit early - don't do normal merge logic
       } else {
-        // Normal drag behavior - check for auto-interactions
+        // Normal drag behavior - remove the old feature group first
+        if (this.map && this.map.removeLayer) {
+          this.map.removeLayer(featureGroup);
+        }
+        const featureGroupIndex = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        if (featureGroupIndex !== -1) {
+          this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
+        }
+
+        // Check for auto-interactions
         let interactionResult = {
           shouldMerge: false,
           shouldCreateHole: false,
@@ -2197,7 +2221,7 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed during drag operation
    */
   private detectModifierKey(event: MouseEvent): boolean {
-    if (!this.config.dragPolygons.modifierSubtract.enabled) {
+    if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
       return false;
     }
 
@@ -2273,6 +2297,8 @@ class Polydraw extends L.Control {
         this.addPolygonLayer(differenceResult, false);
       }
     });
+
+    // Don't add the dragged polygon back - it was used for subtraction
   }
 
   /**
@@ -2309,14 +2335,43 @@ class Polydraw extends L.Control {
 
     // Check interactions with all other polygons
     for (const featureGroup of this.arrayOfFeatureGroups) {
-      if (featureGroup === excludeFeatureGroup) continue;
+      if (featureGroup === excludeFeatureGroup) {
+        continue;
+      }
 
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
         const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
-        // Check if polygons intersect
-        if (this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon)) {
+        // Check if polygons intersect OR if one is contained within the other
+        let intersects = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+
+        // If no intersection detected, check for containment (one polygon inside another)
+        if (!intersects) {
+          try {
+            // Check if dragged polygon is completely inside existing polygon
+            // Handle both Polygon and MultiPolygon coordinate structures
+            const draggedCoords =
+              draggedPolygon.geometry.type === 'Polygon'
+                ? (draggedPolygon.geometry.coordinates[0] as any[])
+                : (draggedPolygon.geometry.coordinates[0][0] as any[]);
+            const existingCoords =
+              existingPolygon.geometry.type === 'Polygon'
+                ? (existingPolygon.geometry.coordinates[0] as any[])
+                : (existingPolygon.geometry.coordinates[0][0] as any[]);
+
+            const draggedInside = this.turfHelper.isWithin(draggedCoords, existingCoords);
+
+            // Check if existing polygon is completely inside dragged polygon
+            const existingInside = this.turfHelper.isWithin(existingCoords, draggedCoords);
+
+            intersects = draggedInside || existingInside;
+          } catch (error) {
+            console.warn('Error checking containment:', error.message);
+          }
+        }
+
+        if (intersects) {
           intersectingFeatureGroups.push(featureGroup);
         }
       } catch (error) {
@@ -2410,14 +2465,50 @@ class Polydraw extends L.Control {
    * Calculate angle between three points
    */
   private calculateAngle(p1: ILatLng, p2: ILatLng, p3: ILatLng): number {
-    return GeometryUtils.calculateAngle(p1, p2, p3);
+    const v1 = { x: p1.lng - p2.lng, y: p1.lat - p2.lat };
+    const v2 = { x: p3.lng - p2.lng, y: p3.lat - p2.lat };
+
+    const dot = v1.x * v2.x + v1.y * v2.y;
+    const mag1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+    const mag2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+
+    if (mag1 === 0 || mag2 === 0) return 0;
+
+    const cosAngle = dot / (mag1 * mag2);
+    return Math.acos(Math.max(-1, Math.min(1, cosAngle)));
   }
 
   /**
    * Calculate distance from point to line between two other points
    */
   private calculateDistanceFromLine(p1: ILatLng, point: ILatLng, p2: ILatLng): number {
-    return GeometryUtils.calculateDistanceFromLine(p1, point, p2);
+    const A = point.lng - p1.lng;
+    const B = point.lat - p1.lat;
+    const C = p2.lng - p1.lng;
+    const D = p2.lat - p1.lat;
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+
+    if (lenSq === 0) return Math.sqrt(A * A + B * B);
+
+    const param = dot / lenSq;
+
+    let xx, yy;
+    if (param < 0) {
+      xx = p1.lng;
+      yy = p1.lat;
+    } else if (param > 1) {
+      xx = p2.lng;
+      yy = p2.lat;
+    } else {
+      xx = p1.lng + param * C;
+      yy = p1.lat + param * D;
+    }
+
+    const dx = point.lng - xx;
+    const dy = point.lat - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
@@ -2460,14 +2551,25 @@ class Polydraw extends L.Control {
    * Calculate centroid of polygon
    */
   private calculateCentroid(latlngs: ILatLng[]): ILatLng {
-    return GeometryUtils.calculateCentroid(latlngs);
+    let sumLat = 0,
+      sumLng = 0;
+    for (const point of latlngs) {
+      sumLat += point.lat;
+      sumLng += point.lng;
+    }
+    return {
+      lat: sumLat / latlngs.length,
+      lng: sumLng / latlngs.length,
+    };
   }
 
   /**
    * Calculate distance between two points
    */
   private calculateDistance(p1: ILatLng, p2: ILatLng): number {
-    return GeometryUtils.calculateDistance(p1, p2);
+    const dx = p1.lng - p2.lng;
+    const dy = p1.lat - p2.lat;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   /**
