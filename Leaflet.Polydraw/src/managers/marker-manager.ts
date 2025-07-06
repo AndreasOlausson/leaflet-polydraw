@@ -56,6 +56,10 @@ export class MarkerManager {
     onMarkerDrag?: (featureGroup: L.FeatureGroup) => void,
     onMarkerDragEnd?: (featureGroup: L.FeatureGroup) => void,
     onDeletePolygon?: (polygon: ILatLng[][]) => void,
+    onSimplify?: (latlngs: ILatLng[]) => void,
+    onBbox?: (latlngs: ILatLng[]) => void,
+    onDoubleElbows?: (latlngs: ILatLng[]) => void,
+    onBezier?: (latlngs: ILatLng[]) => void,
   ) {
     // Ensure latlngs is an array
     if (!Array.isArray(latlngs)) {
@@ -138,7 +142,13 @@ export class MarkerManager {
 
       // Add popup and click events for special markers
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
-        const menuPopup = this.generateMenuMarkerPopup(latlngs);
+        const menuPopup = this.generateMenuMarkerPopup(
+          latlngs,
+          onSimplify,
+          onBbox,
+          onDoubleElbows,
+          onBezier,
+        );
         marker.options.zIndexOffset =
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.bindPopup(menuPopup, { className: 'alter-marker' });
