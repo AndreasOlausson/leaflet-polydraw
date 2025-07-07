@@ -23,7 +23,7 @@ export class PolygonDragManager {
     private turfHelper: TurfHelper,
     private map: L.Map,
     private getDrawMode: () => DrawMode,
-    private arrayOfFeatureGroups: PolydrawFeatureGroup[],
+    private getArrayOfFeatureGroups: () => PolydrawFeatureGroup[],
     private addPolygonLayerCallback?: (geoJSON: any, simplify: boolean) => void,
     private updatePolygonInformationCallback?: () => void,
   ) {}
@@ -526,9 +526,10 @@ export class PolygonDragManager {
         if (this.map && this.map.removeLayer) {
           this.map.removeLayer(featureGroup);
         }
-        const featureGroupIndex = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+        const featureGroupIndex = arrayOfFeatureGroups.indexOf(featureGroup);
         if (featureGroupIndex !== -1) {
-          this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
+          arrayOfFeatureGroups.splice(featureGroupIndex, 1);
         }
 
         this.performModifierSubtract(draggedPolygonFeature, intersectingFeatureGroups);
@@ -542,9 +543,10 @@ export class PolygonDragManager {
         if (this.map && this.map.removeLayer) {
           this.map.removeLayer(featureGroup);
         }
-        const featureGroupIndex = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+        const featureGroupIndex = arrayOfFeatureGroups.indexOf(featureGroup);
         if (featureGroupIndex !== -1) {
-          this.arrayOfFeatureGroups.splice(featureGroupIndex, 1);
+          arrayOfFeatureGroups.splice(featureGroupIndex, 1);
         }
 
         // Check for auto-interactions
@@ -557,24 +559,29 @@ export class PolygonDragManager {
 
         try {
           const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
+          console.log('DEBUG: Checking drag interactions for polygon:', draggedPolygonFeature);
           interactionResult = this.checkDragInteractions(draggedPolygonFeature, featureGroup);
+          console.log('DEBUG: Drag interaction result:', interactionResult);
         } catch (turfError) {
           console.warn('Turf operations not available:', turfError.message);
         }
 
         if (interactionResult.shouldMerge) {
+          console.log('DEBUG: Should merge - performing drag merge');
           // Merge with intersecting polygons
           this.performDragMerge(
             this.turfHelper.getTurfPolygon(newGeoJSON),
             interactionResult.intersectingFeatureGroups,
           );
         } else if (interactionResult.shouldCreateHole) {
+          console.log('DEBUG: Should create hole - performing drag hole');
           // Create hole in containing polygon
           this.performDragHole(
             this.turfHelper.getTurfPolygon(newGeoJSON),
             interactionResult.containingFeatureGroup,
           );
         } else {
+          console.log('DEBUG: No interaction detected - just updating position');
           // No interaction - just update position
           this.addPolygonLayer(newGeoJSON, false);
         }
@@ -612,7 +619,7 @@ export class PolygonDragManager {
     const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
     // Check interactions with all other polygons
-    for (const featureGroup of this.arrayOfFeatureGroups) {
+    for (const featureGroup of this.getArrayOfFeatureGroups()) {
       if (featureGroup === excludeFeatureGroup) {
         continue;
       }
@@ -703,9 +710,10 @@ export class PolygonDragManager {
 
       // Remove the original polygon
       this.map.removeLayer(featureGroup);
-      const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+      const index = arrayOfFeatureGroups.indexOf(featureGroup);
       if (index > -1) {
-        this.arrayOfFeatureGroups.splice(index, 1);
+        arrayOfFeatureGroups.splice(index, 1);
       }
 
       // Add the result if it exists (polygon with hole or remaining parts)
@@ -731,18 +739,37 @@ export class PolygonDragManager {
       containingFeatureGroup: null as L.FeatureGroup | null,
     };
 
+    console.log(
+      'DEBUG: checkDragInteractions - config.dragPolygons.autoMergeOnIntersect:',
+      this.config.dragPolygons.autoMergeOnIntersect,
+    );
+    console.log(
+      'DEBUG: checkDragInteractions - config.dragPolygons.autoHoleOnContained:',
+      this.config.dragPolygons.autoHoleOnContained,
+    );
+
     if (
       !this.config.dragPolygons.autoMergeOnIntersect &&
       !this.config.dragPolygons.autoHoleOnContained
     ) {
+      console.log(
+        'DEBUG: checkDragInteractions - auto merge and auto hole both disabled, returning early',
+      );
       return result;
     }
 
     // Clean up any empty feature groups before checking interactions
     this.cleanupEmptyFeatureGroups();
 
+    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+    console.log(
+      'DEBUG: checkDragInteractions - checking against',
+      arrayOfFeatureGroups.length,
+      'feature groups',
+    );
+
     // Check interactions with all other polygons
-    for (const featureGroup of this.arrayOfFeatureGroups) {
+    for (const featureGroup of arrayOfFeatureGroups) {
       if (featureGroup === excludeFeatureGroup) continue;
 
       try {
@@ -854,9 +881,10 @@ export class PolygonDragManager {
         } catch (error) {
           // Silently handle layer removal errors in test environment
         }
-        const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+        const index = arrayOfFeatureGroups.indexOf(featureGroup);
         if (index > -1) {
-          this.arrayOfFeatureGroups.splice(index, 1);
+          arrayOfFeatureGroups.splice(index, 1);
         }
       }
     }
@@ -881,9 +909,10 @@ export class PolygonDragManager {
     if (differenceResult) {
       // Remove the original containing polygon
       this.map.removeLayer(containingFeatureGroup);
-      const index = this.arrayOfFeatureGroups.indexOf(containingFeatureGroup);
+      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+      const index = arrayOfFeatureGroups.indexOf(containingFeatureGroup);
       if (index > -1) {
-        this.arrayOfFeatureGroups.splice(index, 1);
+        arrayOfFeatureGroups.splice(index, 1);
       }
 
       // Add the polygon with the new hole
@@ -895,8 +924,19 @@ export class PolygonDragManager {
   }
 
   private addPolygonLayer(geoJSON: any, simplify: boolean): void {
+    console.log('DEBUG: PolygonDragManager addPolygonLayer called with:', geoJSON);
+    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+    console.log(
+      'DEBUG: PolygonDragManager arrayOfFeatureGroups length before add:',
+      arrayOfFeatureGroups.length,
+    );
+
     if (this.addPolygonLayerCallback) {
       this.addPolygonLayerCallback(geoJSON, simplify);
+      console.log(
+        'DEBUG: PolygonDragManager arrayOfFeatureGroups length after add:',
+        arrayOfFeatureGroups.length,
+      );
     } else {
       console.warn('addPolygonLayerCallback not provided');
     }
@@ -912,21 +952,50 @@ export class PolygonDragManager {
    * Clean up any empty feature groups that remain after operations
    */
   private cleanupEmptyFeatureGroups(): void {
+    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
     console.log(
       'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - before cleanup, array length:',
-      this.arrayOfFeatureGroups.length,
+      arrayOfFeatureGroups.length,
     );
 
     // Filter out feature groups that have no features or invalid features
-    const validFeatureGroups = this.arrayOfFeatureGroups.filter((featureGroup) => {
+    const validFeatureGroups = arrayOfFeatureGroups.filter((featureGroup) => {
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
+
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - checking feature group:',
+          featureCollection,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - featureCollection exists:',
+          !!featureCollection,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features exists:',
+          !!featureCollection?.features,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features length:',
+          featureCollection?.features?.length,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features[0] exists:',
+          !!featureCollection?.features?.[0],
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features[0].geometry exists:',
+          !!featureCollection?.features?.[0]?.geometry,
+        );
+
         const hasValidFeatures =
           featureCollection &&
           featureCollection.features &&
           featureCollection.features.length > 0 &&
           featureCollection.features[0] &&
           featureCollection.features[0].geometry;
+
+        console.log('DEBUG: cleanupEmptyFeatureGroups() - hasValidFeatures:', hasValidFeatures);
 
         if (!hasValidFeatures) {
           console.log(
@@ -958,12 +1027,12 @@ export class PolygonDragManager {
     });
 
     // Update the array with only valid feature groups
-    this.arrayOfFeatureGroups.length = 0;
-    this.arrayOfFeatureGroups.push(...validFeatureGroups);
+    arrayOfFeatureGroups.length = 0;
+    arrayOfFeatureGroups.push(...validFeatureGroups);
 
     console.log(
       'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - after cleanup, array length:',
-      this.arrayOfFeatureGroups.length,
+      arrayOfFeatureGroups.length,
     );
   }
 }

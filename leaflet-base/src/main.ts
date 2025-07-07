@@ -135,7 +135,7 @@ polydraw.addTo(map as any);
 
 document.getElementById("addDebugPoly")?.addEventListener("click", () => {
   // Example with visual optimization level 5 (moderate simplification)
-  polydraw.addAutoPolygon(multipleSimplePolygons, {
+  polydraw.addAutoPolygon(overlappingSquares, {
     visualOptimizationLevel: 0,
   });
   console.log("Polydraw:", polydraw);

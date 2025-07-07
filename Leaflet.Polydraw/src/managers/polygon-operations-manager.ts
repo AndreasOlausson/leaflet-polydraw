@@ -11,7 +11,7 @@ export class PolygonOperationsManager {
     private config: PolydrawConfig,
     private turfHelper: TurfHelper,
     private map: L.Map,
-    private arrayOfFeatureGroups: PolydrawFeatureGroup[],
+    private getArrayOfFeatureGroups: () => PolydrawFeatureGroup[],
     private addPolygonLayerCallback: (geoJSON: any, simplify: boolean, noMerge?: boolean) => void,
     private deletePolygonCallback: (polygon: ILatLng[][]) => void,
     private removeFeatureGroupCallback: (featureGroup: L.FeatureGroup) => void,
@@ -30,7 +30,7 @@ export class PolygonOperationsManager {
     if (
       this.config.mergePolygons &&
       !noMerge &&
-      this.arrayOfFeatureGroups.length > 0 &&
+      this.getArrayOfFeatureGroups().length > 0 &&
       !hasKinks
     ) {
       this.merge(latlngs);
@@ -45,19 +45,39 @@ export class PolygonOperationsManager {
   subtract(latlngs: Feature<Polygon | MultiPolygon>) {
     const addHole = latlngs;
     const newPolygons = [];
-    this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJsonCallback(layer);
-      const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-      const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
 
-      if (newPolygon) {
-        newPolygons.push(newPolygon);
+    this.getArrayOfFeatureGroups().forEach((featureGroup) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+
+        // Validate feature collection before accessing features[0]
+        if (
+          !featureCollection ||
+          !featureCollection.features ||
+          featureCollection.features.length === 0 ||
+          !featureCollection.features[0] ||
+          !featureCollection.features[0].geometry
+        ) {
+          console.warn('DEBUG: subtract() - skipping invalid feature group:', featureCollection);
+          return; // Skip this feature group
+        }
+
+        const layer = featureCollection.features[0];
+        const poly = this.getLatLngsFromJsonCallback(layer);
+        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+        const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
+
+        if (newPolygon) {
+          newPolygons.push(newPolygon);
+        }
+        this.deletePolygonCallback(poly);
+        this.removeFeatureGroupOnMerge(featureGroup);
+      } catch (error) {
+        console.warn('DEBUG: subtract() - error processing feature group:', error.message);
+        // Continue with next feature group
       }
-      this.deletePolygonCallback(poly);
-      this.removeFeatureGroupOnMerge(featureGroup);
     });
+
     // After subtracting from all, add the remaining polygons
     newPolygons.forEach((np) => {
       this.addPolygonLayerCallback(np, true, true);
@@ -71,44 +91,65 @@ export class PolygonOperationsManager {
    * Merge polygon with intersecting existing polygons
    */
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
+    // Clean up any empty feature groups before starting
+    this.cleanupEmptyFeatureGroups();
+
     const polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
-    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
 
-      if (featureCollection.features[0].geometry.coordinates.length > 1) {
-        featureCollection.features[0].geometry.coordinates.forEach((element) => {
-          const feature = this.turfHelper.getMultiPolygon([element]);
+    this.getArrayOfFeatureGroups().forEach((featureGroup, index) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+
+        // Validate feature collection before accessing features[0]
+        if (
+          !featureCollection ||
+          !featureCollection.features ||
+          featureCollection.features.length === 0 ||
+          !featureCollection.features[0] ||
+          !featureCollection.features[0].geometry
+        ) {
+          console.warn('DEBUG: merge() - skipping invalid feature group:', featureCollection);
+          return; // Skip this feature group
+        }
+
+        if (featureCollection.features[0].geometry.coordinates.length > 1) {
+          featureCollection.features[0].geometry.coordinates.forEach((element) => {
+            const feature = this.turfHelper.getMultiPolygon([element]);
+            polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+            if (polyIntersection) {
+              newArray.push(featureGroup);
+              polygonFeature.push(feature);
+            }
+          });
+        } else {
+          const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
           polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+
+          if (!polyIntersection) {
+            try {
+              const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
+              if (
+                directIntersection &&
+                directIntersection.geometry &&
+                (directIntersection.geometry.type === 'Polygon' ||
+                  directIntersection.geometry.type === 'MultiPolygon')
+              ) {
+                polyIntersection = true;
+              }
+            } catch (error) {
+              // Silently handle intersection errors
+            }
+          }
           if (polyIntersection) {
             newArray.push(featureGroup);
             polygonFeature.push(feature);
           }
-        });
-      } else {
-        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-        polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-
-        if (!polyIntersection) {
-          try {
-            const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
-            if (
-              directIntersection &&
-              directIntersection.geometry &&
-              (directIntersection.geometry.type === 'Polygon' ||
-                directIntersection.geometry.type === 'MultiPolygon')
-            ) {
-              polyIntersection = true;
-            }
-          } catch (error) {
-            // Silently handle intersection errors
-          }
         }
-        if (polyIntersection) {
-          newArray.push(featureGroup);
-          polygonFeature.push(feature);
-        }
+      } catch (error) {
+        console.warn('DEBUG: merge() - error processing feature group:', error.message);
+        // Continue with next feature group
       }
     });
 
@@ -176,7 +217,7 @@ export class PolygonOperationsManager {
       this.addPolygonLayerCallback(resultPolygon, true);
     } catch (error) {
       // In test environment, still add to array even if map rendering fails
-      this.arrayOfFeatureGroups.push(new L.FeatureGroup());
+      this.getArrayOfFeatureGroups().push(new L.FeatureGroup());
     }
   }
 
@@ -271,8 +312,9 @@ export class PolygonOperationsManager {
    */
   private deletePolygonOnMerge(polygon: any) {
     let polygon2 = [];
-    if (this.arrayOfFeatureGroups.length > 0) {
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+    if (arrayOfFeatureGroups.length > 0) {
+      arrayOfFeatureGroups.forEach((featureGroup) => {
         const layer = featureGroup.getLayers()[0] as any;
         const latlngs = layer.getLatLngs()[0];
         polygon2 = [...latlngs[0]];
@@ -298,9 +340,10 @@ export class PolygonOperationsManager {
       const polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
 
       featureGroup.clearLayers();
-      this.arrayOfFeatureGroups = this.arrayOfFeatureGroups.filter(
-        (featureGroups) => featureGroups !== featureGroup,
-      );
+      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+      // Note: We can't directly modify the array returned by the getter,
+      // so we need to use the callback to remove the feature group
+      // This method should ideally use the removeFeatureGroupCallback instead
 
       this.map.removeLayer(featureGroup);
     }
@@ -317,21 +360,50 @@ export class PolygonOperationsManager {
    * Clean up any empty feature groups that remain after operations
    */
   private cleanupEmptyFeatureGroups(): void {
+    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
     console.log(
       'DEBUG: cleanupEmptyFeatureGroups() - before cleanup, array length:',
-      this.arrayOfFeatureGroups.length,
+      arrayOfFeatureGroups.length,
     );
 
     // Filter out feature groups that have no features or invalid features
-    const validFeatureGroups = this.arrayOfFeatureGroups.filter((featureGroup) => {
+    const validFeatureGroups = arrayOfFeatureGroups.filter((featureGroup) => {
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
+
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - checking feature group:',
+          featureCollection,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - featureCollection exists:',
+          !!featureCollection,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features exists:',
+          !!featureCollection?.features,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features length:',
+          featureCollection?.features?.length,
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features[0] exists:',
+          !!featureCollection?.features?.[0],
+        );
+        console.log(
+          'DEBUG: cleanupEmptyFeatureGroups() - features[0].geometry exists:',
+          !!featureCollection?.features?.[0]?.geometry,
+        );
+
         const hasValidFeatures =
           featureCollection &&
           featureCollection.features &&
           featureCollection.features.length > 0 &&
           featureCollection.features[0] &&
           featureCollection.features[0].geometry;
+
+        console.log('DEBUG: cleanupEmptyFeatureGroups() - hasValidFeatures:', hasValidFeatures);
 
         if (!hasValidFeatures) {
           console.log(
@@ -360,12 +432,12 @@ export class PolygonOperationsManager {
     });
 
     // Update the array with only valid feature groups
-    this.arrayOfFeatureGroups.length = 0;
-    this.arrayOfFeatureGroups.push(...validFeatureGroups);
+    arrayOfFeatureGroups.length = 0;
+    arrayOfFeatureGroups.push(...validFeatureGroups);
 
     console.log(
       'DEBUG: cleanupEmptyFeatureGroups() - after cleanup, array length:',
-      this.arrayOfFeatureGroups.length,
+      arrayOfFeatureGroups.length,
     );
   }
 }

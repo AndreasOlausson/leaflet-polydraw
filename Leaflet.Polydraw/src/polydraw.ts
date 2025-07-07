@@ -91,8 +91,19 @@ class Polydraw extends L.Control {
       this.turfHelper,
       this.map,
       () => this.getDrawMode(),
-      this.arrayOfFeatureGroups,
-      (geoJSON, simplify) => this.addPolygonLayer(geoJSON, simplify),
+      () => this.arrayOfFeatureGroups,
+      (geoJSON, simplify) => {
+        console.log('DEBUG: Main polydraw addPolygonLayer callback called');
+        console.log(
+          'DEBUG: Main polydraw arrayOfFeatureGroups length before:',
+          this.arrayOfFeatureGroups.length,
+        );
+        this.addPolygonLayer(geoJSON, simplify);
+        console.log(
+          'DEBUG: Main polydraw arrayOfFeatureGroups length after:',
+          this.arrayOfFeatureGroups.length,
+        );
+      },
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
     );
     this.drawingEventsManager = new DrawingEventsManager(
@@ -106,7 +117,7 @@ class Polydraw extends L.Control {
       this.config,
       this.turfHelper,
       this.map,
-      this.arrayOfFeatureGroups,
+      () => this.arrayOfFeatureGroups,
       (geoJSON, simplify, noMerge) => this.addPolygonLayer(geoJSON, simplify, false, 0),
       (polygon) => this.deletePolygon(polygon),
       (featureGroup) => this.removeFeatureGroup(featureGroup),
@@ -316,6 +327,10 @@ class Polydraw extends L.Control {
 
   // Update the addAutoPolygon method signature and implementation
   public addAutoPolygon(geographicBorders: L.LatLng[][][], options?: AutoPolygonOptions): void {
+    console.log('DEBUG: addAutoPolygon called with:', geographicBorders.length, 'polygon groups');
+    console.log('DEBUG: addAutoPolygon mergePolygons setting:', this.mergePolygons);
+    console.log('DEBUG: addAutoPolygon current array length:', this.arrayOfFeatureGroups.length);
+
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');
@@ -332,7 +347,8 @@ class Polydraw extends L.Control {
     // Extract options with defaults
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
 
-    geographicBorders.forEach((group, _groupIndex) => {
+    geographicBorders.forEach((group, groupIndex) => {
+      console.log('DEBUG: addAutoPolygon processing group', groupIndex);
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
       try {
@@ -382,7 +398,29 @@ class Polydraw extends L.Control {
           });
         });
 
-        this.arrayOfFeatureGroups.push(featureGroup);
+        // Instead of directly pushing to array, use the same logic as addPolygon
+        // to respect merge settings
+        console.log('DEBUG: addAutoPolygon checking if should merge');
+        if (this.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
+          console.log('DEBUG: addAutoPolygon attempting merge with existing polygons');
+          // Convert the polygon to GeoJSON format for merge processing
+          const geoJSON = polygon.toGeoJSON();
+
+          // Remove the temporary feature group since we'll use merge logic
+          try {
+            this.map.removeLayer(featureGroup);
+          } catch (error) {
+            // Handle map removal errors
+          }
+
+          // Use the existing merge logic instead of direct array push
+          this.addPolygon(geoJSON, false, false);
+        } else {
+          console.log('DEBUG: addAutoPolygon adding directly (no merge)');
+          // No merge needed, add directly
+          this.arrayOfFeatureGroups.push(featureGroup);
+        }
+
         this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
       } catch (error) {
         console.error('Error adding auto polygon:', error);
@@ -703,16 +741,20 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
+    console.log('DEBUG: addPolygonLayer called with:', latlngs);
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
+    console.log('DEBUG: addPolygonLayer latLngs after simplify:', latLngs);
     // Create and add a new polygon layer
     const polygon = this.getPolygon(latLngs);
+    console.log('DEBUG: addPolygonLayer polygon created:', polygon);
 
     // Store optimization level in polygon metadata
     (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
 
     featureGroup.addLayer(polygon);
+    console.log('DEBUG: addPolygonLayer polygon added to featureGroup');
 
     // Enable polygon dragging if configured
     if (this.config.modes.dragPolygons) {
@@ -721,6 +763,7 @@ class Polydraw extends L.Control {
 
     // Add red polylines for hole rings and markers
     const markerLatlngs = polygon.getLatLngs();
+    console.log('DEBUG: addPolygonLayer markerLatlngs:', markerLatlngs);
 
     markerLatlngs.forEach((polygonRings) => {
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
@@ -763,6 +806,19 @@ class Polydraw extends L.Control {
     });
 
     this.arrayOfFeatureGroups.push(featureGroup);
+    console.log(
+      'DEBUG: addPolygonLayer featureGroup added to array, new length:',
+      this.arrayOfFeatureGroups.length,
+    );
+
+    // Add to map
+    try {
+      featureGroup.addTo(this.map);
+      console.log('DEBUG: addPolygonLayer featureGroup added to map successfully');
+    } catch (error) {
+      console.log('DEBUG: addPolygonLayer failed to add featureGroup to map:', error.message);
+    }
+
     this.setDrawMode(DrawMode.Off);
 
     featureGroup.on('click', (e) => {
