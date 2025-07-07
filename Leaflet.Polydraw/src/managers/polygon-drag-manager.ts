@@ -619,6 +619,7 @@ export class PolygonDragManager {
 
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
+
         const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
         let intersects = false;
@@ -737,13 +738,36 @@ export class PolygonDragManager {
       return result;
     }
 
+    // Clean up any empty feature groups before checking interactions
+    this.cleanupEmptyFeatureGroups();
+
     // Check interactions with all other polygons
     for (const featureGroup of this.arrayOfFeatureGroups) {
       if (featureGroup === excludeFeatureGroup) continue;
 
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
-        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+        // DEBUG: Add validation before accessing features[0]
+        if (
+          !featureCollection ||
+          !featureCollection.features ||
+          featureCollection.features.length === 0
+        ) {
+          console.warn(
+            'DEBUG: Invalid feature collection in checkDragInteractions:',
+            featureCollection,
+          );
+          continue; // Skip this feature group
+        }
+
+        const firstFeature = featureCollection.features[0];
+        if (!firstFeature || !firstFeature.geometry) {
+          console.warn('DEBUG: Invalid first feature in checkDragInteractions:', firstFeature);
+          continue; // Skip this feature group
+        }
+
+        const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
 
         // Check if dragged polygon is completely contained within existing polygon
         // Use difference operation to check containment
@@ -882,5 +906,64 @@ export class PolygonDragManager {
     if (this.updatePolygonInformationCallback) {
       this.updatePolygonInformationCallback();
     }
+  }
+
+  /**
+   * Clean up any empty feature groups that remain after operations
+   */
+  private cleanupEmptyFeatureGroups(): void {
+    console.log(
+      'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - before cleanup, array length:',
+      this.arrayOfFeatureGroups.length,
+    );
+
+    // Filter out feature groups that have no features or invalid features
+    const validFeatureGroups = this.arrayOfFeatureGroups.filter((featureGroup) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const hasValidFeatures =
+          featureCollection &&
+          featureCollection.features &&
+          featureCollection.features.length > 0 &&
+          featureCollection.features[0] &&
+          featureCollection.features[0].geometry;
+
+        if (!hasValidFeatures) {
+          console.log(
+            'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - removing empty feature group:',
+            featureCollection,
+          );
+          // Remove from map if it exists
+          try {
+            this.map.removeLayer(featureGroup);
+          } catch (error) {
+            // Silently handle removal errors
+          }
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.warn(
+          'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - error checking feature group:',
+          error,
+        );
+        // Remove problematic feature groups
+        try {
+          this.map.removeLayer(featureGroup);
+        } catch (removeError) {
+          // Silently handle removal errors
+        }
+        return false;
+      }
+    });
+
+    // Update the array with only valid feature groups
+    this.arrayOfFeatureGroups.length = 0;
+    this.arrayOfFeatureGroups.push(...validFeatureGroups);
+
+    console.log(
+      'DEBUG: PolygonDragManager cleanupEmptyFeatureGroups() - after cleanup, array length:',
+      this.arrayOfFeatureGroups.length,
+    );
   }
 }

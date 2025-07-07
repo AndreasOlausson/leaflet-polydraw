@@ -343,7 +343,9 @@ export class TurfHelper {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([polygon1, polygon2]);
       const diff = turf.difference(featureCollection);
-      return diff ? this.getTurfPolygon(diff) : null;
+
+      const result = diff ? this.getTurfPolygon(diff) : null;
+      return result;
     } catch (error) {
       console.warn('Error in polygonDifference:', error.message);
       return null;

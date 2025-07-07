@@ -51,6 +51,7 @@ export class PolygonOperationsManager {
       const poly = this.getLatLngsFromJsonCallback(layer);
       const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
       const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
+
       if (newPolygon) {
         newPolygons.push(newPolygon);
       }
@@ -61,6 +62,9 @@ export class PolygonOperationsManager {
     newPolygons.forEach((np) => {
       this.addPolygonLayerCallback(np, true, true);
     });
+
+    // Clean up any empty feature groups that might remain
+    this.cleanupEmptyFeatureGroups();
   }
 
   /**
@@ -307,5 +311,61 @@ export class PolygonOperationsManager {
    */
   private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
     return poly1.toString() === poly2.toString();
+  }
+
+  /**
+   * Clean up any empty feature groups that remain after operations
+   */
+  private cleanupEmptyFeatureGroups(): void {
+    console.log(
+      'DEBUG: cleanupEmptyFeatureGroups() - before cleanup, array length:',
+      this.arrayOfFeatureGroups.length,
+    );
+
+    // Filter out feature groups that have no features or invalid features
+    const validFeatureGroups = this.arrayOfFeatureGroups.filter((featureGroup) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const hasValidFeatures =
+          featureCollection &&
+          featureCollection.features &&
+          featureCollection.features.length > 0 &&
+          featureCollection.features[0] &&
+          featureCollection.features[0].geometry;
+
+        if (!hasValidFeatures) {
+          console.log(
+            'DEBUG: cleanupEmptyFeatureGroups() - removing empty feature group:',
+            featureCollection,
+          );
+          // Remove from map if it exists
+          try {
+            this.map.removeLayer(featureGroup);
+          } catch (error) {
+            // Silently handle removal errors
+          }
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.warn('DEBUG: cleanupEmptyFeatureGroups() - error checking feature group:', error);
+        // Remove problematic feature groups
+        try {
+          this.map.removeLayer(featureGroup);
+        } catch (removeError) {
+          // Silently handle removal errors
+        }
+        return false;
+      }
+    });
+
+    // Update the array with only valid feature groups
+    this.arrayOfFeatureGroups.length = 0;
+    this.arrayOfFeatureGroups.push(...validFeatureGroups);
+
+    console.log(
+      'DEBUG: cleanupEmptyFeatureGroups() - after cleanup, array length:',
+      this.arrayOfFeatureGroups.length,
+    );
   }
 }
