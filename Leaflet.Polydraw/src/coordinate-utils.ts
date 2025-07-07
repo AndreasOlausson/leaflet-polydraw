@@ -5,19 +5,20 @@
 import * as L from 'leaflet';
 import type { ILatLng } from './types/polydraw-interfaces';
 import { GeometryUtils } from './geometry-utils';
+import type { TurfHelper } from './turf-helper';
 
 export class CoordinateUtils {
   /**
    * Convert coordinate arrays to proper format for polygon creation
    */
-  static convertToCoords(latlngs: ILatLng[][]): any[] {
+  static convertToCoords(latlngs: ILatLng[][], turfHelper: TurfHelper): any[] {
     const coords = [];
 
     // latlngs length
     if (latlngs.length > 1 && latlngs.length < 3) {
       const coordinates = [];
       // Coords of last polygon
-      const within = this.isWithin(
+      const within = turfHelper.isWithin(
         L.GeoJSON.latLngsToCoords(latlngs[latlngs.length - 1]),
         L.GeoJSON.latLngsToCoords(latlngs[0]),
       );
@@ -37,7 +38,7 @@ export class CoordinateUtils {
     } else if (latlngs.length > 2) {
       const coordinates = [];
       for (let index = 1; index < latlngs.length - 1; index++) {
-        const within = this.isWithin(
+        const within = turfHelper.isWithin(
           L.GeoJSON.latLngsToCoords(latlngs[index]),
           L.GeoJSON.latLngsToCoords(latlngs[0]),
         );
