@@ -724,6 +724,9 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
+    // Ensure managers are initialized before adding polygon
+    this.ensureManagersInitialized();
+
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
@@ -757,28 +760,13 @@ class Polydraw extends L.Control {
           featureGroup.addLayer(holePolyline);
         }
 
-        // Add markers with preserved optimization level using MarkerManager
+        // Add markers with preserved optimization level
         if (isHoleRing) {
-          this.markerManager.addHoleMarker(
-            polyElement,
-            featureGroup,
-            visualOptimizationLevel,
-            (featureGroup) => this.markerDrag(featureGroup),
-            (featureGroup) => this.markerDragEnd(featureGroup),
-          );
+          console.log('🔧 Calling addHoleMarker for hole ring with', polyElement.length, 'points');
+          this.addHoleMarker(polyElement, featureGroup, visualOptimizationLevel);
         } else {
-          this.markerManager.addMarker(
-            polyElement,
-            featureGroup,
-            visualOptimizationLevel,
-            (featureGroup) => this.markerDrag(featureGroup),
-            (featureGroup) => this.markerDragEnd(featureGroup),
-            (polygon) => this.deletePolygon(polygon),
-            (latlngs) => this.convertToSimplifiedPolygon(latlngs),
-            (latlngs) => this.convertToBoundsPolygon(latlngs),
-            (latlngs) => this.doubleElbows(latlngs),
-            (latlngs) => this.bezierify(latlngs),
-          );
+          console.log('🔧 Calling addMarker for main ring with', polyElement.length, 'points');
+          this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
         }
       });
     });
@@ -941,10 +929,15 @@ class Polydraw extends L.Control {
 
     // Process each ring (outer ring and holes)
     processedRings.forEach((ring, ringIndex) => {
-      // Create invisible polylines for each edge
-      for (let i = 0; i < ring.length - 1; i++) {
+      // Create invisible polylines for each edge, including the closing edge
+      for (let i = 0; i < ring.length; i++) {
         const edgeStart = ring[i];
-        const edgeEnd = ring[i + 1];
+        const edgeEnd = ring[(i + 1) % ring.length]; // Use modulo to wrap around to first point
+
+        // Skip if start and end are the same (duplicate closing point)
+        if (edgeStart.lat === edgeEnd.lat && edgeStart.lng === edgeEnd.lng) {
+          continue;
+        }
 
         // Create an invisible polyline for this edge
         const edgePolyline = L.polyline([edgeStart, edgeEnd], {
@@ -988,19 +981,44 @@ class Polydraw extends L.Control {
    * Handle edge click events
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    // COMMENTED OUT - Edge click functionality disabled
     const edgeInfo = (edgePolyline as any)._polydrawEdgeInfo;
-
     if (!edgeInfo) return;
-
-    // Console log the edge click
-    console.log('🎯 Edge clicked!', {
-      ringIndex: edgeInfo.ringIndex,
-      edgeIndex: edgeInfo.edgeIndex,
-      clickPoint: e.latlng,
-      edgeStart: edgeInfo.startPoint,
-      edgeEnd: edgeInfo.endPoint,
-    });
-
+    // Add elbow functionality
+    const newPoint = e.latlng;
+    const parentPolygon = edgeInfo.parentPolygon;
+    const parentFeatureGroup = edgeInfo.parentFeatureGroup;
+    if (parentPolygon && parentFeatureGroup) {
+      try {
+        // Ensure managers are initialized before adding polygon
+        this.ensureManagersInitialized();
+        // Check if parentPolygon has toGeoJSON method (safety check for tests)
+        if (typeof parentPolygon.toGeoJSON !== 'function') {
+          return;
+        }
+        // Get the polygon as GeoJSON
+        const poly = parentPolygon.toGeoJSON();
+        // Process both Polygon and MultiPolygon types
+        if (poly.geometry.type === 'MultiPolygon' || poly.geometry.type === 'Polygon') {
+          // Use the existing injectPointToPolygon method
+          const newPolygon = this.turfHelper.injectPointToPolygon(poly, [
+            newPoint.lng,
+            newPoint.lat,
+          ]);
+          if (newPolygon) {
+            // Get the optimization level from the original polygon
+            const optimizationLevel = (parentPolygon as any)._polydrawOptimizationLevel || 0;
+            // Remove the entire feature group (this removes polygon + all markers + edge listeners)
+            this.removeFeatureGroup(parentFeatureGroup);
+            // Add the new polygon with the injected point and preserve optimization level
+            this.addPolygonLayer(newPolygon, false, false, optimizationLevel);
+          }
+        }
+      } catch (error) {
+        // TODO: Add proper error handling.
+        // Silently handle errors
+      }
+    }
     // Stop event propagation to prevent polygon click
     L.DomEvent.stopPropagation(e);
   }
@@ -1028,9 +1046,6 @@ class Polydraw extends L.Control {
     //TODO ...
   }
 
-  //   const newLatlngs: Feature<Polygon | MultiPolygon> = addNew; //Trenger kanskje this.turfHelper.getTurfPolygon( addNew);
-  //   this.addPolygonLayer(newLatlngs, true);
-  // }
   private events(onoff: boolean) {
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
@@ -1501,6 +1516,285 @@ class Polydraw extends L.Control {
       // Silently handle intersection analysis errors
       return 'standard_union';
     }
+  }
+
+  // Simple addMarker method without over-engineered optimization
+  private addMarker(
+    latlngs: ILatLng[],
+    FeatureGroup: L.FeatureGroup,
+    visualOptimizationLevel: number = 0,
+  ) {
+    // Ensure latlngs is an array
+    if (!Array.isArray(latlngs)) {
+      console.warn('addMarker: latlngs is not an array:', latlngs);
+      return;
+    }
+
+    let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
+    let deleteMarkerIdx = this.getMarkerIndex(
+      latlngs,
+      this.config.markers.markerDeleteIcon.position,
+    );
+    let infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+
+    // Fallback for small polygons
+    if (latlngs.length <= 5) {
+      menuMarkerIdx = 0;
+      deleteMarkerIdx = Math.floor(latlngs.length / 2);
+      infoMarkerIdx = latlngs.length - 1;
+    }
+
+    latlngs.forEach((latlng, i) => {
+      let iconClasses = this.config.markers.markerIcon.styleClasses;
+
+      if (i === menuMarkerIdx && this.config.markers.menuMarker) {
+        iconClasses = this.config.markers.markerMenuIcon.styleClasses;
+      } else if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+        iconClasses = this.config.markers.markerDeleteIcon.styleClasses;
+      } else if (i === infoMarkerIdx && this.config.markers.infoMarker) {
+        iconClasses = this.config.markers.markerInfoIcon.styleClasses;
+      }
+
+      // Handle both array and string formats for iconClasses
+      const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+
+      const marker = new L.Marker(latlng, {
+        icon: IconFactory.createDivIcon(processedClasses),
+        draggable: this.config.modes.dragElbow,
+        title: this.config.markers.coordsTitle ? this.getLatLngInfoString(latlng) : '',
+        zIndexOffset:
+          this.config.markers.markerIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
+      });
+
+      FeatureGroup.addLayer(marker).addTo(this.map);
+
+      // Set high z-index for special markers
+      if (i === menuMarkerIdx || i === deleteMarkerIdx || i === infoMarkerIdx) {
+        const element = marker.getElement();
+        if (element) {
+          element.style.zIndex = '10000';
+        }
+      }
+
+      // Add drag event handlers
+      if (this.config.modes.dragElbow) {
+        marker.on('drag', (e) => {
+          this.markerDrag(FeatureGroup);
+        });
+        marker.on('dragend', (e) => {
+          this.markerDragEnd(FeatureGroup);
+        });
+      }
+
+      // Add popup and click events for special markers
+      if (i === menuMarkerIdx && this.config.markers.menuMarker) {
+        const menuPopup = this.generateMenuMarkerPopup(latlngs);
+        marker.options.zIndexOffset =
+          this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+        marker.bindPopup(menuPopup, { className: 'alter-marker' });
+      }
+      if (i === infoMarkerIdx && this.config.markers.infoMarker) {
+        const closedLatlngs = [...latlngs];
+        if (latlngs.length > 0) {
+          const first = latlngs[0];
+          const last = latlngs[latlngs.length - 1];
+          if (first.lat !== last.lat || first.lng !== last.lng) {
+            closedLatlngs.push(first);
+          }
+        }
+        const area = PolygonUtil.getSqmArea(closedLatlngs);
+        const perimeter = PolygonUtil.getPerimeter(closedLatlngs);
+        const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
+        marker.options.zIndexOffset =
+          this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+        marker.bindPopup(infoPopup, { className: 'info-marker' });
+      }
+      if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+        marker.options.zIndexOffset =
+          this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+        marker.on('click', (e) => {
+          this.deletePolygon([latlngs]);
+        });
+      }
+    });
+  }
+
+  // Simple addHoleMarker method without over-engineered optimization
+  private addHoleMarker(
+    latlngs: ILatLng[],
+    FeatureGroup: L.FeatureGroup,
+    visualOptimizationLevel: number = 0,
+  ) {
+    // Ensure latlngs is an array
+    if (!Array.isArray(latlngs)) {
+      console.warn('addHoleMarker: latlngs is not an array:', latlngs);
+      return;
+    }
+
+    latlngs.forEach((latlng, i) => {
+      const iconClasses = this.config.markers.holeIcon.styleClasses;
+
+      // Handle both array and string formats for iconClasses
+      const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+
+      const marker = new L.Marker(latlng, {
+        icon: IconFactory.createDivIcon(processedClasses),
+        draggable: true,
+        title: this.getLatLngInfoString(latlng),
+        zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
+      });
+      FeatureGroup.addLayer(marker).addTo(this.map);
+
+      marker.on('drag', (e) => {
+        this.markerDrag(FeatureGroup);
+      });
+      marker.on('dragend', (e) => {
+        this.markerDragEnd(FeatureGroup);
+      });
+    });
+  }
+
+  private getLatLngInfoString(latlng: ILatLng): string {
+    return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
+  }
+
+  private generateMenuMarkerPopup(latLngs: ILatLng[]): HTMLDivElement {
+    const outerWrapper: HTMLDivElement = document.createElement('div');
+    outerWrapper.classList.add('alter-marker-outer-wrapper');
+
+    const wrapper: HTMLDivElement = document.createElement('div');
+    wrapper.classList.add('alter-marker-wrapper');
+
+    const invertedCorner: HTMLElement = document.createElement('i');
+    invertedCorner.classList.add('inverted-corner');
+
+    const markerContent: HTMLDivElement = document.createElement('div');
+    markerContent.classList.add('content');
+
+    const markerContentWrapper: HTMLDivElement = document.createElement('div');
+    markerContentWrapper.classList.add('marker-menu-content');
+
+    const simplify: HTMLDivElement = document.createElement('div');
+    simplify.classList.add('marker-menu-button', 'simplify');
+    simplify.title = 'Simplify';
+
+    const doubleElbows: HTMLDivElement = document.createElement('div');
+    doubleElbows.classList.add('marker-menu-button', 'double-elbows');
+    doubleElbows.title = 'DoubleElbows';
+
+    const bbox: HTMLDivElement = document.createElement('div');
+    bbox.classList.add('marker-menu-button', 'bbox');
+    bbox.title = 'Bounding box';
+
+    const bezier: HTMLDivElement = document.createElement('div');
+    bezier.classList.add('marker-menu-button', 'bezier');
+    bezier.title = 'Curve';
+
+    const separator: HTMLDivElement = document.createElement('div');
+    separator.classList.add('separator');
+
+    outerWrapper.appendChild(wrapper);
+    wrapper.appendChild(invertedCorner);
+    wrapper.appendChild(markerContent);
+    markerContent.appendChild(markerContentWrapper);
+    markerContentWrapper.appendChild(simplify);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(doubleElbows);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bbox);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bezier);
+
+    simplify.onclick = () => {
+      this.convertToSimplifiedPolygon(latLngs);
+    };
+    bbox.onclick = () => {
+      this.convertToBoundsPolygon(latLngs);
+    };
+
+    doubleElbows.onclick = () => {
+      this.doubleElbows(latLngs);
+    };
+    bezier.onclick = () => {
+      this.bezierify(latLngs);
+    };
+
+    return outerWrapper;
+  }
+
+  private generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
+    const _perimeter = new Perimeter(perimeter, this.config as any);
+    const _area = new Area(area, this.config as any);
+
+    const outerWrapper: HTMLDivElement = document.createElement('div');
+    outerWrapper.classList.add('info-marker-outer-wrapper');
+
+    const wrapper: HTMLDivElement = document.createElement('div');
+    wrapper.classList.add('info-marker-wrapper');
+
+    const invertedCorner: HTMLElement = document.createElement('i');
+    invertedCorner.classList.add('inverted-corner');
+
+    const markerContent: HTMLDivElement = document.createElement('div');
+    markerContent.classList.add('content');
+
+    const rowWithSeparator: HTMLDivElement = document.createElement('div');
+    rowWithSeparator.classList.add('row', 'bottom-separator');
+
+    const perimeterHeader: HTMLDivElement = document.createElement('div');
+    perimeterHeader.classList.add('header');
+    perimeterHeader.innerText = this.config.markers.markerInfoIcon.perimeterLabel;
+
+    const emptyDiv: HTMLDivElement = document.createElement('div');
+
+    const perimeterArea: HTMLSpanElement = document.createElement('span');
+    perimeterArea.classList.add('area');
+    perimeterArea.innerText = this.config.markers.markerInfoIcon.useMetrics
+      ? _perimeter.metricLength
+      : _perimeter.imperialLength;
+    const perimeterUnit: HTMLSpanElement = document.createElement('span');
+    perimeterUnit.classList.add('unit');
+    perimeterUnit.innerText =
+      ' ' +
+      (this.config.markers.markerInfoIcon.useMetrics
+        ? _perimeter.metricUnit
+        : _perimeter.imperialUnit);
+
+    const row: HTMLDivElement = document.createElement('div');
+    row.classList.add('row');
+
+    const areaHeader: HTMLDivElement = document.createElement('div');
+    areaHeader.classList.add('header');
+    areaHeader.innerText = this.config.markers.markerInfoIcon.areaLabel;
+
+    const rightRow: HTMLDivElement = document.createElement('div');
+    row.classList.add('right-margin');
+
+    const areaArea: HTMLSpanElement = document.createElement('span');
+    areaArea.classList.add('area');
+    areaArea.innerText = this.config.markers.markerInfoIcon.useMetrics
+      ? _area.metricArea
+      : _area.imperialArea;
+    const areaUnit: HTMLSpanElement = document.createElement('span');
+    areaUnit.classList.add('unit');
+    areaUnit.innerText =
+      ' ' + (this.config.markers.markerInfoIcon.useMetrics ? _area.metricUnit : _area.imperialUnit);
+
+    outerWrapper.appendChild(wrapper);
+    wrapper.appendChild(invertedCorner);
+    wrapper.appendChild(markerContent);
+    markerContent.appendChild(rowWithSeparator);
+    rowWithSeparator.appendChild(perimeterHeader);
+    rowWithSeparator.appendChild(emptyDiv);
+    emptyDiv.appendChild(perimeterArea);
+    emptyDiv.appendChild(perimeterUnit);
+    markerContent.appendChild(row);
+    row.appendChild(areaHeader);
+    row.appendChild(rightRow);
+    rightRow.appendChild(areaArea);
+    rightRow.appendChild(areaUnit);
+
+    return outerWrapper;
   }
 }
 

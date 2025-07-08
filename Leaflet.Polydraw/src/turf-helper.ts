@@ -330,9 +330,78 @@ export class TurfHelper {
   }
 
   injectPointToPolygon(polygon, point) {
-    // Complex logic, adapt as needed
-    // For now, placeholder
-    return polygon;
+    // Clone polygon to avoid modifying original
+    const newPoly = JSON.parse(JSON.stringify(polygon));
+
+    if (newPoly.geometry.type === 'MultiPolygon') {
+      const coordinates = newPoly.geometry.coordinates[0][0];
+      // Find the closest edge and insert the point
+      let minDistance = Infinity;
+      let insertIndex = 0;
+
+      for (let i = 0; i < coordinates.length - 1; i++) {
+        const edgeStart = coordinates[i];
+        const edgeEnd = coordinates[i + 1];
+        const distance = this.distanceToLineSegment(point, edgeStart, edgeEnd);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          insertIndex = i + 1;
+        }
+      }
+
+      coordinates.splice(insertIndex, 0, point);
+    } else if (newPoly.geometry.type === 'Polygon') {
+      const coordinates = newPoly.geometry.coordinates[0];
+      // Find the closest edge and insert the point
+      let minDistance = Infinity;
+      let insertIndex = 0;
+
+      for (let i = 0; i < coordinates.length - 1; i++) {
+        const edgeStart = coordinates[i];
+        const edgeEnd = coordinates[i + 1];
+        const distance = this.distanceToLineSegment(point, edgeStart, edgeEnd);
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          insertIndex = i + 1;
+        }
+      }
+
+      coordinates.splice(insertIndex, 0, point);
+    }
+
+    return newPoly;
+  }
+
+  private distanceToLineSegment(point: number[], lineStart: number[], lineEnd: number[]): number {
+    const A = point[0] - lineStart[0];
+    const B = point[1] - lineStart[1];
+    const C = lineEnd[0] - lineStart[0];
+    const D = lineEnd[1] - lineStart[1];
+
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+
+    if (lenSq === 0) return Math.sqrt(A * A + B * B);
+
+    const param = dot / lenSq;
+
+    let xx, yy;
+    if (param < 0) {
+      xx = lineStart[0];
+      yy = lineStart[1];
+    } else if (param > 1) {
+      xx = lineEnd[0];
+      yy = lineEnd[1];
+    } else {
+      xx = lineStart[0] + param * C;
+      yy = lineStart[1] + param * D;
+    }
+
+    const dx = point[0] - xx;
+    const dy = point[1] - yy;
+    return Math.sqrt(dx * dx + dy * dy);
   }
 
   polygonDifference(
