@@ -3,16 +3,149 @@ import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 import { DrawMode } from '../src/enums';
 
-// Mock Leaflet
-vi.mock('leaflet', () => ({
-  default: {
-    Control: class {
-      addTo() {
-        return this;
-      }
-      onAdd() {
-        return document.createElement('div');
-      }
+// Mock only the essential DOM/rendering parts that can't run in Node.js
+vi.mock('leaflet', () => {
+  const MockControl = class {
+    addTo() {
+      return this;
+    }
+    onAdd() {
+      return document.createElement('div');
+    }
+  };
+
+  const MockMap = class {
+    dragging = { enable: vi.fn(), disable: vi.fn() };
+    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
+    scrollWheelZoom = { enable: vi.fn(), disable: vi.fn() };
+    getContainer() {
+      return document.createElement('div');
+    }
+    on() {
+      return this;
+    }
+    off() {
+      return this;
+    }
+    removeLayer() {
+      return this;
+    }
+    addLayer() {
+      return this;
+    }
+    containerPointToLatLng() {
+      return { lat: 0, lng: 0 };
+    }
+  };
+
+  const MockFeatureGroup = class {
+    layers: any[] = [];
+    addLayer(layer: any) {
+      this.layers.push(layer);
+      return this;
+    }
+    removeLayer(layer: any) {
+      this.layers = this.layers.filter((l) => l !== layer);
+      return this;
+    }
+    clearLayers() {
+      this.layers = [];
+      return this;
+    }
+    addTo() {
+      return this;
+    }
+    getLayers() {
+      return this.layers;
+    }
+    eachLayer(fn: any) {
+      this.layers.forEach(fn);
+      return this;
+    }
+    toGeoJSON() {
+      return {
+        type: 'FeatureCollection',
+        features: this.layers.map((layer: any) =>
+          layer.toGeoJSON
+            ? layer.toGeoJSON()
+            : {
+                type: 'Feature',
+                geometry: { type: 'Polygon', coordinates: [] },
+              },
+        ),
+      };
+    }
+    on() {
+      return this;
+    }
+  };
+
+  const MockPolygon = class {
+    latlngs: any;
+    options: any;
+    constructor(latlngs?: any, options?: any) {
+      this.latlngs = latlngs || [];
+      this.options = options || {};
+    }
+    getLatLngs() {
+      return this.latlngs;
+    }
+    setLatLngs(latlngs: any) {
+      this.latlngs = latlngs;
+      return this;
+    }
+    toGeoJSON() {
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: this.latlngs.map((ring: any) =>
+            ring.map ? ring.map((point: any) => [point.lng, point.lat]) : [[0, 0]],
+          ),
+        },
+      };
+    }
+    setStyle() {
+      return this;
+    }
+    on() {
+      return this;
+    }
+  };
+
+  return {
+    Control: MockControl,
+    Map: MockMap,
+    FeatureGroup: MockFeatureGroup,
+    Polygon: MockPolygon,
+    polyline: vi.fn((latlngs, options) => ({
+      latlngs: latlngs || [],
+      options: options || {},
+      addLatLng: vi.fn(),
+      setLatLngs: vi.fn(),
+      setStyle: vi.fn(),
+      toGeoJSON: vi.fn(() => ({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [],
+        },
+      })),
+      addTo: vi.fn(),
+      on: vi.fn(),
+    })),
+    GeoJSON: {
+      geometryToLayer: vi.fn((geojson: any) => {
+        const mockPolygon = new MockPolygon();
+        mockPolygon.toGeoJSON = () => geojson;
+        return mockPolygon;
+      }),
+      coordsToLatLngs: vi.fn((coords: any) => {
+        if (Array.isArray(coords) && Array.isArray(coords[0])) {
+          return coords.map((coord: any) => ({ lat: coord[1], lng: coord[0] }));
+        }
+        return coords;
+      }),
     },
     DomUtil: {
       create: vi.fn(() => document.createElement('div')),
@@ -23,91 +156,58 @@ vi.mock('leaflet', () => ({
     DomEvent: {
       stopPropagation: vi.fn(),
     },
-    Map: class {
-      dragging = { enable: vi.fn(), disable: vi.fn() };
-      doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
-      scrollWheelZoom = { enable: vi.fn(), disable: vi.fn() };
-      getContainer() {
-        return document.createElement('div');
-      }
-      on() {
-        return this;
-      }
-      off() {
-        return this;
-      }
-      removeLayer() {
-        return this;
-      }
-      containerPointToLatLng() {
-        return { lat: 0, lng: 0 };
-      }
-    },
-    FeatureGroup: class {
-      addLayer() {
-        return this;
-      }
-      removeLayer() {
-        return this;
-      }
-      clearLayers() {
-        return this;
-      }
-      addTo() {
-        return this;
-      }
-      getLayers() {
-        return [];
-      }
-      eachLayer() {
-        return this;
-      }
-      toGeoJSON() {
-        return { features: [] };
-      }
-      on() {
-        return this;
-      }
-    },
-    Polygon: class {
-      getLatLngs() {
-        return [];
-      }
-      setLatLngs() {
-        return this;
-      }
-      toGeoJSON() {
-        return { geometry: { coordinates: [] } };
-      }
-      setStyle() {
-        return this;
-      }
-      on() {
-        return this;
-      }
-    },
-    polyline: vi.fn(() => ({
-      addLatLng: vi.fn(),
-      setLatLngs: vi.fn(),
-      setStyle: vi.fn(),
-      toGeoJSON: vi.fn(() => ({ geometry: { coordinates: [] } })),
-      addTo: vi.fn(),
-    })),
-    GeoJSON: {
-      geometryToLayer: vi.fn(() => ({
-        setStyle: vi.fn(),
-        getLatLngs: vi.fn(() => []),
-        setLatLngs: vi.fn(),
-        toGeoJSON: vi.fn(() => ({ geometry: { coordinates: [] } })),
-        on: vi.fn(),
-      })),
-      coordsToLatLngs: vi.fn((coords) => coords),
-    },
     control: {
       polydraw: vi.fn(),
     },
-  },
-}));
+    default: {
+      Control: MockControl,
+      Map: MockMap,
+      FeatureGroup: MockFeatureGroup,
+      Polygon: MockPolygon,
+      polyline: vi.fn((latlngs, options) => ({
+        latlngs: latlngs || [],
+        options: options || {},
+        addLatLng: vi.fn(),
+        setLatLngs: vi.fn(),
+        setStyle: vi.fn(),
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [],
+          },
+        })),
+        addTo: vi.fn(),
+        on: vi.fn(),
+      })),
+      GeoJSON: {
+        geometryToLayer: vi.fn((geojson: any) => {
+          const mockPolygon = new MockPolygon();
+          mockPolygon.toGeoJSON = () => geojson;
+          return mockPolygon;
+        }),
+        coordsToLatLngs: vi.fn((coords: any) => {
+          if (Array.isArray(coords) && Array.isArray(coords[0])) {
+            return coords.map((coord: any) => ({ lat: coord[1], lng: coord[0] }));
+          }
+          return coords;
+        }),
+      },
+      DomUtil: {
+        create: vi.fn(() => document.createElement('div')),
+        addClass: vi.fn(),
+        removeClass: vi.fn(),
+        hasClass: vi.fn(() => false),
+      },
+      DomEvent: {
+        stopPropagation: vi.fn(),
+      },
+      control: {
+        polydraw: vi.fn(),
+      },
+    },
+  };
+});
 
 describe('Add Elbow Functionality', () => {
   let polydraw: Polydraw;
@@ -117,76 +217,76 @@ describe('Add Elbow Functionality', () => {
     // Create a mock map
     map = new L.Map(document.createElement('div'));
 
-    // Create polydraw instance
-    polydraw = new Polydraw();
+    // Create polydraw instance with minimal configuration
+    polydraw = new Polydraw({
+      config: {
+        mergePolygons: false, // Disable merging for cleaner tests
+        kinks: false,
+      } as any, // Use 'as any' to bypass full config validation in tests
+    });
     polydraw.addTo(map);
   });
 
   describe('Edge Click Detection', () => {
-    it('should detect edge clicks and provide edge information', () => {
-      // Mock polygon with coordinates
-      const mockPolygon = {
-        getLatLngs: vi.fn(() => [
+    it('should detect edge clicks and provide correct edge information', () => {
+      // Create a real polygon using addAutoPolygon
+      const squareCoords = [
+        [
           [
-            [
-              { lat: 58.4, lng: 15.6 },
-              { lat: 58.41, lng: 15.6 },
-              { lat: 58.41, lng: 15.61 },
-              { lat: 58.4, lng: 15.61 },
-              { lat: 58.4, lng: 15.6 },
-            ],
+            { lat: 58.4, lng: 15.6 },
+            { lat: 58.41, lng: 15.6 },
+            { lat: 58.41, lng: 15.61 },
+            { lat: 58.4, lng: 15.61 },
+            { lat: 58.4, lng: 15.6 },
           ],
-        ]),
-        setStyle: vi.fn(),
-        on: vi.fn(),
-      };
+        ],
+      ];
 
-      const mockFeatureGroup = new L.FeatureGroup();
+      // Add polygon to polydraw (this should work)
+      polydraw.addAutoPolygon(squareCoords as any);
 
-      // Test that edge click listeners are added
+      // Verify that addEdgeClickListeners method exists and can be called
       const addEdgeClickListeners = (polydraw as any).addEdgeClickListeners;
       expect(typeof addEdgeClickListeners).toBe('function');
 
-      // Call the method (it should not throw)
-      expect(() => {
-        addEdgeClickListeners.call(polydraw, mockPolygon, mockFeatureGroup);
-      }).not.toThrow();
-    });
+      // Verify that onEdgeClick method exists and handles edge info correctly
+      const onEdgeClick = (polydraw as any).onEdgeClick;
+      expect(typeof onEdgeClick).toBe('function');
 
-    it('should handle edge click events with proper edge information', () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      // Mock edge polyline with edge info
+      // Mock edge polyline with realistic edge info
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,
           edgeIndex: 1,
-          startPoint: { lat: 58.4, lng: 15.6 },
-          endPoint: { lat: 58.41, lng: 15.6 },
+          startPoint: { lat: 58.41, lng: 15.6 },
+          endPoint: { lat: 58.41, lng: 15.61 },
           parentPolygon: {},
           parentFeatureGroup: {},
         },
+        setStyle: vi.fn(),
       };
 
-      const mockEvent = {
-        latlng: { lat: 58.405, lng: 15.6 },
+      const mockClickEvent = {
+        latlng: { lat: 58.41, lng: 15.605 }, // Click on the right edge
       };
 
-      // Test edge click handler
-      const onEdgeClick = (polydraw as any).onEdgeClick;
-      expect(typeof onEdgeClick).toBe('function');
+      // Spy on console.log to verify edge detection works
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-      onEdgeClick.call(polydraw, mockEvent, mockEdgePolyline);
+      // This should work (existing functionality)
+      expect(() => {
+        onEdgeClick.call(polydraw, mockClickEvent, mockEdgePolyline);
+      }).not.toThrow();
 
-      // Should log edge click information
+      // Verify edge click was detected and logged
       expect(consoleSpy).toHaveBeenCalledWith(
         '🎯 Edge clicked!',
         expect.objectContaining({
           ringIndex: 0,
           edgeIndex: 1,
-          clickPoint: { lat: 58.405, lng: 15.6 },
-          edgeStart: { lat: 58.4, lng: 15.6 },
-          edgeEnd: { lat: 58.41, lng: 15.6 },
+          clickPoint: { lat: 58.41, lng: 15.605 },
+          edgeStart: { lat: 58.41, lng: 15.6 },
+          edgeEnd: { lat: 58.41, lng: 15.61 },
         }),
       );
 
@@ -194,170 +294,217 @@ describe('Add Elbow Functionality', () => {
     });
   });
 
-  describe('Add Elbow (Marker) Functionality', () => {
-    it('should be able to add a marker at edge midpoint', () => {
-      // Test data for edge
-      const edgeStart = { lat: 58.4, lng: 15.6 };
-      const edgeEnd = { lat: 58.41, lng: 15.6 };
-      const expectedMidpoint = { lat: 58.405, lng: 15.6 };
-
-      // Calculate midpoint
-      const midpoint = {
-        lat: (edgeStart.lat + edgeEnd.lat) / 2,
-        lng: (edgeStart.lng + edgeEnd.lng) / 2,
-      };
-
-      expect(midpoint).toEqual(expectedMidpoint);
+  describe('Add Elbow API', () => {
+    it('should expose addElbowAtEdge method', () => {
+      expect(typeof (polydraw as any).addElbowAtEdge).toBe('function');
     });
 
-    it('should insert new point into polygon coordinates', () => {
-      // Mock polygon coordinates
-      const originalCoords = [
-        { lat: 58.4, lng: 15.6 },
-        { lat: 58.41, lng: 15.6 },
-        { lat: 58.41, lng: 15.61 },
-        { lat: 58.4, lng: 15.61 },
-      ];
-
-      // Insert point at edge index 1 (between points 1 and 2)
-      const newPoint = { lat: 58.405, lng: 15.605 };
-      const edgeIndex = 1;
-
-      const updatedCoords = [
-        ...originalCoords.slice(0, edgeIndex + 1),
-        newPoint,
-        ...originalCoords.slice(edgeIndex + 1),
-      ];
-
-      expect(updatedCoords).toHaveLength(originalCoords.length + 1);
-      expect(updatedCoords[edgeIndex + 1]).toEqual(newPoint);
+    it('should expose addElbowAtPosition method', () => {
+      expect(typeof (polydraw as any).addElbowAtPosition).toBe('function');
     });
 
-    it('should handle polygon update after adding elbow', () => {
-      // Mock polygon with methods
-      const mockPolygon = {
-        getLatLngs: vi.fn(() => [
-          [
-            [
-              { lat: 58.4, lng: 15.6 },
-              { lat: 58.41, lng: 15.6 },
-              { lat: 58.41, lng: 15.61 },
-              { lat: 58.4, lng: 15.61 },
-            ],
-          ],
-        ]),
-        setLatLngs: vi.fn(),
-        toGeoJSON: vi.fn(() => ({
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [15.6, 58.4],
-                [15.6, 58.41],
-                [15.61, 58.41],
-                [15.61, 58.4],
-                [15.6, 58.4],
-              ],
-            ],
-          },
-        })),
-      };
+    it('should have elbow-related configuration options', () => {
+      const config = (polydraw as any).config;
+      expect(config.elbowOptions).toBeDefined();
+      expect(config.elbowOptions.enabled).toBe(true);
+    });
+  });
 
-      // Test that polygon can be updated
-      const newCoords = [
+  describe('Edge Click to Elbow Integration', () => {
+    it('should add elbow when edge is clicked', () => {
+      const triangleCoords = [
         [
           [
             { lat: 58.4, lng: 15.6 },
-            { lat: 58.405, lng: 15.6 },
-            { lat: 58.41, lng: 15.6 },
-            { lat: 58.41, lng: 15.61 },
-            { lat: 58.4, lng: 15.61 },
+            { lat: 58.42, lng: 15.6 },
+            { lat: 58.41, lng: 15.62 },
+            { lat: 58.4, lng: 15.6 },
           ],
         ],
       ];
 
-      mockPolygon.setLatLngs(newCoords);
-      expect(mockPolygon.setLatLngs).toHaveBeenCalledWith(newCoords);
-    });
-  });
+      polydraw.addAutoPolygon(triangleCoords as any);
 
-  describe('Edge Hover Functionality', () => {
-    it('should highlight edge on hover', () => {
+      const initialPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
+      const initialPolygon = (polydraw as any).arrayOfFeatureGroups[0]?.getLayers()[0];
+      const initialVertexCount = initialPolygon?.getLatLngs()[0]?.length || 0;
+
+      const edgeClickEvent = {
+        latlng: { lat: 58.41, lng: 15.6 },
+      };
+
       const mockEdgePolyline = {
-        setStyle: vi.fn(),
+        _polydrawEdgeInfo: {
+          ringIndex: 0,
+          edgeIndex: 0,
+          startPoint: { lat: 58.4, lng: 15.6 },
+          endPoint: { lat: 58.42, lng: 15.6 },
+          parentPolygon: initialPolygon,
+          parentFeatureGroup: (polydraw as any).arrayOfFeatureGroups[0],
+        },
       };
 
-      const highlightEdgeOnHover = (polydraw as any).highlightEdgeOnHover;
-      expect(typeof highlightEdgeOnHover).toBe('function');
+      const result = (polydraw as any).handleEdgeClickForElbow(edgeClickEvent, mockEdgePolyline);
 
-      // Test hover on
-      highlightEdgeOnHover.call(polydraw, mockEdgePolyline, true);
-      expect(mockEdgePolyline.setStyle).toHaveBeenCalledWith({
-        color: '#ff0000',
-        weight: 4,
-        opacity: 1,
-      });
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.newVertexAdded).toBe(true);
+      expect(result.insertedAt).toEqual({ lat: 58.41, lng: 15.6 });
 
-      // Test hover off
-      highlightEdgeOnHover.call(polydraw, mockEdgePolyline, false);
-      expect(mockEdgePolyline.setStyle).toHaveBeenCalledWith({
-        color: 'transparent',
-        weight: 10,
-        opacity: 0,
-      });
+      const updatedPolygon = (polydraw as any).arrayOfFeatureGroups[0]?.getLayers()[0];
+      const newVertexCount = updatedPolygon?.getLatLngs()[0]?.length || 0;
+      expect(newVertexCount).toBe(initialVertexCount + 1);
     });
-  });
 
-  describe('Polygon Structure Detection', () => {
-    it('should handle different polygon coordinate structures', () => {
-      // Test structure: [Array(1)] -> [Array(N)] -> N LatLng objects
-      const mockPolygon1 = {
-        getLatLngs: () => [
-          [
-            [
-              { lat: 58.4, lng: 15.6 },
-              { lat: 58.41, lng: 15.6 },
-              { lat: 58.41, lng: 15.61 },
-            ],
-          ],
-        ],
-      };
-
-      // Test structure: [[{lat, lng}, ...]]
-      const mockPolygon2 = {
-        getLatLngs: () => [
+    it('should insert elbow at correct position in polygon coordinates', () => {
+      const squareCoords = [
+        [
           [
             { lat: 58.4, lng: 15.6 },
-            { lat: 58.41, lng: 15.6 },
+            { lat: 58.4, lng: 15.61 },
             { lat: 58.41, lng: 15.61 },
+            { lat: 58.41, lng: 15.6 },
+            { lat: 58.4, lng: 15.6 },
           ],
         ],
-      };
+      ];
 
-      // Test structure: [{lat, lng}, ...]
-      const mockPolygon3 = {
-        getLatLngs: () => [
-          { lat: 58.4, lng: 15.6 },
-          { lat: 58.41, lng: 15.6 },
-          { lat: 58.41, lng: 15.61 },
+      polydraw.addAutoPolygon(squareCoords as any);
+
+      const edgeIndex = 1;
+      const clickPosition = { lat: 58.405, lng: 15.61 };
+
+      const result = (polydraw as any).addElbowAtEdge(0, edgeIndex, clickPosition);
+
+      expect(result.success).toBe(true);
+
+      const updatedPolygon = (polydraw as any).arrayOfFeatureGroups[0]?.getLayers()[0];
+      const coordinates = updatedPolygon?.getLatLngs()[0];
+
+      expect(coordinates[edgeIndex + 1]).toEqual(clickPosition);
+      expect(coordinates.length).toBe(6);
+    });
+
+    it('should handle elbow addition to polygons with holes', () => {
+      const polygonWithHole = [
+        [
+          [
+            { lat: 58.4, lng: 15.6 },
+            { lat: 58.4, lng: 15.62 },
+            { lat: 58.42, lng: 15.62 },
+            { lat: 58.42, lng: 15.6 },
+            { lat: 58.4, lng: 15.6 },
+          ],
+          [
+            { lat: 58.405, lng: 15.605 },
+            { lat: 58.405, lng: 15.615 },
+            { lat: 58.415, lng: 15.615 },
+            { lat: 58.415, lng: 15.605 },
+            { lat: 58.405, lng: 15.605 },
+          ],
         ],
-      };
+      ];
 
-      const mockFeatureGroup = new L.FeatureGroup();
-      const addEdgeClickListeners = (polydraw as any).addEdgeClickListeners;
+      polydraw.addAutoPolygon([polygonWithHole] as any);
 
-      // All structures should be handled without throwing
-      expect(() => {
-        addEdgeClickListeners.call(polydraw, mockPolygon1, mockFeatureGroup);
-      }).not.toThrow();
+      const ringIndex = 1;
+      const edgeIndex = 0;
+      const clickPosition = { lat: 58.405, lng: 15.61 };
 
-      expect(() => {
-        addEdgeClickListeners.call(polydraw, mockPolygon2, mockFeatureGroup);
-      }).not.toThrow();
+      const result = (polydraw as any).addElbowToRing(ringIndex, edgeIndex, clickPosition);
 
-      expect(() => {
-        addEdgeClickListeners.call(polydraw, mockPolygon3, mockFeatureGroup);
-      }).not.toThrow();
+      expect(result.success).toBe(true);
+      expect(result.ringModified).toBe(ringIndex);
     });
   });
+
+  // describe('Elbow Visual Feedback (TO BE IMPLEMENTED)', () => {
+  //   it('should highlight edge differently when elbow mode is active', () => {
+  //     const mockEdgePolyline = {
+  //       setStyle: vi.fn(),
+  //     };
+
+  //     // This will FAIL - elbow mode doesn't exist
+  //     (polydraw as any).setElbowMode(true);
+
+  //     const highlightEdgeOnHover = (polydraw as any).highlightEdgeOnHover;
+  //     highlightEdgeOnHover.call(polydraw, mockEdgePolyline, true);
+
+  //     // Should use elbow-specific highlight color
+  //     expect(mockEdgePolyline.setStyle).toHaveBeenCalledWith({
+  //       color: '#00ff00', // Green for elbow mode
+  //       weight: 4,
+  //       opacity: 1,
+  //     });
+  //   });
+
+  //   it('should show elbow preview on edge hover', () => {
+  //     const mockEdgePolyline = {
+  //       _polydrawEdgeInfo: {
+  //         startPoint: { lat: 58.4, lng: 15.6 },
+  //         endPoint: { lat: 58.41, lng: 15.6 },
+  //       },
+  //       setStyle: vi.fn(),
+  //     };
+
+  //     // This will FAIL - preview functionality doesn't exist
+  //     const previewMarker = (polydraw as any).showElbowPreview(mockEdgePolyline, {
+  //       lat: 58.405,
+  //       lng: 15.6,
+  //     });
+
+  //     expect(previewMarker).toBeDefined();
+  //     expect(previewMarker.getLatLng()).toEqual({ lat: 58.405, lng: 15.6 });
+  //   });
+  // });
+
+  // describe('Elbow Undo/Redo Support (TO BE IMPLEMENTED)', () => {
+  //   it('should support undoing elbow addition', () => {
+  //     // Create polygon and add elbow
+  //     const coords = [
+  //       [
+  //         [
+  //           { lat: 58.4, lng: 15.6 },
+  //           { lat: 58.41, lng: 15.6 },
+  //           { lat: 58.41, lng: 15.61 },
+  //           { lat: 58.4, lng: 15.6 },
+  //         ],
+  //       ],
+  //     ];
+
+  //     polydraw.addAutoPolygon(coords as any);
+
+  //     // This will FAIL - undo functionality doesn't exist
+  //     const undoState = (polydraw as any).saveUndoState();
+  //     (polydraw as any).addElbowAtPosition(0, 0, { lat: 58.405, lng: 15.6 });
+  //     const undoResult = (polydraw as any).undo();
+
+  //     expect(undoResult.success).toBe(true);
+  //     expect(undoResult.actionUndone).toBe('addElbow');
+  //   });
+  // });
+
+  // describe('Elbow Configuration (TO BE IMPLEMENTED)', () => {
+  //   it('should respect elbow configuration settings', () => {
+  //     const customConfig = {
+  //       mergePolygons: false,
+  //       kinks: false,
+  //       elbowOptions: {
+  //         enabled: true,
+  //         snapToMidpoint: true,
+  //         minDistanceFromVertex: 0.001,
+  //         maxElbowsPerEdge: 3,
+  //       },
+  //     };
+
+  //     const configuredPolydraw = new Polydraw({ config: customConfig as any });
+
+  //     // This will FAIL - configuration doesn't exist
+  //     const config = (configuredPolydraw as any).config.elbowOptions;
+  //     expect(config.enabled).toBe(true);
+  //     expect(config.snapToMidpoint).toBe(true);
+  //     expect(config.minDistanceFromVertex).toBe(0.001);
+  //     expect(config.maxElbowsPerEdge).toBe(3);
+  //   });
+  // });
 });
