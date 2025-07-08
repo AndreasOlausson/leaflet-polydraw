@@ -3,7 +3,7 @@
   "mergePolygons": true,
   "kinks": false,
   "modes": {
-    "attachElbow": false,
+    "attachElbow": true,
     "dragElbow": true,
     "dragPolygons": true
   },

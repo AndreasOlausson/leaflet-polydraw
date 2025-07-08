@@ -93,16 +93,7 @@ class Polydraw extends L.Control {
       () => this.getDrawMode(),
       () => this.arrayOfFeatureGroups,
       (geoJSON, simplify) => {
-        console.log('DEBUG: Main polydraw addPolygonLayer callback called');
-        console.log(
-          'DEBUG: Main polydraw arrayOfFeatureGroups length before:',
-          this.arrayOfFeatureGroups.length,
-        );
         this.addPolygonLayer(geoJSON, simplify);
-        console.log(
-          'DEBUG: Main polydraw arrayOfFeatureGroups length after:',
-          this.arrayOfFeatureGroups.length,
-        );
       },
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
     );
@@ -327,10 +318,6 @@ class Polydraw extends L.Control {
 
   // Update the addAutoPolygon method signature and implementation
   public addAutoPolygon(geographicBorders: L.LatLng[][][], options?: AutoPolygonOptions): void {
-    console.log('DEBUG: addAutoPolygon called with:', geographicBorders.length, 'polygon groups');
-    console.log('DEBUG: addAutoPolygon mergePolygons setting:', this.mergePolygons);
-    console.log('DEBUG: addAutoPolygon current array length:', this.arrayOfFeatureGroups.length);
-
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');
@@ -348,7 +335,6 @@ class Polydraw extends L.Control {
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
 
     geographicBorders.forEach((group, groupIndex) => {
-      console.log('DEBUG: addAutoPolygon processing group', groupIndex);
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
       try {
@@ -400,9 +386,7 @@ class Polydraw extends L.Control {
 
         // Instead of directly pushing to array, use the same logic as addPolygon
         // to respect merge settings
-        console.log('DEBUG: addAutoPolygon checking if should merge');
         if (this.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
-          console.log('DEBUG: addAutoPolygon attempting merge with existing polygons');
           // Convert the polygon to GeoJSON format for merge processing
           const geoJSON = polygon.toGeoJSON();
 
@@ -416,7 +400,6 @@ class Polydraw extends L.Control {
           // Use the existing merge logic instead of direct array push
           this.addPolygon(geoJSON, false, false);
         } else {
-          console.log('DEBUG: addAutoPolygon adding directly (no merge)');
           // No merge needed, add directly
           this.arrayOfFeatureGroups.push(featureGroup);
         }
@@ -741,20 +724,16 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
-    console.log('DEBUG: addPolygonLayer called with:', latlngs);
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
-    console.log('DEBUG: addPolygonLayer latLngs after simplify:', latLngs);
     // Create and add a new polygon layer
     const polygon = this.getPolygon(latLngs);
-    console.log('DEBUG: addPolygonLayer polygon created:', polygon);
 
     // Store optimization level in polygon metadata
     (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
 
     featureGroup.addLayer(polygon);
-    console.log('DEBUG: addPolygonLayer polygon added to featureGroup');
 
     // Enable polygon dragging if configured
     if (this.config.modes.dragPolygons) {
@@ -763,7 +742,6 @@ class Polydraw extends L.Control {
 
     // Add red polylines for hole rings and markers
     const markerLatlngs = polygon.getLatLngs();
-    console.log('DEBUG: addPolygonLayer markerLatlngs:', markerLatlngs);
 
     markerLatlngs.forEach((polygonRings) => {
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
@@ -806,20 +784,18 @@ class Polydraw extends L.Control {
     });
 
     this.arrayOfFeatureGroups.push(featureGroup);
-    console.log(
-      'DEBUG: addPolygonLayer featureGroup added to array, new length:',
-      this.arrayOfFeatureGroups.length,
-    );
 
     // Add to map
     try {
       featureGroup.addTo(this.map);
-      console.log('DEBUG: addPolygonLayer featureGroup added to map successfully');
     } catch (error) {
-      console.log('DEBUG: addPolygonLayer failed to add featureGroup to map:', error.message);
+      // Silently handle map rendering errors in test environment
     }
 
     this.setDrawMode(DrawMode.Off);
+
+    // Add edge click detection
+    this.addEdgeClickListeners(polygon, featureGroup);
 
     featureGroup.on('click', (e) => {
       this.polygonClicked(e, latLngs);
@@ -903,7 +879,6 @@ class Polydraw extends L.Control {
 
     return polygon;
   }
-
   /**
    * Check if a polygon has holes
    */
@@ -918,41 +893,140 @@ class Polydraw extends L.Control {
     return false;
   }
 
-  private polygonClicked(e: L.LeafletMouseEvent, poly: Feature<Polygon | MultiPolygon>) {
-    if (this.config.modes.attachElbow) {
-      const newPoint = e.latlng;
-      if (poly.geometry.type === 'MultiPolygon') {
-        const newPolygon = this.turfHelper.injectPointToPolygon(poly, [newPoint.lng, newPoint.lat]);
-        this.deletePolygon(this.getLatLngsFromJson(poly));
-        this.addPolygonLayer(newPolygon, false);
+  /**
+   * Add click listeners to polygon edges for edge-specific interactions
+   */
+  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
+    const rawLatLngs = polygon.getLatLngs();
+
+    // Handle different polygon structures - Leaflet can return different nesting levels
+    let processedRings: ILatLng[][];
+
+    if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
+      if (Array.isArray(rawLatLngs[0])) {
+        // Check if rawLatLngs[0][0] is an array of LatLng objects
+        if (Array.isArray(rawLatLngs[0][0]) && rawLatLngs[0][0].length > 0) {
+          const firstCoord = rawLatLngs[0][0][0];
+
+          // Check if it's an array of coordinate objects
+          if (firstCoord && typeof firstCoord === 'object' && 'lat' in firstCoord) {
+            // This is the case: we have LatLng objects, but they're nested one level too deep
+            // The structure is [Array(1)] -> [Array(N)] -> N LatLng objects
+            // We need to extract from rawLatLngs[0], not rawLatLngs
+            processedRings = rawLatLngs[0] as ILatLng[][];
+          } else {
+            // Fallback for other structures
+            processedRings = rawLatLngs[0] as ILatLng[][];
+          }
+        } else if (
+          rawLatLngs[0][0] &&
+          typeof rawLatLngs[0][0] === 'object' &&
+          'lat' in rawLatLngs[0][0]
+        ) {
+          // Structure: [[{lat, lng}, ...]] (single ring wrapped in array)
+          processedRings = rawLatLngs as ILatLng[][];
+        } else {
+          // Fallback: rawLatLngs[0] contains the actual coordinate arrays
+          processedRings = rawLatLngs[0] as ILatLng[][];
+        }
+      } else if (rawLatLngs[0] && typeof rawLatLngs[0] === 'object' && 'lat' in rawLatLngs[0]) {
+        // Structure: [{lat, lng}, ...] (direct coordinate array)
+        processedRings = [rawLatLngs as ILatLng[]];
+      } else {
+        processedRings = [rawLatLngs as ILatLng[]];
       }
+    } else {
+      return;
+    }
+
+    // Process each ring (outer ring and holes)
+    processedRings.forEach((ring, ringIndex) => {
+      // Create invisible polylines for each edge
+      for (let i = 0; i < ring.length - 1; i++) {
+        const edgeStart = ring[i];
+        const edgeEnd = ring[i + 1];
+
+        // Create an invisible polyline for this edge
+        const edgePolyline = L.polyline([edgeStart, edgeEnd], {
+          color: 'transparent',
+          weight: 10, // Wide invisible line for easier clicking
+          opacity: 0,
+          interactive: true, // Make it clickable
+        });
+
+        // Store edge information for later use
+        (edgePolyline as any)._polydrawEdgeInfo = {
+          ringIndex,
+          edgeIndex: i,
+          startPoint: edgeStart,
+          endPoint: edgeEnd,
+          parentPolygon: polygon,
+          parentFeatureGroup: featureGroup,
+        };
+
+        // Add click listener to the edge
+        edgePolyline.on('click', (e: L.LeafletMouseEvent) => {
+          this.onEdgeClick(e, edgePolyline);
+        });
+
+        // Add hover listeners for visual feedback
+        edgePolyline.on('mouseover', () => {
+          this.highlightEdgeOnHover(edgePolyline, true);
+        });
+
+        edgePolyline.on('mouseout', () => {
+          this.highlightEdgeOnHover(edgePolyline, false);
+        });
+
+        // Add the invisible edge polyline to the feature group
+        featureGroup.addLayer(edgePolyline);
+      }
+    });
+  }
+
+  /**
+   * Handle edge click events
+   */
+  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    const edgeInfo = (edgePolyline as any)._polydrawEdgeInfo;
+
+    if (!edgeInfo) return;
+
+    // Console log the edge click
+    console.log('🎯 Edge clicked!', {
+      ringIndex: edgeInfo.ringIndex,
+      edgeIndex: edgeInfo.edgeIndex,
+      clickPoint: e.latlng,
+      edgeStart: edgeInfo.startPoint,
+      edgeEnd: edgeInfo.endPoint,
+    });
+
+    // Stop event propagation to prevent polygon click
+    L.DomEvent.stopPropagation(e);
+  }
+
+  /**
+   * Highlight edge on hover
+   */
+  private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
+    if (isHovering) {
+      edgePolyline.setStyle({
+        color: '#7a9441',
+        weight: 4,
+        opacity: 1,
+      });
+    } else {
+      edgePolyline.setStyle({
+        color: 'transparent',
+        weight: 10,
+        opacity: 0,
+      });
     }
   }
-  // private polygonClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
-  //   if (this.config.modes.attachElbow) {
-  //     const newPoint = e.latlng;
-  //     if (poly.geometry.type === "MultiPolygon") {
-  //       let newPolygon = this.turfHelper.injectPointToPolygon(poly, [newPoint.lng, newPoint.lat]);
-  //       this.deletePolygon(this.getLatLngsFromJson(poly));
-  //       this.addPolygonLayer(newPolygon, false);
-  //     }
-  //   }
-  // }
-  // private unionPolygons(layers, latlngs: Feature<Polygon | MultiPolygon>, polygonFeature) {
-  //   // console.log("unionPolygons", layers, latlngs, polygonFeature);
 
-  //   let addNew = latlngs;
-  //   layers.forEach((featureGroup, i) => {
-  //     let featureCollection = featureGroup.toGeoJSON();
-  //     const layer = featureCollection.features[0];
-  //     let poly = this.getLatLngsFromJson(layer);
-  //     const union = this.turfHelper.union(addNew, polygonFeature[i]); //Check for multipolygons
-  //     //Needs a cleanup for the new version
-  //     this.deletePolygonOnMerge(poly);
-  //     this.removeFeatureGroup(featureGroup);
-
-  //     addNew = union;
-  //   });
+  private polygonClicked(e: L.LeafletMouseEvent, poly: Feature<Polygon | MultiPolygon>) {
+    //TODO ...
+  }
 
   //   const newLatlngs: Feature<Polygon | MultiPolygon> = addNew; //Trenger kanskje this.turfHelper.getTurfPolygon( addNew);
   //   this.addPolygonLayer(newLatlngs, true);
