@@ -347,7 +347,13 @@ describe('PolydrawStateManager', () => {
         polygonHasKinks: true,
         isDragging: false,
         isModifierDragActive: false,
-        listenerCount: 1,
+        listenerCounts: {
+          drawMode: 1,
+          featureGroups: 0,
+          dragState: 0,
+          dragPosition: 0,
+          modifierKey: 0,
+        },
       });
     });
 

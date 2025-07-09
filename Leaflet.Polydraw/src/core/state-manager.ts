@@ -13,6 +13,12 @@ import type {
   DrawModeChangeHandler,
 } from '../types/polydraw-interfaces';
 
+// Event handler types for comprehensive state management
+export type FeatureGroupsChangeHandler = (featureGroups: PolydrawFeatureGroup[]) => void;
+export type DragStateChangeHandler = (dragState: Readonly<DragState>) => void;
+export type DragPositionChangeHandler = (position: ILatLng) => void;
+export type ModifierKeyChangeHandler = (isHeld: boolean) => void;
+
 export interface DragState {
   startPosition: ILatLng | null;
   isDragging: boolean;
@@ -46,6 +52,10 @@ export class PolydrawStateManager {
 
   // Event Listeners
   private drawModeListeners: DrawModeChangeHandler[] = [];
+  private featureGroupsChangeListeners: FeatureGroupsChangeHandler[] = [];
+  private dragStateChangeListeners: DragStateChangeHandler[] = [];
+  private dragPositionChangeListeners: DragPositionChangeHandler[] = [];
+  private modifierKeyChangeListeners: ModifierKeyChangeHandler[] = [];
 
   // ===== FEATURE GROUPS MANAGEMENT =====
 
@@ -61,7 +71,7 @@ export class PolydrawStateManager {
    */
   addFeatureGroup(featureGroup: PolydrawFeatureGroup): void {
     this.featureGroups.push(featureGroup);
-    // TODO: Emit featureGroupsChanged event
+    this.emitFeatureGroupsChange();
   }
 
   /**
@@ -71,7 +81,7 @@ export class PolydrawStateManager {
     const index = this.featureGroups.indexOf(featureGroup);
     if (index > -1) {
       this.featureGroups.splice(index, 1);
-      // TODO: Emit featureGroupsChanged event
+      this.emitFeatureGroupsChange();
     }
   }
 
@@ -80,7 +90,7 @@ export class PolydrawStateManager {
    */
   clearAllFeatureGroups(): void {
     this.featureGroups = [];
-    // TODO: Emit featureGroupsChanged event
+    this.emitFeatureGroupsChange();
   }
 
   /**
@@ -152,7 +162,7 @@ export class PolydrawStateManager {
       isModifierKeyHeld: this.dragState.isModifierKeyHeld, // Preserve modifier state
       modifierDragMode: this.dragState.isModifierKeyHeld, // Set based on current modifier
     };
-    // TODO: Emit dragStateChanged event
+    this.emitDragStateChange();
   }
 
   /**
@@ -161,7 +171,7 @@ export class PolydrawStateManager {
   updateDragPosition(position: ILatLng): void {
     if (this.dragState.isDragging) {
       this.dragState.startPosition = position;
-      // TODO: Emit dragPositionChanged event
+      this.emitDragPositionChange(position);
     }
   }
 
@@ -176,20 +186,23 @@ export class PolydrawStateManager {
       isModifierKeyHeld: this.dragState.isModifierKeyHeld, // Preserve modifier state
       modifierDragMode: false,
     };
-    // TODO: Emit dragStateChanged event
+    this.emitDragStateChange();
   }
 
   /**
    * Set modifier key state
    */
   setModifierKeyState(isHeld: boolean): void {
+    const previousState = this.dragState.isModifierKeyHeld;
     this.dragState.isModifierKeyHeld = isHeld;
 
-    // Update modifier drag mode if currently dragging
-    if (this.dragState.isDragging) {
-      this.dragState.modifierDragMode = isHeld;
+    // Update modifier drag mode - always update, not just when dragging
+    this.dragState.modifierDragMode = isHeld;
+
+    // Only emit if state actually changed
+    if (previousState !== isHeld) {
+      this.emitModifierKeyChange(isHeld);
     }
-    // TODO: Emit modifierKeyChanged event
   }
 
   /**
@@ -245,6 +258,136 @@ export class PolydrawStateManager {
     });
   }
 
+  // ===== FEATURE GROUPS EVENT MANAGEMENT =====
+
+  /**
+   * Add a feature groups change listener
+   */
+  onFeatureGroupsChange(callback: FeatureGroupsChangeHandler): void {
+    this.featureGroupsChangeListeners.push(callback);
+  }
+
+  /**
+   * Remove a feature groups change listener
+   */
+  offFeatureGroupsChange(callback: FeatureGroupsChangeHandler): void {
+    const index = this.featureGroupsChangeListeners.indexOf(callback);
+    if (index > -1) {
+      this.featureGroupsChangeListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit feature groups change event to all listeners
+   */
+  private emitFeatureGroupsChange(): void {
+    const featureGroups = this.getFeatureGroups();
+    this.featureGroupsChangeListeners.forEach((callback) => {
+      try {
+        callback(featureGroups);
+      } catch (error) {
+        console.error('Error in feature groups change listener:', error);
+      }
+    });
+  }
+
+  // ===== DRAG STATE EVENT MANAGEMENT =====
+
+  /**
+   * Add a drag state change listener
+   */
+  onDragStateChange(callback: DragStateChangeHandler): void {
+    this.dragStateChangeListeners.push(callback);
+  }
+
+  /**
+   * Remove a drag state change listener
+   */
+  offDragStateChange(callback: DragStateChangeHandler): void {
+    const index = this.dragStateChangeListeners.indexOf(callback);
+    if (index > -1) {
+      this.dragStateChangeListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit drag state change event to all listeners
+   */
+  private emitDragStateChange(): void {
+    const dragState = this.getDragState();
+    this.dragStateChangeListeners.forEach((callback) => {
+      try {
+        callback(dragState);
+      } catch (error) {
+        console.error('Error in drag state change listener:', error);
+      }
+    });
+  }
+
+  // ===== DRAG POSITION EVENT MANAGEMENT =====
+
+  /**
+   * Add a drag position change listener
+   */
+  onDragPositionChange(callback: DragPositionChangeHandler): void {
+    this.dragPositionChangeListeners.push(callback);
+  }
+
+  /**
+   * Remove a drag position change listener
+   */
+  offDragPositionChange(callback: DragPositionChangeHandler): void {
+    const index = this.dragPositionChangeListeners.indexOf(callback);
+    if (index > -1) {
+      this.dragPositionChangeListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit drag position change event to all listeners
+   */
+  private emitDragPositionChange(position: ILatLng): void {
+    this.dragPositionChangeListeners.forEach((callback) => {
+      try {
+        callback(position);
+      } catch (error) {
+        console.error('Error in drag position change listener:', error);
+      }
+    });
+  }
+
+  // ===== MODIFIER KEY EVENT MANAGEMENT =====
+
+  /**
+   * Add a modifier key change listener
+   */
+  onModifierKeyChange(callback: ModifierKeyChangeHandler): void {
+    this.modifierKeyChangeListeners.push(callback);
+  }
+
+  /**
+   * Remove a modifier key change listener
+   */
+  offModifierKeyChange(callback: ModifierKeyChangeHandler): void {
+    const index = this.modifierKeyChangeListeners.indexOf(callback);
+    if (index > -1) {
+      this.modifierKeyChangeListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit modifier key change event to all listeners
+   */
+  private emitModifierKeyChange(isHeld: boolean): void {
+    this.modifierKeyChangeListeners.forEach((callback) => {
+      try {
+        callback(isHeld);
+      } catch (error) {
+        console.error('Error in modifier key change listener:', error);
+      }
+    });
+  }
+
   // ===== UTILITY METHODS =====
 
   /**
@@ -257,7 +400,13 @@ export class PolydrawStateManager {
       polygonHasKinks: this.polygonState.hasKinks,
       isDragging: this.dragState.isDragging,
       isModifierDragActive: this.dragState.modifierDragMode,
-      listenerCount: this.drawModeListeners.length,
+      listenerCounts: {
+        drawMode: this.drawModeListeners.length,
+        featureGroups: this.featureGroupsChangeListeners.length,
+        dragState: this.dragStateChangeListeners.length,
+        dragPosition: this.dragPositionChangeListeners.length,
+        modifierKey: this.modifierKeyChangeListeners.length,
+      },
     };
   }
 

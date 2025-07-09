@@ -161,6 +161,13 @@ describe('Modifier Drag Integration Test', () => {
       },
     };
 
+    // Mock performModifierSubtract BEFORE any operations
+    const performModifierSubtractSpy = vi.fn();
+    (polydraw as any).performModifierSubtract = performModifierSubtractSpy;
+
+    // Mock findIntersectingPolygons
+    (polydraw as any).findIntersectingPolygons = vi.fn(() => [mockPolygon._polydrawFeatureGroup]);
+
     // Set draw mode to off (required for dragging)
     (polydraw as any).drawMode = 0; // DrawMode.Off
 
@@ -198,12 +205,10 @@ describe('Modifier Drag Integration Test', () => {
     (polydraw as any).currentModifierDragMode = true;
     (polydraw as any).isModifierKeyHeld = true;
 
-    // Mock performModifierSubtract to verify it gets called
-    const performModifierSubtractSpy = vi.fn();
-    (polydraw as any).performModifierSubtract = performModifierSubtractSpy;
-
-    // Mock findIntersectingPolygons
-    (polydraw as any).findIntersectingPolygons = vi.fn(() => [mockPolygon._polydrawFeatureGroup]);
+    // Also set the State Manager modifier state to ensure both checks pass
+    if ((polydraw as any).stateManager) {
+      (polydraw as any).stateManager.setModifierKeyState(true);
+    }
 
     updatePolygonCoordinates.call(polydraw, mockPolygon, mockPolygon._polydrawFeatureGroup, {
       type: 'Feature',
@@ -216,6 +221,10 @@ describe('Modifier Drag Integration Test', () => {
     // Verify that modifier state was reset
     expect((polydraw as any).currentModifierDragMode).toBe(false);
     expect((polydraw as any).isModifierKeyHeld).toBe(false);
+
+    // Also verify State Manager state is reset
+    expect((polydraw as any).stateManager.isModifierDragActive()).toBe(false);
+    expect((polydraw as any).stateManager.getDragState().isModifierKeyHeld).toBe(false);
   });
 
   it('should detect Mac platform and use metaKey', () => {

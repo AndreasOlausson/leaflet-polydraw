@@ -680,12 +680,54 @@ describe('Draw Polygon Functionality', () => {
         const control = mergingEnabledControl as any;
 
         // Setup: Start with 1 existing polygon (real-world scenario after first draw)
-        control.arrayOfFeatureGroups = [{}]; // Mock 1 existing polygon
+        // Create a mock feature group with proper toGeoJSON method
+        const mockFeatureGroup = {
+          toGeoJSON: vi.fn().mockReturnValue({
+            features: [
+              {
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0, 0],
+                      [1, 0],
+                      [1, 1],
+                      [0, 1],
+                      [0, 0],
+                    ],
+                  ],
+                },
+              },
+            ],
+          }),
+        };
+
+        control.arrayOfFeatureGroups = [mockFeatureGroup]; // Mock 1 existing polygon
         expect(control.arrayOfFeatureGroups.length).toBe(1);
 
         // Ensure merging is enabled and properties are set correctly
         control.mergePolygons = true;
         control.kinks = false;
+
+        // Mock TurfHelper to return true for intersection (polygons overlap)
+        const mockTurfHelper = control.turfHelper;
+        mockTurfHelper.polygonIntersect.mockReturnValue(true);
+        mockTurfHelper.getTurfPolygon.mockReturnValue({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        });
 
         // Mock addPolygonLayer to simulate adding without merging (buggy behavior)
         const originalAddPolygonLayer = control.addPolygonLayer;
@@ -694,9 +736,10 @@ describe('Draw Polygon Functionality', () => {
           control.arrayOfFeatureGroups.push({}); // Add another polygon
         });
 
-        // Mock merge to simulate proper merging behavior
-        const originalMerge = control.merge;
-        control.merge = vi.fn((feature) => {
+        // Mock the PolygonManager's merge method to simulate proper merging behavior
+        const polygonManager = control.polygonManager;
+        const originalMerge = polygonManager.merge;
+        polygonManager.merge = vi.fn((feature) => {
           // Simulate proper merging - merge existing polygons into one
           // In real merge, this would combine overlapping polygons
           // Keep the array at 1 polygon (merged result)
@@ -725,6 +768,7 @@ describe('Draw Polygon Functionality', () => {
         // - mergePolygons = true
         // - arrayOfFeatureGroups.length > 0 (we have 1 polygon)
         // - kinks = false
+        // - polygonIntersect returns true (polygons overlap)
         control.addPolygon(polygon2, false, false);
 
         // VERIFICATION: With correct logic, merge should be called
