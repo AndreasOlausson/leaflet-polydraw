@@ -8,25 +8,75 @@ import type {
   PolydrawFeatureGroup,
 } from '../types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { PolydrawStateManager } from '../core/state-manager';
 
 /**
  * Manages polygon dragging functionality including modifier-based subtract operations
+ * Integrated with State Manager for centralized state management
  */
 export class PolygonDragManager {
-  // Drag state management
-  private currentDragPolygon: PolydrawPolygon | null = null;
-  private isModifierKeyHeld: boolean = false;
-  private currentModifierDragMode: boolean = false;
-
   constructor(
     private config: PolydrawConfig,
     private turfHelper: TurfHelper,
     private map: L.Map,
-    private getDrawMode: () => DrawMode,
+    private stateManager: PolydrawStateManager,
     private getArrayOfFeatureGroups: () => PolydrawFeatureGroup[],
     private addPolygonLayerCallback?: (geoJSON: any, simplify: boolean) => void,
     private updatePolygonInformationCallback?: () => void,
   ) {}
+
+  /**
+   * Get current draw mode from State Manager
+   */
+  private getDrawMode(): DrawMode {
+    return this.stateManager.getDrawMode();
+  }
+
+  /**
+   * Get current drag polygon from State Manager
+   */
+  private get currentDragPolygon(): PolydrawPolygon | null {
+    return this.stateManager.getDragState().currentPolygon;
+  }
+
+  /**
+   * Set current drag polygon in State Manager
+   */
+  private set currentDragPolygon(polygon: PolydrawPolygon | null) {
+    if (polygon) {
+      this.stateManager.startDrag(polygon, { lat: 0, lng: 0 }); // Position will be updated
+    } else {
+      this.stateManager.endDrag();
+    }
+  }
+
+  /**
+   * Get modifier key state from State Manager
+   */
+  private get isModifierKeyHeld(): boolean {
+    return this.stateManager.getDragState().isModifierKeyHeld;
+  }
+
+  /**
+   * Set modifier key state in State Manager
+   */
+  private set isModifierKeyHeld(held: boolean) {
+    this.stateManager.setModifierKeyState(held);
+  }
+
+  /**
+   * Get modifier drag mode state from State Manager
+   */
+  private get currentModifierDragMode(): boolean {
+    return this.stateManager.isModifierDragActive();
+  }
+
+  /**
+   * Set modifier drag mode state in State Manager
+   */
+  private set currentModifierDragMode(active: boolean) {
+    this.stateManager.setModifierKeyState(active);
+  }
 
   /**
    * Enable polygon dragging functionality on a polygon layer

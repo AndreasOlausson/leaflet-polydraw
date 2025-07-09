@@ -87,7 +87,7 @@ class Polydraw extends L.Control {
       this.config,
       this.turfHelper,
       this.map,
-      () => this.getDrawMode(),
+      this.stateManager,
       () => this.arrayOfFeatureGroups,
       (geoJSON, simplify) => {
         this.addPolygonLayer(geoJSON, simplify);
