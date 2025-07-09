@@ -35,38 +35,30 @@ import type {
   DrawModeChangeHandler,
 } from './types/polydraw-interfaces';
 
+// Import State Manager
+import { PolydrawStateManager } from './core/state-manager';
+
 class Polydraw extends L.Control {
   private map: L.Map;
   private tracer: L.Polyline = {} as L.Polyline;
-  private arrayOfFeatureGroups: PolydrawFeatureGroup[] = [];
   private kinks: boolean;
   private mergePolygons: boolean;
-  private drawMode: DrawMode = DrawMode.Off;
-  private drawModeListeners: DrawModeChangeHandler[] = [];
-  private currentPolygonHasKinks: boolean = false;
   private turfHelper: TurfHelper;
 
   private subContainer?: HTMLElement;
   private config: PolydrawConfig;
 
   private mapStateService: MapStateService;
-
   private polygonInformation: PolygonInformationService;
+
+  // State Manager - centralized state management
+  private stateManager: PolydrawStateManager;
 
   // Manager instances
   private markerManager: MarkerManager;
   private polygonDragManager: PolygonDragManager;
   private drawingEventsManager: DrawingEventsManager;
   private polygonOperationsManager: PolygonOperationsManager;
-
-  // Drag state management
-  private dragStartPosition: ILatLng | null = null;
-  private isDragging: boolean = false;
-  private currentDragPolygon: PolydrawPolygon | null = null;
-
-  // Modifier key drag state management
-  private isModifierKeyHeld: boolean = false;
-  private currentModifierDragMode: boolean = false;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
     super(options);
@@ -79,6 +71,9 @@ class Polydraw extends L.Control {
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       // Handle polygon info update
     });
+
+    // Initialize State Manager
+    this.stateManager = new PolydrawStateManager();
   }
 
   /**
@@ -280,13 +275,17 @@ class Polydraw extends L.Control {
       // null,
     );
 
-    // Add listener to update button active states based on draw mode
-    this.drawModeListeners.push((mode) => {
+    // Register UI update listener with the State Manager's event system
+    const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
       if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
-    });
+    };
+
+    // Add to both legacy listeners (for backward compatibility) and State Manager
+    this.legacyDrawModeListeners.push(uiUpdateListener);
+    this.stateManager.onDrawModeChange(uiUpdateListener);
 
     this.tracer = L.polyline([], this.config.polyLineOptions);
     try {
@@ -384,25 +383,8 @@ class Polydraw extends L.Control {
           });
         });
 
-        // Instead of directly pushing to array, use the same logic as addPolygon
-        // to respect merge settings
-        if (this.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
-          // Convert the polygon to GeoJSON format for merge processing
-          const geoJSON = polygon.toGeoJSON();
-
-          // Remove the temporary feature group since we'll use merge logic
-          try {
-            this.map.removeLayer(featureGroup);
-          } catch (error) {
-            // Handle map removal errors
-          }
-
-          // Use the existing merge logic instead of direct array push
-          this.addPolygon(geoJSON, false, false);
-        } else {
-          // No merge needed, add directly
-          this.arrayOfFeatureGroups.push(featureGroup);
-        }
+        // Add to the real array
+        this.arrayOfFeatureGroups.push(featureGroup);
 
         this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
       } catch (error) {
@@ -527,7 +509,111 @@ class Polydraw extends L.Control {
   }
 
   getDrawMode(): DrawMode {
-    return this.drawMode;
+    return this.stateManager.getDrawMode();
+  }
+
+  /**
+   * Add a listener for draw mode changes
+   * @param callback Function to call when draw mode changes
+   */
+  public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
+    // Add to both legacy listeners and State Manager for full compatibility
+    this.legacyDrawModeListeners.push(callback);
+    this.stateManager.onDrawModeChange(callback);
+  }
+
+  /**
+   * Remove a listener for draw mode changes
+   * @param callback Function to remove from listeners
+   */
+  public offDrawModeChangeListener(callback: DrawModeChangeHandler): void {
+    // Remove from legacy listeners
+    const legacyIndex = this.legacyDrawModeListeners.indexOf(callback);
+    if (legacyIndex > -1) {
+      this.legacyDrawModeListeners.splice(legacyIndex, 1);
+    }
+
+    // Remove from State Manager
+    this.stateManager.offDrawModeChange(callback);
+  }
+
+  // Keep arrayOfFeatureGroups as a real array - State Manager integration was causing issues
+  private _arrayOfFeatureGroups: PolydrawFeatureGroup[] = [];
+
+  // Simple getter that returns the real array
+  private get arrayOfFeatureGroups(): PolydrawFeatureGroup[] {
+    return this._arrayOfFeatureGroups;
+  }
+
+  // Simple setter that updates the real array
+  private set arrayOfFeatureGroups(groups: PolydrawFeatureGroup[]) {
+    this._arrayOfFeatureGroups = groups;
+  }
+
+  // Getters and setters for other state properties that delegate to State Manager
+  private get currentPolygonHasKinks(): boolean {
+    return this.stateManager.getPolygonHasKinks();
+  }
+
+  private set currentPolygonHasKinks(hasKinks: boolean) {
+    this.stateManager.setPolygonHasKinks(hasKinks);
+  }
+
+  private get drawModeListeners(): DrawModeChangeHandler[] {
+    // This getter is used by the onAdd method to access listeners for UI setup
+    // We need to maintain compatibility with existing code that expects an array
+    // The actual event management is now handled by the State Manager
+    return this.legacyDrawModeListeners;
+  }
+
+  // Legacy listeners array for backward compatibility
+  private legacyDrawModeListeners: DrawModeChangeHandler[] = [];
+
+  private get drawMode(): DrawMode {
+    return this.stateManager.getDrawMode();
+  }
+
+  private set drawMode(mode: DrawMode) {
+    this.stateManager.setDrawMode(mode);
+  }
+
+  // Drag state properties
+  private get currentModifierDragMode(): boolean {
+    return this.stateManager.isModifierDragActive();
+  }
+
+  private set currentModifierDragMode(active: boolean) {
+    this.stateManager.setModifierKeyState(active);
+  }
+
+  private get isModifierKeyHeld(): boolean {
+    return this.stateManager.getDragState().isModifierKeyHeld;
+  }
+
+  private set isModifierKeyHeld(held: boolean) {
+    this.stateManager.setModifierKeyState(held);
+  }
+
+  private get currentDragPolygon(): PolydrawPolygon | null {
+    return this.stateManager.getDragState().currentPolygon;
+  }
+
+  private set currentDragPolygon(polygon: PolydrawPolygon | null) {
+    if (polygon) {
+      this.stateManager.startDrag(polygon, { lat: 0, lng: 0 }); // Temporary position
+    } else {
+      this.stateManager.endDrag();
+    }
+  }
+
+  private get dragStartPosition(): ILatLng | null {
+    return this.stateManager.getDragState().startPosition;
+  }
+
+  private set dragStartPosition(position: ILatLng | null) {
+    if (position && this.currentDragPolygon) {
+      this.stateManager.startDrag(this.currentDragPolygon, position);
+    }
   }
 
   private stopDraw() {
@@ -771,6 +857,7 @@ class Polydraw extends L.Control {
       });
     });
 
+    // Add to the real array
     this.arrayOfFeatureGroups.push(featureGroup);
 
     // Add to map
@@ -1090,9 +1177,13 @@ class Polydraw extends L.Control {
   }
 
   private emitDrawModeChanged(): void {
-    for (const cb of this.drawModeListeners) {
+    // Emit to legacy listeners (for UI button updates)
+    for (const cb of this.legacyDrawModeListeners) {
       cb(this.drawMode);
     }
+
+    // The State Manager handles its own event emission when setDrawMode is called
+    // No need to duplicate here since we're calling this.stateManager.setDrawMode() in the setter
   }
 
   /**

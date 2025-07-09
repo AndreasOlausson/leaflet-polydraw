@@ -376,8 +376,8 @@ export class PolygonOperationsManager {
   private cleanupEmptyFeatureGroups(): void {
     const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
 
-    // Filter out feature groups that have no features or invalid features
-    const validFeatureGroups = arrayOfFeatureGroups.filter((featureGroup) => {
+    // Find invalid feature groups that need to be removed
+    const invalidFeatureGroups = arrayOfFeatureGroups.filter((featureGroup) => {
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
 
@@ -388,29 +388,23 @@ export class PolygonOperationsManager {
           featureCollection.features[0] &&
           featureCollection.features[0].geometry;
 
-        if (!hasValidFeatures) {
-          // Remove from map if it exists
-          try {
-            this.map.removeLayer(featureGroup);
-          } catch (error) {
-            // Silently handle removal errors
-          }
-          return false;
-        }
-        return true;
+        return !hasValidFeatures;
       } catch (error) {
-        // Remove problematic feature groups
-        try {
-          this.map.removeLayer(featureGroup);
-        } catch (removeError) {
-          // Silently handle removal errors
-        }
-        return false;
+        return true; // Mark as invalid if there's an error
       }
     });
 
-    // Update the array with only valid feature groups
-    arrayOfFeatureGroups.length = 0;
-    arrayOfFeatureGroups.push(...validFeatureGroups);
+    // Remove invalid feature groups using the proper callback
+    invalidFeatureGroups.forEach((featureGroup) => {
+      try {
+        this.removeFeatureGroupCallback(featureGroup);
+      } catch (error) {
+        // Silently handle removal errors
+        console.warn(
+          'DEBUG: cleanupEmptyFeatureGroups() - error removing feature group:',
+          error.message,
+        );
+      }
+    });
   }
 }
