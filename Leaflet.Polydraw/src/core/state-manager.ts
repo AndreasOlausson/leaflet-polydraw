@@ -100,6 +100,119 @@ export class PolydrawStateManager {
     return this.featureGroups.length;
   }
 
+  /**
+   * Push a feature group to the collection (alias for addFeatureGroup)
+   */
+  pushFeatureGroup(featureGroup: PolydrawFeatureGroup): void {
+    this.addFeatureGroup(featureGroup);
+  }
+
+  /**
+   * Filter feature groups based on a predicate function
+   */
+  filterFeatureGroups(predicate: (fg: PolydrawFeatureGroup) => boolean): void {
+    const originalLength = this.featureGroups.length;
+    this.featureGroups = this.featureGroups.filter(predicate);
+
+    // Only emit if the array actually changed
+    if (this.featureGroups.length !== originalLength) {
+      this.emitFeatureGroupsChange();
+    }
+  }
+
+  /**
+   * Remove feature groups at specific index with optional replacement
+   */
+  spliceFeatureGroups(
+    index: number,
+    deleteCount: number,
+    ...items: PolydrawFeatureGroup[]
+  ): PolydrawFeatureGroup[] {
+    const removed = this.featureGroups.splice(index, deleteCount, ...items);
+
+    // Only emit if something was actually changed
+    if (removed.length > 0 || items.length > 0) {
+      this.emitFeatureGroupsChange();
+    }
+
+    return removed;
+  }
+
+  /**
+   * Find the index of a specific feature group
+   */
+  findFeatureGroupIndex(featureGroup: PolydrawFeatureGroup): number {
+    return this.featureGroups.indexOf(featureGroup);
+  }
+
+  /**
+   * Set the entire feature groups array (for bulk operations)
+   */
+  setFeatureGroups(groups: PolydrawFeatureGroup[]): void {
+    this.featureGroups = [...groups]; // Create a copy to prevent external mutation
+    this.emitFeatureGroupsChange();
+  }
+
+  /**
+   * Execute a forEach operation on feature groups
+   */
+  forEachFeatureGroup(callback: (featureGroup: PolydrawFeatureGroup, index: number) => void): void {
+    this.featureGroups.forEach((featureGroup, index) => callback(featureGroup, index));
+  }
+
+  /**
+   * Check if feature groups array is empty
+   */
+  hasFeatureGroups(): boolean {
+    return this.featureGroups.length > 0;
+  }
+
+  /**
+   * Get feature group at specific index
+   */
+  getFeatureGroupAt(index: number): PolydrawFeatureGroup | undefined {
+    return this.featureGroups[index];
+  }
+
+  /**
+   * Replace all feature groups with new ones (optimized for performance)
+   */
+  replaceAllFeatureGroups(newGroups: PolydrawFeatureGroup[]): void {
+    // Only update and emit if the arrays are actually different
+    if (
+      this.featureGroups.length !== newGroups.length ||
+      !this.featureGroups.every((fg, index) => fg === newGroups[index])
+    ) {
+      this.featureGroups = [...newGroups];
+      this.emitFeatureGroupsChange();
+    }
+  }
+
+  /**
+   * Batch multiple operations without emitting events until complete
+   */
+  batchFeatureGroupOperations(operations: () => void): void {
+    const originalEmit = this.emitFeatureGroupsChange;
+    let shouldEmit = false;
+
+    // Temporarily override emit to track if changes occurred
+    this.emitFeatureGroupsChange = () => {
+      shouldEmit = true;
+    };
+
+    try {
+      operations();
+    } finally {
+      // Restore original emit function
+      this.emitFeatureGroupsChange = originalEmit;
+
+      // Emit once if any changes occurred
+      if (shouldEmit) {
+        this.emitFeatureGroupsChange();
+      }
+    }
+  }
+
   // ===== DRAW MODE MANAGEMENT =====
 
   /**

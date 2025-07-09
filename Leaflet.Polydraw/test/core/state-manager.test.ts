@@ -101,6 +101,264 @@ describe('PolydrawStateManager', () => {
       // Original should be unchanged
       expect(stateManager.getFeatureGroupCount()).toBe(1);
     });
+
+    test('should push feature groups (alias for addFeatureGroup)', () => {
+      const mockFeatureGroup = createMockFeatureGroup('test-group');
+
+      stateManager.pushFeatureGroup(mockFeatureGroup);
+
+      expect(stateManager.getFeatureGroupCount()).toBe(1);
+      expect(stateManager.getFeatureGroups()[0]).toBe(mockFeatureGroup);
+    });
+
+    test('should filter feature groups correctly', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('keep-this');
+      const mockFeatureGroup2 = createMockFeatureGroup('remove-this');
+      const mockFeatureGroup3 = createMockFeatureGroup('keep-this-too');
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+      stateManager.addFeatureGroup(mockFeatureGroup3);
+
+      // Filter to keep only groups with 'keep' in the id
+      stateManager.filterFeatureGroups((fg) => (fg as any).id.includes('keep'));
+
+      expect(stateManager.getFeatureGroupCount()).toBe(2);
+      expect(stateManager.getFeatureGroups()).toContain(mockFeatureGroup1);
+      expect(stateManager.getFeatureGroups()).toContain(mockFeatureGroup3);
+      expect(stateManager.getFeatureGroups()).not.toContain(mockFeatureGroup2);
+    });
+
+    test('should not emit event when filter does not change array', () => {
+      const mockFeatureGroup = createMockFeatureGroup('test-group');
+      const mockCallback = vi.fn();
+
+      stateManager.addFeatureGroup(mockFeatureGroup);
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Reset call count
+      mockCallback.mockClear();
+
+      // Filter that keeps all items
+      stateManager.filterFeatureGroups(() => true);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
+
+    test('should splice feature groups correctly', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockFeatureGroup3 = createMockFeatureGroup('group-3');
+      const mockFeatureGroup4 = createMockFeatureGroup('group-4');
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+      stateManager.addFeatureGroup(mockFeatureGroup3);
+
+      // Remove 1 item at index 1 and insert 1 new item
+      const removed = stateManager.spliceFeatureGroups(1, 1, mockFeatureGroup4);
+
+      expect(removed).toEqual([mockFeatureGroup2]);
+      expect(stateManager.getFeatureGroupCount()).toBe(3);
+      expect(stateManager.getFeatureGroups()).toEqual([
+        mockFeatureGroup1,
+        mockFeatureGroup4,
+        mockFeatureGroup3,
+      ]);
+    });
+
+    test('should not emit event when splice makes no changes', () => {
+      const mockFeatureGroup = createMockFeatureGroup('test-group');
+      const mockCallback = vi.fn();
+
+      stateManager.addFeatureGroup(mockFeatureGroup);
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Reset call count
+      mockCallback.mockClear();
+
+      // Splice that removes 0 items and adds 0 items
+      stateManager.spliceFeatureGroups(0, 0);
+
+      expect(mockCallback).not.toHaveBeenCalled();
+    });
+
+    test('should find feature group index correctly', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockFeatureGroup3 = createMockFeatureGroup('group-3');
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+      stateManager.addFeatureGroup(mockFeatureGroup3);
+
+      expect(stateManager.findFeatureGroupIndex(mockFeatureGroup1)).toBe(0);
+      expect(stateManager.findFeatureGroupIndex(mockFeatureGroup2)).toBe(1);
+      expect(stateManager.findFeatureGroupIndex(mockFeatureGroup3)).toBe(2);
+
+      // Non-existent group should return -1
+      const nonExistentGroup = createMockFeatureGroup('non-existent');
+      expect(stateManager.findFeatureGroupIndex(nonExistentGroup)).toBe(-1);
+    });
+
+    test('should set feature groups array', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const newGroups = [mockFeatureGroup1, mockFeatureGroup2];
+
+      stateManager.setFeatureGroups(newGroups);
+
+      expect(stateManager.getFeatureGroupCount()).toBe(2);
+      expect(stateManager.getFeatureGroups()).toEqual(newGroups);
+    });
+
+    test('should create copy when setting feature groups to prevent external mutation', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const newGroups = [mockFeatureGroup1, mockFeatureGroup2];
+
+      stateManager.setFeatureGroups(newGroups);
+
+      // Mutate the original array
+      newGroups.push(createMockFeatureGroup('external-group'));
+
+      // State manager should be unchanged
+      expect(stateManager.getFeatureGroupCount()).toBe(2);
+    });
+
+    test('should execute forEach on feature groups', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockCallback = vi.fn();
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+
+      stateManager.forEachFeatureGroup(mockCallback);
+
+      expect(mockCallback).toHaveBeenCalledTimes(2);
+      expect(mockCallback).toHaveBeenCalledWith(mockFeatureGroup1, 0);
+      expect(mockCallback).toHaveBeenCalledWith(mockFeatureGroup2, 1);
+    });
+
+    test('should check if has feature groups', () => {
+      expect(stateManager.hasFeatureGroups()).toBe(false);
+
+      const mockFeatureGroup = createMockFeatureGroup('test-group');
+      stateManager.addFeatureGroup(mockFeatureGroup);
+
+      expect(stateManager.hasFeatureGroups()).toBe(true);
+
+      stateManager.clearAllFeatureGroups();
+      expect(stateManager.hasFeatureGroups()).toBe(false);
+    });
+
+    test('should get feature group at specific index', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+
+      expect(stateManager.getFeatureGroupAt(0)).toBe(mockFeatureGroup1);
+      expect(stateManager.getFeatureGroupAt(1)).toBe(mockFeatureGroup2);
+      expect(stateManager.getFeatureGroupAt(2)).toBeUndefined();
+      expect(stateManager.getFeatureGroupAt(-1)).toBeUndefined();
+    });
+
+    test('should replace all feature groups efficiently', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockFeatureGroup3 = createMockFeatureGroup('group-3');
+      const mockCallback = vi.fn();
+
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      stateManager.addFeatureGroup(mockFeatureGroup2);
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Reset call count
+      mockCallback.mockClear();
+
+      // Replace with same groups - should not emit
+      stateManager.replaceAllFeatureGroups([mockFeatureGroup1, mockFeatureGroup2]);
+      expect(mockCallback).not.toHaveBeenCalled();
+
+      // Replace with different groups - should emit
+      stateManager.replaceAllFeatureGroups([mockFeatureGroup3]);
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(stateManager.getFeatureGroups()).toEqual([mockFeatureGroup3]);
+    });
+
+    test('should batch feature group operations', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockFeatureGroup3 = createMockFeatureGroup('group-3');
+      const mockCallback = vi.fn();
+
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Batch multiple operations
+      stateManager.batchFeatureGroupOperations(() => {
+        stateManager.addFeatureGroup(mockFeatureGroup1);
+        stateManager.addFeatureGroup(mockFeatureGroup2);
+        stateManager.addFeatureGroup(mockFeatureGroup3);
+        stateManager.removeFeatureGroup(mockFeatureGroup2);
+      });
+
+      // Should only emit once at the end
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(stateManager.getFeatureGroupCount()).toBe(2);
+      expect(stateManager.getFeatureGroups()).toEqual([mockFeatureGroup1, mockFeatureGroup3]);
+    });
+
+    test('should handle errors in batch operations gracefully', () => {
+      const mockFeatureGroup = createMockFeatureGroup('test-group');
+      const mockCallback = vi.fn();
+
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Batch operation that throws an error
+      expect(() => {
+        stateManager.batchFeatureGroupOperations(() => {
+          stateManager.addFeatureGroup(mockFeatureGroup);
+          throw new Error('Test error');
+        });
+      }).toThrow('Test error');
+
+      // Should still emit the change that occurred before the error
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+      expect(stateManager.getFeatureGroupCount()).toBe(1);
+    });
+
+    test('should emit feature groups change events for all operations', () => {
+      const mockFeatureGroup1 = createMockFeatureGroup('group-1');
+      const mockFeatureGroup2 = createMockFeatureGroup('group-2');
+      const mockCallback = vi.fn();
+
+      stateManager.onFeatureGroupsChange(mockCallback);
+
+      // Test all operations that should emit events
+      stateManager.addFeatureGroup(mockFeatureGroup1);
+      expect(mockCallback).toHaveBeenCalledTimes(1);
+
+      stateManager.pushFeatureGroup(mockFeatureGroup2);
+      expect(mockCallback).toHaveBeenCalledTimes(2);
+
+      stateManager.removeFeatureGroup(mockFeatureGroup1);
+      expect(mockCallback).toHaveBeenCalledTimes(3);
+
+      stateManager.setFeatureGroups([mockFeatureGroup1, mockFeatureGroup2]);
+      expect(mockCallback).toHaveBeenCalledTimes(4);
+
+      stateManager.filterFeatureGroups((fg) => (fg as any).id === 'group-1');
+      expect(mockCallback).toHaveBeenCalledTimes(5);
+
+      stateManager.spliceFeatureGroups(0, 1, mockFeatureGroup2);
+      expect(mockCallback).toHaveBeenCalledTimes(6);
+
+      stateManager.clearAllFeatureGroups();
+      expect(mockCallback).toHaveBeenCalledTimes(7);
+    });
   });
 
   describe('Draw Mode Management', () => {
