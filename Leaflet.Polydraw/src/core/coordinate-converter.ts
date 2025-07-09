@@ -63,72 +63,72 @@ export class CoordinateConverter {
     return coords;
   }
 
-  /**
-   * Extract LatLng coordinates from GeoJSON feature
-   * @param feature GeoJSON feature to extract coordinates from
-   * @returns Array of LatLng coordinates
-   */
-  static getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
-    let coord: ILatLng[][] = [];
+  // /**
+  //  * Extract LatLng coordinates from GeoJSON feature
+  //  * @param feature GeoJSON feature to extract coordinates from
+  //  * @returns Array of LatLng coordinates
+  //  */
+  // static getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
+  //   let coord: ILatLng[][] = [];
 
-    if (feature && feature.geometry) {
-      if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
-      } else if (
-        feature.geometry.type === 'Polygon' &&
-        feature.geometry.coordinates[0].length > 1
-      ) {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
-      } else if (feature.geometry.type === 'Polygon') {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
-      }
-    }
+  //   if (feature && feature.geometry) {
+  //     if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     } else if (
+  //       feature.geometry.type === 'Polygon' &&
+  //       feature.geometry.coordinates[0].length > 1
+  //     ) {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
+  //     } else if (feature.geometry.type === 'Polygon') {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     }
+  //   }
 
-    return coord;
-  }
+  //   return coord;
+  // }
 
-  /**
-   * Apply offset to polygon coordinates for dragging operations
-   * @param latLngs Original coordinates (can be nested arrays or single coordinates)
-   * @param offsetLat Latitude offset
-   * @param offsetLng Longitude offset
-   * @returns Offset coordinates with same structure as input
-   */
-  static offsetPolygonCoordinates(
-    latLngs: ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][],
-    offsetLat: number,
-    offsetLng: number,
-  ): ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][] {
-    if (!latLngs) return latLngs;
+  // /**
+  //  * Apply offset to polygon coordinates for dragging operations
+  //  * @param latLngs Original coordinates (can be nested arrays or single coordinates)
+  //  * @param offsetLat Latitude offset
+  //  * @param offsetLng Longitude offset
+  //  * @returns Offset coordinates with same structure as input
+  //  */
+  // static offsetPolygonCoordinates(
+  //   latLngs: ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][],
+  //   offsetLat: number,
+  //   offsetLng: number,
+  // ): ILatLng | ILatLng[] | ILatLng[][] | ILatLng[][][] {
+  //   if (!latLngs) return latLngs;
 
-    // Check if it's a single coordinate object
-    if (this.isLatLngObject(latLngs)) {
-      const coord = latLngs as ILatLng;
-      return {
-        lat: coord.lat + offsetLat,
-        lng: coord.lng + offsetLng,
-      };
-    }
+  //   // Check if it's a single coordinate object
+  //   if (this.isLatLngObject(latLngs)) {
+  //     const coord = latLngs as ILatLng;
+  //     return {
+  //       lat: coord.lat + offsetLat,
+  //       lng: coord.lng + offsetLng,
+  //     };
+  //   }
 
-    // Check if it's an array
-    if (Array.isArray(latLngs)) {
-      if (latLngs.length === 0) return latLngs;
+  //   // Check if it's an array
+  //   if (Array.isArray(latLngs)) {
+  //     if (latLngs.length === 0) return latLngs;
 
-      // Check if first element is also an array (nested structure)
-      if (Array.isArray(latLngs[0])) {
-        return (latLngs as (ILatLng[] | ILatLng[][])[]).map((ring) =>
-          this.offsetPolygonCoordinates(ring, offsetLat, offsetLng),
-        ) as ILatLng[][] | ILatLng[][][];
-      } else {
-        // Array of coordinates
-        return (latLngs as ILatLng[]).map((coord) =>
-          this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
-        ) as ILatLng[];
-      }
-    }
+  //     // Check if first element is also an array (nested structure)
+  //     if (Array.isArray(latLngs[0])) {
+  //       return (latLngs as (ILatLng[] | ILatLng[][])[]).map((ring) =>
+  //         this.offsetPolygonCoordinates(ring, offsetLat, offsetLng),
+  //       ) as ILatLng[][] | ILatLng[][][];
+  //     } else {
+  //       // Array of coordinates
+  //       return (latLngs as ILatLng[]).map((coord) =>
+  //         this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
+  //       ) as ILatLng[];
+  //     }
+  //   }
 
-    return latLngs;
-  }
+  //   return latLngs;
+  // }
 
   /**
    * Type guard to check if an object is a LatLng coordinate
@@ -144,14 +144,14 @@ export class CoordinateConverter {
     );
   }
 
-  /**
-   * Get coordinate information string for display
-   * @param latlng LatLng coordinate
-   * @returns Formatted coordinate string
-   */
-  static getLatLngInfoString(latlng: ILatLng): string {
-    return `Latitude: ${latlng.lat} Longitude: ${latlng.lng}`;
-  }
+  // /**
+  //  * Get coordinate information string for display
+  //  * @param latlng LatLng coordinate
+  //  * @returns Formatted coordinate string
+  //  */
+  // static getLatLngInfoString(latlng: ILatLng): string {
+  //   return `Latitude: ${latlng.lat} Longitude: ${latlng.lng}`;
+  // }
 
   /**
    * Simple within check for polygon containment

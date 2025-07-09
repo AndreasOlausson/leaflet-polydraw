@@ -15,18 +15,18 @@ export class DrawingEventsManager {
     private onPolygonComplete: (geoPos: Feature<Polygon | MultiPolygon>) => void,
   ) {}
 
-  /**
-   * Enable or disable drawing event listeners
-   */
-  events(onoff: boolean) {
-    const onoroff = onoff ? 'on' : 'off';
-    this.map[onoroff]('mousedown', this.mouseDown, this);
-    if (onoff) {
-      this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e));
-    } else {
-      this.map.getContainer().removeEventListener('touchstart', (e) => this.mouseDown(e), true);
-    }
-  }
+  // /**
+  //  * Enable or disable drawing event listeners
+  //  */
+  // events(onoff: boolean) {
+  //   const onoroff = onoff ? 'on' : 'off';
+  //   this.map[onoroff]('mousedown', this.mouseDown, this);
+  //   if (onoff) {
+  //     this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e));
+  //   } else {
+  //     this.map.getContainer().removeEventListener('touchstart', (e) => this.mouseDown(e), true);
+  //   }
+  // }
 
   /**
    * Handle mouse down to start drawing
@@ -58,10 +58,18 @@ export class DrawingEventsManager {
     this.drawStartedEvents(true);
   }
 
+  // /**
+  //  * Stop drawing and reset state
+  //  */
+  // stopDraw() {
+  //   this.resetTracker();
+  //   this.drawStartedEvents(false);
+  // }
+
   /**
-   * Stop drawing and reset state
+   * Stop drawing and reset state (private version)
    */
-  stopDraw() {
+  private stopDraw() {
     this.resetTracker();
     this.drawStartedEvents(false);
   }

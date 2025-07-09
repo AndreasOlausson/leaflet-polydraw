@@ -126,7 +126,7 @@ export class PolygonDragManager {
     L.DomEvent.preventDefault(e);
 
     // Detect modifier key state at drag start
-    const isModifierPressed = this.detectModifierKey(e.originalEvent || e);
+    const isModifierPressed = this.detectModifierKeyInternal(e.originalEvent || e);
     this.currentModifierDragMode = isModifierPressed;
     this.isModifierKeyHeld = isModifierPressed;
 
@@ -595,6 +595,20 @@ export class PolygonDragManager {
         console.warn('Could not revert polygon position:', revertError.message);
       }
     }
+  }
+
+  // /**
+  //  * Check if modifier key is pressed (Ctrl/Cmd)
+  //  */
+  // detectModifierKey(event: MouseEvent): boolean {
+  //   return event.ctrlKey || event.metaKey;
+  // }
+
+  /**
+   * Check if modifier key is pressed (Ctrl/Cmd) - used internally
+   */
+  private detectModifierKeyInternal(event: MouseEvent): boolean {
+    return event.ctrlKey || event.metaKey;
   }
 
   /**

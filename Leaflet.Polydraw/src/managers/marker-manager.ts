@@ -16,10 +16,33 @@ export class MarkerManager {
     private map: L.Map,
   ) {}
 
+  // /**
+  //  * Get marker index based on position configuration
+  //  */
+  // getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
+  //   const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
+  //   const compass = new Compass(
+  //     bounds.getSouth(),
+  //     bounds.getWest(),
+  //     bounds.getNorth(),
+  //     bounds.getEast(),
+  //   );
+  //   const compassDirection = compass.getDirection(position);
+  //   const latLngPoint: ILatLng = {
+  //     lat: compassDirection.lat,
+  //     lng: compassDirection.lng,
+  //   };
+  //   const targetPoint = this.turfHelper.getCoord(latLngPoint);
+  //   const fc = this.turfHelper.getFeaturePointCollection(latlngs);
+  //   const nearestPointIdx = this.turfHelper.getNearestPointIndex(targetPoint, fc as any);
+
+  //   return nearestPointIdx;
+  // }
+
   /**
-   * Get marker index based on position configuration
+   * Get marker index based on position configuration (used internally)
    */
-  getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
+  private getMarkerIndexInternal(latlngs: ILatLng[], position: MarkerPosition): number {
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
       bounds.getSouth(),
@@ -64,12 +87,18 @@ export class MarkerManager {
     // Calculate which markers should be visually hidden
     const markerVisibility = this.calculateMarkerVisibility(latlngs, visualOptimizationLevel);
 
-    let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
-    let deleteMarkerIdx = this.getMarkerIndex(
+    let menuMarkerIdx = this.getMarkerIndexInternal(
+      latlngs,
+      this.config.markers.markerMenuIcon.position,
+    );
+    let deleteMarkerIdx = this.getMarkerIndexInternal(
       latlngs,
       this.config.markers.markerDeleteIcon.position,
     );
-    let infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+    let infoMarkerIdx = this.getMarkerIndexInternal(
+      latlngs,
+      this.config.markers.markerInfoIcon.position,
+    );
 
     // Fallback for small polygons
     if (latlngs.length <= 5) {

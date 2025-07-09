@@ -19,27 +19,6 @@ export class PolygonOperationsManager {
   ) {}
 
   /**
-   * Add a new polygon, potentially merging with existing ones
-   */
-  addPolygon(
-    latlngs: Feature<Polygon | MultiPolygon>,
-    simplify: boolean,
-    noMerge: boolean = false,
-    hasKinks: boolean = false,
-  ) {
-    if (
-      this.config.mergePolygons &&
-      !noMerge &&
-      this.getArrayOfFeatureGroups().length > 0 &&
-      !hasKinks
-    ) {
-      this.merge(latlngs);
-    } else {
-      this.addPolygonLayerCallback(latlngs, simplify);
-    }
-  }
-
-  /**
    * Subtract polygon from all existing polygons
    */
   subtract(latlngs: Feature<Polygon | MultiPolygon>) {
@@ -87,314 +66,320 @@ export class PolygonOperationsManager {
     this.cleanupEmptyFeatureGroups();
   }
 
-  /**
-   * Merge polygon with intersecting existing polygons
-   */
-  private merge(latlngs: Feature<Polygon | MultiPolygon>) {
-    // Clean up any empty feature groups before starting
-    this.cleanupEmptyFeatureGroups();
+  // /**
+  //  * Add a new polygon, potentially merging with existing ones
+  //  */
+  // addPolygon(
+  //   latlngs: Feature<Polygon | MultiPolygon>,
+  //   simplify: boolean,
+  //   noMerge: boolean = false,
+  //   hasKinks: boolean = false,
+  // ) {
+  //   if (
+  //     this.config.mergePolygons &&
+  //     !noMerge &&
+  //     this.getArrayOfFeatureGroups().length > 0 &&
+  //     !hasKinks
+  //   ) {
+  //     this.merge(latlngs);
+  //   } else {
+  //     this.addPolygonLayerCallback(latlngs, simplify);
+  //   }
+  // }
 
-    const polygonFeature = [];
-    const newArray: L.FeatureGroup[] = [];
-    let polyIntersection: boolean = false;
+  // /**
+  //  * Merge polygon with intersecting existing polygons
+  //  */
+  // private merge(latlngs: Feature<Polygon | MultiPolygon>) {
+  //   // Clean up any empty feature groups before starting
+  //   this.cleanupEmptyFeatureGroups();
 
-    this.getArrayOfFeatureGroups().forEach((featureGroup, index) => {
-      try {
-        const featureCollection = featureGroup.toGeoJSON() as any;
+  //   const polygonFeature = [];
+  //   const newArray: L.FeatureGroup[] = [];
+  //   let polyIntersection: boolean = false;
 
-        // Validate feature collection before accessing features[0]
-        if (
-          !featureCollection ||
-          !featureCollection.features ||
-          featureCollection.features.length === 0 ||
-          !featureCollection.features[0] ||
-          !featureCollection.features[0].geometry
-        ) {
-          console.warn('DEBUG: merge() - skipping invalid feature group:', featureCollection);
-          return; // Skip this feature group
-        }
+  //   this.getArrayOfFeatureGroups().forEach((featureGroup, index) => {
+  //     try {
+  //       const featureCollection = featureGroup.toGeoJSON() as any;
 
-        if (featureCollection.features[0].geometry.coordinates.length > 1) {
-          featureCollection.features[0].geometry.coordinates.forEach((element) => {
-            const feature = this.turfHelper.getMultiPolygon([element]);
-            polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-            if (polyIntersection) {
-              newArray.push(featureGroup);
-              polygonFeature.push(feature);
-            }
-          });
-        } else {
-          const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-          polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+  //       // Validate feature collection before accessing features[0]
+  //       if (
+  //         !featureCollection ||
+  //         !featureCollection.features ||
+  //         featureCollection.features.length === 0 ||
+  //         !featureCollection.features[0] ||
+  //         !featureCollection.features[0].geometry
+  //       ) {
+  //         console.warn('DEBUG: merge() - skipping invalid feature group:', featureCollection);
+  //         return; // Skip this feature group
+  //       }
 
-          if (!polyIntersection) {
-            try {
-              const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
-              if (
-                directIntersection &&
-                directIntersection.geometry &&
-                (directIntersection.geometry.type === 'Polygon' ||
-                  directIntersection.geometry.type === 'MultiPolygon')
-              ) {
-                polyIntersection = true;
-              }
-            } catch (error) {
-              // Silently handle intersection errors
-            }
-          }
-          if (polyIntersection) {
-            newArray.push(featureGroup);
-            polygonFeature.push(feature);
-          }
-        }
-      } catch (error) {
-        console.warn('DEBUG: merge() - error processing feature group:', error.message);
-        // Continue with next feature group
-      }
-    });
+  //       if (featureCollection.features[0].geometry.coordinates.length > 1) {
+  //         featureCollection.features[0].geometry.coordinates.forEach((element) => {
+  //           const feature = this.turfHelper.getMultiPolygon([element]);
+  //           polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+  //           if (polyIntersection) {
+  //             newArray.push(featureGroup);
+  //             polygonFeature.push(feature);
+  //           }
+  //         });
+  //       } else {
+  //         const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+  //         polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
 
-    if (newArray.length > 0) {
-      this.unionPolygons(newArray, latlngs, polygonFeature);
-    } else {
-      this.addPolygonLayerCallback(latlngs, true);
-    }
-  }
+  //         if (!polyIntersection) {
+  //           try {
+  //             const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
+  //             if (
+  //               directIntersection &&
+  //               directIntersection.geometry &&
+  //               (directIntersection.geometry.type === 'Polygon' ||
+  //                 directIntersection.geometry.type === 'MultiPolygon')
+  //             ) {
+  //               polyIntersection = true;
+  //             }
+  //           } catch (error) {
+  //             // Silently handle intersection errors
+  //           }
+  //         }
+  //         if (polyIntersection) {
+  //           newArray.push(featureGroup);
+  //           polygonFeature.push(feature);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.warn('DEBUG: merge() - error processing feature group:', error.message);
+  //       // Continue with next feature group
+  //     }
+  //   });
 
-  /**
-   * Perform union operations on intersecting polygons
-   */
-  private unionPolygons(
-    layers: L.FeatureGroup[],
-    latlngs: Feature<Polygon | MultiPolygon>,
-    polygonFeature: Feature<Polygon | MultiPolygon>[],
-  ) {
-    // Enhanced union logic to handle complex merge scenarios including holes
+  //   if (newArray.length > 0) {
+  //     this.unionPolygons(newArray, latlngs, polygonFeature);
+  //   } else {
+  //     this.addPolygonLayerCallback(latlngs, true);
+  //   }
+  // }
 
-    let resultPolygon = latlngs;
-    const processedFeatureGroups: L.FeatureGroup[] = [];
+  // /**
+  //  * Perform union operations on intersecting polygons
+  //  */
+  // private unionPolygons(
+  //   layers: L.FeatureGroup[],
+  //   latlngs: Feature<Polygon | MultiPolygon>,
+  //   polygonFeature: Feature<Polygon | MultiPolygon>[],
+  // ) {
+  //   // Enhanced union logic to handle complex merge scenarios including holes
 
-    // Process each intersecting polygon
-    layers.forEach((featureGroup, i) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJsonCallback(layer);
-      const existingPolygon = polygonFeature[i];
+  //   let resultPolygon = latlngs;
+  //   const processedFeatureGroups: L.FeatureGroup[] = [];
 
-      // Check the type of intersection to determine the correct operation
-      const intersectionType = this.analyzeIntersectionType(resultPolygon, existingPolygon);
+  //   // Process each intersecting polygon
+  //   layers.forEach((featureGroup, i) => {
+  //     const featureCollection = featureGroup.toGeoJSON() as any;
+  //     const layer = featureCollection.features[0];
+  //     const poly = this.getLatLngsFromJsonCallback(layer);
+  //     const existingPolygon = polygonFeature[i];
 
-      if (intersectionType === 'should_create_holes') {
-        // For complex cut-through scenarios, we actually want to MERGE (union) the polygons
-        // The "should_create_holes" name is misleading - it means "complex intersection detected"
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-      } else {
-        // Standard union operation for normal merges
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-      }
+  //     // Check the type of intersection to determine the correct operation
+  //     const intersectionType = this.analyzeIntersectionType(resultPolygon, existingPolygon);
 
-      // Mark for removal
-      processedFeatureGroups.push(featureGroup);
-      try {
-        this.deletePolygonOnMerge(poly);
-      } catch (error) {
-        // Silently handle polygon deletion errors in test environment
-      }
-      try {
-        this.removeFeatureGroupCallback(featureGroup);
-      } catch (error) {
-        // Silently handle feature group removal errors in test environment
-      }
-    });
+  //     if (intersectionType === 'should_create_holes') {
+  //       // For complex cut-through scenarios, we actually want to MERGE (union) the polygons
+  //       // The "should_create_holes" name is misleading - it means "complex intersection detected"
+  //       const union = this.turfHelper.union(resultPolygon, existingPolygon);
+  //       if (union) {
+  //         resultPolygon = union;
+  //       }
+  //     } else {
+  //       // Standard union operation for normal merges
+  //       const union = this.turfHelper.union(resultPolygon, existingPolygon);
+  //       if (union) {
+  //         resultPolygon = union;
+  //       }
+  //     }
 
-    // Add the final result
-    try {
-      this.addPolygonLayerCallback(resultPolygon, true);
-    } catch (error) {
-      // In test environment, still add to array even if map rendering fails
-      this.getArrayOfFeatureGroups().push(new L.FeatureGroup());
-    }
-  }
+  //     // Mark for removal
+  //     processedFeatureGroups.push(featureGroup);
+  //     try {
+  //       this.deletePolygonOnMerge(poly);
+  //     } catch (error) {
+  //       // Silently handle polygon deletion errors in test environment
+  //     }
+  //     try {
+  //       this.removeFeatureGroupCallback(featureGroup);
+  //     } catch (error) {
+  //       // Silently handle feature group removal errors in test environment
+  //     }
+  //   });
 
-  /**
-   * Analyze the type of intersection between two polygons to determine merge strategy
-   */
-  private analyzeIntersectionType(
-    newPolygon: Feature<Polygon | MultiPolygon>,
-    existingPolygon: Feature<Polygon | MultiPolygon>,
-  ): string {
-    try {
-      // Check if the new polygon is completely contained within the existing polygon
-      // This is the primary case where we want to create holes
-      try {
-        const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+  //   // Add the final result
+  //   try {
+  //     this.addPolygonLayerCallback(resultPolygon, true);
+  //   } catch (error) {
+  //     // In test environment, still add to array even if map rendering fails
+  //     this.getArrayOfFeatureGroups().push(new L.FeatureGroup());
+  //   }
+  // }
 
-        if (
-          difference &&
-          difference.geometry.type === 'Polygon' &&
-          difference.geometry.coordinates.length > 1
-        ) {
-          // If difference creates a polygon with holes, the new polygon was likely contained
-          return 'should_create_holes';
-        }
-      } catch (error) {
-        // Silently handle difference operation errors
-      }
+  // /**
+  //  * Get LatLng coordinates from GeoJSON feature
+  //  */
+  // private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
+  //   // Extract LatLng coordinates from GeoJSON feature
+  //   let coord: ILatLng[][];
+  //   if (feature) {
+  //     if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     } else if (
+  //       feature.geometry.coordinates[0].length > 1 &&
+  //       feature.geometry.type === 'Polygon'
+  //     ) {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
+  //     } else {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     }
+  //   }
 
-      // Check if this is a complex cutting scenario using proper geometric analysis
-      // instead of arbitrary vertex count
-      try {
-        // Method 1: Check convexity - complex shapes are usually non-convex
-        const convexHull = this.turfHelper.getConvexHull(existingPolygon);
-        if (convexHull) {
-          const convexArea = this.turfHelper.getPolygonArea(convexHull);
-          const actualArea = this.turfHelper.getPolygonArea(existingPolygon);
-          const convexityRatio = actualArea / convexArea;
+  //   return coord;
+  // }
 
-          // If shape is significantly non-convex (< 0.7), it might be complex
-          if (convexityRatio < 0.7) {
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
+  // /**
+  //  * Analyze intersection type between two polygons
+  //  */
+  // private analyzeIntersectionType(
+  //   newPolygon: Feature<Polygon | MultiPolygon>,
+  //   existingPolygon: Feature<Polygon | MultiPolygon>,
+  // ): string {
+  //   try {
+  //     // Check if the new polygon is completely contained within the existing polygon
+  //     // This is the primary case where we want to create holes
+  //     try {
+  //       const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
 
-        // Method 2: Check intersection complexity
-        const intersection = this.turfHelper.getIntersection(newPolygon, existingPolygon);
-        if (intersection && intersection.geometry.type === 'MultiPolygon') {
-          // Multiple intersection areas = complex cut-through scenario
-          return 'should_create_holes';
-        }
+  //       if (
+  //         difference &&
+  //         difference.geometry.type === 'Polygon' &&
+  //         difference.geometry.coordinates.length > 1
+  //       ) {
+  //         // If difference creates a polygon with holes, the new polygon was likely contained
+  //         return 'should_create_holes';
+  //       }
+  //     } catch (error) {
+  //       // Silently handle difference operation errors
+  //     }
 
-        // Method 3: Area ratio analysis for partial overlaps
-        if (intersection) {
-          const intersectionArea = this.turfHelper.getPolygonArea(intersection);
-          const newArea = this.turfHelper.getPolygonArea(newPolygon);
-          const existingArea = this.turfHelper.getPolygonArea(existingPolygon);
+  //     // Check if this is a complex cutting scenario using proper geometric analysis
+  //     // instead of arbitrary vertex count
+  //     try {
+  //       // Method 1: Check convexity - complex shapes are usually non-convex
+  //       const convexHull = this.turfHelper.getConvexHull(existingPolygon);
+  //       if (convexHull) {
+  //         const convexArea = this.turfHelper.getPolygonArea(convexHull);
+  //         const actualArea = this.turfHelper.getPolygonArea(existingPolygon);
+  //         const convexityRatio = actualArea / convexArea;
 
-          // Check if it's a significant but partial overlap (not full containment)
-          const overlapRatioExisting = intersectionArea / existingArea;
-          const overlapRatioNew = intersectionArea / newArea;
+  //         // If shape is significantly non-convex (< 0.7), it might be complex
+  //         if (convexityRatio < 0.7) {
+  //           const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+  //           if (difference && difference.geometry.type === 'MultiPolygon') {
+  //             return 'should_create_holes';
+  //           }
+  //         }
+  //       }
 
-          if (
-            overlapRatioExisting > 0.1 &&
-            overlapRatioExisting < 0.9 &&
-            overlapRatioNew > 0.1 &&
-            overlapRatioNew < 0.9
-          ) {
-            // Significant partial overlap might indicate cut-through
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
-      } catch (error) {
-        // Silently handle geometric analysis errors
-      }
+  //       // Method 2: Check intersection complexity
+  //       const intersection = this.turfHelper.getIntersection(newPolygon, existingPolygon);
+  //       if (intersection && intersection.geometry.type === 'MultiPolygon') {
+  //         // Multiple intersection areas = complex cut-through scenario
+  //         return 'should_create_holes';
+  //       }
 
-      // Default to standard union for normal merging cases
-      return 'standard_union';
-    } catch (error) {
-      // Silently handle intersection analysis errors
-      return 'standard_union';
-    }
-  }
+  //       // Method 3: Area ratio analysis for partial overlaps
+  //       if (intersection) {
+  //         const intersectionArea = this.turfHelper.getPolygonArea(intersection);
+  //         const newArea = this.turfHelper.getPolygonArea(newPolygon);
+  //         const existingArea = this.turfHelper.getPolygonArea(existingPolygon);
 
-  /**
-   * Delete polygon during merge operations
-   */
-  private deletePolygonOnMerge(polygon: any) {
-    let polygon2 = [];
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-    if (arrayOfFeatureGroups.length > 0) {
-      arrayOfFeatureGroups.forEach((featureGroup) => {
-        const layer = featureGroup.getLayers()[0] as any;
-        const latlngs = layer.getLatLngs()[0];
-        polygon2 = [...latlngs[0]];
-        if (latlngs[0][0] !== latlngs[0][latlngs[0].length - 1]) {
-          polygon2.push(latlngs[0][0]);
-        }
-        const equals = this.polygonArrayEqualsMerge(polygon2, polygon);
+  //         // Check if it's a significant but partial overlap (not full containment)
+  //         const overlapRatioExisting = intersectionArea / existingArea;
+  //         const overlapRatioNew = intersectionArea / newArea;
 
-        if (equals) {
-          this.removeFeatureGroupOnMerge(featureGroup);
-          this.deletePolygonCallback(polygon);
-        }
-      });
-    }
-  }
+  //         if (
+  //           overlapRatioExisting > 0.1 &&
+  //           overlapRatioExisting < 0.9 &&
+  //           overlapRatioNew > 0.1 &&
+  //           overlapRatioNew < 0.9
+  //         ) {
+  //           // Significant partial overlap might indicate cut-through
+  //           const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
+  //           if (difference && difference.geometry.type === 'MultiPolygon') {
+  //             return 'should_create_holes';
+  //           }
+  //         }
+  //       }
+  //     } catch (error) {
+  //       // Silently handle geometric analysis errors
+  //     }
+
+  //     // Default to standard union for normal merging cases
+  //     return 'standard_union';
+  //   } catch (error) {
+  //     // Silently handle intersection analysis errors
+  //     return 'standard_union';
+  //   }
+  // }
+
+  // /**
+  //  * Delete polygon during merge operations
+  //  */
+  // private deletePolygonOnMerge(polygon: any) {
+  //   let polygon2 = [];
+  //   const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+  //   if (arrayOfFeatureGroups.length > 0) {
+  //     arrayOfFeatureGroups.forEach((featureGroup) => {
+  //       const layer = featureGroup.getLayers()[0] as any;
+  //       const latlngs = layer.getLatLngs()[0];
+  //       polygon2 = [...latlngs[0]];
+  //       if (latlngs[0][0] !== latlngs[0][latlngs[0].length - 1]) {
+  //         polygon2.push(latlngs[0][0]);
+  //       }
+  //       const equals = this.polygonArrayEqualsMerge(polygon2, polygon);
+
+  //       if (equals) {
+  //         this.removeFeatureGroupOnMerge(featureGroup);
+  //         this.deletePolygonCallback(polygon);
+  //       }
+  //     });
+  //   }
+  // }
 
   /**
    * Remove a feature group during merge operations
    */
   private removeFeatureGroupOnMerge(featureGroup: L.FeatureGroup) {
-    const newArray = [];
     if (featureGroup.getLayers()[0]) {
-      const polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
-
       featureGroup.clearLayers();
-      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-      // Note: We can't directly modify the array returned by the getter,
-      // so we need to use the callback to remove the feature group
-      // This method should ideally use the removeFeatureGroupCallback instead
-
       this.map.removeLayer(featureGroup);
     }
   }
 
-  /**
-   * Compare two polygon arrays for equality in merge operations
-   */
-  private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
-    return poly1.toString() === poly2.toString();
-  }
+  // /**
+  //  * Compare two polygon arrays for equality in merge operations
+  //  */
+  // private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
+  //   return poly1.toString() === poly2.toString();
+  // }
 
   /**
    * Clean up any empty feature groups that remain after operations
    */
   private cleanupEmptyFeatureGroups(): void {
     const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-    console.log(
-      'DEBUG: cleanupEmptyFeatureGroups() - before cleanup, array length:',
-      arrayOfFeatureGroups.length,
-    );
 
     // Filter out feature groups that have no features or invalid features
     const validFeatureGroups = arrayOfFeatureGroups.filter((featureGroup) => {
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
-
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - checking feature group:',
-          featureCollection,
-        );
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - featureCollection exists:',
-          !!featureCollection,
-        );
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - features exists:',
-          !!featureCollection?.features,
-        );
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - features length:',
-          featureCollection?.features?.length,
-        );
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - features[0] exists:',
-          !!featureCollection?.features?.[0],
-        );
-        console.log(
-          'DEBUG: cleanupEmptyFeatureGroups() - features[0].geometry exists:',
-          !!featureCollection?.features?.[0]?.geometry,
-        );
 
         const hasValidFeatures =
           featureCollection &&
@@ -403,13 +388,7 @@ export class PolygonOperationsManager {
           featureCollection.features[0] &&
           featureCollection.features[0].geometry;
 
-        console.log('DEBUG: cleanupEmptyFeatureGroups() - hasValidFeatures:', hasValidFeatures);
-
         if (!hasValidFeatures) {
-          console.log(
-            'DEBUG: cleanupEmptyFeatureGroups() - removing empty feature group:',
-            featureCollection,
-          );
           // Remove from map if it exists
           try {
             this.map.removeLayer(featureGroup);
@@ -420,7 +399,6 @@ export class PolygonOperationsManager {
         }
         return true;
       } catch (error) {
-        console.warn('DEBUG: cleanupEmptyFeatureGroups() - error checking feature group:', error);
         // Remove problematic feature groups
         try {
           this.map.removeLayer(featureGroup);
@@ -434,10 +412,5 @@ export class PolygonOperationsManager {
     // Update the array with only valid feature groups
     arrayOfFeatureGroups.length = 0;
     arrayOfFeatureGroups.push(...validFeatureGroups);
-
-    console.log(
-      'DEBUG: cleanupEmptyFeatureGroups() - after cleanup, array length:',
-      arrayOfFeatureGroups.length,
-    );
   }
 }
