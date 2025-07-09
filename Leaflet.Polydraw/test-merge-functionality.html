@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Test Merge Functionality</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+      #map {
+        height: 400px;
+        width: 100%;
+      }
+      #controls {
+        margin: 10px 0;
+      }
+      button {
+        margin: 5px;
+        padding: 10px;
+      }
+      #status {
+        margin: 10px 0;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Test Merge Functionality</h1>
+    <div id="controls">
+      <button onclick="addOverlappingSquares()">Add Overlapping Squares (Should Merge)</button>
+      <button onclick="clearAll()">Clear All</button>
+    </div>
+    <div id="status">Ready</div>
+    <div id="map"></div>
+
+    <script type="module">
+      import Polydraw from './dist/polydraw.js';
+
+      // Initialize map
+      const map = L.map('map').setView([51.505, -0.09], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+      // Initialize Polydraw with merging enabled
+      const polydraw = new Polydraw({
+        position: 'topleft',
+        config: {
+          mergePolygons: true,
+          kinks: false,
+        },
+      });
+      polydraw.addTo(map);
+
+      // Test functions
+      window.addOverlappingSquares = function () {
+        const statusDiv = document.getElementById('status');
+        statusDiv.textContent = 'Adding overlapping squares...';
+
+        // Clear existing polygons first
+        polydraw.removeAllFeatureGroups();
+
+        // Add first square
+        const square1 = [
+          [
+            [
+              { lat: 51.5, lng: -0.1 },
+              { lat: 51.51, lng: -0.1 },
+              { lat: 51.51, lng: -0.11 },
+              { lat: 51.5, lng: -0.11 },
+              { lat: 51.5, lng: -0.1 },
+            ],
+          ],
+        ];
+
+        // Add second overlapping square
+        const square2 = [
+          [
+            [
+              { lat: 51.505, lng: -0.105 },
+              { lat: 51.515, lng: -0.105 },
+              { lat: 51.515, lng: -0.115 },
+              { lat: 51.505, lng: -0.115 },
+              { lat: 51.505, lng: -0.105 },
+            ],
+          ],
+        ];
+
+        try {
+          polydraw.addAutoPolygon(square1);
+          statusDiv.textContent = 'First square added. Adding second overlapping square...';
+
+          setTimeout(() => {
+            polydraw.addAutoPolygon(square2);
+
+            // Check result after a short delay
+            setTimeout(() => {
+              const polygonCount = polydraw.arrayOfFeatureGroups
+                ? polydraw.arrayOfFeatureGroups.length
+                : 0;
+              if (polygonCount === 1) {
+                statusDiv.textContent = `✅ SUCCESS: Overlapping squares merged into 1 polygon!`;
+                statusDiv.style.color = 'green';
+              } else {
+                statusDiv.textContent = `❌ FAILED: Expected 1 polygon, got ${polygonCount} polygons`;
+                statusDiv.style.color = 'red';
+              }
+            }, 100);
+          }, 500);
+        } catch (error) {
+          statusDiv.textContent = `❌ ERROR: ${error.message}`;
+          statusDiv.style.color = 'red';
+        }
+      };
+
+      window.clearAll = function () {
+        polydraw.removeAllFeatureGroups();
+        document.getElementById('status').textContent = 'All polygons cleared';
+        document.getElementById('status').style.color = 'black';
+      };
+    </script>
+  </body>
+</html>

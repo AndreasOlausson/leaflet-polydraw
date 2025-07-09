@@ -23,7 +23,7 @@ export class PolygonManager {
   ) => void;
   private deletePolygonCallback: (polygon: ILatLng[][]) => void;
   private removeFeatureGroupCallback: (featureGroup: L.FeatureGroup) => void;
-  private getArrayOfFeatureGroupsCallback: () => PolydrawFeatureGroup[];
+  private getFeatureGroupsCallback: () => PolydrawFeatureGroup[];
 
   constructor(
     map: L.Map,
@@ -38,7 +38,7 @@ export class PolygonManager {
     ) => void,
     deletePolygonCallback: (polygon: ILatLng[][]) => void,
     removeFeatureGroupCallback: (featureGroup: L.FeatureGroup) => void,
-    getArrayOfFeatureGroupsCallback: () => PolydrawFeatureGroup[],
+    getFeatureGroupsCallback: () => PolydrawFeatureGroup[],
   ) {
     this.map = map;
     this.turfHelper = turfHelper;
@@ -47,7 +47,7 @@ export class PolygonManager {
     this.addPolygonLayerCallback = addPolygonLayerCallback;
     this.deletePolygonCallback = deletePolygonCallback;
     this.removeFeatureGroupCallback = removeFeatureGroupCallback;
-    this.getArrayOfFeatureGroupsCallback = getArrayOfFeatureGroupsCallback;
+    this.getFeatureGroupsCallback = getFeatureGroupsCallback;
   }
 
   /**
@@ -64,7 +64,7 @@ export class PolygonManager {
     if (
       this.config.mergePolygons &&
       !noMerge &&
-      this.getArrayOfFeatureGroupsCallback().length > 0 &&
+      this.getFeatureGroupsCallback().length > 0 &&
       !hasKinks
     ) {
       this.merge(latlngs);
@@ -79,7 +79,7 @@ export class PolygonManager {
   subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>): void {
     const addHole = latlngs;
     const newPolygons = [];
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroupsCallback();
+    const arrayOfFeatureGroups = this.getFeatureGroupsCallback();
 
     arrayOfFeatureGroups.forEach((featureGroup) => {
       try {
@@ -130,7 +130,7 @@ export class PolygonManager {
    * Delete a specific polygon
    */
   deletePolygon(polygon: ILatLng[][]): void {
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroupsCallback();
+    const arrayOfFeatureGroups = this.getFeatureGroupsCallback();
 
     if (arrayOfFeatureGroups.length > 0) {
       arrayOfFeatureGroups.forEach((featureGroup) => {
@@ -173,7 +173,7 @@ export class PolygonManager {
    * Remove all feature groups
    */
   removeAllFeatureGroups(): void {
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroupsCallback();
+    const arrayOfFeatureGroups = this.getFeatureGroupsCallback();
 
     arrayOfFeatureGroups.forEach((featureGroups) => {
       try {
@@ -194,7 +194,7 @@ export class PolygonManager {
     const polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroupsCallback();
+    const arrayOfFeatureGroups = this.getFeatureGroupsCallback();
 
     arrayOfFeatureGroups.forEach((featureGroup, index) => {
       try {
@@ -435,7 +435,7 @@ export class PolygonManager {
    */
   private deletePolygonOnMerge(polygon: any): void {
     let polygon2 = [];
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroupsCallback();
+    const arrayOfFeatureGroups = this.getFeatureGroupsCallback();
 
     if (arrayOfFeatureGroups.length > 0) {
       arrayOfFeatureGroups.forEach((featureGroup) => {
