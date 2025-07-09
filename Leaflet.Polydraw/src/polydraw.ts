@@ -24,6 +24,7 @@ import { MarkerManager } from './managers/marker-manager';
 import { PolygonDragManager } from './managers/polygon-drag-manager';
 import { DrawingEventsManager } from './managers/drawing-events-manager';
 import { PolygonOperationsManager } from './managers/polygon-operations-manager';
+import { PolygonManager } from './managers/polygon-manager';
 
 // Import comprehensive type definitions
 import type {
@@ -59,6 +60,7 @@ class Polydraw extends L.Control {
   private polygonDragManager: PolygonDragManager;
   private drawingEventsManager: DrawingEventsManager;
   private polygonOperationsManager: PolygonOperationsManager;
+  private polygonManager: PolygonManager;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
     super(options);
@@ -108,6 +110,17 @@ class Polydraw extends L.Control {
       (polygon) => this.deletePolygon(polygon),
       (featureGroup) => this.removeFeatureGroup(featureGroup),
       (feature) => this.getLatLngsFromJson(feature),
+    );
+    this.polygonManager = new PolygonManager(
+      this.map,
+      this.turfHelper,
+      this.config,
+      this.stateManager,
+      (geoJSON, simplify, dynamicTolerance, visualOptimizationLevel) =>
+        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, visualOptimizationLevel),
+      (polygon) => this.deletePolygon(polygon),
+      (featureGroup) => this.removeFeatureGroup(featureGroup),
+      () => this.arrayOfFeatureGroups,
     );
   }
 
@@ -714,15 +727,9 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    // Add a new polygon, potentially merging with existing ones
-    // Use currentPolygonHasKinks for runtime state, fallback to global kinks config
-    const hasKinks = this.currentPolygonHasKinks || this.kinks;
-
-    if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !hasKinks) {
-      this.merge(latlngs);
-    } else {
-      this.addPolygonLayer(latlngs, simplify);
-    }
+    // Delegate to PolygonManager for centralized polygon operations
+    this.ensureManagersInitialized();
+    this.polygonManager.addPolygon(latlngs, simplify, noMerge);
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
     // Delegate to PolygonOperationsManager
