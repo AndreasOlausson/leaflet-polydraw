@@ -98,7 +98,7 @@ class Polydraw extends L.Control {
       this.config,
       this.map,
       this.tracer,
-      () => this.getDrawMode(),
+      this.stateManager,
       (geoPos) => this.handlePolygonComplete(geoPos),
     );
     this.polygonOperationsManager = new PolygonOperationsManager(

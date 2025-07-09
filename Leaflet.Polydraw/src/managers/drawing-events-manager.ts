@@ -2,18 +2,29 @@ import * as L from 'leaflet';
 import { DrawMode } from '../enums';
 import type { ILatLng, PolydrawConfig } from '../types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { PolydrawStateManager } from '../core/state-manager';
 
 /**
  * Manages drawing events and interactions for polygon creation
+ * Integrated with State Manager for centralized state management
  */
 export class DrawingEventsManager {
+  private isDrawing: boolean = false;
+
   constructor(
     private config: PolydrawConfig,
     private map: L.Map,
     private tracer: L.Polyline,
-    private getDrawMode: () => DrawMode,
+    private stateManager: PolydrawStateManager,
     private onPolygonComplete: (geoPos: Feature<Polygon | MultiPolygon>) => void,
-  ) {}
+  ) {
+    // Subscribe to draw mode changes to update visual feedback
+    this.stateManager.onDrawModeChange((mode) => {
+      this.updateTracerStyle(mode);
+      this.updateMapCursor(mode);
+      this.updateMapInteractions(mode);
+    });
+  }
 
   // /**
   //  * Enable or disable drawing event listeners
@@ -220,6 +231,21 @@ export class DrawingEventsManager {
       L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
     } else {
       L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+    }
+  }
+
+  /**
+   * Update map interactions based on draw mode
+   */
+  updateMapInteractions(drawMode: DrawMode) {
+    switch (drawMode) {
+      case DrawMode.Off:
+        this.setLeafletMapEvents(true, true, true);
+        break;
+      case DrawMode.Add:
+      case DrawMode.Subtract:
+        this.setLeafletMapEvents(false, false, false);
+        break;
     }
   }
 }
