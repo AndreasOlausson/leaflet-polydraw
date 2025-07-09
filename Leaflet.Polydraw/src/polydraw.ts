@@ -981,10 +981,8 @@ class Polydraw extends L.Control {
    * Handle edge click events
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    // COMMENTED OUT - Edge click functionality disabled
     const edgeInfo = (edgePolyline as any)._polydrawEdgeInfo;
     if (!edgeInfo) return;
-    // Add elbow functionality
     const newPoint = e.latlng;
     const parentPolygon = edgeInfo.parentPolygon;
     const parentFeatureGroup = edgeInfo.parentFeatureGroup;
@@ -992,7 +990,6 @@ class Polydraw extends L.Control {
       try {
         // Ensure managers are initialized before adding polygon
         this.ensureManagersInitialized();
-        // Check if parentPolygon has toGeoJSON method (safety check for tests)
         if (typeof parentPolygon.toGeoJSON !== 'function') {
           return;
         }
@@ -1000,17 +997,13 @@ class Polydraw extends L.Control {
         const poly = parentPolygon.toGeoJSON();
         // Process both Polygon and MultiPolygon types
         if (poly.geometry.type === 'MultiPolygon' || poly.geometry.type === 'Polygon') {
-          // Use the existing injectPointToPolygon method
           const newPolygon = this.turfHelper.injectPointToPolygon(poly, [
             newPoint.lng,
             newPoint.lat,
           ]);
           if (newPolygon) {
-            // Get the optimization level from the original polygon
             const optimizationLevel = (parentPolygon as any)._polydrawOptimizationLevel || 0;
-            // Remove the entire feature group (this removes polygon + all markers + edge listeners)
             this.removeFeatureGroup(parentFeatureGroup);
-            // Add the new polygon with the injected point and preserve optimization level
             this.addPolygonLayer(newPolygon, false, false, optimizationLevel);
           }
         }
