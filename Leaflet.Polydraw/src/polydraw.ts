@@ -1228,7 +1228,7 @@ class Polydraw extends L.Control {
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    // Delegate to MarkerManager
+    // Delegate to MarkerManager with merge detection parameters
     this.markerManager.handleMarkerDragEnd(
       FeatureGroup,
       () => this.polygonInformation.deletePolygonInformationStorage(),
@@ -1236,6 +1236,8 @@ class Polydraw extends L.Control {
       (geoJSON, simplify, dynamicTolerance, optimizationLevel) =>
         this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, optimizationLevel),
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
+      () => this.arrayOfFeatureGroups,
+      this.config,
     );
   }
 
