@@ -22,11 +22,19 @@ export class PolygonOperationsManager {
    * Subtract polygon from all existing polygons
    */
   subtract(latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('🔍 DEBUG: subtract() - Starting subtraction operation');
+    console.log('🔍 DEBUG: subtract() - Subtracting polygon:', latlngs);
+    console.log(
+      '🔍 DEBUG: subtract() - Current feature groups count:',
+      this.getArrayOfFeatureGroups().length,
+    );
+
     const addHole = latlngs;
     const newPolygons = [];
 
-    this.getArrayOfFeatureGroups().forEach((featureGroup) => {
+    this.getArrayOfFeatureGroups().forEach((featureGroup, index) => {
       try {
+        console.log(`🔍 DEBUG: subtract() - Processing feature group ${index}`);
         const featureCollection = featureGroup.toGeoJSON() as any;
 
         // Validate feature collection before accessing features[0]
@@ -42,12 +50,58 @@ export class PolygonOperationsManager {
         }
 
         const layer = featureCollection.features[0];
+        console.log(`🔍 DEBUG: subtract() - Original polygon ${index} geometry:`, layer.geometry);
+        console.log(
+          `🔍 DEBUG: subtract() - Original polygon ${index} coordinates structure:`,
+          layer.geometry.coordinates,
+        );
+
         const poly = this.getLatLngsFromJsonCallback(layer);
         const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
         const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
 
+        console.log(`🔍 DEBUG: subtract() - Result polygon ${index}:`, newPolygon);
         if (newPolygon) {
+          console.log(
+            `🔍 DEBUG: subtract() - Result polygon ${index} geometry:`,
+            newPolygon.geometry,
+          );
+          console.log(
+            `🔍 DEBUG: subtract() - Result polygon ${index} coordinates structure:`,
+            newPolygon.geometry.coordinates,
+          );
+          console.log(
+            `🔍 DEBUG: subtract() - Result polygon ${index} type:`,
+            newPolygon.geometry.type,
+          );
+
+          // Check if result is MultiPolygon (separate pieces) or Polygon with holes
+          if (newPolygon.geometry.type === 'MultiPolygon') {
+            console.log(
+              '🎯 DEBUG: subtract() - Result is MultiPolygon with',
+              newPolygon.geometry.coordinates.length,
+              'separate polygons',
+            );
+            newPolygon.geometry.coordinates.forEach((polygonCoords, polyIndex) => {
+              console.log(
+                `🎯 DEBUG: subtract() - MultiPolygon piece ${polyIndex} has ${polygonCoords.length} rings (1 outer + ${polygonCoords.length - 1} holes)`,
+              );
+            });
+          } else if (newPolygon.geometry.type === 'Polygon') {
+            console.log(
+              '🎯 DEBUG: subtract() - Result is single Polygon with',
+              newPolygon.geometry.coordinates.length,
+              'rings (1 outer +',
+              newPolygon.geometry.coordinates.length - 1,
+              'holes)',
+            );
+          }
+
           newPolygons.push(newPolygon);
+        } else {
+          console.log(
+            `🔍 DEBUG: subtract() - No result polygon for feature group ${index} (completely subtracted)`,
+          );
         }
         this.deletePolygonCallback(poly);
         this.removeFeatureGroupOnMerge(featureGroup);
@@ -57,13 +111,21 @@ export class PolygonOperationsManager {
       }
     });
 
+    console.log('🔍 DEBUG: subtract() - Total result polygons:', newPolygons.length);
+
     // After subtracting from all, add the remaining polygons
-    newPolygons.forEach((np) => {
+    newPolygons.forEach((np, index) => {
+      console.log(`🔍 DEBUG: subtract() - Adding result polygon ${index} to map`);
       this.addPolygonLayerCallback(np, true, true);
     });
 
     // Clean up any empty feature groups that might remain
     this.cleanupEmptyFeatureGroups();
+
+    console.log(
+      '🔍 DEBUG: subtract() - Final feature groups count:',
+      this.getArrayOfFeatureGroups().length,
+    );
   }
 
   // /**

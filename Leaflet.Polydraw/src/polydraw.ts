@@ -815,14 +815,62 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
+    console.log('🔍 DEBUG: addPolygonLayer() - Adding polygon to map');
+    console.log('🔍 DEBUG: addPolygonLayer() - Input polygon:', latlngs);
+    console.log('🔍 DEBUG: addPolygonLayer() - Polygon type:', latlngs.geometry.type);
+    console.log(
+      '🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure:',
+      latlngs.geometry.coordinates,
+    );
+
     // Ensure managers are initialized before adding polygon
     this.ensureManagersInitialized();
 
+    const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
+
+    // 🎯 FIX: Handle MultiPolygon by creating separate feature groups for each piece
+    if (latLngs.geometry.type === 'MultiPolygon' && latLngs.geometry.coordinates.length > 1) {
+      console.log(
+        '🎯 DEBUG: addPolygonLayer() - Splitting MultiPolygon into separate feature groups',
+      );
+
+      // Create separate polygons for each piece of the MultiPolygon
+      latLngs.geometry.coordinates.forEach((polygonCoords, index) => {
+        console.log(`🎯 DEBUG: addPolygonLayer() - Creating separate polygon ${index}`);
+
+        // Create a single Polygon feature for this piece
+        const singlePolygonFeature: Feature<Polygon> = {
+          type: 'Feature',
+          properties: latLngs.properties || {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: polygonCoords,
+          },
+        };
+
+        console.log(`🎯 DEBUG: addPolygonLayer() - Single polygon ${index}:`, singlePolygonFeature);
+
+        // Recursively call addPolygonLayer for each individual polygon
+        this.addPolygonLayer(
+          singlePolygonFeature,
+          false,
+          dynamicTolerance,
+          visualOptimizationLevel,
+        );
+      });
+
+      console.log('🎯 DEBUG: addPolygonLayer() - Finished splitting MultiPolygon');
+      return; // Exit early - we've handled the MultiPolygon by splitting it
+    }
+
+    // Original logic for single Polygon (or MultiPolygon with only 1 piece)
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
-    const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
     // Create and add a new polygon layer
     const polygon = this.getPolygon(latLngs);
+
+    console.log('🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon:', polygon);
+    console.log('🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates:', polygon.getLatLngs());
 
     // Store optimization level in polygon metadata
     (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
@@ -837,9 +885,53 @@ class Polydraw extends L.Control {
     // Add red polylines for hole rings and markers
     const markerLatlngs = polygon.getLatLngs();
 
-    markerLatlngs.forEach((polygonRings) => {
+    console.log('🔍 DEBUG: addPolygonLayer() - Marker coordinates structure:', markerLatlngs);
+
+    markerLatlngs.forEach((polygonRings, ringGroupIndex) => {
+      console.log(
+        `🔍 DEBUG: addPolygonLayer() - Processing ring group ${ringGroupIndex} with ${polygonRings.length} rings`,
+      );
+
+      // 🎯 FIX: Handle different coordinate structures from split polygons
+      // Check if polygonRings is actually an array of LatLng objects (flattened structure)
+      if (
+        polygonRings.length > 0 &&
+        polygonRings[0] &&
+        typeof polygonRings[0] === 'object' &&
+        'lat' in polygonRings[0]
+      ) {
+        console.log(
+          `🔍 DEBUG: addPolygonLayer() - Ring group ${ringGroupIndex} has flattened structure, treating as single ring`,
+        );
+
+        // This is a flattened structure - treat the entire polygonRings as a single ring
+        const polyElement = polygonRings as ILatLng[];
+        const isHoleRing = false; // Main ring for split polygons
+
+        console.log(
+          `🔍 DEBUG: addPolygonLayer() - Flattened ring with ${polyElement.length} points`,
+        );
+
+        // Add markers for the main ring
+        console.log('🔧 Calling addMarker for flattened ring with', polyElement.length, 'points');
+        this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
+
+        return; // Skip the normal processing
+      }
+
+      // Normal processing for properly nested structures
       polygonRings.forEach((polyElement: ILatLng[], i: number) => {
         const isHoleRing = i > 0;
+
+        // 🎯 FIX: Validate polyElement is an array before processing
+        if (!Array.isArray(polyElement)) {
+          console.warn(`🔍 DEBUG: addPolygonLayer() - Ring ${i} is not an array:`, polyElement);
+          return; // Skip this ring
+        }
+
+        console.log(
+          `🔍 DEBUG: addPolygonLayer() - Ring ${i} (${isHoleRing ? 'hole' : 'outer'}) with ${polyElement.length} points`,
+        );
 
         // Add red polyline overlay for hole rings
         if (isHoleRing) {
@@ -864,6 +956,15 @@ class Polydraw extends L.Control {
 
     // Add to the real array
     this.arrayOfFeatureGroups.push(featureGroup);
+
+    console.log(
+      '🔍 DEBUG: addPolygonLayer() - Total feature groups after adding:',
+      this.arrayOfFeatureGroups.length,
+    );
+    console.log(
+      '🔍 DEBUG: addPolygonLayer() - New feature group layers count:',
+      featureGroup.getLayers().length,
+    );
 
     // Add to map
     try {

@@ -9,8 +9,89 @@ export class PolygonInfo {
   sqmArea: number[] = [];
   perimeter: number[] = [];
   constructor(polygon) {
-    // Process each polygon
+    console.log('🔍 DEBUG: PolygonInfo constructor - Input polygon:', polygon);
+
+    // 🎯 FIX: Handle different polygon data structures
+    if (!Array.isArray(polygon)) {
+      console.warn('🔍 DEBUG: PolygonInfo constructor - polygon is not an array:', polygon);
+      return; // Skip processing if not an array
+    }
+
+    // 🎯 FIX: Handle flattened structure from split polygons
+    // Check if polygon[0] is an array of LatLng objects (structure: [Array(N)])
+    if (
+      polygon.length > 0 &&
+      Array.isArray(polygon[0]) &&
+      polygon[0].length > 0 &&
+      typeof polygon[0][0] === 'object' &&
+      'lat' in polygon[0][0]
+    ) {
+      console.log(
+        '🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly',
+      );
+
+      // This is the structure: [Array(N)] where Array(N) = [LatLng, LatLng, LatLng, ...]
+      // We can process polygon[0] directly as the coordinate array
+      const coordinateArray = polygon[0];
+
+      console.log(
+        '🔍 DEBUG: PolygonInfo constructor - Processing coordinate array:',
+        coordinateArray,
+      );
+
+      // Process the coordinate array directly
+      this.trashcanPoint[0] = this.getTrashcanPoint(coordinateArray);
+      this.sqmArea[0] = this.calculatePolygonArea(coordinateArray);
+      this.perimeter[0] = this.calculatePolygonPerimeter(coordinateArray);
+      this.polygon[0] = [coordinateArray]; // Store as [Array(N)] format
+
+      return; // Exit early - we've handled the flattened structure
+    }
+
+    // 🎯 FIX: Handle direct flattened structure (less common case)
+    // Check if polygon[0] is a LatLng object directly (structure: [LatLng, LatLng, ...])
+    if (polygon.length > 0 && polygon[0] && typeof polygon[0] === 'object' && 'lat' in polygon[0]) {
+      console.log(
+        '🔍 DEBUG: PolygonInfo constructor - Detected direct flattened structure, wrapping in proper format',
+      );
+
+      // This is a flattened structure: [LatLng, LatLng, LatLng, ...]
+      // We need to wrap it in the expected format: [[[LatLng, LatLng, LatLng, ...]]]
+      const wrappedPolygon = [[polygon]]; // Wrap in proper nesting
+
+      console.log('🔍 DEBUG: PolygonInfo constructor - Wrapped polygon:', wrappedPolygon);
+
+      // Process the wrapped polygon
+      this.trashcanPoint[0] = this.getTrashcanPoint(polygon);
+      this.sqmArea[0] = this.calculatePolygonArea(polygon);
+      this.perimeter[0] = this.calculatePolygonPerimeter(polygon);
+      this.polygon[0] = wrappedPolygon[0]; // Store as [[LatLng, LatLng, ...]]
+
+      return; // Exit early - we've handled the flattened structure
+    }
+
+    // Process each polygon (normal nested structure)
     polygon.forEach((polygons, i) => {
+      console.log(`🔍 DEBUG: PolygonInfo constructor - Processing polygon ${i}:`, polygons);
+
+      // 🎯 FIX: Handle case where polygons might be a single LatLng object or invalid structure
+      if (!polygons || !Array.isArray(polygons)) {
+        console.warn(
+          `🔍 DEBUG: PolygonInfo constructor - polygons[${i}] is not an array:`,
+          polygons,
+        );
+        return; // Skip this polygon
+      }
+
+      // 🎯 FIX: Handle case where polygons[0] might not exist or not be an array
+      if (!polygons[0] || !Array.isArray(polygons[0])) {
+        console.warn(
+          `🔍 DEBUG: PolygonInfo constructor - polygons[${i}][0] is not an array:`,
+          polygons[0],
+        );
+        return; // Skip this polygon
+      }
+
       this.trashcanPoint[i] = this.getTrashcanPoint(polygons[0]);
       this.sqmArea[i] = this.calculatePolygonArea(polygons[0]);
       this.perimeter[i] = this.calculatePolygonPerimeter(polygons[0]);

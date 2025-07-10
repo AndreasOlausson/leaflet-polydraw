@@ -171,6 +171,16 @@ export class PolygonDragManager {
   private onPolygonMouseDown(e: any, polygon: any) {
     if (!this.config.modes.dragPolygons || this.getDrawMode() !== DrawMode.Off) return;
 
+    console.log('🔍 DEBUG: onPolygonMouseDown() - Starting polygon drag');
+    console.log(
+      '🔍 DEBUG: onPolygonMouseDown() - Polygon feature group:',
+      polygon._polydrawFeatureGroup,
+    );
+    console.log(
+      '🔍 DEBUG: onPolygonMouseDown() - Polygon original coordinates:',
+      polygon._polydrawLatLngs,
+    );
+
     // Prevent event bubbling to map
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
@@ -179,6 +189,8 @@ export class PolygonDragManager {
     const isModifierPressed = this.detectModifierKeyInternal(e.originalEvent || e);
     this.currentModifierDragMode = isModifierPressed;
     this.isModifierKeyHeld = isModifierPressed;
+
+    console.log('🔍 DEBUG: onPolygonMouseDown() - Modifier key pressed:', isModifierPressed);
 
     // Initialize drag
     polygon._polydrawDragData.isDragging = true;
