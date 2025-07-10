@@ -763,8 +763,20 @@ class Polydraw extends L.Control {
     this.polygonManager.addPolygon(latlngs, simplify, noMerge);
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    // Delegate to PolygonOperationsManager
-    this.polygonOperationsManager.subtract(latlngs);
+    // Use the simplified approach through PolygonStateManager
+    this.ensureManagersInitialized();
+
+    try {
+      // Use PolygonStateManager for subtract operations to ensure proper registration
+      this.polygonStateManager.subtractPolygon(latlngs);
+    } catch (error) {
+      console.warn('PolygonStateManager subtract failed, falling back to legacy method:', error);
+      // Fallback to legacy method if needed
+      this.polygonOperationsManager.subtract(latlngs);
+    }
+
+    // 🎯 FIX: Reset draw mode to Off after subtract operation completes
+    this.setDrawMode(DrawMode.Off);
   }
   private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
     // Extract LatLng coordinates from GeoJSON feature
@@ -1008,6 +1020,26 @@ class Polydraw extends L.Control {
       '🔍 DEBUG: addPolygonLayer() - New feature group layers count:',
       featureGroup.getLayers().length,
     );
+
+    // 🎯 FIX: Register with PolygonStateManager for proper tracking
+    try {
+      if (this.polygonStateManager) {
+        // Create a polygon data entry manually since this bypasses the normal addPolygon flow
+        const polygonId = `polygon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const polygonData = {
+          id: polygonId,
+          geoJSON: latLngs,
+          featureGroup: featureGroup,
+          optimizationLevel: visualOptimizationLevel,
+        };
+
+        // Add to the state manager's internal tracking
+        (this.polygonStateManager as any).polygons.set(polygonId, polygonData);
+        console.log('🔧 addPolygonLayer() - Registered polygon with state manager:', polygonId);
+      }
+    } catch (error) {
+      console.warn('Failed to register polygon with state manager:', error);
+    }
 
     // Add to map
     try {
