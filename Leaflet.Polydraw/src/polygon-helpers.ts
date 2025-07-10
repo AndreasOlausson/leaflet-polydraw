@@ -102,27 +102,60 @@ export class PolygonInfo {
     this.sqmArea[0] = area;
   }
   private getTrashcanPoint(polygon: ILatLng[]): ILatLng {
-    const res = Math.max(...polygon.map((o) => o.lat));
-    const idx = polygon.findIndex((o) => o.lat === res);
+    // 🎯 FIX: Validate polygon array and coordinates
+    if (!Array.isArray(polygon) || polygon.length === 0) {
+      console.warn('getTrashcanPoint: Invalid polygon array:', polygon);
+      return { lat: 0, lng: 0 }; // Return default coordinates
+    }
+
+    // 🎯 FIX: Filter out invalid coordinates
+    const validCoords = polygon.filter(
+      (coord) =>
+        coord &&
+        typeof coord === 'object' &&
+        typeof coord.lat === 'number' &&
+        typeof coord.lng === 'number' &&
+        !isNaN(coord.lat) &&
+        !isNaN(coord.lng),
+    );
+
+    if (validCoords.length === 0) {
+      console.warn('getTrashcanPoint: No valid coordinates found:', polygon);
+      return { lat: 0, lng: 0 }; // Return default coordinates
+    }
+
+    const res = Math.max(...validCoords.map((o) => o.lat));
+    const idx = validCoords.findIndex((o) => o.lat === res);
+
+    if (idx === -1) {
+      console.warn('getTrashcanPoint: Could not find max lat coordinate');
+      return { lat: 0, lng: 0 }; // Return default coordinates
+    }
 
     let previousPoint: ILatLng;
     let nextPoint: ILatLng;
 
     if (idx > 0) {
-      previousPoint = polygon[idx - 1];
-      if (idx < polygon.length - 1) {
-        nextPoint = polygon[idx + 1];
+      previousPoint = validCoords[idx - 1];
+      if (idx < validCoords.length - 1) {
+        nextPoint = validCoords[idx + 1];
       } else {
-        nextPoint = polygon[0];
+        nextPoint = validCoords[0];
       }
     } else {
-      previousPoint = polygon[polygon.length - 1];
-      nextPoint = polygon[idx + 1];
+      previousPoint = validCoords[validCoords.length - 1];
+      nextPoint = validCoords[idx + 1];
+    }
+
+    // 🎯 FIX: Validate that we have valid points before accessing properties
+    if (!previousPoint || !nextPoint) {
+      console.warn('getTrashcanPoint: Could not determine previous/next points');
+      return validCoords[idx] || { lat: 0, lng: 0 };
     }
 
     const secondPoint = previousPoint.lng < nextPoint.lng ? previousPoint : nextPoint;
 
-    const midpoint = PolygonUtil.getMidPoint(polygon[idx], secondPoint);
+    const midpoint = PolygonUtil.getMidPoint(validCoords[idx], secondPoint);
 
     return midpoint;
   }

@@ -25,6 +25,7 @@ import { PolygonDragManager } from './managers/polygon-drag-manager';
 import { DrawingEventsManager } from './managers/drawing-events-manager';
 import { PolygonOperationsManager } from './managers/polygon-operations-manager';
 import { PolygonManager } from './managers/polygon-manager';
+import { PolygonEdgeManager } from './managers/polygon-edge-manager';
 
 // Import comprehensive type definitions
 import type {
@@ -61,6 +62,7 @@ class Polydraw extends L.Control {
   private drawingEventsManager: DrawingEventsManager;
   private polygonOperationsManager: PolygonOperationsManager;
   private polygonManager: PolygonManager;
+  private polygonEdgeManager: PolygonEdgeManager;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
     super(options);
@@ -121,6 +123,14 @@ class Polydraw extends L.Control {
       (polygon) => this.deletePolygon(polygon),
       (featureGroup) => this.removeFeatureGroup(featureGroup),
       () => this.arrayOfFeatureGroups,
+    );
+    this.polygonEdgeManager = new PolygonEdgeManager(
+      this.config,
+      this.turfHelper,
+      this.map,
+      (featureGroup) => this.removeFeatureGroup(featureGroup),
+      (geoJSON, simplify, dynamicTolerance, visualOptimizationLevel) =>
+        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, visualOptimizationLevel),
     );
   }
 
@@ -912,9 +922,13 @@ class Polydraw extends L.Control {
           `🔍 DEBUG: addPolygonLayer() - Flattened ring with ${polyElement.length} points`,
         );
 
-        // Add markers for the main ring
-        console.log('🔧 Calling addMarker for flattened ring with', polyElement.length, 'points');
-        this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
+        // Add markers for the main ring only if we have valid points
+        if (polyElement.length > 0) {
+          console.log('🔧 Calling addMarker for flattened ring with', polyElement.length, 'points');
+          this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
+        } else {
+          console.warn('🔍 DEBUG: addPolygonLayer() - Skipping empty flattened ring');
+        }
 
         return; // Skip the normal processing
       }
@@ -927,6 +941,12 @@ class Polydraw extends L.Control {
         if (!Array.isArray(polyElement)) {
           console.warn(`🔍 DEBUG: addPolygonLayer() - Ring ${i} is not an array:`, polyElement);
           return; // Skip this ring
+        }
+
+        // 🎯 FIX: Skip empty rings to prevent marker errors
+        if (polyElement.length === 0) {
+          console.warn(`🔍 DEBUG: addPolygonLayer() - Ring ${i} is empty, skipping`);
+          return; // Skip empty rings
         }
 
         console.log(
@@ -943,7 +963,7 @@ class Polydraw extends L.Control {
           featureGroup.addLayer(holePolyline);
         }
 
-        // Add markers with preserved optimization level
+        // Add markers with preserved optimization level only if we have valid points
         if (isHoleRing) {
           console.log('🔧 Calling addHoleMarker for hole ring with', polyElement.length, 'points');
           this.addHoleMarker(polyElement, featureGroup, visualOptimizationLevel);
@@ -976,7 +996,7 @@ class Polydraw extends L.Control {
     this.setDrawMode(DrawMode.Off);
 
     // Add edge click detection
-    this.addEdgeClickListeners(polygon, featureGroup);
+    this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
 
     featureGroup.on('click', (e) => {
       this.polygonClicked(e, latLngs);
@@ -1034,31 +1054,98 @@ class Polydraw extends L.Control {
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
-    // Create a Leaflet polygon from GeoJSON
-    const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
+    // 🎯 FIX: Validate GeoJSON coordinates before creating Leaflet polygon
+    try {
+      // Check if coordinates contain valid data
+      if (!latlngs || !latlngs.geometry || !latlngs.geometry.coordinates) {
+        console.warn('getPolygon: Invalid GeoJSON structure:', latlngs);
+        throw new Error('Invalid GeoJSON structure');
+      }
 
-    // Always use normal green polygon styling for the main polygon
-    polygon.setStyle(this.config.polygonOptions);
+      // Validate coordinate arrays contain valid numbers
+      const coords = latlngs.geometry.coordinates;
+      const hasValidCoords = this.validateGeoJSONCoordinates(coords);
 
-    // Store hole information for later use in marker styling
-    polygon._polydrawHasHoles = this.polygonHasHoles(latlngs);
+      if (!hasValidCoords) {
+        console.warn('getPolygon: Invalid coordinates detected:', coords);
+        throw new Error('Invalid coordinates in GeoJSON');
+      }
 
-    // Enable dragging by setting the draggable option
-    // This is a workaround since GeoJSON layers don't have dragging by default
-    if (polygon.setDraggable) {
-      polygon.setDraggable(true);
-    } else {
-      // Alternative approach: add dragging capability manually
-      polygon.options = polygon.options || {};
-      polygon.options.draggable = true;
+      // Create a Leaflet polygon from GeoJSON
+      const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
 
-      // Initialize dragging if the method exists
-      if (polygon._initInteraction) {
-        polygon._initInteraction();
+      // Always use normal green polygon styling for the main polygon
+      polygon.setStyle(this.config.polygonOptions);
+
+      // Store hole information for later use in marker styling
+      polygon._polydrawHasHoles = this.polygonHasHoles(latlngs);
+
+      // Enable dragging by setting the draggable option
+      // This is a workaround since GeoJSON layers don't have dragging by default
+      if (polygon.setDraggable) {
+        polygon.setDraggable(true);
+      } else {
+        // Alternative approach: add dragging capability manually
+        polygon.options = polygon.options || {};
+        polygon.options.draggable = true;
+
+        // Initialize dragging if the method exists
+        if (polygon._initInteraction) {
+          polygon._initInteraction();
+        }
+      }
+
+      return polygon;
+    } catch (error) {
+      console.error('getPolygon: Failed to create polygon:', error);
+      // Return a minimal valid polygon to prevent crashes
+      const fallbackCoords: Feature<Polygon> = {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0, 0.001],
+              [0.001, 0.001],
+              [0.001, 0],
+              [0, 0],
+            ],
+          ],
+        },
+      };
+      return L.GeoJSON.geometryToLayer(fallbackCoords) as any;
+    }
+  }
+
+  /**
+   * Validate GeoJSON coordinates to ensure they contain valid numbers
+   */
+  private validateGeoJSONCoordinates(coords: any): boolean {
+    if (!Array.isArray(coords)) {
+      return false;
+    }
+
+    // Recursively validate coordinate arrays
+    for (const coord of coords) {
+      if (Array.isArray(coord)) {
+        // If it's an array, recursively validate
+        if (!this.validateGeoJSONCoordinates(coord)) {
+          return false;
+        }
+      } else if (typeof coord === 'number') {
+        // If it's a number, check if it's valid
+        if (isNaN(coord) || !isFinite(coord)) {
+          return false;
+        }
+      } else {
+        // Invalid coordinate type
+        return false;
       }
     }
 
-    return polygon;
+    return true;
   }
   /**
    * Check if a polygon has holes
@@ -1074,162 +1161,32 @@ class Polydraw extends L.Control {
     return false;
   }
 
-  /**
-   * Add click listeners to polygon edges for edge-specific interactions
-   */
-  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
-    const rawLatLngs = polygon.getLatLngs();
-
-    // Handle different polygon structures - Leaflet can return different nesting levels
-    let processedRings: ILatLng[][];
-
-    if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
-      if (Array.isArray(rawLatLngs[0])) {
-        // Check if rawLatLngs[0][0] is an array of LatLng objects
-        if (Array.isArray(rawLatLngs[0][0]) && rawLatLngs[0][0].length > 0) {
-          const firstCoord = rawLatLngs[0][0][0];
-
-          // Check if it's an array of coordinate objects
-          if (firstCoord && typeof firstCoord === 'object' && 'lat' in firstCoord) {
-            // This is the case: we have LatLng objects, but they're nested one level too deep
-            // The structure is [Array(1)] -> [Array(N)] -> N LatLng objects
-            // We need to extract from rawLatLngs[0], not rawLatLngs
-            processedRings = rawLatLngs[0] as ILatLng[][];
-          } else {
-            // Fallback for other structures
-            processedRings = rawLatLngs[0] as ILatLng[][];
-          }
-        } else if (
-          rawLatLngs[0][0] &&
-          typeof rawLatLngs[0][0] === 'object' &&
-          'lat' in rawLatLngs[0][0]
-        ) {
-          // Structure: [[{lat, lng}, ...]] (single ring wrapped in array)
-          processedRings = rawLatLngs as ILatLng[][];
-        } else {
-          // Fallback: rawLatLngs[0] contains the actual coordinate arrays
-          processedRings = rawLatLngs[0] as ILatLng[][];
-        }
-      } else if (rawLatLngs[0] && typeof rawLatLngs[0] === 'object' && 'lat' in rawLatLngs[0]) {
-        // Structure: [{lat, lng}, ...] (direct coordinate array)
-        processedRings = [rawLatLngs as ILatLng[]];
-      } else {
-        processedRings = [rawLatLngs as ILatLng[]];
-      }
-    } else {
-      return;
-    }
-
-    // Process each ring (outer ring and holes)
-    processedRings.forEach((ring, ringIndex) => {
-      // Create invisible polylines for each edge, including the closing edge
-      for (let i = 0; i < ring.length; i++) {
-        const edgeStart = ring[i];
-        const edgeEnd = ring[(i + 1) % ring.length]; // Use modulo to wrap around to first point
-
-        // Skip if start and end are the same (duplicate closing point)
-        if (edgeStart.lat === edgeEnd.lat && edgeStart.lng === edgeEnd.lng) {
-          continue;
-        }
-
-        // Create an invisible polyline for this edge
-        const edgePolyline = L.polyline([edgeStart, edgeEnd], {
-          color: 'transparent',
-          weight: 10, // Wide invisible line for easier clicking
-          opacity: 0,
-          interactive: true, // Make it clickable
-        });
-
-        // Store edge information for later use
-        (edgePolyline as any)._polydrawEdgeInfo = {
-          ringIndex,
-          edgeIndex: i,
-          startPoint: edgeStart,
-          endPoint: edgeEnd,
-          parentPolygon: polygon,
-          parentFeatureGroup: featureGroup,
-        };
-
-        // Add click listener to the edge
-        edgePolyline.on('click', (e: L.LeafletMouseEvent) => {
-          this.onEdgeClick(e, edgePolyline);
-        });
-
-        // Add hover listeners for visual feedback
-        edgePolyline.on('mouseover', () => {
-          this.highlightEdgeOnHover(edgePolyline, true);
-        });
-
-        edgePolyline.on('mouseout', () => {
-          this.highlightEdgeOnHover(edgePolyline, false);
-        });
-
-        // Add the invisible edge polyline to the feature group
-        featureGroup.addLayer(edgePolyline);
-      }
-    });
-  }
-
-  /**
-   * Handle edge click events
-   */
-  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    const edgeInfo = (edgePolyline as any)._polydrawEdgeInfo;
-    if (!edgeInfo) return;
-    const newPoint = e.latlng;
-    const parentPolygon = edgeInfo.parentPolygon;
-    const parentFeatureGroup = edgeInfo.parentFeatureGroup;
-    if (parentPolygon && parentFeatureGroup) {
-      try {
-        // Ensure managers are initialized before adding polygon
-        this.ensureManagersInitialized();
-        if (typeof parentPolygon.toGeoJSON !== 'function') {
-          return;
-        }
-        // Get the polygon as GeoJSON
-        const poly = parentPolygon.toGeoJSON();
-        // Process both Polygon and MultiPolygon types
-        if (poly.geometry.type === 'MultiPolygon' || poly.geometry.type === 'Polygon') {
-          const newPolygon = this.turfHelper.injectPointToPolygon(poly, [
-            newPoint.lng,
-            newPoint.lat,
-          ]);
-          if (newPolygon) {
-            const optimizationLevel = (parentPolygon as any)._polydrawOptimizationLevel || 0;
-            this.removeFeatureGroup(parentFeatureGroup);
-            this.addPolygonLayer(newPolygon, false, false, optimizationLevel);
-          }
-        }
-      } catch (error) {
-        // TODO: Add proper error handling.
-        // Silently handle errors
-      }
-    }
-    // Stop event propagation to prevent polygon click
-    L.DomEvent.stopPropagation(e);
-  }
-
-  /**
-   * Highlight edge on hover
-   */
-  private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    if (isHovering) {
-      edgePolyline.setStyle({
-        color: '#7a9441',
-        weight: 4,
-        opacity: 1,
-      });
-    } else {
-      edgePolyline.setStyle({
-        color: 'transparent',
-        weight: 10,
-        opacity: 0,
-      });
-    }
-  }
-
   private polygonClicked(e: L.LeafletMouseEvent, poly: Feature<Polygon | MultiPolygon>) {
     //TODO ...
+  }
+
+  /**
+   * Wrapper methods for edge functionality - for backward compatibility with tests
+   */
+  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
+    this.ensureManagersInitialized();
+    if (this.polygonEdgeManager) {
+      this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
+    }
+  }
+
+  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    this.ensureManagersInitialized();
+    if (this.polygonEdgeManager) {
+      this.polygonEdgeManager.onEdgeClick(e, edgePolyline);
+    }
+  }
+
+  private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
+    this.ensureManagersInitialized();
+    if (this.polygonEdgeManager) {
+      this.polygonEdgeManager.highlightEdgeOnHover(edgePolyline, isHovering);
+    }
   }
 
   private events(onoff: boolean) {
@@ -1717,18 +1674,47 @@ class Polydraw extends L.Control {
     FeatureGroup: L.FeatureGroup,
     visualOptimizationLevel: number = 0,
   ) {
-    // Ensure latlngs is an array
+    // Ensure latlngs is an array and has valid points
     if (!Array.isArray(latlngs)) {
       console.warn('addMarker: latlngs is not an array:', latlngs);
       return;
     }
 
-    let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
+    // 🎯 FIX: Skip empty arrays to prevent marker errors
+    if (latlngs.length === 0) {
+      console.warn('addMarker: latlngs array is empty, skipping marker creation');
+      return;
+    }
+
+    // 🎯 FIX: Validate that all elements are valid LatLng objects
+    const validLatLngs = latlngs.filter(
+      (latlng) =>
+        latlng &&
+        typeof latlng === 'object' &&
+        typeof latlng.lat === 'number' &&
+        typeof latlng.lng === 'number' &&
+        !isNaN(latlng.lat) &&
+        !isNaN(latlng.lng),
+    );
+
+    if (validLatLngs.length === 0) {
+      console.warn('addMarker: no valid LatLng objects found, skipping marker creation');
+      return;
+    }
+
+    // Use validLatLngs for marker index calculation
+    let menuMarkerIdx = this.getMarkerIndex(
+      validLatLngs,
+      this.config.markers.markerMenuIcon.position,
+    );
     let deleteMarkerIdx = this.getMarkerIndex(
-      latlngs,
+      validLatLngs,
       this.config.markers.markerDeleteIcon.position,
     );
-    let infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+    let infoMarkerIdx = this.getMarkerIndex(
+      validLatLngs,
+      this.config.markers.markerInfoIcon.position,
+    );
 
     // Fallback for small polygons
     if (latlngs.length <= 5) {

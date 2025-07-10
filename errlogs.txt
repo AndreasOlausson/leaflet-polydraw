@@ -1,0 +1,114 @@
+DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:829 🔍 DEBUG: addPolygonLayer() - Input polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:830 🔍 DEBUG: addPolygonLayer() - Polygon type: MultiPolygon
+polydraw.ts:831 🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure: [Array(1)]
+polydraw.ts:882 🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon: NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawHasHoles: false}
+polydraw.ts:883 🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates: [Array(1)]
+polydraw.ts:898 🔍 DEBUG: addPolygonLayer() - Marker coordinates structure: [Array(1)]
+polydraw.ts:901 🔍 DEBUG: addPolygonLayer() - Processing ring group 0 with 1 rings
+polydraw.ts:952 🔍 DEBUG: addPolygonLayer() - Ring 0 (outer) with 54 points
+polydraw.ts:971 🔧 Calling addMarker for main ring with 54 points
+polydraw.ts:980 🔍 DEBUG: addPolygonLayer() - Total feature groups after adding: 1
+polydraw.ts:984 🔍 DEBUG: addPolygonLayer() - New feature group layers count: 55
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(54)]
+polygon-operations-manager.ts:25 🔍 DEBUG: subtract() - Starting subtraction operation
+polygon-operations-manager.ts:26 🔍 DEBUG: subtract() - Subtracting polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-operations-manager.ts:27 🔍 DEBUG: subtract() - Current feature groups count: 1
+polygon-operations-manager.ts:37 🔍 DEBUG: subtract() - Processing feature group 0
+polygon-operations-manager.ts:53 🔍 DEBUG: subtract() - Original polygon 0 geometry: {type: 'MultiPolygon', coordinates: Array(1)}
+polygon-operations-manager.ts:54 🔍 DEBUG: subtract() - Original polygon 0 coordinates structure: [Array(1)]
+polygon-operations-manager.ts:63 🔍 DEBUG: subtract() - Result polygon 0: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-operations-manager.ts:65 🔍 DEBUG: subtract() - Result polygon 0 geometry: {type: 'MultiPolygon', coordinates: Array(2)}
+polygon-operations-manager.ts:69 🔍 DEBUG: subtract() - Result polygon 0 coordinates structure: (2) [Array(1), Array(1)]
+polygon-operations-manager.ts:73 🔍 DEBUG: subtract() - Result polygon 0 type: MultiPolygon
+polygon-operations-manager.ts:80 🎯 DEBUG: subtract() - Result is MultiPolygon with 2 separate polygons
+polygon-operations-manager.ts:86 🎯 DEBUG: subtract() - MultiPolygon piece 0 has 1 rings (1 outer + 0 holes)
+polygon-operations-manager.ts:86 🎯 DEBUG: subtract() - MultiPolygon piece 1 has 1 rings (1 outer + 0 holes)
+polygon-operations-manager.ts:114 🔍 DEBUG: subtract() - Total result polygons: 1
+polygon-operations-manager.ts:118 🔍 DEBUG: subtract() - Adding result polygon 0 to map
+polydraw.ts:828 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:829 🔍 DEBUG: addPolygonLayer() - Input polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:830 🔍 DEBUG: addPolygonLayer() - Polygon type: MultiPolygon
+polydraw.ts:831 🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure: (2) [Array(1), Array(1)]
+polydraw.ts:843 🎯 DEBUG: addPolygonLayer() - Splitting MultiPolygon into separate feature groups
+polydraw.ts:849 🎯 DEBUG: addPolygonLayer() - Creating separate polygon 0
+polydraw.ts:861 🎯 DEBUG: addPolygonLayer() - Single polygon 0: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:828 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:829 🔍 DEBUG: addPolygonLayer() - Input polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:830 🔍 DEBUG: addPolygonLayer() - Polygon type: Polygon
+polydraw.ts:831 🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure: [Array(31)]
+polydraw.ts:882 🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon: NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawHasHoles: false}
+polydraw.ts:883 🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates: [Array(30)]
+polydraw.ts:898 🔍 DEBUG: addPolygonLayer() - Marker coordinates structure: [Array(30)]
+polydraw.ts:901 🔍 DEBUG: addPolygonLayer() - Processing ring group 0 with 30 rings
+polydraw.ts:913 🔍 DEBUG: addPolygonLayer() - Ring group 0 has flattened structure, treating as single ring
+polydraw.ts:921 🔍 DEBUG: addPolygonLayer() - Flattened ring with 30 points
+polydraw.ts:927 🔧 Calling addMarker for flattened ring with 30 points
+polydraw.ts:980 🔍 DEBUG: addPolygonLayer() - Total feature groups after adding: 2
+polydraw.ts:984 🔍 DEBUG: addPolygonLayer() - New feature group layers count: 31
+polydraw.ts:849 🎯 DEBUG: addPolygonLayer() - Creating separate polygon 1
+polydraw.ts:861 🎯 DEBUG: addPolygonLayer() - Single polygon 1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:828 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:829 🔍 DEBUG: addPolygonLayer() - Input polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:830 🔍 DEBUG: addPolygonLayer() - Polygon type: Polygon
+polydraw.ts:831 🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure: [Array(34)]
+polydraw.ts:882 🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon: NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawHasHoles: false}
+polydraw.ts:883 🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates: [Array(33)]
+polydraw.ts:898 🔍 DEBUG: addPolygonLayer() - Marker coordinates structure: [Array(33)]
+polydraw.ts:901 🔍 DEBUG: addPolygonLayer() - Processing ring group 0 with 33 rings
+polydraw.ts:913 🔍 DEBUG: addPolygonLayer() - Ring group 0 has flattened structure, treating as single ring
+polydraw.ts:921 🔍 DEBUG: addPolygonLayer() - Flattened ring with 33 points
+polydraw.ts:927 🔧 Calling addMarker for flattened ring with 33 points
+polydraw.ts:980 🔍 DEBUG: addPolygonLayer() - Total feature groups after adding: 3
+polydraw.ts:984 🔍 DEBUG: addPolygonLayer() - New feature group layers count: 34
+polydraw.ts:872 🎯 DEBUG: addPolygonLayer() - Finished splitting MultiPolygon
+polygon-operations-manager.ts:125 🔍 DEBUG: subtract() - Final feature groups count: 2
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(30)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (30) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(33)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (33) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:828 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:829 🔍 DEBUG: addPolygonLayer() - Input polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:830 🔍 DEBUG: addPolygonLayer() - Polygon type: MultiPolygon
+polydraw.ts:831 🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure: [Array(31)]
+polydraw.ts:1100 getPolygon: Failed to create polygon: Error: Invalid LatLng object: (undefined, undefined)
+    at new LatLng (leaflet.js?v=d09e8d0b:942:17)
+    at coordsToLatLng (leaflet.js?v=d09e8d0b:5906:16)
+    at coordsToLatLngs (leaflet.js?v=d09e8d0b:5911:130)
+    at coordsToLatLngs (leaflet.js?v=d09e8d0b:5911:33)
+    at coordsToLatLngs (leaflet.js?v=d09e8d0b:5911:33)
+    at NewClass.geometryToLayer (leaflet.js?v=d09e8d0b:5876:23)
+    at Ii.getPolygon (polydraw.ts:1075:33)
+    at Ii.addPolygonLayer (polydraw.ts:880:26)
+    at polydraw.ts:1237:14
+    at xi.handleMarkerDragEnd (marker-manager.ts:390:9)
+getPolygon @ polydraw.ts:1100
+addPolygonLayer @ polydraw.ts:880
+(anonymous) @ polydraw.ts:1237
+handleMarkerDragEnd @ marker-manager.ts:390
+markerDragEnd @ polydraw.ts:1232
+(anonymous) @ polydraw.ts:1764
+fire @ leaflet.js?v=d09e8d0b:388
+_onDragEnd @ leaflet.js?v=d09e8d0b:4932
+fire @ leaflet.js?v=d09e8d0b:388
+finishDrag @ leaflet.js?v=d09e8d0b:4030
+_onUp @ leaflet.js?v=d09e8d0b:4014
+handler @ leaflet.js?v=d09e8d0b:1734Understand this error
+polydraw.ts:882 🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon: NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true}
+polydraw.ts:883 🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates: [Array(4)]
+polydraw.ts:898 🔍 DEBUG: addPolygonLayer() - Marker coordinates structure: [Array(4)]
+polydraw.ts:901 🔍 DEBUG: addPolygonLayer() - Processing ring group 0 with 4 rings
+polydraw.ts:913 🔍 DEBUG: addPolygonLayer() - Ring group 0 has flattened structure, treating as single ring
+polydraw.ts:921 🔍 DEBUG: addPolygonLayer() - Flattened ring with 4 points
+polydraw.ts:927 🔧 Calling addMarker for flattened ring with 4 points
+polydraw.ts:980 🔍 DEBUG: addPolygonLayer() - Total feature groups after adding: 2
+polydraw.ts:984 🔍 DEBUG: addPolygonLayer() - New feature group layers count: 5
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(33)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (33) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(4)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (4) [LatLng, LatLng, LatLng, LatLng]

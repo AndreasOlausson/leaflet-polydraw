@@ -10,6 +10,9 @@ import { TurfHelper } from '../turf-helper';
  * Manages marker creation, positioning, and optimization for polygons
  */
 export class MarkerManager {
+  private lastDragTime?: Map<string, number>;
+  private isUpdatingPolygon = false;
+
   constructor(
     private config: PolydrawConfig,
     private turfHelper: TurfHelper,
@@ -230,103 +233,81 @@ export class MarkerManager {
    * Handle marker drag operations - update polygon coordinates based on marker positions
    */
   handleMarkerDrag(featureGroup: L.FeatureGroup) {
-    const newPos = [];
-    let testarray = [];
-    let hole = [];
-    const allLayers = featureGroup.getLayers() as L.Layer[];
+    // 🎯 FIX: Prevent recursive calls
+    if (this.isUpdatingPolygon) {
+      return;
+    }
 
+    // 🎯 FIX: Add throttling to prevent infinite loops
+    const now = Date.now();
+    const featureGroupId = (featureGroup as any)._leaflet_id || 'unknown';
+
+    if (!this.lastDragTime) {
+      this.lastDragTime = new Map();
+    }
+
+    const lastTime = this.lastDragTime.get(featureGroupId) || 0;
+    if (now - lastTime < 16) {
+      // Throttle to ~60fps
+      return;
+    }
+    this.lastDragTime.set(featureGroupId, now);
+
+    const allLayers = featureGroup.getLayers() as L.Layer[];
     const polygon = allLayers.find((layer) => layer instanceof L.Polygon) as any;
     const markers = allLayers.filter((layer) => layer instanceof L.Marker);
 
-    if (!polygon) return;
-
-    const posarrays = polygon.getLatLngs();
-    let markerIndex = 0;
-
-    if (posarrays.length > 1) {
-      for (let index = 0; index < posarrays.length; index++) {
-        testarray = [];
-        hole = [];
-
-        if (index === 0) {
-          if (posarrays[0].length > 1) {
-            for (let i = 0; i < posarrays[0].length; i++) {
-              for (let j = 0; j < posarrays[0][i].length; j++) {
-                if (markerIndex < markers.length) {
-                  testarray.push(markers[markerIndex].getLatLng());
-                  markerIndex++;
-                }
-              }
-              hole.push(testarray);
-            }
-          } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-            hole.push(testarray);
-          }
-          newPos.push(hole);
-        } else {
-          for (let j = 0; j < posarrays[index][0].length; j++) {
-            if (markerIndex < markers.length) {
-              testarray.push(markers[markerIndex].getLatLng());
-              markerIndex++;
-            }
-          }
-          hole.push(testarray);
-          newPos.push(hole);
-        }
-      }
-    } else {
-      hole = [];
-      for (let index = 0; index < posarrays[0].length; index++) {
-        testarray = [];
-
-        if (index === 0) {
-          if (posarrays[0][index].length > 1) {
-            for (let j = 0; j < posarrays[0][index].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-          } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
-              if (markerIndex < markers.length) {
-                testarray.push(markers[markerIndex].getLatLng());
-                markerIndex++;
-              }
-            }
-          }
-        } else {
-          for (let j = 0; j < posarrays[0][index].length; j++) {
-            if (markerIndex < markers.length) {
-              testarray.push(markers[markerIndex].getLatLng());
-              markerIndex++;
-            }
-          }
-        }
-        hole.push(testarray);
-      }
-      newPos.push(hole);
+    if (!polygon || markers.length === 0) {
+      return;
     }
 
-    (polygon as any).setLatLngs(newPos);
+    try {
+      this.isUpdatingPolygon = true;
+      const posarrays = polygon.getLatLngs();
 
-    const polylines = allLayers.filter(
-      (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
-    );
-    let polylineIndex = 0;
+      // 🎯 FIX: Simplified approach for split polygons
+      // Check if this is a simple polygon (flat structure from split operations)
+      if (this.isSimplePolygonStructure(posarrays)) {
+        // For simple polygons, just map markers directly to coordinates
+        const newCoords = markers.map((marker) => marker.getLatLng());
 
-    for (let ringIndex = 0; ringIndex < newPos[0].length; ringIndex++) {
-      const isHoleRing = ringIndex > 0;
-      if (isHoleRing && polylineIndex < polylines.length) {
-        (polylines[polylineIndex] as any).setLatLngs(newPos[0][ringIndex][0]);
-        polylineIndex++;
+        if (newCoords.length > 0 && this.isValidCoordinateArray(newCoords)) {
+          (polygon as any).setLatLngs(newCoords);
+          return;
+        }
       }
+
+      // 🎯 FIX: For complex structures, use the rebuilding approach
+      const rebuiltCoords = this.rebuildCoordinatesFromMarkers(polygon, markers);
+      if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
+        (polygon as any).setLatLngs(rebuiltCoords);
+      } else {
+        return;
+      }
+
+      // Update polylines for holes if they exist
+      const polylines = allLayers.filter(
+        (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
+      );
+
+      if (
+        polylines.length > 0 &&
+        rebuiltCoords &&
+        rebuiltCoords[0] &&
+        rebuiltCoords[0].length > 1
+      ) {
+        let polylineIndex = 0;
+        for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
+          if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
+            (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
+            polylineIndex++;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('handleMarkerDrag: Error updating polygon coordinates:', error);
+    } finally {
+      this.isUpdatingPolygon = false;
     }
   }
 
@@ -346,69 +327,114 @@ export class MarkerManager {
     onPolygonInfoCreate: () => void,
   ) {
     onPolygonInfoDelete();
-    const featureCollection = featureGroup.toGeoJSON() as any;
+
+    // 🎯 FIX: Build coordinates directly from markers instead of using toGeoJSON()
+    const allLayers = featureGroup.getLayers() as any;
+    const polygon = allLayers.find((layer) => layer instanceof L.Polygon);
+    const markers = allLayers.filter((layer) => layer instanceof L.Marker);
+
+    if (!polygon || markers.length === 0) {
+      console.warn('handleMarkerDragEnd: No polygon or markers found');
+      onPolygonInfoCreate();
+      return;
+    }
 
     // Retrieve optimization level from the original polygon before removing it
     let optimizationLevel = 0;
-    const allLayers = featureGroup.getLayers() as any;
-    const polygon = allLayers.find((layer) => layer instanceof L.Polygon);
     if (polygon && (polygon as any)._polydrawOptimizationLevel !== undefined) {
       optimizationLevel = (polygon as any)._polydrawOptimizationLevel;
     }
 
-    // Handle end of marker drag, check for kinks and update polygons
-    onFeatureGroupRemove(featureGroup);
-
-    if (featureCollection.features[0].geometry.coordinates.length > 1) {
-      featureCollection.features[0].geometry.coordinates.forEach((element) => {
-        const feature = this.turfHelper.getMultiPolygon([element]);
-
-        // Check if the current polygon has kinks (self-intersections) after marker drag
-        if (this.turfHelper.hasKinks(feature)) {
-          const unkink = this.turfHelper.getKinks(feature);
-          // Handle unkinked polygons - split kinked polygon into valid parts
-          unkink.forEach((polygon) => {
-            // Use addPolygonLayer directly to preserve optimization level
-            onPolygonLayerAdd(
-              this.turfHelper.getTurfPolygon(polygon),
-              false,
-              false,
-              optimizationLevel,
-            );
-          });
-        } else {
-          // Use addPolygonLayer directly to preserve optimization level
-          onPolygonLayerAdd(
-            this.turfHelper.getTurfPolygon(feature),
-            false,
-            false,
-            optimizationLevel,
-          );
-        }
+    try {
+      // 🎯 FIX: Build coordinates directly from markers to avoid toGeoJSON() issues
+      const markerCoordinates = markers.map((marker) => {
+        const latlng = marker.getLatLng();
+        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
       });
-    } else {
-      const feature = this.turfHelper.getMultiPolygon(
-        featureCollection.features[0].geometry.coordinates,
+
+      // Ensure the polygon is closed (first and last coordinates should be the same)
+      if (markerCoordinates.length > 0) {
+        const first = markerCoordinates[0];
+        const last = markerCoordinates[markerCoordinates.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          markerCoordinates.push([first[0], first[1]]);
+        }
+      }
+
+      console.log(
+        '🔧 DEBUG: handleMarkerDragEnd - Built coordinates from markers:',
+        markerCoordinates,
       );
-      // Markerdragend
+
+      // Create a proper GeoJSON feature
+      const feature = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [markerCoordinates], // Polygon coordinates are nested: [[[lng, lat], ...]]
+        },
+      };
+
+      console.log('🔧 DEBUG: handleMarkerDragEnd - Created feature:', feature);
+
+      // Handle end of marker drag, check for kinks and update polygons
+      onFeatureGroupRemove(featureGroup);
+
+      // Check if the current polygon has kinks (self-intersections) after marker drag
       if (this.turfHelper.hasKinks(feature)) {
+        console.log('🔧 DEBUG: handleMarkerDragEnd - Polygon has kinks, splitting');
         const unkink = this.turfHelper.getKinks(feature);
-        // Unkink - split kinked polygon into valid parts
-        unkink.forEach((polygon) => {
+        // Handle unkinked polygons - split kinked polygon into valid parts
+        unkink.forEach((unkinkedPolygon) => {
           // Use addPolygonLayer directly to preserve optimization level
           onPolygonLayerAdd(
-            this.turfHelper.getTurfPolygon(polygon),
+            this.turfHelper.getTurfPolygon(unkinkedPolygon),
             false,
             false,
             optimizationLevel,
           );
         });
-        // Test coordinates after processing
       } else {
+        console.log('🔧 DEBUG: handleMarkerDragEnd - Polygon is valid, adding directly');
         // Use addPolygonLayer directly to preserve optimization level
-        onPolygonLayerAdd(this.turfHelper.getTurfPolygon(feature), false, false, optimizationLevel);
+        onPolygonLayerAdd(feature, false, false, optimizationLevel);
+      }
+    } catch (error) {
+      console.error('handleMarkerDragEnd: Error processing polygon after drag:', error);
+
+      // Fallback: try to recreate the polygon with current marker positions
+      try {
+        const fallbackCoords = markers.map((marker) => {
+          const latlng = marker.getLatLng();
+          return [latlng.lng, latlng.lat];
+        });
+
+        if (fallbackCoords.length >= 3) {
+          // Ensure closed polygon
+          const first = fallbackCoords[0];
+          const last = fallbackCoords[fallbackCoords.length - 1];
+          if (first[0] !== last[0] || first[1] !== last[1]) {
+            fallbackCoords.push([first[0], first[1]]);
+          }
+
+          const fallbackFeature = {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: [fallbackCoords],
+            },
+          };
+
+          console.log('🔧 DEBUG: handleMarkerDragEnd - Using fallback feature:', fallbackFeature);
+          onPolygonLayerAdd(fallbackFeature, false, false, optimizationLevel);
+        }
+      } catch (fallbackError) {
+        console.error('handleMarkerDragEnd: Fallback also failed:', fallbackError);
       }
     }
+
     // Updated feature groups after drag
     onPolygonInfoCreate();
   }
@@ -882,5 +908,211 @@ export class MarkerManager {
     marker.on('dragend', () => {
       this.hideMarkerVisually(marker);
     });
+  }
+
+  /**
+   * Check if this is a simple polygon structure (flat coordinates from split operations)
+   */
+  private isSimplePolygonStructure(posarrays: any): boolean {
+    // Check if it's a flat array of LatLng objects
+    if (Array.isArray(posarrays) && posarrays.length > 0) {
+      const first = posarrays[0];
+
+      // If first element has lat/lng properties, it's a flat structure
+      if (first && typeof first === 'object' && 'lat' in first && 'lng' in first) {
+        return true;
+      }
+
+      // If it's a single-level nested structure [[LatLng, LatLng, ...]]
+      if (Array.isArray(first) && first.length > 0 && first[0] && 'lat' in first[0]) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Validate a simple coordinate array
+   */
+  private isValidCoordinateArray(coords: any[]): boolean {
+    if (!Array.isArray(coords) || coords.length === 0) {
+      return false;
+    }
+
+    for (const coord of coords) {
+      if (
+        !coord ||
+        typeof coord !== 'object' ||
+        typeof coord.lat !== 'number' ||
+        typeof coord.lng !== 'number' ||
+        isNaN(coord.lat) ||
+        isNaN(coord.lng)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Validate LatLngs structure to prevent Leaflet errors
+   */
+  private isValidLatLngsStructure(latlngs: any): boolean {
+    if (!Array.isArray(latlngs) || latlngs.length === 0) {
+      console.warn('isValidLatLngsStructure: Invalid top-level structure:', latlngs);
+      return false;
+    }
+
+    // 🎯 FIX: Handle flat structure from rebuilt coordinates [LatLng, LatLng, ...]
+    if (latlngs.length > 0 && latlngs[0] && typeof latlngs[0] === 'object' && 'lat' in latlngs[0]) {
+      console.log('isValidLatLngsStructure: Detected flat structure, validating directly');
+
+      // This is a flat structure: [LatLng, LatLng, ...]
+      for (const coord of latlngs) {
+        if (
+          !coord ||
+          typeof coord !== 'object' ||
+          typeof coord.lat !== 'number' ||
+          typeof coord.lng !== 'number' ||
+          isNaN(coord.lat) ||
+          isNaN(coord.lng)
+        ) {
+          console.warn('isValidLatLngsStructure: Invalid coordinate in flat structure:', coord);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // 🎯 FIX: Handle single-level nested structure [[LatLng, LatLng, ...]]
+    if (
+      latlngs.length === 1 &&
+      Array.isArray(latlngs[0]) &&
+      latlngs[0].length > 0 &&
+      latlngs[0][0] &&
+      typeof latlngs[0][0] === 'object' &&
+      'lat' in latlngs[0][0]
+    ) {
+      console.log('isValidLatLngsStructure: Detected single-level nested structure, validating');
+
+      // This is a single-level nested structure: [[LatLng, LatLng, ...]]
+      for (const coord of latlngs[0]) {
+        if (
+          !coord ||
+          typeof coord !== 'object' ||
+          typeof coord.lat !== 'number' ||
+          typeof coord.lng !== 'number' ||
+          isNaN(coord.lat) ||
+          isNaN(coord.lng)
+        ) {
+          console.warn('isValidLatLngsStructure: Invalid coordinate in nested structure:', coord);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Check if the structure contains valid coordinate arrays (nested structure)
+    for (const ring of latlngs) {
+      if (!Array.isArray(ring) || ring.length === 0) {
+        console.warn('isValidLatLngsStructure: Invalid ring structure:', ring);
+        return false;
+      }
+
+      for (const subRing of ring) {
+        if (!Array.isArray(subRing) || subRing.length === 0) {
+          console.warn('isValidLatLngsStructure: Invalid subRing structure:', subRing);
+          return false;
+        }
+
+        // Check if coordinates are valid LatLng objects
+        for (const coord of subRing) {
+          if (
+            !coord ||
+            typeof coord !== 'object' ||
+            typeof coord.lat !== 'number' ||
+            typeof coord.lng !== 'number' ||
+            isNaN(coord.lat) ||
+            isNaN(coord.lng)
+          ) {
+            console.warn('isValidLatLngsStructure: Invalid coordinate:', coord);
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Fix coordinate structure by rebuilding it properly from markers
+   */
+  private rebuildCoordinatesFromMarkers(polygon: any, markers: L.Marker[]): any[] | null {
+    try {
+      const posarrays = polygon.getLatLngs();
+      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure:', posarrays);
+      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count:', markers.length);
+
+      // Simple case: flat structure with direct coordinates
+      if (posarrays.length === 1 && Array.isArray(posarrays[0]) && posarrays[0].length > 0) {
+        // Check if posarrays[0] contains LatLng objects directly
+        if (posarrays[0][0] && typeof posarrays[0][0] === 'object' && 'lat' in posarrays[0][0]) {
+          console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Simple flat structure detected');
+
+          // Build coordinates directly from markers
+          const coordinates = markers.map((marker) => marker.getLatLng());
+
+          if (coordinates.length > 0) {
+            console.log(
+              '🔧 DEBUG: rebuildCoordinatesFromMarkers - Built coordinates:',
+              coordinates,
+            );
+            return [coordinates]; // Return as [Array(N)] structure for simple polygons
+          }
+        }
+      }
+
+      // Complex case: nested structure
+      let markerIndex = 0;
+      const newPos = [];
+
+      for (let ringGroupIndex = 0; ringGroupIndex < posarrays.length; ringGroupIndex++) {
+        const ringGroup = posarrays[ringGroupIndex];
+        const newRingGroup = [];
+
+        if (Array.isArray(ringGroup)) {
+          for (let ringIndex = 0; ringIndex < ringGroup.length; ringIndex++) {
+            const ring = ringGroup[ringIndex];
+            const newRing = [];
+
+            if (Array.isArray(ring)) {
+              for (let coordIndex = 0; coordIndex < ring.length; coordIndex++) {
+                if (markerIndex < markers.length) {
+                  newRing.push(markers[markerIndex].getLatLng());
+                  markerIndex++;
+                }
+              }
+            }
+
+            if (newRing.length > 0) {
+              newRingGroup.push(newRing);
+            }
+          }
+        }
+
+        if (newRingGroup.length > 0) {
+          newPos.push(newRingGroup);
+        }
+      }
+
+      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result:', newPos);
+      return newPos.length > 0 ? newPos : null;
+    } catch (error) {
+      console.warn('🔧 DEBUG: rebuildCoordinatesFromMarkers - Error:', error);
+      return null;
+    }
   }
 }
