@@ -32,9 +32,19 @@ export class PolygonOperationsManager {
     const addHole = latlngs;
     const newPolygons = [];
 
-    this.getArrayOfFeatureGroups().forEach((featureGroup, index) => {
+    // 🎯 FIX: Create a copy of the array to avoid modification during iteration
+    const featureGroupsToProcess = [...this.getArrayOfFeatureGroups()];
+
+    featureGroupsToProcess.forEach((featureGroup, index) => {
       try {
         console.log(`🔍 DEBUG: subtract() - Processing feature group ${index}`);
+
+        // 🎯 FIX: Check if feature group is still valid (not already removed)
+        if (!featureGroup || !featureGroup.getLayers) {
+          console.warn('DEBUG: subtract() - skipping invalid/removed feature group');
+          return;
+        }
+
         const featureCollection = featureGroup.toGeoJSON() as any;
 
         // Validate feature collection before accessing features[0]
@@ -103,8 +113,10 @@ export class PolygonOperationsManager {
             `🔍 DEBUG: subtract() - No result polygon for feature group ${index} (completely subtracted)`,
           );
         }
+
+        // 🎯 FIX: Remove the feature group properly using the callback
         this.deletePolygonCallback(poly);
-        this.removeFeatureGroupOnMerge(featureGroup);
+        this.removeFeatureGroupCallback(featureGroup);
       } catch (error) {
         console.warn('DEBUG: subtract() - error processing feature group:', error.message);
         // Continue with next feature group

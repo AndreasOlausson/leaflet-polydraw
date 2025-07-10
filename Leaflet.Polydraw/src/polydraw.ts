@@ -40,6 +40,10 @@ import type {
 // Import State Manager
 import { PolydrawStateManager } from './core/state-manager';
 
+// Import Simplified Managers
+import { PolygonStateManager } from './core/polygon-state-manager';
+import { SimplifiedMarkerManager } from './core/simplified-marker-manager';
+
 class Polydraw extends L.Control {
   private map: L.Map;
   private tracer: L.Polyline = {} as L.Polyline;
@@ -56,7 +60,11 @@ class Polydraw extends L.Control {
   // State Manager - centralized state management
   private stateManager: PolydrawStateManager;
 
-  // Manager instances
+  // Simplified Managers - new approach
+  private polygonStateManager: PolygonStateManager;
+  private simplifiedMarkerManager: SimplifiedMarkerManager;
+
+  // Manager instances (legacy - for backward compatibility)
   private markerManager: MarkerManager;
   private polygonDragManager: PolygonDragManager;
   private drawingEventsManager: DrawingEventsManager;
@@ -84,6 +92,21 @@ class Polydraw extends L.Control {
    * Initialize managers after map is available
    */
   private initializeManagers() {
+    // Initialize simplified managers first
+    this.polygonStateManager = new PolygonStateManager(
+      this.config,
+      this.turfHelper,
+      this.map,
+      this.stateManager,
+      (geoJSON, optimizationLevel) => this.createFeatureGroupForPolygon(geoJSON, optimizationLevel),
+    );
+
+    this.simplifiedMarkerManager = new SimplifiedMarkerManager(
+      this.config,
+      this.polygonStateManager,
+    );
+
+    // Initialize legacy managers for backward compatibility
     this.markerManager = new MarkerManager(this.config, this.turfHelper, this.map);
     this.polygonDragManager = new PolygonDragManager(
       this.config,
@@ -1228,17 +1251,14 @@ class Polydraw extends L.Control {
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    // Delegate to MarkerManager with merge detection parameters
-    this.markerManager.handleMarkerDragEnd(
-      FeatureGroup,
-      () => this.polygonInformation.deletePolygonInformationStorage(),
-      (featureGroup) => this.removeFeatureGroup(featureGroup),
-      (geoJSON, simplify, dynamicTolerance, optimizationLevel) =>
-        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, optimizationLevel),
-      () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
-      () => this.arrayOfFeatureGroups,
-      this.config,
-    );
+    // Use the simplified approach for marker drag operations
+    this.polygonInformation.deletePolygonInformationStorage();
+
+    // Delegate to SimplifiedMarkerManager - this handles the entire operation
+    this.simplifiedMarkerManager.handleMarkerDragEnd(FeatureGroup);
+
+    // Update polygon information after the operation
+    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
   private emitDrawModeChanged(): void {
@@ -1435,6 +1455,100 @@ class Polydraw extends L.Control {
           intersectingFeatureGroups: [],
           containingFeatureGroup: null,
         };
+  }
+
+  /**
+   * Create a feature group for a polygon - used by PolygonStateManager
+   */
+  private createFeatureGroupForPolygon(
+    geoJSON: Feature<Polygon | MultiPolygon>,
+    optimizationLevel: number,
+  ): PolydrawFeatureGroup {
+    console.log('🔧 createFeatureGroupForPolygon() - Creating feature group for:', geoJSON);
+
+    const featureGroup: L.FeatureGroup = new L.FeatureGroup();
+
+    // Create and add polygon
+    const polygon = this.getPolygon(geoJSON);
+    (polygon as any)._polydrawOptimizationLevel = optimizationLevel;
+    featureGroup.addLayer(polygon);
+
+    // Enable polygon dragging if configured
+    if (this.config.modes.dragPolygons) {
+      this.enablePolygonDragging(polygon, featureGroup, geoJSON);
+    }
+
+    // Add markers
+    const markerLatlngs = polygon.getLatLngs();
+    this.addMarkersToFeatureGroup(markerLatlngs, featureGroup, optimizationLevel);
+
+    // Add to map
+    try {
+      featureGroup.addTo(this.map);
+    } catch (error) {
+      // Silently handle map rendering errors in test environment
+    }
+
+    // Add edge click detection
+    this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
+
+    featureGroup.on('click', (e) => {
+      this.polygonClicked(e, geoJSON);
+    });
+
+    return featureGroup;
+  }
+
+  /**
+   * Add markers to a feature group based on coordinate structure
+   */
+  private addMarkersToFeatureGroup(
+    markerLatlngs: any,
+    featureGroup: PolydrawFeatureGroup,
+    optimizationLevel: number,
+  ): void {
+    markerLatlngs.forEach((polygonRings: any, ringGroupIndex: number) => {
+      // Handle flattened structure from split polygons
+      if (
+        polygonRings.length > 0 &&
+        polygonRings[0] &&
+        typeof polygonRings[0] === 'object' &&
+        'lat' in polygonRings[0]
+      ) {
+        // Flattened structure - treat as single ring
+        const polyElement = polygonRings as ILatLng[];
+        if (polyElement.length > 0) {
+          this.addMarker(polyElement, featureGroup, optimizationLevel);
+        }
+        return;
+      }
+
+      // Normal nested structure
+      polygonRings.forEach((polyElement: ILatLng[], i: number) => {
+        const isHoleRing = i > 0;
+
+        if (!Array.isArray(polyElement) || polyElement.length === 0) {
+          return;
+        }
+
+        // Add red polyline overlay for hole rings
+        if (isHoleRing) {
+          const holePolyline = L.polyline(polyElement, {
+            color: this.config.holeOptions.color,
+            weight: this.config.holeOptions.weight || 2,
+            opacity: this.config.holeOptions.opacity || 1,
+          });
+          featureGroup.addLayer(holePolyline);
+        }
+
+        // Add markers
+        if (isHoleRing) {
+          this.addHoleMarker(polyElement, featureGroup, optimizationLevel);
+        } else {
+          this.addMarker(polyElement, featureGroup, optimizationLevel);
+        }
+      });
+    });
   }
 
   /**
