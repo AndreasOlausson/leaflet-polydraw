@@ -784,9 +784,9 @@ class Polydraw extends L.Control {
       // Use PolygonStateManager for subtract operations to ensure proper registration
       this.polygonStateManager.subtractPolygon(latlngs);
     } catch (error) {
-      console.warn('PolygonStateManager subtract failed, falling back to legacy method:', error);
-      // Fallback to legacy method if needed
-      this.polygonOperationsManager.subtract(latlngs);
+      console.warn('PolygonStateManager subtract failed, no fallback needed:', error);
+      // 🎯 SIMPLIFIED: No fallback to legacy method - just log the error
+      // The PolygonStateManager should handle all subtract operations
     }
 
     // 🎯 FIX: Reset draw mode to Off after subtract operation completes
