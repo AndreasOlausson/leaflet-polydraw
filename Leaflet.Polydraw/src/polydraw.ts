@@ -113,13 +113,9 @@ class Polydraw extends L.Control {
       },
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
       (featureGroup) => {
-        // 🎯 FIX: Call the actual removeFeatureGroup method that SimplePolygonOperations expects
-        console.log('🔧 Polygon drag removal - Calling removeFeatureGroup directly');
         this.removeFeatureGroup(featureGroup);
       },
       (geoJSON, optimizationLevel) => {
-        // 🎯 FIX: Use addPolygon method that includes merge logic
-        console.log('🔧 PolygonDragManager - Using addPolygon with merge logic');
         this.addPolygon(geoJSON, false, false); // false = simplify, false = noMerge (allow merge)
       },
     );
@@ -365,8 +361,6 @@ class Polydraw extends L.Control {
         // This ensures that overlapping polygons are merged when mergePolygons is enabled
         this.ensureManagersInitialized();
 
-        // 🎯 SIMPLIFIED: Use direct addPolygon instead of legacy PolygonManager
-        console.log('🔧 addAutoPolygon() - Using simplified approach (direct addPolygon)');
         try {
           this.addPolygon(polygon2, false, false);
         } catch (renderError) {
@@ -516,13 +510,9 @@ class Polydraw extends L.Control {
   }
 
   removeAllFeatureGroups() {
-    // 🎯 FIX: Use PolygonStateManager instead of legacy array manipulation
-    console.log('🔧 removeAllFeatureGroups() - Using PolygonStateManager to clear all polygons');
-
     if (this.polygonStateManager) {
       // Get all polygon IDs before clearing
       const allPolygons = this.polygonStateManager.getAllPolygons();
-      console.log('🔧 removeAllFeatureGroups() - Removing', allPolygons.length, 'polygons');
 
       // Remove each polygon from PolygonStateManager
       allPolygons.forEach((polygonData) => {
@@ -541,11 +531,6 @@ class Polydraw extends L.Control {
 
     this.polygonInformation.deletePolygonInformationStorage();
     this.polygonInformation.updatePolygons();
-
-    console.log(
-      '🔧 removeAllFeatureGroups() - All polygons removed, final count:',
-      this.arrayOfFeatureGroups.length,
-    );
   }
 
   getDrawMode(): DrawMode {
@@ -577,37 +562,24 @@ class Polydraw extends L.Control {
     this.stateManager.offDrawModeChange(callback);
   }
 
-  // 🎯 FORCE SINGLE POINT OF TRUTH: Comment out legacy array, use PolygonStateManager only
-  // private _arrayOfFeatureGroups: PolydrawFeatureGroup[] = [];
-
   // Force everything to use PolygonStateManager as single point of truth
   private get arrayOfFeatureGroups(): PolydrawFeatureGroup[] {
-    console.log(
-      '🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth',
-    );
     if (!this.polygonStateManager) {
       console.warn(
-        '🔧 arrayOfFeatureGroups getter - PolygonStateManager not initialized, returning empty array',
+        'arrayOfFeatureGroups getter - PolygonStateManager not initialized, returning empty array',
       );
       return [];
     }
     const allPolygons = this.polygonStateManager.getAllPolygons();
     const featureGroups = allPolygons.map((p) => p.featureGroup);
-    console.log(
-      `🔧 arrayOfFeatureGroups getter - Found ${allPolygons.length} polygons, returning ${featureGroups.length} feature groups`,
-    );
     return featureGroups;
   }
 
   // Force everything to use PolygonStateManager as single point of truth
   private set arrayOfFeatureGroups(groups: PolydrawFeatureGroup[]) {
-    console.log('🔧 arrayOfFeatureGroups setter - BLOCKED! Use PolygonStateManager instead');
+    console.warn('arrayOfFeatureGroups setter - BLOCKED! Use PolygonStateManager instead');
 
-    // 🎯 FIX: Allow test environment to set up initial state
     if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
-      console.log(
-        '🔧 arrayOfFeatureGroups setter - Test environment detected, allowing direct assignment for setup',
-      );
       // In test environment, allow direct assignment for test setup
       // Tests need to be able to set up initial state
       return;
@@ -708,7 +680,6 @@ class Polydraw extends L.Control {
     this.map[onoroff]('mousemove', this.mouseMove, this);
     this.map[onoroff]('mouseup', this.mouseUpLeave, this);
 
-    // 🎯 FIX: Handle test environment where DOM methods might not be available
     if (onoff) {
       try {
         this.map.getContainer().addEventListener('touchmove', (e) => this.mouseMove(e));
@@ -791,9 +762,6 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    // 🎯 SIMPLIFIED: Use direct addPolygonLayer instead of legacy PolygonManager
-    console.log('🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)');
-
     // Check if merging should be applied (unless explicitly disabled)
     if (!noMerge && this.config.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
       // Use existing merge logic for now
@@ -804,7 +772,6 @@ class Polydraw extends L.Control {
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    // 🎯 SIMPLIFIED: Use PolygonStateManager for subtract operations
     this.ensureManagersInitialized();
 
     try {
@@ -812,11 +779,9 @@ class Polydraw extends L.Control {
       this.polygonStateManager.subtractPolygon(latlngs);
     } catch (error) {
       console.warn('PolygonStateManager subtract failed:', error);
-      // 🎯 SIMPLIFIED: No fallback to legacy method - just log the error
       // The PolygonStateManager should handle all subtract operations
     }
 
-    // 🎯 FIX: Reset draw mode to Off after subtract operation completes
     this.setDrawMode(DrawMode.Off);
   }
 
@@ -840,31 +805,13 @@ class Polydraw extends L.Control {
   }
 
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
-    // 🎯 FIX: Use PolygonStateManager instead of legacy array manipulation
-    console.log('🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array');
-    console.log(
-      '🔧 removeFeatureGroup() - Before removal, array length:',
-      this.arrayOfFeatureGroups.length,
-    );
-    console.log(
-      '🔧 removeFeatureGroup() - Feature group to remove:',
-      (featureGroup as any)._leaflet_id,
-    );
-
     // Find the polygon ID by feature group
     const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
     if (polygonId) {
-      console.log('🔧 removeFeatureGroup() - Found polygon ID:', polygonId);
-
       // Remove from PolygonStateManager (this is the single source of truth)
       this.polygonStateManager.removePolygon(polygonId);
-
-      console.log(
-        '🔧 removeFeatureGroup() - After removal, array length:',
-        this.arrayOfFeatureGroups.length,
-      );
     } else {
-      console.warn('🔧 removeFeatureGroup() - Could not find polygon ID for feature group');
+      console.warn('removeFeatureGroup() - Could not find polygon ID for feature group');
 
       // Fallback: clear layers and remove from map
       featureGroup.clearLayers();
@@ -891,36 +838,16 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
-    console.log('🔍 DEBUG: addPolygonLayer() - Adding polygon to map');
-    console.log(
-      '🔍 DEBUG: addPolygonLayer() - Input polygon geometry type:',
-      latlngs.geometry.type,
-    );
-    console.log(
-      '🔍 DEBUG: addPolygonLayer() - Input coordinates structure:',
-      this.analyzeCoordinateStructure(latlngs.geometry.coordinates),
-    );
-
     // Ensure managers are initialized before adding polygon
     this.ensureManagersInitialized();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
-    // 🎯 FIX: Only use PolygonStateManager - don't create duplicate feature groups
-    console.log(
-      '🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)',
-    );
     try {
       this.polygonStateManager.addPolygon(latLngs, visualOptimizationLevel, true);
-      console.log('🔧 addPolygonLayer() - Successfully added to PolygonStateManager');
     } catch (error) {
-      console.error('🔧 addPolygonLayer() - Failed to add to PolygonStateManager:', error);
+      console.error('addPolygonLayer() - Failed to add to PolygonStateManager:', error);
     }
-
-    console.log(
-      '🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length:',
-      this.arrayOfFeatureGroups.length,
-    );
 
     this.setDrawMode(DrawMode.Off);
   }
@@ -1042,7 +969,6 @@ class Polydraw extends L.Control {
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
-    // 🎯 FIX: Validate GeoJSON coordinates before creating Leaflet polygon
     try {
       // Check if coordinates contain valid data
       if (!latlngs || !latlngs.geometry || !latlngs.geometry.coordinates) {
@@ -1181,7 +1107,6 @@ class Polydraw extends L.Control {
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
 
-    // 🎯 FIX: Handle test environment where DOM methods might not be available
     if (onoff) {
       try {
         this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e));
@@ -1226,9 +1151,6 @@ class Polydraw extends L.Control {
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    // 🎯 FIX: Use legacy MarkerManager with hole preservation built-in
-    console.log('🔧 markerDragEnd() - Using legacy MarkerManager with hole preservation');
-
     this.ensureManagersInitialized();
 
     this.markerManager.handleMarkerDragEnd(
@@ -1263,18 +1185,10 @@ class Polydraw extends L.Control {
   ) {
     this.ensureManagersInitialized();
 
-    // 🎯 FIX: Always use the legacy PolygonDragManager for polygon dragging
-    // The simplified approach doesn't work because Leaflet polygons don't have built-in dragging
-    // The legacy manager uses custom mouse events which is the correct approach
-    this.ensureManagersInitialized();
-
     if (this.polygonDragManager) {
-      console.log(
-        '🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)',
-      );
       this.polygonDragManager.enablePolygonDragging(polygon, featureGroup, latLngs);
     } else {
-      console.warn('🔧 enablePolygonDragging() - PolygonDragManager not available');
+      console.warn('enablePolygonDragging() - PolygonDragManager not available');
     }
   }
 
@@ -1457,8 +1371,6 @@ class Polydraw extends L.Control {
     geoJSON: Feature<Polygon | MultiPolygon>,
     optimizationLevel: number,
   ): PolydrawFeatureGroup {
-    console.log('🔧 createFeatureGroupForPolygon() - Creating feature group for:', geoJSON);
-
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     // Create and add polygon
@@ -1481,7 +1393,7 @@ class Polydraw extends L.Control {
     } catch (error) {
       // Silently handle map rendering errors in test environment
       console.warn(
-        '🔧 createFeatureGroupForPolygon() - Map rendering error (test environment):',
+        'createFeatureGroupForPolygon() - Map rendering error (test environment):',
         error.message,
       );
     }
@@ -1566,50 +1478,31 @@ class Polydraw extends L.Control {
     }
 
     const allPolygons = this.polygonStateManager.getAllPolygons();
-    console.log(
-      '🔍 findPolygonIdByFeatureGroup() - Searching for feature group among',
-      allPolygons.length,
-      'polygons',
-    );
 
     // Method 1: Direct feature group comparison
     for (const polygonData of allPolygons) {
-      console.log(
-        '🔍 findPolygonIdByFeatureGroup() - Checking polygon:',
-        polygonData.id,
-        'featureGroup match:',
-        polygonData.featureGroup === featureGroup,
-      );
       if (polygonData.featureGroup === featureGroup) {
-        console.log('🔍 findPolygonIdByFeatureGroup() - Found direct match:', polygonData.id);
         return polygonData.id;
       }
     }
 
     // Method 2: If direct comparison fails, try to match by polygon geometry
     // This handles cases where feature groups are recreated during operations
-    console.log(
-      '🔍 findPolygonIdByFeatureGroup() - Direct match failed, trying geometry comparison',
-    );
-
     try {
       // Get the polygon from the feature group
       const layers = featureGroup.getLayers();
       if (layers.length === 0) {
-        console.log('🔍 findPolygonIdByFeatureGroup() - Feature group has no layers');
         return null;
       }
 
       // Find the polygon layer (not markers)
       const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
       if (!polygonLayer) {
-        console.log('🔍 findPolygonIdByFeatureGroup() - No polygon layer found in feature group');
         return null;
       }
 
       // Get the GeoJSON of the dragged polygon
       const draggedGeoJSON = (polygonLayer as any).toGeoJSON();
-      console.log('🔍 findPolygonIdByFeatureGroup() - Dragged polygon GeoJSON:', draggedGeoJSON);
 
       // Compare with stored polygons by coordinates
       for (const polygonData of allPolygons) {
@@ -1619,7 +1512,6 @@ class Polydraw extends L.Control {
           const draggedCoords = JSON.stringify(draggedGeoJSON.geometry.coordinates);
 
           if (storedCoords === draggedCoords) {
-            console.log('🔍 findPolygonIdByFeatureGroup() - Found geometry match:', polygonData.id);
             return polygonData.id;
           }
         } catch (error) {
@@ -1629,8 +1521,6 @@ class Polydraw extends L.Control {
     } catch (error) {
       console.warn('🔍 findPolygonIdByFeatureGroup() - Error in geometry comparison:', error);
     }
-
-    console.log('🔍 findPolygonIdByFeatureGroup() - No match found with any method');
     return null;
   }
 
@@ -1644,10 +1534,6 @@ class Polydraw extends L.Control {
 
     const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
     if (polygonId) {
-      console.log(
-        '🔧 removePolygonFromStateManager() - Removing polygon from state manager:',
-        polygonId,
-      );
       this.polygonStateManager.removePolygon(polygonId);
     }
   }
@@ -1663,9 +1549,6 @@ class Polydraw extends L.Control {
   }
 
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
-    // 🎯 SIMPLIFIED: Use basic merge logic - find intersecting polygons and union them
-    console.log('🔧 merge() - Using simplified merge approach');
-
     const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
     // Find all polygons that intersect with the new polygon
@@ -1701,7 +1584,6 @@ class Polydraw extends L.Control {
           }
         }
 
-        console.log('🔧 merge() - Intersection check result:', hasIntersection);
         if (hasIntersection) {
           intersectingFeatureGroups.push(featureGroup);
         }
@@ -1740,12 +1622,6 @@ class Polydraw extends L.Control {
     }
   }
 
-  // 🎯 SIMPLIFIED: Removed deletePolygonOnMerge() - no longer needed with simplified merge logic
-  // The simplified merge approach handles polygon removal directly in the merge/union methods
-
-  // 🎯 SIMPLIFIED: Removed analyzeIntersectionType() - no longer needed with simplified union logic
-  // The complex intersection analysis was causing issues and is not needed for basic merge operations
-
   // Simple addMarker method without over-engineered optimization
   private addMarker(
     latlngs: ILatLng[],
@@ -1758,13 +1634,11 @@ class Polydraw extends L.Control {
       return;
     }
 
-    // 🎯 FIX: Skip empty arrays to prevent marker errors
     if (latlngs.length === 0) {
       console.warn('addMarker: latlngs array is empty, skipping marker creation');
       return;
     }
 
-    // 🎯 FIX: Validate that all elements are valid LatLng objects
     const validLatLngs = latlngs.filter(
       (latlng) =>
         latlng &&

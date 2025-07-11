@@ -233,12 +233,10 @@ export class MarkerManager {
    * Handle marker drag operations - update polygon coordinates based on marker positions
    */
   handleMarkerDrag(featureGroup: L.FeatureGroup) {
-    // 🎯 FIX: Prevent recursive calls and throttle updates
     if (this.isUpdatingPolygon) {
       return;
     }
 
-    // 🎯 FIX: Add throttling to prevent excessive updates
     const featureGroupId = (featureGroup as any)._leaflet_id || 'unknown';
     const now = Date.now();
 
@@ -264,12 +262,10 @@ export class MarkerManager {
     try {
       this.isUpdatingPolygon = true;
 
-      // 🎯 FIX: Use requestAnimationFrame to prevent blocking
       requestAnimationFrame(() => {
         try {
           const posarrays = polygon.getLatLngs();
 
-          // 🎯 FIX: Simplified approach for split polygons
           // Check if this is a simple polygon (flat structure from split operations)
           if (this.isSimplePolygonStructure(posarrays)) {
             // For simple polygons, just map markers directly to coordinates
@@ -281,7 +277,6 @@ export class MarkerManager {
             }
           }
 
-          // 🎯 FIX: For complex structures, use the rebuilding approach
           const rebuiltCoords = this.rebuildCoordinatesFromMarkers(polygon, markers);
           if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
             (polygon as any).setLatLngs(rebuiltCoords);
@@ -357,18 +352,11 @@ export class MarkerManager {
     }
 
     try {
-      // 🎯 FIX: Check if this polygon has holes and preserve the structure
       const originalLatLngs = polygon.getLatLngs();
-      console.log('🔧 DEBUG: handleMarkerDragEnd - Original structure:', originalLatLngs);
 
       let feature: any;
 
-      // 🎯 FIX: Explode, update, and reconstruct approach for polygons with holes
       if (this.hasHoleStructure(originalLatLngs)) {
-        console.log(
-          '🔧 DEBUG: handleMarkerDragEnd - Polygon with holes detected, using explode-update-reconstruct approach',
-        );
-
         // Step 1: Remove the original polygon
         onFeatureGroupRemove(featureGroup);
 
@@ -380,8 +368,6 @@ export class MarkerManager {
           optimizationLevel,
         );
       } else {
-        console.log('🔧 DEBUG: handleMarkerDragEnd - Simple polygon, building normally');
-
         // Simple polygon - build coordinates directly from markers
         const markerCoordinates = markers.map((marker) => {
           const latlng = marker.getLatLng();
@@ -406,14 +392,11 @@ export class MarkerManager {
           },
         };
 
-        console.log('🔧 DEBUG: handleMarkerDragEnd - Created simple feature:', feature);
-
         // Handle end of marker drag, check for kinks and update polygons
         onFeatureGroupRemove(featureGroup);
 
         // Check if the current polygon has kinks (self-intersections) after marker drag
         if (this.turfHelper.hasKinks(feature)) {
-          console.log('🔧 DEBUG: handleMarkerDragEnd - Polygon has kinks, splitting');
           const unkink = this.turfHelper.getKinks(feature);
           // Handle unkinked polygons - split kinked polygon into valid parts
           unkink.forEach((unkinkedPolygon) => {
@@ -426,7 +409,6 @@ export class MarkerManager {
             );
           });
         } else {
-          console.log('🔧 DEBUG: handleMarkerDragEnd - Polygon is valid, adding directly');
           // No interaction - just add the polygon normally
           onPolygonLayerAdd(feature, false, false, optimizationLevel);
         }
@@ -458,7 +440,6 @@ export class MarkerManager {
             },
           };
 
-          console.log('🔧 DEBUG: handleMarkerDragEnd - Using fallback feature:', fallbackFeature);
           onPolygonLayerAdd(fallbackFeature, false, false, optimizationLevel);
         }
       } catch (fallbackError) {
@@ -996,10 +977,7 @@ export class MarkerManager {
       return false;
     }
 
-    // 🎯 FIX: Handle flat structure from rebuilt coordinates [LatLng, LatLng, ...]
     if (latlngs.length > 0 && latlngs[0] && typeof latlngs[0] === 'object' && 'lat' in latlngs[0]) {
-      console.log('isValidLatLngsStructure: Detected flat structure, validating directly');
-
       // This is a flat structure: [LatLng, LatLng, ...]
       for (const coord of latlngs) {
         if (
@@ -1017,7 +995,6 @@ export class MarkerManager {
       return true;
     }
 
-    // 🎯 FIX: Handle single-level nested structure [[LatLng, LatLng, ...]]
     if (
       latlngs.length === 1 &&
       Array.isArray(latlngs[0]) &&
@@ -1026,8 +1003,6 @@ export class MarkerManager {
       typeof latlngs[0][0] === 'object' &&
       'lat' in latlngs[0][0]
     ) {
-      console.log('isValidLatLngsStructure: Detected single-level nested structure, validating');
-
       // This is a single-level nested structure: [[LatLng, LatLng, ...]]
       for (const coord of latlngs[0]) {
         if (
@@ -1085,8 +1060,6 @@ export class MarkerManager {
   private rebuildCoordinatesFromMarkers(polygon: any, markers: L.Marker[]): any[] | null {
     try {
       const posarrays = polygon.getLatLngs();
-      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure:', posarrays);
-      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count:', markers.length);
 
       const newPos = [];
       let testarray = [];
@@ -1094,67 +1067,38 @@ export class MarkerManager {
       const layerLength = markers; // In the old code, this was FeatureGroup.getLayers(), but we already have markers
       let length = 0;
 
-      // 🎯 FIX: Check for holes in the correct structure
+      // Check for holes in the correct structure
       // The structure is [Array(2)] where Array(2) contains [ring1, ring2]
       if (posarrays.length === 1 && Array.isArray(posarrays[0]) && posarrays[0].length > 1) {
         // This is the hole structure: [[ring1, ring2, ...]]
-        console.log(
-          '🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)',
-        );
-
         hole = [];
         let markerOffset = 0;
 
         for (let ringIndex = 0; ringIndex < posarrays[0].length; ringIndex++) {
           testarray = [];
           const currentRing = posarrays[0][ringIndex];
-
-          console.log(
-            `🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring ${ringIndex} with ${currentRing.length} points, marker offset: ${markerOffset}`,
-          );
-
           // Map markers for this ring
           for (let j = 0; j < currentRing.length; j++) {
             if (markerOffset + j < layerLength.length) {
               testarray.push(layerLength[markerOffset + j].getLatLng());
             }
           }
-
           if (testarray.length > 0) {
             hole.push(testarray);
-            console.log(
-              `🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring ${ringIndex} with ${testarray.length} markers`,
-            );
           }
-
           // Move marker offset for next ring
           markerOffset += currentRing.length;
         }
-
         newPos.push(hole);
-        console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved:', hole);
       } else if (posarrays.length > 1) {
         // Multiple top-level rings (different structure)
-        console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Multiple top-level rings detected');
-
         for (let index = 0; index < posarrays.length; index++) {
           testarray = [];
           hole = [];
-          console.log(
-            '🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing top-level ring:',
-            index,
-            posarrays[index],
-          );
-
           if (index === 0) {
             // First ring (outer ring)
             if (posarrays[0].length > 1) {
               for (let i = 0; i < posarrays[0].length; i++) {
-                console.log(
-                  '🔧 DEBUG: rebuildCoordinatesFromMarkers - Outer ring sub-ring:',
-                  i,
-                  posarrays[index][i],
-                );
                 for (let j = 0; j < posarrays[0][i].length; j++) {
                   if (j < layerLength.length) {
                     testarray.push(layerLength[j].getLatLng());
@@ -1170,13 +1114,10 @@ export class MarkerManager {
               }
               hole.push(testarray);
             }
-            console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Outer ring hole:', hole);
             newPos.push(hole);
           } else {
             // Subsequent rings (holes)
             length += posarrays[index - 1].length;
-            console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole ring start index:', length);
-
             for (let j = length; j < posarrays[index].length + length; j++) {
               if (j < layerLength.length) {
                 testarray.push(layerLength[j].getLatLng());
@@ -1188,28 +1129,20 @@ export class MarkerManager {
         }
       } else {
         // Simple flat structure
-        console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Simple flat structure');
-
         hole = [];
         testarray = [];
-
         // Simple flat polygon - just map all markers to one ring
         for (let j = 0; j < layerLength.length; j++) {
           testarray.push(layerLength[j].getLatLng());
         }
-
         if (testarray.length > 0) {
           hole.push(testarray);
           newPos.push(hole);
         }
-
-        console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Simple structure result:', hole);
       }
-
-      console.log('🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos:', newPos);
       return newPos.length > 0 ? newPos : null;
     } catch (error) {
-      console.warn('🔧 DEBUG: rebuildCoordinatesFromMarkers - Error:', error);
+      console.warn('rebuildCoordinatesFromMarkers - Error:', error);
       return null;
     }
   }
@@ -1391,8 +1324,6 @@ export class MarkerManager {
    */
   private hasHoleStructure(latLngs: any): boolean {
     try {
-      console.log('🔧 DEBUG: MarkerManager.hasHoleStructure - Checking structure:', latLngs);
-
       // Check for nested structure: [Array(2)] where Array(2) contains [ring1, ring2]
       if (
         Array.isArray(latLngs) &&
@@ -1400,9 +1331,6 @@ export class MarkerManager {
         Array.isArray(latLngs[0]) &&
         latLngs[0].length > 1
       ) {
-        console.log(
-          '🔧 DEBUG: MarkerManager.hasHoleStructure - Found nested hole structure [Array(N)] where N > 1',
-        );
         return true;
       }
 
@@ -1422,17 +1350,12 @@ export class MarkerManager {
           typeof secondRing[0] === 'object' &&
           'lat' in secondRing[0]
         ) {
-          console.log(
-            '🔧 DEBUG: MarkerManager.hasHoleStructure - Found polygon with holes (multiple rings)',
-          );
           return true;
         }
       }
-
-      console.log('🔧 DEBUG: MarkerManager.hasHoleStructure - No holes detected');
       return false;
     } catch (error) {
-      console.warn('🔧 DEBUG: MarkerManager.hasHoleStructure - Error:', error);
+      console.warn('MarkerManager.hasHoleStructure - Error:', error);
       return false;
     }
   }
@@ -1442,12 +1365,6 @@ export class MarkerManager {
    */
   private buildPolygonWithHoles(originalLatLngs: any, markers: L.Marker[]): any {
     try {
-      console.log(
-        '🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Original structure:',
-        originalLatLngs,
-      );
-      console.log('🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Markers count:', markers.length);
-
       // Map markers to coordinates
       const markerCoords = markers.map((marker) => {
         const latlng = marker.getLatLng();
@@ -1464,17 +1381,11 @@ export class MarkerManager {
 
         if (Array.isArray(originalRing) && originalRing.length > 0) {
           const ringCoords: number[][] = [];
-
-          console.log(
-            `🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Processing ring ${ringIdx} with ${originalRing.length} points`,
-          );
-
           // Take coordinates for this ring from markers
           for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
             ringCoords.push(markerCoords[markerIndex]);
             markerIndex++;
           }
-
           // Ensure ring is closed
           if (ringCoords.length > 0) {
             const first = ringCoords[0];
@@ -1483,47 +1394,28 @@ export class MarkerManager {
               ringCoords.push([first[0], first[1]]);
             }
             rings.push(ringCoords);
-
-            console.log(
-              `🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Created ring ${ringIdx} with ${ringCoords.length} coordinates`,
-            );
           }
         }
       }
 
       if (rings.length === 0) {
-        console.warn('🔧 DEBUG: MarkerManager.buildPolygonWithHoles - No rings created');
+        console.warn('MarkerManager.buildPolygonWithHoles - No rings created');
         return null;
       }
 
-      console.log(
-        `🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Successfully created ${rings.length} rings`,
-      );
-
       // Ensure proper winding direction for GeoJSON compliance
       if (rings.length > 1) {
-        console.log(
-          '🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Fixing winding direction for holes',
-        );
-
         for (let i = 0; i < rings.length; i++) {
           const ring = rings[i];
           const isClockwise = this.isClockwise(ring);
-
           if (i === 0) {
             // Outer ring should be counterclockwise
             if (isClockwise) {
-              console.log(
-                '🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Reversing outer ring to counterclockwise',
-              );
               rings[i] = ring.reverse();
             }
           } else {
             // Hole rings should be clockwise
             if (!isClockwise) {
-              console.log(
-                `🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Reversing hole ring ${i} to clockwise`,
-              );
               rings[i] = ring.reverse();
             }
           }
@@ -1540,10 +1432,9 @@ export class MarkerManager {
         },
       };
 
-      console.log('🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Created GeoJSON:', geoJSON);
       return geoJSON;
     } catch (error) {
-      console.error('🔧 DEBUG: MarkerManager.buildPolygonWithHoles - Error:', error);
+      console.error('MarkerManager.buildPolygonWithHoles - Error:', error);
       return null;
     }
   }
@@ -1568,7 +1459,7 @@ export class MarkerManager {
   }
 
   /**
-   * 🎯 FIX: Explode, update, and reconstruct approach for polygons with holes
+   * Explode, update, and reconstruct approach for polygons with holes
    * 1. Explode polygon into separate parts (outer + inner)
    * 2. Update the dragged part with new coordinates
    * 3. Reconstruct a new polygon with hole using updated part + unchanged part
@@ -1585,35 +1476,23 @@ export class MarkerManager {
     optimizationLevel: number,
   ) {
     try {
-      console.log('🔧 DEBUG: explodeUpdateAndReconstruct - Original structure:', originalLatLngs);
-      console.log('🔧 DEBUG: explodeUpdateAndReconstruct - Markers count:', markers.length);
-
       // Step 1: Explode the polygon into separate parts
       const explodedParts = this.explodePolygonIntoParts(originalLatLngs);
-      console.log('🔧 DEBUG: explodeUpdateAndReconstruct - Exploded parts:', explodedParts);
 
       // Step 2: Update the dragged part with new marker coordinates
       const updatedParts = this.updatePartsWithMarkers(explodedParts, markers);
-      console.log('🔧 DEBUG: explodeUpdateAndReconstruct - Updated parts:', updatedParts);
 
       // Step 3: Reconstruct a new polygon with hole
       const reconstructedPolygon = this.reconstructPolygonWithHole(updatedParts);
-      console.log(
-        '🔧 DEBUG: explodeUpdateAndReconstruct - Reconstructed polygon:',
-        reconstructedPolygon,
-      );
 
       // Step 4: Add the final polygon
       if (reconstructedPolygon) {
         onPolygonLayerAdd(reconstructedPolygon, false, false, optimizationLevel);
-        console.log(
-          '🔧 DEBUG: explodeUpdateAndReconstruct - Successfully added reconstructed polygon',
-        );
       } else {
-        console.error('🔧 DEBUG: explodeUpdateAndReconstruct - Failed to reconstruct polygon');
+        console.error('explodeUpdateAndReconstruct - Failed to reconstruct polygon');
       }
     } catch (error) {
-      console.error('🔧 DEBUG: explodeUpdateAndReconstruct - Error:', error);
+      console.error('explodeUpdateAndReconstruct - Error:', error);
     }
   }
 
@@ -1691,28 +1570,19 @@ export class MarkerManager {
 
     for (const part of sortedParts) {
       let coords = part.coordinates;
-
       // Ensure proper winding direction for GeoJSON compliance
       const isClockwise = this.isClockwise(coords);
-
       if (part.isHole) {
         // Hole rings should be clockwise in GeoJSON
         if (!isClockwise) {
-          console.log(
-            `🔧 DEBUG: reconstructPolygonWithHole - Reversing hole ring ${part.ringIndex} to clockwise`,
-          );
           coords = coords.reverse();
         }
       } else {
         // Outer ring should be counterclockwise in GeoJSON
         if (isClockwise) {
-          console.log(
-            `🔧 DEBUG: reconstructPolygonWithHole - Reversing outer ring ${part.ringIndex} to counterclockwise`,
-          );
           coords = coords.reverse();
         }
       }
-
       rings.push(coords);
     }
 

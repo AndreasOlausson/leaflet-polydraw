@@ -9,15 +9,10 @@ export class PolygonInfo {
   sqmArea: number[] = [];
   perimeter: number[] = [];
   constructor(polygon) {
-    console.log('🔍 DEBUG: PolygonInfo constructor - Input polygon:', polygon);
-
-    // 🎯 FIX: Handle different polygon data structures
     if (!Array.isArray(polygon)) {
-      console.warn('🔍 DEBUG: PolygonInfo constructor - polygon is not an array:', polygon);
       return; // Skip processing if not an array
     }
 
-    // 🎯 FIX: Handle flattened structure from split polygons
     // Check if polygon[0] is an array of LatLng objects (structure: [Array(N)])
     if (
       polygon.length > 0 &&
@@ -26,18 +21,9 @@ export class PolygonInfo {
       typeof polygon[0][0] === 'object' &&
       'lat' in polygon[0][0]
     ) {
-      console.log(
-        '🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly',
-      );
-
       // This is the structure: [Array(N)] where Array(N) = [LatLng, LatLng, LatLng, ...]
       // We can process polygon[0] directly as the coordinate array
       const coordinateArray = polygon[0];
-
-      console.log(
-        '🔍 DEBUG: PolygonInfo constructor - Processing coordinate array:',
-        coordinateArray,
-      );
 
       // Process the coordinate array directly
       this.trashcanPoint[0] = this.getTrashcanPoint(coordinateArray);
@@ -48,18 +34,11 @@ export class PolygonInfo {
       return; // Exit early - we've handled the flattened structure
     }
 
-    // 🎯 FIX: Handle direct flattened structure (less common case)
     // Check if polygon[0] is a LatLng object directly (structure: [LatLng, LatLng, ...])
     if (polygon.length > 0 && polygon[0] && typeof polygon[0] === 'object' && 'lat' in polygon[0]) {
-      console.log(
-        '🔍 DEBUG: PolygonInfo constructor - Detected direct flattened structure, wrapping in proper format',
-      );
-
       // This is a flattened structure: [LatLng, LatLng, LatLng, ...]
       // We need to wrap it in the expected format: [[[LatLng, LatLng, LatLng, ...]]]
       const wrappedPolygon = [[polygon]]; // Wrap in proper nesting
-
-      console.log('🔍 DEBUG: PolygonInfo constructor - Wrapped polygon:', wrappedPolygon);
 
       // Process the wrapped polygon
       this.trashcanPoint[0] = this.getTrashcanPoint(polygon);
@@ -72,23 +51,11 @@ export class PolygonInfo {
 
     // Process each polygon (normal nested structure)
     polygon.forEach((polygons, i) => {
-      console.log(`🔍 DEBUG: PolygonInfo constructor - Processing polygon ${i}:`, polygons);
-
-      // 🎯 FIX: Handle case where polygons might be a single LatLng object or invalid structure
       if (!polygons || !Array.isArray(polygons)) {
-        console.warn(
-          `🔍 DEBUG: PolygonInfo constructor - polygons[${i}] is not an array:`,
-          polygons,
-        );
         return; // Skip this polygon
       }
 
-      // 🎯 FIX: Handle case where polygons[0] might not exist or not be an array
       if (!polygons[0] || !Array.isArray(polygons[0])) {
-        console.warn(
-          `🔍 DEBUG: PolygonInfo constructor - polygons[${i}][0] is not an array:`,
-          polygons[0],
-        );
         return; // Skip this polygon
       }
 
@@ -102,13 +69,11 @@ export class PolygonInfo {
     this.sqmArea[0] = area;
   }
   private getTrashcanPoint(polygon: ILatLng[]): ILatLng {
-    // 🎯 FIX: Validate polygon array and coordinates
     if (!Array.isArray(polygon) || polygon.length === 0) {
       console.warn('getTrashcanPoint: Invalid polygon array:', polygon);
       return { lat: 0, lng: 0 }; // Return default coordinates
     }
 
-    // 🎯 FIX: Filter out invalid coordinates
     const validCoords = polygon.filter(
       (coord) =>
         coord &&
@@ -147,7 +112,6 @@ export class PolygonInfo {
       nextPoint = validCoords[idx + 1];
     }
 
-    // 🎯 FIX: Validate that we have valid points before accessing properties
     if (!previousPoint || !nextPoint) {
       console.warn('getTrashcanPoint: Could not determine previous/next points');
       return validCoords[idx] || { lat: 0, lng: 0 };

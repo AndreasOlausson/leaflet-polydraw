@@ -174,16 +174,6 @@ export class PolygonDragManager {
   private onPolygonMouseDown(e: any, polygon: any) {
     if (!this.config.modes.dragPolygons || this.getDrawMode() !== DrawMode.Off) return;
 
-    console.log('🔍 DEBUG: onPolygonMouseDown() - Starting polygon drag');
-    console.log(
-      '🔍 DEBUG: onPolygonMouseDown() - Polygon feature group:',
-      polygon._polydrawFeatureGroup,
-    );
-    console.log(
-      '🔍 DEBUG: onPolygonMouseDown() - Polygon original coordinates:',
-      polygon._polydrawLatLngs,
-    );
-
     // Prevent event bubbling to map
     L.DomEvent.stopPropagation(e);
     L.DomEvent.preventDefault(e);
@@ -192,8 +182,6 @@ export class PolygonDragManager {
     const isModifierPressed = this.detectModifierKeyInternal(e.originalEvent || e);
     this.currentModifierDragMode = isModifierPressed;
     this.isModifierKeyHeld = isModifierPressed;
-
-    console.log('🔍 DEBUG: onPolygonMouseDown() - Modifier key pressed:', isModifierPressed);
 
     // Initialize drag
     polygon._polydrawDragData.isDragging = true;
@@ -572,10 +560,6 @@ export class PolygonDragManager {
           return;
         }
 
-        // 🎯 CLEANED: Use callback instead of direct array manipulation
-        console.log(
-          '🔧 performModifierSubtract() - Using removal callback instead of direct array manipulation',
-        );
         if (this.removePolygonFromStateManagerCallback) {
           this.removePolygonFromStateManagerCallback(featureGroup);
         }
@@ -587,25 +571,16 @@ export class PolygonDragManager {
         this.isModifierKeyHeld = false;
         return;
       } else {
-        // 🎯 SIMPLE APPROACH: Use SimplePolygonOperations for normal drags
-        console.log('🔧 updatePolygonCoordinates() - Using simple approach for normal drag');
-
         const simpleOps = new SimplePolygonOperations(
           this.getArrayOfFeatureGroups(),
           this.map,
           (geoJSON, simplify) => this.addPolygonLayer(geoJSON, simplify),
           (featureGroup) => {
-            // 🎯 FIX: Call the actual removal callback that was passed to PolygonDragManager
-            console.log(
-              '🔧 PolygonDragManager - Calling removal callback to actually remove polygon',
-            );
             if (this.removePolygonFromStateManagerCallback) {
               this.removePolygonFromStateManagerCallback(featureGroup);
             }
           },
-          // 🎯 FIX: Pass the addPolygon callback that includes merge logic
           (geoJSON, simplify, noMerge) => {
-            console.log('🔧 PolygonDragManager - Using addPolygon with merge logic for drag');
             if (this.addPolygonToStateManagerCallback) {
               // Use the callback that includes merge logic
               this.addPolygonToStateManagerCallback(geoJSON, 0); // 0 = optimization level
@@ -754,7 +729,6 @@ export class PolygonDragManager {
       // Perform difference operation (subtract dragged polygon from existing polygon)
       const differenceResult = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
 
-      // 🎯 CLEANED: Use callback instead of direct array manipulation
       if (this.removePolygonFromStateManagerCallback) {
         this.removePolygonFromStateManagerCallback(featureGroup);
       }
@@ -901,7 +875,6 @@ export class PolygonDragManager {
       if (unionResult) {
         mergedPolygon = unionResult;
 
-        // 🎯 CLEANED: Use callback instead of direct array manipulation
         if (this.removePolygonFromStateManagerCallback) {
           this.removePolygonFromStateManagerCallback(featureGroup);
         }
@@ -926,7 +899,6 @@ export class PolygonDragManager {
     const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
 
     if (differenceResult) {
-      // 🎯 CLEANED: Use callback instead of direct array manipulation
       if (this.removePolygonFromStateManagerCallback) {
         this.removePolygonFromStateManagerCallback(containingFeatureGroup);
       }
@@ -958,12 +930,7 @@ export class PolygonDragManager {
    */
   private removePolygonFromStateManager(featureGroup: L.FeatureGroup): void {
     if (this.removePolygonFromStateManagerCallback) {
-      console.log(
-        '🔧 removePolygonFromStateManager() - Calling callback to remove from state manager',
-      );
       this.removePolygonFromStateManagerCallback(featureGroup);
-    } else {
-      console.log('removePolygonFromStateManager called but callback not provided');
     }
   }
 

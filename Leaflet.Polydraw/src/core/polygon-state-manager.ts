@@ -45,23 +45,18 @@ export class PolygonStateManager {
     optimizationLevel: number = 0,
     skipMergeCheck: boolean = false,
   ): string[] {
-    console.log('🔧 PolygonStateManager.addPolygon() - Adding polygon:', geoJSON);
-
-    // 🎯 FIX: Clean up any stale polygons before adding new ones
     this.cleanupStalePolygons();
 
     // Check for merge opportunities first (unless skipped)
     if (!skipMergeCheck && this.config.mergePolygons) {
       const mergeResult = this.checkForMerges(geoJSON);
       if (mergeResult.shouldMerge) {
-        console.log('🔧 PolygonStateManager.addPolygon() - Merging with existing polygons');
         return this.performMerge(geoJSON, mergeResult.intersectingIds, optimizationLevel);
       }
     }
 
     // Handle MultiPolygon by splitting into separate polygons
     if (geoJSON.geometry.type === 'MultiPolygon' && geoJSON.geometry.coordinates.length > 1) {
-      console.log('🔧 PolygonStateManager.addPolygon() - Splitting MultiPolygon');
       const ids: string[] = [];
 
       geoJSON.geometry.coordinates.forEach((polygonCoords) => {
@@ -107,7 +102,6 @@ export class PolygonStateManager {
     // Remove from our tracking
     this.polygons.delete(id);
 
-    console.log('🔧 PolygonStateManager.removePolygon() - Removed polygon:', id);
     return true;
   }
 
@@ -115,8 +109,6 @@ export class PolygonStateManager {
    * Update a polygon with new coordinates (from marker drag)
    */
   updatePolygon(id: string, newGeoJSON: Feature<Polygon | MultiPolygon>): string[] {
-    console.log('🔧 PolygonStateManager.updatePolygon() - Updating polygon:', id);
-
     // Remove the old polygon
     if (!this.removePolygon(id)) {
       console.warn('Failed to remove polygon for update:', id);
@@ -131,30 +123,14 @@ export class PolygonStateManager {
    * Subtract one polygon from others
    */
   subtractPolygon(subtractGeoJSON: Feature<Polygon | MultiPolygon>): string[] {
-    console.log('🔧 PolygonStateManager.subtractPolygon() - Subtracting polygon');
-
     const intersectingIds = this.findIntersectingPolygons(subtractGeoJSON);
     const newIds: string[] = [];
 
     if (intersectingIds.length === 0) {
-      console.log(
-        '🔧 PolygonStateManager.subtractPolygon() - No intersections, nothing to subtract',
-      );
       return [];
     }
 
-    console.log(
-      `🔧 PolygonStateManager.subtractPolygon() - Found ${intersectingIds.length} intersecting polygons:`,
-      intersectingIds,
-    );
-
-    // 🎯 FIX: For subtract operations, we should merge all intersecting polygons first,
-    // then subtract from the merged result to get the correct geometric result
     if (intersectingIds.length > 1) {
-      console.log(
-        '🔧 PolygonStateManager.subtractPolygon() - Multiple intersections detected, merging first',
-      );
-
       // Get all intersecting polygons
       const intersectingPolygons = intersectingIds
         .map((id) => this.polygons.get(id))
@@ -216,11 +192,6 @@ export class PolygonStateManager {
         // Keep the original polygon if subtract fails
       }
     }
-
-    console.log(
-      `🔧 PolygonStateManager.subtractPolygon() - Created ${newIds.length} result polygons:`,
-      newIds,
-    );
     return newIds;
   }
 
@@ -263,15 +234,11 @@ export class PolygonStateManager {
     optimizationLevel: number,
   ): string {
     const id = this.generateId();
-    console.log('🔧 PolygonStateManager.addSinglePolygon() - Starting with ID:', id);
 
     try {
       // Create feature group using callback
       const featureGroup = this.createFeatureGroupCallback(geoJSON, optimizationLevel);
-      console.log('🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully');
 
-      // 🎯 FIX: Update polygon references to point to the new feature group
-      // This ensures that when polygons are dragged, they can find their correct ID
       this.updatePolygonFeatureGroupReferences(featureGroup, geoJSON);
 
       // Store polygon data
@@ -283,25 +250,15 @@ export class PolygonStateManager {
       };
 
       this.polygons.set(id, polygonData);
-      console.log(
-        '🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now:',
-        this.polygons.size,
-      );
 
       // Add to state manager
       this.stateManager.addFeatureGroup(featureGroup);
 
-      console.log('🔧 PolygonStateManager.addSinglePolygon() - Added polygon:', id);
       return id;
     } catch (error) {
-      console.error('🔧 PolygonStateManager.addSinglePolygon() - Error adding polygon:', error);
+      console.error('PolygonStateManager.addSinglePolygon() - Error adding polygon:', error);
 
-      // 🎯 FIX: In test environment, still store the polygon even if feature group creation fails
       if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
-        console.log(
-          '🔧 PolygonStateManager.addSinglePolygon() - Test environment: storing polygon despite error',
-        );
-
         // Create a minimal feature group for test environment
         const fallbackFeatureGroup = new L.FeatureGroup();
 
@@ -313,10 +270,6 @@ export class PolygonStateManager {
         };
 
         this.polygons.set(id, polygonData);
-        console.log(
-          '🔧 PolygonStateManager.addSinglePolygon() - Test fallback stored, size now:',
-          this.polygons.size,
-        );
 
         return id;
       }
@@ -350,8 +303,6 @@ export class PolygonStateManager {
             startLatLngs: null,
           };
         }
-
-        console.log('🔧 updatePolygonFeatureGroupReferences() - Updated polygon references');
       }
     });
   }
@@ -461,10 +412,7 @@ export class PolygonStateManager {
    * This prevents leftover polygons from causing unwanted merges
    */
   public cleanupStalePolygons(): void {
-    // 🎯 FIX: In test environment, don't clean up polygons that failed to add to map
-    // This allows tests to still see the polygons even if map rendering fails
     if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') {
-      console.log('🔧 cleanupStalePolygons() - Test environment detected, skipping cleanup');
       return;
     }
 
@@ -474,24 +422,21 @@ export class PolygonStateManager {
       try {
         // Check if the feature group is still on the map
         if (!this.map.hasLayer(polygonData.featureGroup)) {
-          console.log('🔧 cleanupStalePolygons() - Found stale polygon:', id);
           staleIds.push(id);
         }
       } catch (error) {
         // If we can't check, assume it's stale
-        console.log('🔧 cleanupStalePolygons() - Error checking polygon, marking as stale:', id);
         staleIds.push(id);
       }
     }
 
     // Remove stale polygons
     staleIds.forEach((id) => {
-      console.log('🔧 cleanupStalePolygons() - Removing stale polygon:', id);
       this.polygons.delete(id);
     });
 
     if (staleIds.length > 0) {
-      console.log(`🔧 cleanupStalePolygons() - Cleaned up ${staleIds.length} stale polygons`);
+      // cleaned, do nothing
     }
   }
 

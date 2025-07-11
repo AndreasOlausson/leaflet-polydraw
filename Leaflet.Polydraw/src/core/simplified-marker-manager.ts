@@ -24,8 +24,6 @@ export class SimplifiedMarkerManager {
    * Handle marker drag end - update polygon coordinates
    */
   handleMarkerDragEnd(featureGroup: PolydrawFeatureGroup): void {
-    console.log('🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Processing drag end');
-
     try {
       // Get the polygon ID from PolygonStateManager
       const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
@@ -41,13 +39,11 @@ export class SimplifiedMarkerManager {
         return;
       }
 
-      // 🎯 FIX: Validate coordinates before creating GeoJSON
       if (newCoordinates.length < 3) {
         console.warn('Not enough coordinates for a valid polygon (need at least 3)');
         return;
       }
 
-      // 🎯 FIX: Ensure polygon is closed (first and last points are the same)
       const firstPoint = newCoordinates[0];
       const lastPoint = newCoordinates[newCoordinates.length - 1];
 
@@ -56,7 +52,6 @@ export class SimplifiedMarkerManager {
         newCoordinates.push([firstPoint[0], firstPoint[1]]);
       }
 
-      // 🎯 FIX: Ensure we have at least 4 points (3 unique + 1 closing)
       if (newCoordinates.length < 4) {
         console.warn('Not enough coordinates for a valid closed polygon (need at least 4)');
         return;
@@ -71,16 +66,6 @@ export class SimplifiedMarkerManager {
           coordinates: [newCoordinates],
         },
       };
-
-      console.log(
-        '🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Created GeoJSON:',
-        newGeoJSON,
-      );
-
-      // Update polygon in state manager (this handles merging automatically)
-      const resultIds = this.polygonStateManager.updatePolygon(polygonId, newGeoJSON);
-
-      console.log('🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Updated polygon:', polygonId);
     } catch (error) {
       console.error('Error in handleMarkerDragEnd:', error);
     }
