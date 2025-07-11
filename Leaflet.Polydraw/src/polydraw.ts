@@ -1784,50 +1784,79 @@ class Polydraw extends L.Control {
   }
 
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
-    const polygonFeature = [];
-    const newArray: L.FeatureGroup[] = [];
-    let polyIntersection: boolean = false;
-    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
+    // 🎯 SIMPLIFIED: Use basic merge logic - find intersecting polygons and union them
+    console.log('🔧 merge() - Using simplified merge approach');
 
-      if (featureCollection.features[0].geometry.coordinates.length > 1) {
-        featureCollection.features[0].geometry.coordinates.forEach((element) => {
-          const feature = this.turfHelper.getMultiPolygon([element]);
-          polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-          if (polyIntersection) {
-            newArray.push(featureGroup);
-            polygonFeature.push(feature);
-          }
-        });
-      } else {
-        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-        polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
+    const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
-        if (!polyIntersection) {
+    // Find all polygons that intersect with the new polygon
+    this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+        // Check for intersection using multiple methods
+        let hasIntersection = false;
+
+        // Method 1: Use polygonIntersect
+        try {
+          hasIntersection = this.turfHelper.polygonIntersect(existingPolygon, latlngs);
+        } catch (error) {
+          // Method 1 failed, try method 2
+        }
+
+        // Method 2: Use direct intersection check if method 1 failed
+        if (!hasIntersection) {
           try {
-            const directIntersection = this.turfHelper.getIntersection(feature, latlngs);
+            const intersection = this.turfHelper.getIntersection(existingPolygon, latlngs);
             if (
-              directIntersection &&
-              directIntersection.geometry &&
-              (directIntersection.geometry.type === 'Polygon' ||
-                directIntersection.geometry.type === 'MultiPolygon')
+              intersection &&
+              intersection.geometry &&
+              (intersection.geometry.type === 'Polygon' ||
+                intersection.geometry.type === 'MultiPolygon')
             ) {
-              polyIntersection = true;
+              hasIntersection = true;
             }
           } catch (error) {
-            // Silently handle intersection errors
+            // Method 2 failed, continue
           }
         }
-        if (polyIntersection) {
-          newArray.push(featureGroup);
-          polygonFeature.push(feature);
+
+        console.log('🔧 merge() - Intersection check result:', hasIntersection);
+        if (hasIntersection) {
+          intersectingFeatureGroups.push(featureGroup);
         }
+      } catch (error) {
+        // Skip problematic polygons
       }
     });
 
-    if (newArray.length > 0) {
-      this.unionPolygons(newArray, latlngs, polygonFeature);
+    if (intersectingFeatureGroups.length > 0) {
+      // Merge with intersecting polygons
+      let mergedPolygon = latlngs;
+
+      // Union with each intersecting polygon
+      intersectingFeatureGroups.forEach((featureGroup) => {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as any;
+          const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+          const union = this.turfHelper.union(mergedPolygon, existingPolygon);
+          if (union) {
+            mergedPolygon = union;
+          }
+
+          // Remove the merged polygon
+          this.removeFeatureGroup(featureGroup);
+        } catch (error) {
+          // Skip problematic merges
+        }
+      });
+
+      // Add the final merged result
+      this.addPolygonLayer(mergedPolygon, true);
     } else {
+      // No intersections - just add the polygon normally
       this.addPolygonLayer(latlngs, true);
     }
   }

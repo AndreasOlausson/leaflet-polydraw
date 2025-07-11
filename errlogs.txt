@@ -1,120 +1,23 @@
-DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:994 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:998 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1388 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polydraw.ts:1019 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[[LATLNG_OBJECT]]] (length: 1)
-polydraw.ts:1027 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
-polydraw.ts:1031 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 66
+polydraw.ts:766 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:1002 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1003 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1007 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1397 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polydraw.ts:1028 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[[LATLNG_OBJECT]]] (length: 1)
+polydraw.ts:1036 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+polydraw.ts:1040 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 66
 polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
 polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(65)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-marker-manager.ts:1076 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(1)]
-marker-manager.ts:1077 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 65
-marker-manager.ts:1131 🔧 DEBUG: rebuildCoordinatesFromMarkers - Complex structure result: [Array(1)]
-polydraw.ts:1344 🔧 markerDragEnd() - Using legacy MarkerManager (single point of truth: arrayOfFeatureGroups)
-marker-manager.ts:351 🔧 DEBUG: handleMarkerDragEnd - Built coordinates from markers: (66) [Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2)]
-marker-manager.ts:366 🔧 DEBUG: handleMarkerDragEnd - Created feature: {type: 'Feature', properties: {…}, geometry: {…}}
-marker-manager.ts:386 🔧 DEBUG: handleMarkerDragEnd - Polygon is valid, checking for merges
-marker-manager.ts:414 🔧 DEBUG: handleMarkerDragEnd - No interactions, adding directly
-polydraw.ts:993 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:994 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: Polygon
-polydraw.ts:998 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[NUMBER]]] (length: 1)
-polydraw.ts:1388 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polydraw.ts:1019 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[LATLNG_OBJECT]] (length: 1)
-polydraw.ts:1027 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
-polydraw.ts:1031 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 66
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(65)]
-polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
-polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (65) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(65)]
-polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
-polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (65) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:766 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:1788 🔧 merge() - Using simplified merge approach
+polydraw.ts:1002 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1003 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1007 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1397 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polydraw.ts:1028 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[[LATLNG_OBJECT]]] (length: 1)
+polydraw.ts:1036 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 2
+polydraw.ts:1040 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 71
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(65)]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(70)]
