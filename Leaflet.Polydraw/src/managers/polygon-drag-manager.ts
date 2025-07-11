@@ -9,6 +9,7 @@ import type {
 } from '../types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawStateManager } from '../core/state-manager';
+import { SimplePolygonOperations } from '../simple-polygon-operations';
 
 /**
  * Manages polygon dragging functionality including modifier-based subtract operations
@@ -23,6 +24,8 @@ export class PolygonDragManager {
     private getArrayOfFeatureGroups: () => PolydrawFeatureGroup[],
     private addPolygonLayerCallback?: (geoJSON: any, simplify: boolean) => void,
     private updatePolygonInformationCallback?: () => void,
+    private removePolygonFromStateManagerCallback?: (featureGroup: PolydrawFeatureGroup) => void,
+    private addPolygonToStateManagerCallback?: (geoJSON: any, optimizationLevel: number) => void,
   ) {}
 
   /**
@@ -535,18 +538,8 @@ export class PolygonDragManager {
   }
 
   /**
-   * Update polygon coordinates after drag - THE BIG ONE!
-   *
-   * TODO - FUTURE IMPROVEMENTS:
-   * 1. Split into smaller methods:
-   *    - handleModifierDragLogic() - modifier-based operations (50 lines)
-   *    - handleNormalDragLogic() - standard drag operations (80 lines)
-   *    - processInteractionResults() - interaction handling (40 lines)
-   *    - updatePolygonInformation() - info storage updates (10 lines)
-   * 2. Extract intersection detection into utility
-   * 3. Separate merge/hole logic into dedicated handlers
-   * 4. Add comprehensive error recovery
-   * 5. Optimize performance for large polygon operations
+   * Update polygon coordinates after drag - SIMPLIFIED APPROACH!
+   * Following the pattern: 1. Delete polygon, 2. Modify using input, 3. Add "the fresh, modified" polygon
    */
   private updatePolygonCoordinates(
     polygon: any,
@@ -555,21 +548,16 @@ export class PolygonDragManager {
   ) {
     try {
       // Get new coordinates from dragged polygon
-      const newLatLngs = polygon.getLatLngs();
-
-      // Convert to GeoJSON format
       const newGeoJSON = polygon.toGeoJSON();
 
-      // Check if modifier key was held during drag FIRST (before removing from array)
+      // Check if modifier key was held during drag
       if (this.isModifierDragActive()) {
-        // Modifier key held - perform subtract operation
+        // Modifier key held - perform subtract operation (keep existing logic for now)
         let draggedPolygonFeature;
         try {
           draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
         } catch (error) {
           console.error('Error creating dragged polygon feature:', error);
-          // Fallback: just add the polygon normally
-          this.addPolygonLayer(newGeoJSON, false);
           return;
         }
 
@@ -584,7 +572,7 @@ export class PolygonDragManager {
           return;
         }
 
-        // NOW remove the old feature group
+        // Remove the old feature group
         if (this.map && this.map.removeLayer) {
           this.map.removeLayer(featureGroup);
         }
@@ -599,49 +587,33 @@ export class PolygonDragManager {
         // Reset modifier state after operation
         this.currentModifierDragMode = false;
         this.isModifierKeyHeld = false;
-        return; // Exit early - don't do normal merge logic
+        return;
       } else {
-        // Normal drag behavior - remove the old feature group first
-        if (this.map && this.map.removeLayer) {
-          this.map.removeLayer(featureGroup);
-        }
-        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-        const featureGroupIndex = arrayOfFeatureGroups.indexOf(featureGroup);
-        if (featureGroupIndex !== -1) {
-          arrayOfFeatureGroups.splice(featureGroupIndex, 1);
-        }
+        // 🎯 SIMPLE APPROACH: Use SimplePolygonOperations for normal drags
+        console.log('🔧 updatePolygonCoordinates() - Using simple approach for normal drag');
 
-        // Check for auto-interactions
-        let interactionResult = {
-          shouldMerge: false,
-          shouldCreateHole: false,
-          intersectingFeatureGroups: [] as L.FeatureGroup[],
-          containingFeatureGroup: null as L.FeatureGroup | null,
-        };
+        const simpleOps = new SimplePolygonOperations(
+          this.getArrayOfFeatureGroups(),
+          this.map,
+          (geoJSON, simplify) => this.addPolygonLayer(geoJSON, simplify),
+          (featureGroup) => {
+            // Remove from map
+            if (this.map && this.map.removeLayer) {
+              this.map.removeLayer(featureGroup);
+            }
+            // Remove from array
+            const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+            const index = arrayOfFeatureGroups.indexOf(featureGroup);
+            if (index > -1) {
+              arrayOfFeatureGroups.splice(index, 1);
+            }
+            // Remove from state manager
+            this.removePolygonFromStateManager(featureGroup);
+          },
+        );
 
-        try {
-          const draggedPolygonFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
-          interactionResult = this.checkDragInteractions(draggedPolygonFeature, featureGroup);
-        } catch (turfError) {
-          console.warn('Turf operations not available:', turfError.message);
-        }
-
-        if (interactionResult.shouldMerge) {
-          // Merge with intersecting polygons
-          this.performDragMerge(
-            this.turfHelper.getTurfPolygon(newGeoJSON),
-            interactionResult.intersectingFeatureGroups,
-          );
-        } else if (interactionResult.shouldCreateHole) {
-          // Create hole in containing polygon
-          this.performDragHole(
-            this.turfHelper.getTurfPolygon(newGeoJSON),
-            interactionResult.containingFeatureGroup,
-          );
-        } else {
-          // No interaction - just update position
-          this.addPolygonLayer(newGeoJSON, false);
-        }
+        // Use the simple approach: delete → modify → add
+        simpleOps.updatePolygonCoordinates(featureGroup, newGeoJSON);
       }
 
       // Update polygon information storage
@@ -651,7 +623,6 @@ export class PolygonDragManager {
 
       // Fallback: revert to original position
       try {
-        // For tests, use a simple fallback coordinate format
         polygon.setLatLngs([[[{ lat: 0, lng: 0 }]]]);
       } catch (revertError) {
         console.warn('Could not revert polygon position:', revertError.message);
@@ -988,6 +959,20 @@ export class PolygonDragManager {
   private updatePolygonInformation(): void {
     if (this.updatePolygonInformationCallback) {
       this.updatePolygonInformationCallback();
+    }
+  }
+
+  /**
+   * Remove polygon from state manager (placeholder for future integration)
+   */
+  private removePolygonFromStateManager(featureGroup: L.FeatureGroup): void {
+    if (this.removePolygonFromStateManagerCallback) {
+      console.log(
+        '🔧 removePolygonFromStateManager() - Calling callback to remove from state manager',
+      );
+      this.removePolygonFromStateManagerCallback(featureGroup);
+    } else {
+      console.log('removePolygonFromStateManager called but callback not provided');
     }
   }
 

@@ -21,95 +21,91 @@ export class SimplifiedMarkerManager {
   ) {}
 
   /**
-   * Handle marker drag - simplified approach
-   */
-  handleMarkerDrag(featureGroup: PolydrawFeatureGroup): void {
-    // Prevent recursive calls
-    if (this.isUpdatingPolygon) {
-      return;
-    }
-
-    const polygon = this.getPolygonFromFeatureGroup(featureGroup);
-    const markers = this.getMarkersFromFeatureGroup(featureGroup);
-
-    if (!polygon || markers.length === 0) {
-      return;
-    }
-
-    try {
-      this.isUpdatingPolygon = true;
-
-      // Simple approach: just map markers to coordinates
-      const newCoords = markers.map((marker) => marker.getLatLng());
-
-      if (newCoords.length > 0 && this.isValidCoordinateArray(newCoords)) {
-        // Update the polygon directly during drag for visual feedback
-        polygon.setLatLngs(newCoords);
-      }
-    } catch (error) {
-      console.error('SimplifiedMarkerManager.handleMarkerDrag: Error:', error);
-    } finally {
-      this.isUpdatingPolygon = false;
-    }
-  }
-
-  /**
-   * Handle marker drag end - simplified approach
+   * Handle marker drag end - update polygon coordinates
    */
   handleMarkerDragEnd(featureGroup: PolydrawFeatureGroup): void {
     console.log('🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Processing drag end');
 
-    const markers = this.getMarkersFromFeatureGroup(featureGroup);
-    if (markers.length === 0) {
-      console.warn('No markers found in feature group');
-      return;
-    }
-
     try {
-      // Step 1: Extract coordinates from markers
-      const markerCoordinates = markers.map((marker) => {
-        const latlng = marker.getLatLng();
-        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
-      });
-
-      // Step 2: Ensure polygon is closed
-      if (markerCoordinates.length > 0) {
-        const first = markerCoordinates[0];
-        const last = markerCoordinates[markerCoordinates.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          markerCoordinates.push([first[0], first[1]]);
-        }
-      }
-
-      // Step 3: Create clean GeoJSON
-      const geoJSON: Feature<Polygon> = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: [markerCoordinates],
-        },
-      };
-
-      console.log('🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Created GeoJSON:', geoJSON);
-
-      // Step 4: Find the polygon ID that corresponds to this feature group
+      // Get the polygon ID from PolygonStateManager
       const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
       if (!polygonId) {
         console.warn('Could not find polygon ID for feature group');
         return;
       }
 
-      // Step 5: Update through polygon state manager (this handles merging automatically)
-      this.polygonStateManager.updatePolygon(polygonId, geoJSON);
+      // Extract new coordinates from markers
+      const newCoordinates = this.extractCoordinatesFromMarkers(featureGroup);
+      if (!newCoordinates || newCoordinates.length === 0) {
+        console.warn('Could not extract valid coordinates from markers');
+        return;
+      }
+
+      // 🎯 FIX: Validate coordinates before creating GeoJSON
+      if (newCoordinates.length < 3) {
+        console.warn('Not enough coordinates for a valid polygon (need at least 3)');
+        return;
+      }
+
+      // 🎯 FIX: Ensure polygon is closed (first and last points are the same)
+      const firstPoint = newCoordinates[0];
+      const lastPoint = newCoordinates[newCoordinates.length - 1];
+
+      if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+        // Close the polygon by adding the first point at the end
+        newCoordinates.push([firstPoint[0], firstPoint[1]]);
+      }
+
+      // 🎯 FIX: Ensure we have at least 4 points (3 unique + 1 closing)
+      if (newCoordinates.length < 4) {
+        console.warn('Not enough coordinates for a valid closed polygon (need at least 4)');
+        return;
+      }
+
+      // Create new GeoJSON
+      const newGeoJSON: Feature<Polygon> = {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [newCoordinates],
+        },
+      };
+
+      console.log(
+        '🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Created GeoJSON:',
+        newGeoJSON,
+      );
+
+      // Update polygon in state manager (this handles merging automatically)
+      const resultIds = this.polygonStateManager.updatePolygon(polygonId, newGeoJSON);
 
       console.log('🔧 SimplifiedMarkerManager.handleMarkerDragEnd() - Updated polygon:', polygonId);
     } catch (error) {
-      console.error('SimplifiedMarkerManager.handleMarkerDragEnd: Error:', error);
+      console.error('Error in handleMarkerDragEnd:', error);
     }
   }
 
   // ===== PRIVATE HELPER METHODS =====
+
+  /**
+   * Extract coordinates from markers in feature group
+   */
+  private extractCoordinatesFromMarkers(featureGroup: PolydrawFeatureGroup): number[][] {
+    const markers = this.getMarkersFromFeatureGroup(featureGroup);
+
+    if (markers.length === 0) {
+      return [];
+    }
+
+    // Extract coordinates from markers
+    const coordinates = markers.map((marker) => {
+      const latlng = marker.getLatLng();
+      return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
+    });
+
+    return coordinates;
+  }
 
   /**
    * Get polygon from feature group

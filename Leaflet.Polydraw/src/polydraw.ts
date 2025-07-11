@@ -118,6 +118,9 @@ class Polydraw extends L.Control {
         this.addPolygonLayer(geoJSON, simplify);
       },
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
+      (featureGroup) => this.removePolygonFromStateManager(featureGroup),
+      (geoJSON, optimizationLevel) =>
+        this.polygonStateManager.addPolygon(geoJSON, optimizationLevel),
     );
     this.drawingEventsManager = new DrawingEventsManager(
       this.config,
@@ -763,8 +766,10 @@ class Polydraw extends L.Control {
     this.polygonManager.addPolygon(latlngs, simplify, noMerge);
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    // Use the simplified approach through PolygonStateManager
+    // 🎯 FIX: First, register all existing polygons with PolygonStateManager
+    // This ensures subtract operations can find them
     this.ensureManagersInitialized();
+    this.registerExistingPolygonsWithStateManager();
 
     try {
       // Use PolygonStateManager for subtract operations to ensure proper registration
@@ -777,6 +782,131 @@ class Polydraw extends L.Control {
 
     // 🎯 FIX: Reset draw mode to Off after subtract operation completes
     this.setDrawMode(DrawMode.Off);
+  }
+
+  /**
+   * Register existing polygons with PolygonStateManager
+   * This is needed when polygons were created through legacy addPolygonLayer
+   */
+  private registerExistingPolygonsWithStateManager(): void {
+    console.log('🔧 registerExistingPolygonsWithStateManager() - Checking existing polygons');
+
+    // Check if PolygonStateManager already has polygons
+    if (this.polygonStateManager.getCount() > 0) {
+      console.log(
+        '🔧 registerExistingPolygonsWithStateManager() - PolygonStateManager already has polygons',
+      );
+      return;
+    }
+
+    // Register each existing polygon
+    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
+      try {
+        // Get the polygon from the feature group
+        const layers = featureGroup.getLayers();
+        const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
+
+        if (polygonLayer) {
+          const geoJSON = (polygonLayer as any).toGeoJSON();
+          const optimizationLevel = (polygonLayer as any)._polydrawOptimizationLevel || 0;
+
+          console.log(
+            `🔧 registerExistingPolygonsWithStateManager() - Registering polygon ${index}:`,
+            geoJSON,
+          );
+
+          // Add to PolygonStateManager (this will create a new feature group)
+          const polygonIds = this.polygonStateManager.addPolygon(geoJSON, optimizationLevel, true);
+
+          // Remove the old feature group from map and array
+          try {
+            this.map.removeLayer(featureGroup);
+          } catch (error) {
+            // Handle removal errors
+          }
+
+          console.log(`🔧 registerExistingPolygonsWithStateManager() - Registered as:`, polygonIds);
+        }
+      } catch (error) {
+        console.warn('Error registering polygon with state manager:', error);
+      }
+    });
+
+    // Clear the legacy array since polygons are now managed by PolygonStateManager
+    this.arrayOfFeatureGroups.length = 0;
+
+    // Update the array with the new feature groups from PolygonStateManager
+    const allPolygons = this.polygonStateManager.getAllPolygons();
+    allPolygons.forEach((polygonData) => {
+      this.arrayOfFeatureGroups.push(polygonData.featureGroup);
+    });
+
+    console.log('🔧 registerExistingPolygonsWithStateManager() - Registration complete');
+  }
+
+  /**
+   * Register a single polygon with PolygonStateManager
+   * This is used when a polygon needs to be registered individually (e.g., during marker drag)
+   */
+  private registerSinglePolygonWithStateManager(featureGroup: PolydrawFeatureGroup): void {
+    console.log('🔧 registerSinglePolygonWithStateManager() - Registering single polygon');
+
+    try {
+      // Get the polygon from the feature group
+      const layers = featureGroup.getLayers();
+      const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
+
+      if (polygonLayer) {
+        const geoJSON = (polygonLayer as any).toGeoJSON();
+        const optimizationLevel = (polygonLayer as any)._polydrawOptimizationLevel || 0;
+
+        console.log('🔧 registerSinglePolygonWithStateManager() - Registering polygon:', geoJSON);
+
+        // Add to PolygonStateManager (this will create a new feature group)
+        const polygonIds = this.polygonStateManager.addPolygon(geoJSON, optimizationLevel, true);
+
+        // Remove the old feature group from map and array
+        try {
+          this.map.removeLayer(featureGroup);
+        } catch (error) {
+          // Handle removal errors
+        }
+
+        // Remove from legacy array
+        const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+        if (index > -1) {
+          this.arrayOfFeatureGroups.splice(index, 1);
+        }
+
+        // Add the new feature group from PolygonStateManager
+        const polygonData = this.polygonStateManager.getPolygon(polygonIds[0]);
+        if (polygonData) {
+          this.arrayOfFeatureGroups.push(polygonData.featureGroup);
+
+          // 🎯 FIX: Update the feature group reference for the marker drag event
+          // The marker drag event is still referencing the old feature group
+          // We need to update it to point to the new feature group
+          const newFeatureGroup = polygonData.featureGroup;
+
+          // Update all markers in the new feature group to reference the correct feature group
+          newFeatureGroup.eachLayer((layer) => {
+            if (layer instanceof L.Marker) {
+              // Remove old event handlers
+              layer.off('dragend');
+
+              // Add new event handlers with correct feature group reference
+              layer.on('dragend', (e) => {
+                this.markerDragEnd(newFeatureGroup);
+              });
+            }
+          });
+        }
+
+        console.log('🔧 registerSinglePolygonWithStateManager() - Registered as:', polygonIds[0]);
+      }
+    } catch (error) {
+      console.warn('Error registering single polygon with state manager:', error);
+    }
   }
   private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
     // Extract LatLng coordinates from GeoJSON feature
@@ -861,11 +991,13 @@ class Polydraw extends L.Control {
     visualOptimizationLevel: number = 0,
   ) {
     console.log('🔍 DEBUG: addPolygonLayer() - Adding polygon to map');
-    console.log('🔍 DEBUG: addPolygonLayer() - Input polygon:', latlngs);
-    console.log('🔍 DEBUG: addPolygonLayer() - Polygon type:', latlngs.geometry.type);
     console.log(
-      '🔍 DEBUG: addPolygonLayer() - Polygon coordinates structure:',
-      latlngs.geometry.coordinates,
+      '🔍 DEBUG: addPolygonLayer() - Input polygon geometry type:',
+      latlngs.geometry.type,
+    );
+    console.log(
+      '🔍 DEBUG: addPolygonLayer() - Input coordinates structure:',
+      this.analyzeCoordinateStructure(latlngs.geometry.coordinates),
     );
 
     // Ensure managers are initialized before adding polygon
@@ -873,175 +1005,34 @@ class Polydraw extends L.Control {
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
-    // 🎯 FIX: Handle MultiPolygon by creating separate feature groups for each piece
-    if (latLngs.geometry.type === 'MultiPolygon' && latLngs.geometry.coordinates.length > 1) {
-      console.log(
-        '🎯 DEBUG: addPolygonLayer() - Splitting MultiPolygon into separate feature groups',
-      );
-
-      // Create separate polygons for each piece of the MultiPolygon
-      latLngs.geometry.coordinates.forEach((polygonCoords, index) => {
-        console.log(`🎯 DEBUG: addPolygonLayer() - Creating separate polygon ${index}`);
-
-        // Create a single Polygon feature for this piece
-        const singlePolygonFeature: Feature<Polygon> = {
-          type: 'Feature',
-          properties: latLngs.properties || {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: polygonCoords,
-          },
-        };
-
-        console.log(`🎯 DEBUG: addPolygonLayer() - Single polygon ${index}:`, singlePolygonFeature);
-
-        // Recursively call addPolygonLayer for each individual polygon
-        this.addPolygonLayer(
-          singlePolygonFeature,
-          false,
-          dynamicTolerance,
-          visualOptimizationLevel,
-        );
-      });
-
-      console.log('🎯 DEBUG: addPolygonLayer() - Finished splitting MultiPolygon');
-      return; // Exit early - we've handled the MultiPolygon by splitting it
-    }
-
-    // Original logic for single Polygon (or MultiPolygon with only 1 piece)
+    // Create the polygon and feature group
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
-
-    // Create and add a new polygon layer
     const polygon = this.getPolygon(latLngs);
-
-    console.log('🔍 DEBUG: addPolygonLayer() - Created Leaflet polygon:', polygon);
-    console.log('🔍 DEBUG: addPolygonLayer() - Leaflet polygon coordinates:', polygon.getLatLngs());
-
-    // Store optimization level in polygon metadata
     (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
-
     featureGroup.addLayer(polygon);
 
-    // Enable polygon dragging if configured
     if (this.config.modes.dragPolygons) {
       this.enablePolygonDragging(polygon, featureGroup, latLngs);
     }
 
-    // Add red polylines for hole rings and markers
     const markerLatlngs = polygon.getLatLngs();
+    console.log(
+      '🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure:',
+      this.analyzeLeafletCoordinateStructure(markerLatlngs),
+    );
 
-    console.log('🔍 DEBUG: addPolygonLayer() - Marker coordinates structure:', markerLatlngs);
-
-    markerLatlngs.forEach((polygonRings, ringGroupIndex) => {
-      console.log(
-        `🔍 DEBUG: addPolygonLayer() - Processing ring group ${ringGroupIndex} with ${polygonRings.length} rings`,
-      );
-
-      // 🎯 FIX: Handle different coordinate structures from split polygons
-      // Check if polygonRings is actually an array of LatLng objects (flattened structure)
-      if (
-        polygonRings.length > 0 &&
-        polygonRings[0] &&
-        typeof polygonRings[0] === 'object' &&
-        'lat' in polygonRings[0]
-      ) {
-        console.log(
-          `🔍 DEBUG: addPolygonLayer() - Ring group ${ringGroupIndex} has flattened structure, treating as single ring`,
-        );
-
-        // This is a flattened structure - treat the entire polygonRings as a single ring
-        const polyElement = polygonRings as ILatLng[];
-        const isHoleRing = false; // Main ring for split polygons
-
-        console.log(
-          `🔍 DEBUG: addPolygonLayer() - Flattened ring with ${polyElement.length} points`,
-        );
-
-        // Add markers for the main ring only if we have valid points
-        if (polyElement.length > 0) {
-          console.log('🔧 Calling addMarker for flattened ring with', polyElement.length, 'points');
-          this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
-        } else {
-          console.warn('🔍 DEBUG: addPolygonLayer() - Skipping empty flattened ring');
-        }
-
-        return; // Skip the normal processing
-      }
-
-      // Normal processing for properly nested structures
-      polygonRings.forEach((polyElement: ILatLng[], i: number) => {
-        const isHoleRing = i > 0;
-
-        // 🎯 FIX: Validate polyElement is an array before processing
-        if (!Array.isArray(polyElement)) {
-          console.warn(`🔍 DEBUG: addPolygonLayer() - Ring ${i} is not an array:`, polyElement);
-          return; // Skip this ring
-        }
-
-        // 🎯 FIX: Skip empty rings to prevent marker errors
-        if (polyElement.length === 0) {
-          console.warn(`🔍 DEBUG: addPolygonLayer() - Ring ${i} is empty, skipping`);
-          return; // Skip empty rings
-        }
-
-        console.log(
-          `🔍 DEBUG: addPolygonLayer() - Ring ${i} (${isHoleRing ? 'hole' : 'outer'}) with ${polyElement.length} points`,
-        );
-
-        // Add red polyline overlay for hole rings
-        if (isHoleRing) {
-          const holePolyline = L.polyline(polyElement, {
-            color: this.config.holeOptions.color,
-            weight: this.config.holeOptions.weight || 2,
-            opacity: this.config.holeOptions.opacity || 1,
-          });
-          featureGroup.addLayer(holePolyline);
-        }
-
-        // Add markers with preserved optimization level only if we have valid points
-        if (isHoleRing) {
-          console.log('🔧 Calling addHoleMarker for hole ring with', polyElement.length, 'points');
-          this.addHoleMarker(polyElement, featureGroup, visualOptimizationLevel);
-        } else {
-          console.log('🔧 Calling addMarker for main ring with', polyElement.length, 'points');
-          this.addMarker(polyElement, featureGroup, visualOptimizationLevel);
-        }
-      });
-    });
-
-    // Add to the real array
+    this.addMarkersToFeatureGroup(markerLatlngs, featureGroup, visualOptimizationLevel);
     this.arrayOfFeatureGroups.push(featureGroup);
 
     console.log(
-      '🔍 DEBUG: addPolygonLayer() - Total feature groups after adding:',
+      '🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length:',
       this.arrayOfFeatureGroups.length,
     );
     console.log(
-      '🔍 DEBUG: addPolygonLayer() - New feature group layers count:',
+      '🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count:',
       featureGroup.getLayers().length,
     );
 
-    // 🎯 FIX: Register with PolygonStateManager for proper tracking
-    try {
-      if (this.polygonStateManager) {
-        // Create a polygon data entry manually since this bypasses the normal addPolygon flow
-        const polygonId = `polygon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const polygonData = {
-          id: polygonId,
-          geoJSON: latLngs,
-          featureGroup: featureGroup,
-          optimizationLevel: visualOptimizationLevel,
-        };
-
-        // Add to the state manager's internal tracking
-        (this.polygonStateManager as any).polygons.set(polygonId, polygonData);
-        console.log('🔧 addPolygonLayer() - Registered polygon with state manager:', polygonId);
-      }
-    } catch (error) {
-      console.warn('Failed to register polygon with state manager:', error);
-    }
-
-    // Add to map
     try {
       featureGroup.addTo(this.map);
     } catch (error) {
@@ -1049,13 +1040,76 @@ class Polydraw extends L.Control {
     }
 
     this.setDrawMode(DrawMode.Off);
-
-    // Add edge click detection
     this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
-
     featureGroup.on('click', (e) => {
       this.polygonClicked(e, latLngs);
     });
+  }
+
+  /**
+   * Analyze coordinate structure for debugging
+   */
+  private analyzeCoordinateStructure(coords: any): string {
+    if (!Array.isArray(coords)) return 'NOT_ARRAY';
+
+    let structure = '[';
+    if (coords.length > 0) {
+      if (Array.isArray(coords[0])) {
+        structure += '[';
+        if (coords[0].length > 0) {
+          if (Array.isArray(coords[0][0])) {
+            structure += '[';
+            if (coords[0][0].length > 0) {
+              if (typeof coords[0][0][0] === 'number') {
+                structure += 'NUMBER';
+              } else {
+                structure += 'OTHER';
+              }
+            }
+            structure += ']';
+          } else {
+            structure += 'NOT_ARRAY';
+          }
+        }
+        structure += ']';
+      } else {
+        structure += 'NOT_ARRAY';
+      }
+    }
+    structure += ']';
+
+    return `${structure} (length: ${coords.length})`;
+  }
+
+  /**
+   * Analyze Leaflet coordinate structure for debugging
+   */
+  private analyzeLeafletCoordinateStructure(coords: any): string {
+    if (!Array.isArray(coords)) return 'NOT_ARRAY';
+
+    let structure = '[';
+    if (coords.length > 0) {
+      if (Array.isArray(coords[0])) {
+        structure += '[';
+        if (coords[0].length > 0) {
+          if (coords[0][0] && typeof coords[0][0] === 'object' && 'lat' in coords[0][0]) {
+            structure += 'LATLNG_OBJECT';
+          } else if (Array.isArray(coords[0][0])) {
+            structure += '[LATLNG_OBJECT]';
+          } else {
+            structure += 'OTHER';
+          }
+        }
+        structure += ']';
+      } else if (coords[0] && typeof coords[0] === 'object' && 'lat' in coords[0]) {
+        structure += 'LATLNG_OBJECT';
+      } else {
+        structure += 'OTHER';
+      }
+    }
+    structure += ']';
+
+    return `${structure} (length: ${coords.length})`;
   }
   private getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
@@ -1283,11 +1337,23 @@ class Polydraw extends L.Control {
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    // Use the simplified approach for marker drag operations
+    // 🎯 FIX: Keep it simple - use the legacy MarkerManager that works with arrayOfFeatureGroups
+    // The arrayOfFeatureGroups IS the single point of truth, not PolygonStateManager
     this.polygonInformation.deletePolygonInformationStorage();
 
-    // Delegate to SimplifiedMarkerManager - this handles the entire operation
-    this.simplifiedMarkerManager.handleMarkerDragEnd(FeatureGroup);
+    console.log(
+      '🔧 markerDragEnd() - Using legacy MarkerManager (single point of truth: arrayOfFeatureGroups)',
+    );
+    this.markerManager.handleMarkerDragEnd(
+      FeatureGroup,
+      () => this.polygonInformation.deletePolygonInformationStorage(),
+      (featureGroup) => this.removeFeatureGroup(featureGroup),
+      (geoJSON, simplify, dynamicTolerance, optimizationLevel) =>
+        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, optimizationLevel),
+      () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
+      () => this.arrayOfFeatureGroups,
+      this.config,
+    );
 
     // Update polygon information after the operation
     this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
@@ -1312,8 +1378,19 @@ class Polydraw extends L.Control {
     latLngs: Feature<Polygon | MultiPolygon>,
   ) {
     this.ensureManagersInitialized();
+
+    // 🎯 FIX: Always use the legacy PolygonDragManager for polygon dragging
+    // The simplified approach doesn't work because Leaflet polygons don't have built-in dragging
+    // The legacy manager uses custom mouse events which is the correct approach
+    this.ensureManagersInitialized();
+
     if (this.polygonDragManager) {
+      console.log(
+        '🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)',
+      );
       this.polygonDragManager.enablePolygonDragging(polygon, featureGroup, latLngs);
+    } else {
+      console.warn('🔧 enablePolygonDragging() - PolygonDragManager not available');
     }
   }
 
@@ -1589,6 +1666,101 @@ class Polydraw extends L.Control {
   private ensureManagersInitialized(): void {
     if (!this.markerManager && this.map) {
       this.initializeManagers();
+    }
+  }
+
+  /**
+   * Find polygon ID by feature group - used by polygon dragging
+   */
+  private findPolygonIdByFeatureGroup(featureGroup: PolydrawFeatureGroup): string | null {
+    if (!this.polygonStateManager) {
+      return null;
+    }
+
+    const allPolygons = this.polygonStateManager.getAllPolygons();
+    console.log(
+      '🔍 findPolygonIdByFeatureGroup() - Searching for feature group among',
+      allPolygons.length,
+      'polygons',
+    );
+
+    // Method 1: Direct feature group comparison
+    for (const polygonData of allPolygons) {
+      console.log(
+        '🔍 findPolygonIdByFeatureGroup() - Checking polygon:',
+        polygonData.id,
+        'featureGroup match:',
+        polygonData.featureGroup === featureGroup,
+      );
+      if (polygonData.featureGroup === featureGroup) {
+        console.log('🔍 findPolygonIdByFeatureGroup() - Found direct match:', polygonData.id);
+        return polygonData.id;
+      }
+    }
+
+    // Method 2: If direct comparison fails, try to match by polygon geometry
+    // This handles cases where feature groups are recreated during operations
+    console.log(
+      '🔍 findPolygonIdByFeatureGroup() - Direct match failed, trying geometry comparison',
+    );
+
+    try {
+      // Get the polygon from the feature group
+      const layers = featureGroup.getLayers();
+      if (layers.length === 0) {
+        console.log('🔍 findPolygonIdByFeatureGroup() - Feature group has no layers');
+        return null;
+      }
+
+      // Find the polygon layer (not markers)
+      const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
+      if (!polygonLayer) {
+        console.log('🔍 findPolygonIdByFeatureGroup() - No polygon layer found in feature group');
+        return null;
+      }
+
+      // Get the GeoJSON of the dragged polygon
+      const draggedGeoJSON = (polygonLayer as any).toGeoJSON();
+      console.log('🔍 findPolygonIdByFeatureGroup() - Dragged polygon GeoJSON:', draggedGeoJSON);
+
+      // Compare with stored polygons by coordinates
+      for (const polygonData of allPolygons) {
+        try {
+          // Compare coordinate arrays (simplified comparison)
+          const storedCoords = JSON.stringify(polygonData.geoJSON.geometry.coordinates);
+          const draggedCoords = JSON.stringify(draggedGeoJSON.geometry.coordinates);
+
+          if (storedCoords === draggedCoords) {
+            console.log('🔍 findPolygonIdByFeatureGroup() - Found geometry match:', polygonData.id);
+            return polygonData.id;
+          }
+        } catch (error) {
+          console.warn('🔍 findPolygonIdByFeatureGroup() - Error comparing geometry:', error);
+        }
+      }
+    } catch (error) {
+      console.warn('🔍 findPolygonIdByFeatureGroup() - Error in geometry comparison:', error);
+    }
+
+    console.log('🔍 findPolygonIdByFeatureGroup() - No match found with any method');
+    return null;
+  }
+
+  /**
+   * Remove polygon from PolygonStateManager when dragging (to prevent duplicates)
+   */
+  private removePolygonFromStateManager(featureGroup: PolydrawFeatureGroup): void {
+    if (!this.polygonStateManager) {
+      return;
+    }
+
+    const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
+    if (polygonId) {
+      console.log(
+        '🔧 removePolygonFromStateManager() - Removing polygon from state manager:',
+        polygonId,
+      );
+      this.polygonStateManager.removePolygon(polygonId);
     }
   }
 
