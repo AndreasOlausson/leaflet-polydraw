@@ -392,9 +392,10 @@ class Polydraw extends L.Control {
         // This ensures that overlapping polygons are merged when mergePolygons is enabled
         this.ensureManagersInitialized();
 
-        // Try to use the proper merging logic, but fall back to direct addition if it fails (test environment)
+        // 🎯 SIMPLIFIED: Use direct addPolygon instead of legacy PolygonManager
+        console.log('🔧 addAutoPolygon() - Using simplified approach (direct addPolygon)');
         try {
-          this.polygonManager.addPolygon(polygon2, false, false);
+          this.addPolygon(polygon2, false, false);
         } catch (renderError) {
           // Fallback for test environment - add directly but still check for merging
           this.addPolygonWithFallbackMerging(polygon2, visualOptimizationLevel);
