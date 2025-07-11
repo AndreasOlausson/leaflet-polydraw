@@ -1,23 +1,140 @@
-polydraw.ts:766 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:1002 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1003 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1007 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1397 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polydraw.ts:1028 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[[LATLNG_OBJECT]]] (length: 1)
-polydraw.ts:1036 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
-polydraw.ts:1040 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 66
+ addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_1
+polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
 polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(65)]
-polydraw.ts:766 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:1788 🔧 merge() - Using simplified merge approach
-polydraw.ts:1002 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1003 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1007 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1397 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polydraw.ts:1028 🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure: [[[LATLNG_OBJECT]]] (length: 1)
-polydraw.ts:1036 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 2
-polydraw.ts:1040 🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count: 71
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(62)]
+polydraw.ts:785 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1807 🔧 merge() - Using simplified merge approach
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1844 🔧 merge() - Intersection check result: false
+polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_2
+polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 2
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
 polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(65)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(62)]
 polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(70)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(43)]
+polygon-drag-manager.ts:177 🔍 DEBUG: onPolygonMouseDown() - Starting polygon drag
+polygon-drag-manager.ts:178 🔍 DEBUG: onPolygonMouseDown() - Polygon feature group: NewClass {options: {…}, _layers: {…}, _initHooksCalled: true, _leaflet_id: 419, _mapToAdd: NewClass, …}
+polygon-drag-manager.ts:182 🔍 DEBUG: onPolygonMouseDown() - Polygon original coordinates: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-drag-manager.ts:196 🔍 DEBUG: onPolygonMouseDown() - Modifier key pressed: false
+polygon-drag-manager.ts:593 🔧 updatePolygonCoordinates() - Using simple approach for normal drag
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+simple-polygon-operations.ts:35 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Starting simple update
+simple-polygon-operations.ts:36 🔧 Input coordinates structure: [[[OTHER]]] (length: 1)
+simple-polygon-operations.ts:56 🔧 SimplePolygonOperations.deletePolygon() - Removing old polygon
+simple-polygon-operations.ts:57 🔧 SimplePolygonOperations.deletePolygon() - Array length before callback: 2
+polygon-drag-manager.ts:601 🔧 PolygonDragManager - Calling removal callback to actually remove polygon
+polydraw.ts:123 🔧 Polygon drag removal - Calling removeFeatureGroup directly
+polydraw.ts:990 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:991 🔧 removeFeatureGroup() - Before removal, array length: 2
+polydraw.ts:995 🔧 removeFeatureGroup() - Feature group to remove: 419
+polydraw.ts:1709 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 2 polygons
+polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_1 featureGroup match: false
+polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_2 featureGroup match: true
+polydraw.ts:1724 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_2
+polydraw.ts:1003 🔧 removeFeatureGroup() - Found polygon ID: polygon_2
+polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_2
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1008 🔧 removeFeatureGroup() - After removal, array length: 1
+simple-polygon-operations.ts:62 🔧 SimplePolygonOperations.deletePolygon() - Array length after callback: 2
+simple-polygon-operations.ts:72 🔧 SimplePolygonOperations.addPolygon() - Adding fresh polygon
+simple-polygon-operations.ts:75 🔧 SimplePolygonOperations.addPolygon() - Checking for merge conditions
+simple-polygon-operations.ts:79 🔧 SimplePolygonOperations.addPolygon() - Found 2 existing polygons, checking for intersections
+simple-polygon-operations.ts:99 🔧 SimplePolygonOperations.checkAndPerformMerge() - Checking for intersections
+simple-polygon-operations.ts:103 🔧 SimplePolygonOperations.checkAndPerformMerge() - Using addPolygon with merge logic
+polygon-drag-manager.ts:610 🔧 PolygonDragManager - Using addPolygon with merge logic for drag
+polydraw.ts:128 🔧 PolygonDragManager - Using addPolygon with merge logic
+polydraw.ts:785 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1807 🔧 merge() - Using simplified merge approach
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1844 🔧 merge() - Intersection check result: true
+polydraw.ts:990 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:991 🔧 removeFeatureGroup() - Before removal, array length: 1
+polydraw.ts:995 🔧 removeFeatureGroup() - Feature group to remove: 105
+polydraw.ts:1709 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 1 polygons
+polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_1 featureGroup match: true
+polydraw.ts:1724 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_1
+polydraw.ts:1003 🔧 removeFeatureGroup() - Found polygon ID: polygon_1
+polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_1
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1008 🔧 removeFeatureGroup() - After removal, array length: 0
+polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_3
+polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+simple-polygon-operations.ts:49 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Completed simple update
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(76)]
+
+
+
+
+
+DELETE START HERE:
+
+ addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: 
+{type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: 
+{type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_1
+polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: 
+[Array(1)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: 
+[Array(36)]
+polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:615 🔧 arrayOfFeatureGroups setter - BLOCKED! Use PolygonStateManager instead
+polydraw.ts:617 Uncaught Error: Direct array assignment blocked - use PolygonStateManager methods instead
+    at set arrayOfFeatureGroups (polydraw.ts:617:11)
+    at Ai.removeAllFeatureGroups (polydraw.ts:561:10)
+    at HTMLAnchorElement.c (polydraw.ts:248:12)
+set arrayOfFeatureGroups	@	polydraw.ts:617
+removeAllFeatureGroups	@	polydraw.ts:561
+c	@	polydraw.ts:248

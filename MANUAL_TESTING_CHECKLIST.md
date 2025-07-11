@@ -64,15 +64,18 @@
 
 ## ✅ Current Status
 
-- [x] Draw Single Polygon
-- [x] Subtract - Remove Bite
-- [x] Subtract - Create Hole
-- [x] Subtract - Split Polygon
-- [x] Draw Overlapping Polygons (Merge)
-- [ ] Drag Elbow (Marker) - **NEXT TO TEST**
-- [ ] Drag Whole Polygon
-- [ ] Delete Polygon
-- [ ] Clear All
+1. [x] Draw Single Polygon
+2. [x] Subtract - Remove Bite
+3. [x] Subtract - Create Hole
+4. [x] Subtract - Split Polygon
+5. [x] Draw Overlapping Polygons (Merge)
+6. [x] Drag Elbow (Marker) - **TESTED: Success with merge!**
+7. [ ] Drag Whole Polygon - **NEXT TO TEST**
+8. [ ] Delete Polygon
+9. [ ] Clear All
+10. [ ] Draw Multiple Separate Polygons
+11. [ ] Auto Add Polygon
+12. [ ] Special Markers (menu, info, delete)
 
 ---
 

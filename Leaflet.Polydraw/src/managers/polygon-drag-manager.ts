@@ -597,18 +597,24 @@ export class PolygonDragManager {
           this.map,
           (geoJSON, simplify) => this.addPolygonLayer(geoJSON, simplify),
           (featureGroup) => {
-            // Remove from map
-            if (this.map && this.map.removeLayer) {
-              this.map.removeLayer(featureGroup);
+            // 🎯 FIX: Call the actual removal callback that was passed to PolygonDragManager
+            console.log(
+              '🔧 PolygonDragManager - Calling removal callback to actually remove polygon',
+            );
+            if (this.removePolygonFromStateManagerCallback) {
+              this.removePolygonFromStateManagerCallback(featureGroup);
             }
-            // Remove from array
-            const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-            const index = arrayOfFeatureGroups.indexOf(featureGroup);
-            if (index > -1) {
-              arrayOfFeatureGroups.splice(index, 1);
+          },
+          // 🎯 FIX: Pass the addPolygon callback that includes merge logic
+          (geoJSON, simplify, noMerge) => {
+            console.log('🔧 PolygonDragManager - Using addPolygon with merge logic for drag');
+            if (this.addPolygonToStateManagerCallback) {
+              // Use the callback that includes merge logic
+              this.addPolygonToStateManagerCallback(geoJSON, 0); // 0 = optimization level
+            } else {
+              // Fallback to direct addPolygonLayer
+              this.addPolygonLayer(geoJSON, simplify);
             }
-            // Remove from state manager
-            this.removePolygonFromStateManager(featureGroup);
           },
         );
 

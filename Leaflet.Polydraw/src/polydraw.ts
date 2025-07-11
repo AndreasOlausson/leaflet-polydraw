@@ -118,9 +118,16 @@ class Polydraw extends L.Control {
         this.addPolygonLayer(geoJSON, simplify);
       },
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
-      (featureGroup) => this.removePolygonFromStateManager(featureGroup),
-      (geoJSON, optimizationLevel) =>
-        this.polygonStateManager.addPolygon(geoJSON, optimizationLevel),
+      (featureGroup) => {
+        // 🎯 FIX: Call the actual removeFeatureGroup method that SimplePolygonOperations expects
+        console.log('🔧 Polygon drag removal - Calling removeFeatureGroup directly');
+        this.removeFeatureGroup(featureGroup);
+      },
+      (geoJSON, optimizationLevel) => {
+        // 🎯 FIX: Use addPolygon method that includes merge logic
+        console.log('🔧 PolygonDragManager - Using addPolygon with merge logic');
+        this.addPolygon(geoJSON, false, false); // false = simplify, false = noMerge (allow merge)
+      },
     );
     this.drawingEventsManager = new DrawingEventsManager(
       this.config,
@@ -543,17 +550,36 @@ class Polydraw extends L.Control {
   }
 
   removeAllFeatureGroups() {
-    this.arrayOfFeatureGroups.forEach((featureGroups) => {
-      try {
-        this.map.removeLayer(featureGroups);
-      } catch (error) {
-        // Silently handle layer removal errors in test environment
-      }
-    });
+    // 🎯 FIX: Use PolygonStateManager instead of legacy array manipulation
+    console.log('🔧 removeAllFeatureGroups() - Using PolygonStateManager to clear all polygons');
 
-    this.arrayOfFeatureGroups = [];
+    if (this.polygonStateManager) {
+      // Get all polygon IDs before clearing
+      const allPolygons = this.polygonStateManager.getAllPolygons();
+      console.log('🔧 removeAllFeatureGroups() - Removing', allPolygons.length, 'polygons');
+
+      // Remove each polygon from PolygonStateManager
+      allPolygons.forEach((polygonData) => {
+        this.polygonStateManager.removePolygon(polygonData.id);
+      });
+    } else {
+      // Fallback: remove from map directly (for test environment)
+      this.arrayOfFeatureGroups.forEach((featureGroups) => {
+        try {
+          this.map.removeLayer(featureGroups);
+        } catch (error) {
+          // Silently handle layer removal errors in test environment
+        }
+      });
+    }
+
     this.polygonInformation.deletePolygonInformationStorage();
     this.polygonInformation.updatePolygons();
+
+    console.log(
+      '🔧 removeAllFeatureGroups() - All polygons removed, final count:',
+      this.arrayOfFeatureGroups.length,
+    );
   }
 
   getDrawMode(): DrawMode {
@@ -585,17 +611,29 @@ class Polydraw extends L.Control {
     this.stateManager.offDrawModeChange(callback);
   }
 
-  // Keep arrayOfFeatureGroups as a real array - State Manager integration was causing issues
-  private _arrayOfFeatureGroups: PolydrawFeatureGroup[] = [];
+  // 🎯 FORCE SINGLE POINT OF TRUTH: Comment out legacy array, use PolygonStateManager only
+  // private _arrayOfFeatureGroups: PolydrawFeatureGroup[] = [];
 
-  // Simple getter that returns the real array
+  // Force everything to use PolygonStateManager as single point of truth
   private get arrayOfFeatureGroups(): PolydrawFeatureGroup[] {
-    return this._arrayOfFeatureGroups;
+    console.log(
+      '🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth',
+    );
+    if (!this.polygonStateManager) {
+      console.warn(
+        '🔧 arrayOfFeatureGroups getter - PolygonStateManager not initialized, returning empty array',
+      );
+      return [];
+    }
+    const allPolygons = this.polygonStateManager.getAllPolygons();
+    return allPolygons.map((p) => p.featureGroup);
   }
 
-  // Simple setter that updates the real array
+  // Force everything to use PolygonStateManager as single point of truth
   private set arrayOfFeatureGroups(groups: PolydrawFeatureGroup[]) {
-    this._arrayOfFeatureGroups = groups;
+    console.log('🔧 arrayOfFeatureGroups setter - BLOCKED! Use PolygonStateManager instead');
+    // Block direct array assignment - force use of PolygonStateManager
+    throw new Error('Direct array assignment blocked - use PolygonStateManager methods instead');
   }
 
   // Getters and setters for other state properties that delegate to State Manager
@@ -967,14 +1005,36 @@ class Polydraw extends L.Control {
   }
 
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
-    // Remove a feature group from the map
-
-    featureGroup.clearLayers();
-    this.arrayOfFeatureGroups = this.arrayOfFeatureGroups.filter(
-      (featureGroups) => featureGroups !== featureGroup,
+    // 🎯 FIX: Use PolygonStateManager instead of legacy array manipulation
+    console.log('🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array');
+    console.log(
+      '🔧 removeFeatureGroup() - Before removal, array length:',
+      this.arrayOfFeatureGroups.length,
     );
-    // this.updatePolygons();
-    this.map.removeLayer(featureGroup);
+    console.log(
+      '🔧 removeFeatureGroup() - Feature group to remove:',
+      (featureGroup as any)._leaflet_id,
+    );
+
+    // Find the polygon ID by feature group
+    const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
+    if (polygonId) {
+      console.log('🔧 removeFeatureGroup() - Found polygon ID:', polygonId);
+
+      // Remove from PolygonStateManager (this is the single source of truth)
+      this.polygonStateManager.removePolygon(polygonId);
+
+      console.log(
+        '🔧 removeFeatureGroup() - After removal, array length:',
+        this.arrayOfFeatureGroups.length,
+      );
+    } else {
+      console.warn('🔧 removeFeatureGroup() - Could not find polygon ID for feature group');
+
+      // Fallback: clear layers and remove from map
+      featureGroup.clearLayers();
+      this.map.removeLayer(featureGroup);
+    }
   }
 
   private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
@@ -1014,45 +1074,23 @@ class Polydraw extends L.Control {
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
-    // Create the polygon and feature group
-    const featureGroup: L.FeatureGroup = new L.FeatureGroup();
-    const polygon = this.getPolygon(latLngs);
-    (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
-    featureGroup.addLayer(polygon);
-
-    if (this.config.modes.dragPolygons) {
-      this.enablePolygonDragging(polygon, featureGroup, latLngs);
-    }
-
-    const markerLatlngs = polygon.getLatLngs();
+    // 🎯 FIX: Only use PolygonStateManager - don't create duplicate feature groups
     console.log(
-      '🔍 DEBUG: addPolygonLayer() - Leaflet polygon.getLatLngs() structure:',
-      this.analyzeLeafletCoordinateStructure(markerLatlngs),
+      '🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)',
     );
-
-    this.addMarkersToFeatureGroup(markerLatlngs, featureGroup, visualOptimizationLevel);
-    this.arrayOfFeatureGroups.push(featureGroup);
+    try {
+      this.polygonStateManager.addPolygon(latLngs, visualOptimizationLevel, true);
+      console.log('🔧 addPolygonLayer() - Successfully added to PolygonStateManager');
+    } catch (error) {
+      console.error('🔧 addPolygonLayer() - Failed to add to PolygonStateManager:', error);
+    }
 
     console.log(
       '🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length:',
       this.arrayOfFeatureGroups.length,
     );
-    console.log(
-      '🔍 DEBUG: addPolygonLayer() - Current featureGroup layers count:',
-      featureGroup.getLayers().length,
-    );
-
-    try {
-      featureGroup.addTo(this.map);
-    } catch (error) {
-      // Silently handle map rendering errors in test environment
-    }
 
     this.setDrawMode(DrawMode.Off);
-    this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
-    featureGroup.on('click', (e) => {
-      this.polygonClicked(e, latLngs);
-    });
   }
 
   /**
@@ -1893,29 +1931,8 @@ class Polydraw extends L.Control {
     this.addPolygonLayer(resultPolygon, true);
   }
 
-  private deletePolygonOnMerge(polygon: any) {
-    // Delete polygon during merge
-    let polygon2 = [];
-    if (this.arrayOfFeatureGroups.length > 0) {
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
-        const layer = featureGroup.getLayers()[0] as any;
-        const latlngs = layer.getLatLngs()[0];
-        polygon2 = [...latlngs[0]];
-        if (latlngs[0][0] !== latlngs[0][latlngs[0].length - 1]) {
-          polygon2.push(latlngs[0][0]);
-        }
-        const equals = this.polygonArrayEqualsMerge(polygon2, polygon);
-
-        if (equals) {
-          // console.log("EQUALS", polygon);
-          this.removeFeatureGroupOnMerge(featureGroup);
-          this.deletePolygon(polygon);
-          this.polygonInformation.deleteTrashcan(polygon);
-          // this.updatePolygons();
-        }
-      });
-    }
-  }
+  // 🎯 SIMPLIFIED: Removed deletePolygonOnMerge() - no longer needed with simplified merge logic
+  // The simplified merge approach handles polygon removal directly in the merge/union methods
 
   // 🎯 SIMPLIFIED: Removed analyzeIntersectionType() - no longer needed with simplified union logic
   // The complex intersection analysis was causing issues and is not needed for basic merge operations
