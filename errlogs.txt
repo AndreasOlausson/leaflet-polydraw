@@ -1,140 +1,599 @@
- addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 0 polygons, returning 0 feature groups
+polydraw.ts:894 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:895 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
+polydraw.ts:899 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
+polydraw.ts:910 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
 polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
-polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_1
-polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_1
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 1
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_1
+polydraw.ts:915 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 1 polygons, returning 1 feature groups
+polydraw.ts:920 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 1 polygons, returning 1 feature groups
 polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(62)]
-polydraw.ts:785 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1807 🔧 merge() - Using simplified merge approach
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1844 🔧 merge() - Intersection check result: false
-polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(51)]
+polygon-state-manager.ts:134 🔧 PolygonStateManager.subtractPolygon() - Subtracting polygon
+polygon-state-manager.ts:146 🔧 PolygonStateManager.subtractPolygon() - Found 1 intersecting polygons: ['polygon_1']
+polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_1
 polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
-polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_2
-polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 2
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(62)]
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(43)]
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_2
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 1
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_2
+polygon-state-manager.ts:220 🔧 PolygonStateManager.subtractPolygon() - Created 1 result polygons: ['polygon_2']
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 1 polygons, returning 1 feature groups
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(2)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: (2) [Array(51), Array(33)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+marker-manager.ts:1085 🔧 DEBUG: rebuildCoordinatesFromMarkers - Original structure: [Array(2)]
+marker-manager.ts:1086 🔧 DEBUG: rebuildCoordinatesFromMarkers - Markers count: 84
+marker-manager.ts:1098 🔧 DEBUG: rebuildCoordinatesFromMarkers - Polygon with holes detected (nested structure)
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 0 with 51 markers
+marker-manager.ts:1109 🔧 DEBUG: rebuildCoordinatesFromMarkers - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1122 🔧 DEBUG: rebuildCoordinatesFromMarkers - Added ring 1 with 33 markers
+marker-manager.ts:1132 🔧 DEBUG: rebuildCoordinatesFromMarkers - Hole structure preserved: (2) [Array(51), Array(33)]
+marker-manager.ts:1206 🔧 DEBUG: rebuildCoordinatesFromMarkers - Final newPos: [Array(2)]
+polydraw.ts:1230 🔧 markerDragEnd() - Using legacy MarkerManager with hole preservation
+marker-manager.ts:362 🔧 DEBUG: handleMarkerDragEnd - Original structure: [Array(2)]
+marker-manager.ts:1391 🔧 DEBUG: MarkerManager.hasHoleStructure - Checking structure: [Array(2)]
+marker-manager.ts:1400 🔧 DEBUG: MarkerManager.hasHoleStructure - Found nested hole structure [Array(N)] where N > 1
+marker-manager.ts:368 🔧 DEBUG: handleMarkerDragEnd - Polygon with holes detected, exploding into separate polygons
+marker-manager.ts:1583 🔧 DEBUG: explodePolygonWithHoles - Original structure: [Array(2)]
+marker-manager.ts:1584 🔧 DEBUG: explodePolygonWithHoles - Markers count: 84
+marker-manager.ts:1598 🔧 DEBUG: explodePolygonWithHoles - Processing ring 0 with 51 points, marker offset: 0
+marker-manager.ts:1655 🔧 DEBUG: explodePolygonWithHoles - Created simple polygon for ring 0 (isHole: false): {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:894 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:895 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: Polygon
+polydraw.ts:899 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[NUMBER]]] (length: 1)
+polydraw.ts:910 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_3
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 2
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_3
+polydraw.ts:915 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+polydraw.ts:920 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 2
+marker-manager.ts:1598 🔧 DEBUG: explodePolygonWithHoles - Processing ring 1 with 33 points, marker offset: 51
+marker-manager.ts:1626 🔧 DEBUG: explodePolygonWithHoles - Reversing hole ring 1 to counterclockwise for separate polygon
+marker-manager.ts:1655 🔧 DEBUG: explodePolygonWithHoles - Created simple polygon for ring 1 (isHole: true): {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:894 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:895 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: Polygon
+polydraw.ts:899 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[NUMBER]]] (length: 1)
+polydraw.ts:910 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_4
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 3
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_4
+polydraw.ts:915 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polydraw.ts:920 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 3
+marker-manager.ts:1665 🔧 DEBUG: explodePolygonWithHoles - Successfully exploded polygon into separate rings
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(2)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: (2) [Array(51), Array(33)]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(51)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (51) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(33)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (33) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
 polygon-drag-manager.ts:177 🔍 DEBUG: onPolygonMouseDown() - Starting polygon drag
-polygon-drag-manager.ts:178 🔍 DEBUG: onPolygonMouseDown() - Polygon feature group: NewClass {options: {…}, _layers: {…}, _initHooksCalled: true, _leaflet_id: 419, _mapToAdd: NewClass, …}
+polygon-drag-manager.ts:178 🔍 DEBUG: onPolygonMouseDown() - Polygon feature group: NewClass {options: {…}, _layers: {…}, _initHooksCalled: true, _leaflet_id: 1055, _mapToAdd: NewClass, …}
 polygon-drag-manager.ts:182 🔍 DEBUG: onPolygonMouseDown() - Polygon original coordinates: {type: 'Feature', properties: {…}, geometry: {…}}
 polygon-drag-manager.ts:196 🔍 DEBUG: onPolygonMouseDown() - Modifier key pressed: false
-polygon-drag-manager.ts:593 🔧 updatePolygonCoordinates() - Using simple approach for normal drag
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polygon-drag-manager.ts:591 🔧 updatePolygonCoordinates() - Using simple approach for normal drag
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
 simple-polygon-operations.ts:35 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Starting simple update
-simple-polygon-operations.ts:36 🔧 Input coordinates structure: [[[OTHER]]] (length: 1)
+simple-polygon-operations.ts:36 🔧 Input coordinates structure: [[[NUMBER]]] (length: 1)
 simple-polygon-operations.ts:56 🔧 SimplePolygonOperations.deletePolygon() - Removing old polygon
-simple-polygon-operations.ts:57 🔧 SimplePolygonOperations.deletePolygon() - Array length before callback: 2
-polygon-drag-manager.ts:601 🔧 PolygonDragManager - Calling removal callback to actually remove polygon
-polydraw.ts:123 🔧 Polygon drag removal - Calling removeFeatureGroup directly
-polydraw.ts:990 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:991 🔧 removeFeatureGroup() - Before removal, array length: 2
-polydraw.ts:995 🔧 removeFeatureGroup() - Feature group to remove: 419
-polydraw.ts:1709 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 2 polygons
-polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_1 featureGroup match: false
-polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_2 featureGroup match: true
-polydraw.ts:1724 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_2
-polydraw.ts:1003 🔧 removeFeatureGroup() - Found polygon ID: polygon_2
-polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_2
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1008 🔧 removeFeatureGroup() - After removal, array length: 1
-simple-polygon-operations.ts:62 🔧 SimplePolygonOperations.deletePolygon() - Array length after callback: 2
+simple-polygon-operations.ts:57 🔧 SimplePolygonOperations.deletePolygon() - Array length before callback: 3
+polygon-drag-manager.ts:599 🔧 PolygonDragManager - Calling removal callback to actually remove polygon
+polydraw.ts:117 🔧 Polygon drag removal - Calling removeFeatureGroup directly
+polydraw.ts:844 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polydraw.ts:845 🔧 removeFeatureGroup() - Before removal, array length: 3
+polydraw.ts:849 🔧 removeFeatureGroup() - Feature group to remove: 1055
+polydraw.ts:1569 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 3 polygons
+polydraw.ts:1577 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_2 featureGroup match: false
+polydraw.ts:1577 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_3 featureGroup match: false
+polydraw.ts:1577 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_4 featureGroup match: true
+polydraw.ts:1584 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_4
+polydraw.ts:857 🔧 removeFeatureGroup() - Found polygon ID: polygon_4
+polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_4
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+polydraw.ts:862 🔧 removeFeatureGroup() - After removal, array length: 2
+simple-polygon-operations.ts:62 🔧 SimplePolygonOperations.deletePolygon() - Array length after callback: 3
 simple-polygon-operations.ts:72 🔧 SimplePolygonOperations.addPolygon() - Adding fresh polygon
 simple-polygon-operations.ts:75 🔧 SimplePolygonOperations.addPolygon() - Checking for merge conditions
-simple-polygon-operations.ts:79 🔧 SimplePolygonOperations.addPolygon() - Found 2 existing polygons, checking for intersections
+simple-polygon-operations.ts:79 🔧 SimplePolygonOperations.addPolygon() - Found 3 existing polygons, checking for intersections
 simple-polygon-operations.ts:99 🔧 SimplePolygonOperations.checkAndPerformMerge() - Checking for intersections
 simple-polygon-operations.ts:103 🔧 SimplePolygonOperations.checkAndPerformMerge() - Using addPolygon with merge logic
-polygon-drag-manager.ts:610 🔧 PolygonDragManager - Using addPolygon with merge logic for drag
-polydraw.ts:128 🔧 PolygonDragManager - Using addPolygon with merge logic
-polydraw.ts:785 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1807 🔧 merge() - Using simplified merge approach
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1844 🔧 merge() - Intersection check result: true
-polydraw.ts:990 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:991 🔧 removeFeatureGroup() - Before removal, array length: 1
-polydraw.ts:995 🔧 removeFeatureGroup() - Feature group to remove: 105
-polydraw.ts:1709 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 1 polygons
-polydraw.ts:1717 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_1 featureGroup match: true
-polydraw.ts:1724 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_1
-polydraw.ts:1003 🔧 removeFeatureGroup() - Found polygon ID: polygon_1
-polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_1
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1008 🔧 removeFeatureGroup() - After removal, array length: 0
-polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-drag-manager.ts:608 🔧 PolygonDragManager - Using addPolygon with merge logic for drag
+polydraw.ts:122 🔧 PolygonDragManager - Using addPolygon with merge logic
+polydraw.ts:795 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+polydraw.ts:1667 🔧 merge() - Using simplified merge approach
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+turf-helper.ts:520 Invalid coordinates array - need at least 3 points for a polygon
+e @ turf-helper.ts:520
+(anonymous) @ turf-helper.ts:575
+removeDuplicateVertices @ turf-helper.ts:575
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:580 Cleaned polygon has invalid ring with less than 4 coordinates
+removeDuplicateVertices @ turf-helper.ts:580
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:101 Error processing kinks: Each LinearRing of a Polygon must have 4 or more Positions.
+getKinks @ turf-helper.ts:101
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+polydraw.ts:1704 🔧 merge() - Intersection check result: false
+turf-helper.ts:520 Invalid coordinates array - need at least 3 points for a polygon
+e @ turf-helper.ts:520
+(anonymous) @ turf-helper.ts:575
+removeDuplicateVertices @ turf-helper.ts:575
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:580 Cleaned polygon has invalid ring with less than 4 coordinates
+removeDuplicateVertices @ turf-helper.ts:580
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:101 Error processing kinks: Each LinearRing of a Polygon must have 4 or more Positions.
+getKinks @ turf-helper.ts:101
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+polydraw.ts:1704 🔧 merge() - Intersection check result: false
+polydraw.ts:894 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:895 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: Polygon
+polydraw.ts:899 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[NUMBER]]] (length: 1)
+polydraw.ts:910 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
 polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
-polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_3
-polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_5
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 3
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_5
+polydraw.ts:915 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polydraw.ts:920 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 3
 simple-polygon-operations.ts:49 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Completed simple update
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: [Array(76)]
-
-
-
-
-
-DELETE START HERE:
-
- addPolygon() - Using simplified approach (direct addPolygonLayer)
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1043 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
-polydraw.ts:1044 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: MultiPolygon
-polydraw.ts:1048 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[OTHER]]] (length: 1)
-polydraw.ts:1059 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
-polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: 
-{type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1604 🔧 createFeatureGroupForPolygon() - Creating feature group for: 
-{type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:1416 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
-polygon-state-manager.ts:317 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
-polygon-state-manager.ts:287 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_1
-polydraw.ts:1064 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:1069 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 1
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: 
-[Array(1)]
-polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: 
-[Array(36)]
-polydraw.ts:600 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
-polydraw.ts:615 🔧 arrayOfFeatureGroups setter - BLOCKED! Use PolygonStateManager instead
-polydraw.ts:617 Uncaught Error: Direct array assignment blocked - use PolygonStateManager methods instead
-    at set arrayOfFeatureGroups (polydraw.ts:617:11)
-    at Ai.removeAllFeatureGroups (polydraw.ts:561:10)
-    at HTMLAnchorElement.c (polydraw.ts:248:12)
-set arrayOfFeatureGroups	@	polydraw.ts:617
-removeAllFeatureGroups	@	polydraw.ts:561
-c	@	polydraw.ts:248
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(2)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: (2) [Array(51), Array(33)]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(51)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (51) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(27)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (27) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-drag-manager.ts:177 🔍 DEBUG: onPolygonMouseDown() - Starting polygon drag
+polygon-drag-manager.ts:178 🔍 DEBUG: onPolygonMouseDown() - Polygon feature group: NewClass {options: {…}, _layers: {…}, _initHooksCalled: true, _leaflet_id: 797, _mapToAdd: NewClass, …}
+polygon-drag-manager.ts:182 🔍 DEBUG: onPolygonMouseDown() - Polygon original coordinates: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-drag-manager.ts:196 🔍 DEBUG: onPolygonMouseDown() - Modifier key pressed: false
+polygon-drag-manager.ts:591 🔧 updatePolygonCoordinates() - Using simple approach for normal drag
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+simple-polygon-operations.ts:35 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Starting simple update
+simple-polygon-operations.ts:36 🔧 Input coordinates structure: [[[NUMBER]]] (length: 1)
+simple-polygon-operations.ts:56 🔧 SimplePolygonOperations.deletePolygon() - Removing old polygon
+simple-polygon-operations.ts:57 🔧 SimplePolygonOperations.deletePolygon() - Array length before callback: 3
+polygon-drag-manager.ts:599 🔧 PolygonDragManager - Calling removal callback to actually remove polygon
+polydraw.ts:117 🔧 Polygon drag removal - Calling removeFeatureGroup directly
+polydraw.ts:844 🔧 removeFeatureGroup() - Using PolygonStateManager instead of legacy array
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polydraw.ts:845 🔧 removeFeatureGroup() - Before removal, array length: 3
+polydraw.ts:849 🔧 removeFeatureGroup() - Feature group to remove: 797
+polydraw.ts:1569 🔍 findPolygonIdByFeatureGroup() - Searching for feature group among 3 polygons
+polydraw.ts:1577 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_2 featureGroup match: false
+polydraw.ts:1577 🔍 findPolygonIdByFeatureGroup() - Checking polygon: polygon_3 featureGroup match: true
+polydraw.ts:1584 🔍 findPolygonIdByFeatureGroup() - Found direct match: polygon_3
+polydraw.ts:857 🔧 removeFeatureGroup() - Found polygon ID: polygon_3
+polygon-state-manager.ts:110 🔧 PolygonStateManager.removePolygon() - Removed polygon: polygon_3
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+polydraw.ts:862 🔧 removeFeatureGroup() - After removal, array length: 2
+simple-polygon-operations.ts:62 🔧 SimplePolygonOperations.deletePolygon() - Array length after callback: 3
+simple-polygon-operations.ts:72 🔧 SimplePolygonOperations.addPolygon() - Adding fresh polygon
+simple-polygon-operations.ts:75 🔧 SimplePolygonOperations.addPolygon() - Checking for merge conditions
+simple-polygon-operations.ts:79 🔧 SimplePolygonOperations.addPolygon() - Found 3 existing polygons, checking for intersections
+simple-polygon-operations.ts:99 🔧 SimplePolygonOperations.checkAndPerformMerge() - Checking for intersections
+simple-polygon-operations.ts:103 🔧 SimplePolygonOperations.checkAndPerformMerge() - Using addPolygon with merge logic
+polygon-drag-manager.ts:608 🔧 PolygonDragManager - Using addPolygon with merge logic for drag
+polydraw.ts:122 🔧 PolygonDragManager - Using addPolygon with merge logic
+polydraw.ts:795 🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+polydraw.ts:1667 🔧 merge() - Using simplified merge approach
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 2 polygons, returning 2 feature groups
+turf-helper.ts:520 Invalid coordinates array - need at least 3 points for a polygon
+e @ turf-helper.ts:520
+(anonymous) @ turf-helper.ts:575
+removeDuplicateVertices @ turf-helper.ts:575
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:580 Cleaned polygon has invalid ring with less than 4 coordinates
+removeDuplicateVertices @ turf-helper.ts:580
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:101 Error processing kinks: Each LinearRing of a Polygon must have 4 or more Positions.
+getKinks @ turf-helper.ts:101
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+polydraw.ts:1704 🔧 merge() - Intersection check result: false
+turf-helper.ts:520 Invalid coordinates array - need at least 3 points for a polygon
+e @ turf-helper.ts:520
+(anonymous) @ turf-helper.ts:575
+removeDuplicateVertices @ turf-helper.ts:575
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:580 Cleaned polygon has invalid ring with less than 4 coordinates
+removeDuplicateVertices @ turf-helper.ts:580
+getKinks @ turf-helper.ts:86
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+turf-helper.ts:101 Error processing kinks: Each LinearRing of a Polygon must have 4 or more Positions.
+getKinks @ turf-helper.ts:101
+polygonIntersect @ turf-helper.ts:198
+(anonymous) @ polydraw.ts:1682
+merge @ polydraw.ts:1672
+addPolygon @ polydraw.ts:800
+(anonymous) @ polydraw.ts:123
+(anonymous) @ polygon-drag-manager.ts:611
+checkAndPerformMerge @ simple-polygon-operations.ts:106
+addPolygon @ simple-polygon-operations.ts:86
+updatePolygonCoordinates @ simple-polygon-operations.ts:47
+updatePolygonCoordinates @ polygon-drag-manager.ts:620
+onPolygonMouseUp @ polygon-drag-manager.ts:328
+fire @ leaflet.js?v=d09e8d0b:388
+_fireDOMEvent @ leaflet.js?v=d09e8d0b:2960
+_handleDOMEvent @ leaflet.js?v=d09e8d0b:2924
+handler @ leaflet.js?v=d09e8d0b:1734Understand this warning
+polydraw.ts:1704 🔧 merge() - Intersection check result: false
+polydraw.ts:894 🔍 DEBUG: addPolygonLayer() - Adding polygon to map
+polydraw.ts:895 🔍 DEBUG: addPolygonLayer() - Input polygon geometry type: Polygon
+polydraw.ts:899 🔍 DEBUG: addPolygonLayer() - Input coordinates structure: [[[NUMBER]]] (length: 1)
+polydraw.ts:910 🔧 addPolygonLayer() - Using ONLY PolygonStateManager (no legacy feature group creation)
+polygon-state-manager.ts:48 🔧 PolygonStateManager.addPolygon() - Adding polygon: {type: 'Feature', properties: {…}, geometry: {…}}
+polygon-state-manager.ts:266 🔧 PolygonStateManager.addSinglePolygon() - Starting with ID: polygon_6
+polydraw.ts:1460 🔧 createFeatureGroupForPolygon() - Creating feature group for: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:1272 🔧 enablePolygonDragging() - Using legacy PolygonDragManager (correct approach)
+polygon-state-manager.ts:271 🔧 PolygonStateManager.addSinglePolygon() - Feature group created successfully
+polygon-state-manager.ts:354 🔧 updatePolygonFeatureGroupReferences() - Updated polygon references
+polygon-state-manager.ts:286 🔧 PolygonStateManager.addSinglePolygon() - Stored in polygons map, size now: 3
+polygon-state-manager.ts:294 🔧 PolygonStateManager.addSinglePolygon() - Added polygon: polygon_6
+polydraw.ts:915 🔧 addPolygonLayer() - Successfully added to PolygonStateManager
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polydraw.ts:920 🔍 DEBUG: addPolygonLayer() - arrayOfFeatureGroups.length: 3
+simple-polygon-operations.ts:49 🔧 SimplePolygonOperations.updatePolygonCoordinates() - Completed simple update
+polydraw.ts:585 🔧 arrayOfFeatureGroups getter - Using PolygonStateManager as single source of truth
+polydraw.ts:596 🔧 arrayOfFeatureGroups getter - Found 3 polygons, returning 3 feature groups
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(2)]
+polygon-helpers.ts:75 🔍 DEBUG: PolygonInfo constructor - Processing polygon 0: (2) [Array(51), Array(33)]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(27)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (27) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polygon-helpers.ts:12 🔍 DEBUG: PolygonInfo constructor - Input polygon: [Array(51)]
+polygon-helpers.ts:29 🔍 DEBUG: PolygonInfo constructor - Detected flattened structure [Array(N)], processing directly
+polygon-helpers.ts:37 🔍 DEBUG: PolygonInfo constructor - Processing coordinate array: (51) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]

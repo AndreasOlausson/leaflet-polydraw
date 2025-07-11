@@ -1226,13 +1226,11 @@ class Polydraw extends L.Control {
   }
   // check this
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
-    // 🎯 FIX: Keep it simple - use the legacy MarkerManager that works with arrayOfFeatureGroups
-    // The arrayOfFeatureGroups IS the single point of truth, not PolygonStateManager
-    this.polygonInformation.deletePolygonInformationStorage();
+    // 🎯 FIX: Use legacy MarkerManager with hole preservation built-in
+    console.log('🔧 markerDragEnd() - Using legacy MarkerManager with hole preservation');
 
-    console.log(
-      '🔧 markerDragEnd() - Using legacy MarkerManager (single point of truth: arrayOfFeatureGroups)',
-    );
+    this.ensureManagersInitialized();
+
     this.markerManager.handleMarkerDragEnd(
       FeatureGroup,
       () => this.polygonInformation.deletePolygonInformationStorage(),
@@ -1243,9 +1241,6 @@ class Polydraw extends L.Control {
       () => this.arrayOfFeatureGroups,
       this.config,
     );
-
-    // Update polygon information after the operation
-    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
   private emitDrawModeChanged(): void {
