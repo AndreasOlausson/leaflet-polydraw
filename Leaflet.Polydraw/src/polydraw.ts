@@ -779,16 +779,14 @@ class Polydraw extends L.Control {
     }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    // 🎯 FIX: First, register all existing polygons with PolygonStateManager
-    // This ensures subtract operations can find them
+    // 🎯 SIMPLIFIED: Use PolygonStateManager for subtract operations
     this.ensureManagersInitialized();
-    this.registerExistingPolygonsWithStateManager();
 
     try {
-      // Use PolygonStateManager for subtract operations to ensure proper registration
+      // Use PolygonStateManager for subtract operations
       this.polygonStateManager.subtractPolygon(latlngs);
     } catch (error) {
-      console.warn('PolygonStateManager subtract failed, no fallback needed:', error);
+      console.warn('PolygonStateManager subtract failed:', error);
       // 🎯 SIMPLIFIED: No fallback to legacy method - just log the error
       // The PolygonStateManager should handle all subtract operations
     }
@@ -797,130 +795,6 @@ class Polydraw extends L.Control {
     this.setDrawMode(DrawMode.Off);
   }
 
-  /**
-   * Register existing polygons with PolygonStateManager
-   * This is needed when polygons were created through legacy addPolygonLayer
-   */
-  private registerExistingPolygonsWithStateManager(): void {
-    console.log('🔧 registerExistingPolygonsWithStateManager() - Checking existing polygons');
-
-    // Check if PolygonStateManager already has polygons
-    if (this.polygonStateManager.getCount() > 0) {
-      console.log(
-        '🔧 registerExistingPolygonsWithStateManager() - PolygonStateManager already has polygons',
-      );
-      return;
-    }
-
-    // Register each existing polygon
-    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
-      try {
-        // Get the polygon from the feature group
-        const layers = featureGroup.getLayers();
-        const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
-
-        if (polygonLayer) {
-          const geoJSON = (polygonLayer as any).toGeoJSON();
-          const optimizationLevel = (polygonLayer as any)._polydrawOptimizationLevel || 0;
-
-          console.log(
-            `🔧 registerExistingPolygonsWithStateManager() - Registering polygon ${index}:`,
-            geoJSON,
-          );
-
-          // Add to PolygonStateManager (this will create a new feature group)
-          const polygonIds = this.polygonStateManager.addPolygon(geoJSON, optimizationLevel, true);
-
-          // Remove the old feature group from map and array
-          try {
-            this.map.removeLayer(featureGroup);
-          } catch (error) {
-            // Handle removal errors
-          }
-
-          console.log(`🔧 registerExistingPolygonsWithStateManager() - Registered as:`, polygonIds);
-        }
-      } catch (error) {
-        console.warn('Error registering polygon with state manager:', error);
-      }
-    });
-
-    // Clear the legacy array since polygons are now managed by PolygonStateManager
-    this.arrayOfFeatureGroups.length = 0;
-
-    // Update the array with the new feature groups from PolygonStateManager
-    const allPolygons = this.polygonStateManager.getAllPolygons();
-    allPolygons.forEach((polygonData) => {
-      this.arrayOfFeatureGroups.push(polygonData.featureGroup);
-    });
-
-    console.log('🔧 registerExistingPolygonsWithStateManager() - Registration complete');
-  }
-
-  /**
-   * Register a single polygon with PolygonStateManager
-   * This is used when a polygon needs to be registered individually (e.g., during marker drag)
-   */
-  private registerSinglePolygonWithStateManager(featureGroup: PolydrawFeatureGroup): void {
-    console.log('🔧 registerSinglePolygonWithStateManager() - Registering single polygon');
-
-    try {
-      // Get the polygon from the feature group
-      const layers = featureGroup.getLayers();
-      const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
-
-      if (polygonLayer) {
-        const geoJSON = (polygonLayer as any).toGeoJSON();
-        const optimizationLevel = (polygonLayer as any)._polydrawOptimizationLevel || 0;
-
-        console.log('🔧 registerSinglePolygonWithStateManager() - Registering polygon:', geoJSON);
-
-        // Add to PolygonStateManager (this will create a new feature group)
-        const polygonIds = this.polygonStateManager.addPolygon(geoJSON, optimizationLevel, true);
-
-        // Remove the old feature group from map and array
-        try {
-          this.map.removeLayer(featureGroup);
-        } catch (error) {
-          // Handle removal errors
-        }
-
-        // Remove from legacy array
-        const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
-        if (index > -1) {
-          this.arrayOfFeatureGroups.splice(index, 1);
-        }
-
-        // Add the new feature group from PolygonStateManager
-        const polygonData = this.polygonStateManager.getPolygon(polygonIds[0]);
-        if (polygonData) {
-          this.arrayOfFeatureGroups.push(polygonData.featureGroup);
-
-          // 🎯 FIX: Update the feature group reference for the marker drag event
-          // The marker drag event is still referencing the old feature group
-          // We need to update it to point to the new feature group
-          const newFeatureGroup = polygonData.featureGroup;
-
-          // Update all markers in the new feature group to reference the correct feature group
-          newFeatureGroup.eachLayer((layer) => {
-            if (layer instanceof L.Marker) {
-              // Remove old event handlers
-              layer.off('dragend');
-
-              // Add new event handlers with correct feature group reference
-              layer.on('dragend', (e) => {
-                this.markerDragEnd(newFeatureGroup);
-              });
-            }
-          });
-        }
-
-        console.log('🔧 registerSinglePolygonWithStateManager() - Registered as:', polygonIds[0]);
-      }
-    } catch (error) {
-      console.warn('Error registering single polygon with state manager:', error);
-    }
-  }
   private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
     // Extract LatLng coordinates from GeoJSON feature
     let coord: ILatLng[][];

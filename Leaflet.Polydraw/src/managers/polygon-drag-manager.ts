@@ -572,14 +572,12 @@ export class PolygonDragManager {
           return;
         }
 
-        // Remove the old feature group
-        if (this.map && this.map.removeLayer) {
-          this.map.removeLayer(featureGroup);
-        }
-        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-        const featureGroupIndex = arrayOfFeatureGroups.indexOf(featureGroup);
-        if (featureGroupIndex !== -1) {
-          arrayOfFeatureGroups.splice(featureGroupIndex, 1);
+        // 🎯 CLEANED: Use callback instead of direct array manipulation
+        console.log(
+          '🔧 performModifierSubtract() - Using removal callback instead of direct array manipulation',
+        );
+        if (this.removePolygonFromStateManagerCallback) {
+          this.removePolygonFromStateManagerCallback(featureGroup);
         }
 
         this.performModifierSubtract(draggedPolygonFeature, intersectingFeatureGroups);
@@ -756,12 +754,9 @@ export class PolygonDragManager {
       // Perform difference operation (subtract dragged polygon from existing polygon)
       const differenceResult = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
 
-      // Remove the original polygon
-      this.map.removeLayer(featureGroup);
-      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-      const index = arrayOfFeatureGroups.indexOf(featureGroup);
-      if (index > -1) {
-        arrayOfFeatureGroups.splice(index, 1);
+      // 🎯 CLEANED: Use callback instead of direct array manipulation
+      if (this.removePolygonFromStateManagerCallback) {
+        this.removePolygonFromStateManagerCallback(featureGroup);
       }
 
       // Add the result if it exists (polygon with hole or remaining parts)
@@ -906,16 +901,9 @@ export class PolygonDragManager {
       if (unionResult) {
         mergedPolygon = unionResult;
 
-        // Remove the merged feature group
-        try {
-          this.map.removeLayer(featureGroup);
-        } catch (error) {
-          // Silently handle layer removal errors in test environment
-        }
-        const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-        const index = arrayOfFeatureGroups.indexOf(featureGroup);
-        if (index > -1) {
-          arrayOfFeatureGroups.splice(index, 1);
+        // 🎯 CLEANED: Use callback instead of direct array manipulation
+        if (this.removePolygonFromStateManagerCallback) {
+          this.removePolygonFromStateManagerCallback(featureGroup);
         }
       }
     }
@@ -938,12 +926,9 @@ export class PolygonDragManager {
     const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
 
     if (differenceResult) {
-      // Remove the original containing polygon
-      this.map.removeLayer(containingFeatureGroup);
-      const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-      const index = arrayOfFeatureGroups.indexOf(containingFeatureGroup);
-      if (index > -1) {
-        arrayOfFeatureGroups.splice(index, 1);
+      // 🎯 CLEANED: Use callback instead of direct array manipulation
+      if (this.removePolygonFromStateManagerCallback) {
+        this.removePolygonFromStateManagerCallback(containingFeatureGroup);
       }
 
       // Add the polygon with the new hole
