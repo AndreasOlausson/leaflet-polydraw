@@ -22,9 +22,6 @@ import { CoordinateUtils } from './coordinate-utils';
 // Import managers
 import { MarkerManager } from './managers/marker-manager';
 import { PolygonDragManager } from './managers/polygon-drag-manager';
-import { DrawingEventsManager } from './managers/drawing-events-manager';
-import { PolygonOperationsManager } from './managers/polygon-operations-manager';
-import { PolygonManager } from './managers/polygon-manager';
 import { PolygonEdgeManager } from './managers/polygon-edge-manager';
 
 // Import comprehensive type definitions
@@ -67,9 +64,6 @@ class Polydraw extends L.Control {
   // Manager instances (legacy - for backward compatibility)
   private markerManager: MarkerManager;
   private polygonDragManager: PolygonDragManager;
-  private drawingEventsManager: DrawingEventsManager;
-  private polygonOperationsManager: PolygonOperationsManager;
-  private polygonManager: PolygonManager;
   private polygonEdgeManager: PolygonEdgeManager;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
@@ -128,34 +122,6 @@ class Polydraw extends L.Control {
         console.log('🔧 PolygonDragManager - Using addPolygon with merge logic');
         this.addPolygon(geoJSON, false, false); // false = simplify, false = noMerge (allow merge)
       },
-    );
-    this.drawingEventsManager = new DrawingEventsManager(
-      this.config,
-      this.map,
-      this.tracer,
-      this.stateManager,
-      (geoPos) => this.handlePolygonComplete(geoPos),
-    );
-    this.polygonOperationsManager = new PolygonOperationsManager(
-      this.config,
-      this.turfHelper,
-      this.map,
-      () => this.arrayOfFeatureGroups,
-      (geoJSON, simplify, noMerge) => this.addPolygonLayer(geoJSON, simplify, false, 0),
-      (polygon) => this.deletePolygon(polygon),
-      (featureGroup) => this.removeFeatureGroup(featureGroup),
-      (feature) => this.getLatLngsFromJson(feature),
-    );
-    this.polygonManager = new PolygonManager(
-      this.map,
-      this.turfHelper,
-      this.config,
-      this.stateManager,
-      (geoJSON, simplify, dynamicTolerance, visualOptimizationLevel) =>
-        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, visualOptimizationLevel),
-      (polygon) => this.deletePolygon(polygon),
-      (featureGroup) => this.removeFeatureGroup(featureGroup),
-      () => this.arrayOfFeatureGroups,
     );
     this.polygonEdgeManager = new PolygonEdgeManager(
       this.config,
@@ -973,36 +939,6 @@ class Polydraw extends L.Control {
 
     return coord;
   }
-  private removeFeatureGroupOnMerge(featureGroup: L.FeatureGroup) {
-    // Remove a feature group during merge operations
-
-    const newArray = [];
-    if (featureGroup.getLayers()[0]) {
-      const polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
-      this.polygonInformation.polygonInformationStorage.forEach((v) => {
-        if (
-          v.polygon.toString() !== polygon[0].toString() &&
-          v.polygon[0].toString() === polygon[0][0].toString()
-        ) {
-          v.polygon = polygon;
-          newArray.push(v);
-        }
-
-        if (
-          v.polygon.toString() !== polygon[0].toString() &&
-          v.polygon[0].toString() !== polygon[0][0].toString()
-        ) {
-          newArray.push(v);
-        }
-      });
-      featureGroup.clearLayers();
-      this.arrayOfFeatureGroups = this.arrayOfFeatureGroups.filter(
-        (featureGroups) => featureGroups !== featureGroup,
-      );
-
-      this.map.removeLayer(featureGroup);
-    }
-  }
 
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
     // 🎯 FIX: Use PolygonStateManager instead of legacy array manipulation
@@ -1037,9 +973,6 @@ class Polydraw extends L.Control {
     }
   }
 
-  private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
-    return poly1.toString() === poly2.toString();
-  }
   private polygonArrayEquals(poly1: any[], poly2: any[]): boolean {
     // Compare two polygon arrays for equality
 
@@ -1897,38 +1830,6 @@ class Polydraw extends L.Control {
       // No intersections - just add the polygon normally
       this.addPolygonLayer(latlngs, true);
     }
-  }
-
-  private unionPolygons(
-    layers: L.FeatureGroup[],
-    latlngs: Feature<Polygon | MultiPolygon>,
-    polygonFeature: Feature<Polygon | MultiPolygon>[],
-  ) {
-    // 🎯 SIMPLIFIED: Basic union logic - just union all polygons together
-    console.log('🔧 unionPolygons() - Using simplified union approach');
-
-    let resultPolygon = latlngs;
-
-    // Union with each intersecting polygon
-    layers.forEach((featureGroup, i) => {
-      try {
-        const existingPolygon = polygonFeature[i];
-
-        // Simple union operation
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-
-        // Remove the merged polygon
-        this.removeFeatureGroup(featureGroup);
-      } catch (error) {
-        console.warn('🔧 unionPolygons() - Error in union operation:', error);
-      }
-    });
-
-    // Add the final result
-    this.addPolygonLayer(resultPolygon, true);
   }
 
   // 🎯 SIMPLIFIED: Removed deletePolygonOnMerge() - no longer needed with simplified merge logic
