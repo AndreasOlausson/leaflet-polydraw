@@ -761,9 +761,17 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    // Delegate to PolygonManager for centralized polygon operations
-    this.ensureManagersInitialized();
-    this.polygonManager.addPolygon(latlngs, simplify, noMerge);
+    // 🎯 SIMPLIFIED: Use direct addPolygonLayer instead of legacy PolygonManager
+    console.log('🔧 addPolygon() - Using simplified approach (direct addPolygonLayer)');
+
+    // Check if merging should be applied (unless explicitly disabled)
+    if (!noMerge && this.config.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
+      // Use existing merge logic for now
+      this.merge(latlngs);
+    } else {
+      // Add directly without merging
+      this.addPolygonLayer(latlngs, simplify);
+    }
   }
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
     // 🎯 FIX: First, register all existing polygons with PolygonStateManager
