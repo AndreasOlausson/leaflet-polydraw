@@ -1866,57 +1866,31 @@ class Polydraw extends L.Control {
     latlngs: Feature<Polygon | MultiPolygon>,
     polygonFeature: Feature<Polygon | MultiPolygon>[],
   ) {
-    // Enhanced union logic to handle complex merge scenarios including holes
+    // 🎯 SIMPLIFIED: Basic union logic - just union all polygons together
+    console.log('🔧 unionPolygons() - Using simplified union approach');
 
     let resultPolygon = latlngs;
-    const processedFeatureGroups: L.FeatureGroup[] = [];
 
-    // Process each intersecting polygon
+    // Union with each intersecting polygon
     layers.forEach((featureGroup, i) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJson(layer);
-      const existingPolygon = polygonFeature[i];
+      try {
+        const existingPolygon = polygonFeature[i];
 
-      // Check the type of intersection to determine the correct operation
-      const intersectionType = this.analyzeIntersectionType(resultPolygon, existingPolygon);
-
-      if (intersectionType === 'should_create_holes') {
-        // For complex cut-through scenarios, we actually want to MERGE (union) the polygons
-        // The "should_create_holes" name is misleading - it means "complex intersection detected"
+        // Simple union operation
         const union = this.turfHelper.union(resultPolygon, existingPolygon);
         if (union) {
           resultPolygon = union;
         }
-      } else {
-        // Standard union operation for normal merges
-        const union = this.turfHelper.union(resultPolygon, existingPolygon);
-        if (union) {
-          resultPolygon = union;
-        }
-      }
 
-      // Mark for removal
-      processedFeatureGroups.push(featureGroup);
-      try {
-        this.deletePolygonOnMerge(poly);
-      } catch (error) {
-        // Silently handle polygon deletion errors in test environment
-      }
-      try {
+        // Remove the merged polygon
         this.removeFeatureGroup(featureGroup);
       } catch (error) {
-        // Silently handle feature group removal errors in test environment
+        console.warn('🔧 unionPolygons() - Error in union operation:', error);
       }
     });
 
     // Add the final result
-    try {
-      this.addPolygonLayer(resultPolygon, true);
-    } catch (error) {
-      // In test environment, still add to array even if map rendering fails
-      this.arrayOfFeatureGroups.push(new L.FeatureGroup());
-    }
+    this.addPolygonLayer(resultPolygon, true);
   }
 
   private deletePolygonOnMerge(polygon: any) {
@@ -1943,88 +1917,8 @@ class Polydraw extends L.Control {
     }
   }
 
-  private analyzeIntersectionType(
-    newPolygon: Feature<Polygon | MultiPolygon>,
-    existingPolygon: Feature<Polygon | MultiPolygon>,
-  ): string {
-    try {
-      // Check if the new polygon is completely contained within the existing polygon
-      // This is the primary case where we want to create holes
-      try {
-        const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-
-        if (
-          difference &&
-          difference.geometry.type === 'Polygon' &&
-          difference.geometry.coordinates.length > 1
-        ) {
-          // If difference creates a polygon with holes, the new polygon was likely contained
-          return 'should_create_holes';
-        }
-      } catch (error) {
-        // Silently handle difference operation errors
-      }
-
-      // Check if this is a complex cutting scenario using proper geometric analysis
-      // instead of arbitrary vertex count
-      try {
-        // Method 1: Check convexity - complex shapes are usually non-convex
-        const convexHull = this.turfHelper.getConvexHull(existingPolygon);
-        if (convexHull) {
-          const convexArea = this.turfHelper.getPolygonArea(convexHull);
-          const actualArea = this.turfHelper.getPolygonArea(existingPolygon);
-          const convexityRatio = actualArea / convexArea;
-
-          // If shape is significantly non-convex (< 0.7), it might be complex
-          if (convexityRatio < 0.7) {
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
-
-        // Method 2: Check intersection complexity
-        const intersection = this.turfHelper.getIntersection(newPolygon, existingPolygon);
-        if (intersection && intersection.geometry.type === 'MultiPolygon') {
-          // Multiple intersection areas = complex cut-through scenario
-          return 'should_create_holes';
-        }
-
-        // Method 3: Area ratio analysis for partial overlaps
-        if (intersection) {
-          const intersectionArea = this.turfHelper.getPolygonArea(intersection);
-          const newArea = this.turfHelper.getPolygonArea(newPolygon);
-          const existingArea = this.turfHelper.getPolygonArea(existingPolygon);
-
-          // Check if it's a significant but partial overlap (not full containment)
-          const overlapRatioExisting = intersectionArea / existingArea;
-          const overlapRatioNew = intersectionArea / newArea;
-
-          if (
-            overlapRatioExisting > 0.1 &&
-            overlapRatioExisting < 0.9 &&
-            overlapRatioNew > 0.1 &&
-            overlapRatioNew < 0.9
-          ) {
-            // Significant partial overlap might indicate cut-through
-            const difference = this.turfHelper.polygonDifference(existingPolygon, newPolygon);
-            if (difference && difference.geometry.type === 'MultiPolygon') {
-              return 'should_create_holes';
-            }
-          }
-        }
-      } catch (error) {
-        // Silently handle geometric analysis errors
-      }
-
-      // Default to standard union for normal merging cases
-      return 'standard_union';
-    } catch (error) {
-      // Silently handle intersection analysis errors
-      return 'standard_union';
-    }
-  }
+  // 🎯 SIMPLIFIED: Removed analyzeIntersectionType() - no longer needed with simplified union logic
+  // The complex intersection analysis was causing issues and is not needed for basic merge operations
 
   // Simple addMarker method without over-engineered optimization
   private addMarker(
