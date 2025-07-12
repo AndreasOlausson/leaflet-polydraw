@@ -466,13 +466,22 @@ export class MarkerManager {
           const unkink = this.turfHelper.getKinks(feature);
           // Handle unkinked polygons - split kinked polygon into valid parts
           unkink.forEach((unkinkedPolygon) => {
-            // Use addPolygonLayer directly to preserve optimization level
-            onPolygonLayerAdd(
-              this.turfHelper.getTurfPolygon(unkinkedPolygon),
-              false,
-              false,
-              optimizationLevel,
-            );
+            // 🎯 CRITICAL: Check if this polygon underwent hole traversal
+            if ((unkinkedPolygon as any)._polydrawHoleTraversalOccurred) {
+              console.log(
+                'Polygon underwent hole traversal - adding as solid polygon (no hole structure)',
+              );
+              // Add as solid polygon without preserving any hole structure
+              onPolygonLayerAdd(unkinkedPolygon, false, false, optimizationLevel);
+            } else {
+              // Normal polygon - preserve structure
+              onPolygonLayerAdd(
+                this.turfHelper.getTurfPolygon(unkinkedPolygon),
+                false,
+                false,
+                optimizationLevel,
+              );
+            }
           });
         } else {
           // No interaction - just add the polygon normally
@@ -1816,5 +1825,92 @@ export class MarkerManager {
     };
 
     return geoJSON;
+  }
+
+  /**
+   * Check if markers indicate that hole traversal occurred
+   */
+  private checkForHoleTraversalInMarkers(markers: L.Marker[], originalLatLngs: any): boolean {
+    try {
+      // Simple heuristic: if we have markers but the original structure had holes,
+      // and the markers form a self-intersecting pattern, it might be hole traversal
+
+      if (!this.hasHoleStructure(originalLatLngs)) {
+        return false; // No holes to traverse
+      }
+
+      // Check if marker positions create a self-intersecting polygon
+      const markerCoords = markers.map((marker) => {
+        const latlng = marker.getLatLng();
+        return [latlng.lng, latlng.lat];
+      });
+
+      // Ensure closed polygon for testing
+      if (markerCoords.length > 0) {
+        const first = markerCoords[0];
+        const last = markerCoords[markerCoords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          markerCoords.push([first[0], first[1]]);
+        }
+      }
+
+      const testPolygon = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [markerCoords],
+        },
+      };
+
+      // If the marker polygon has kinks, it might indicate hole traversal
+      const hasKinks = this.turfHelper.hasKinks(testPolygon);
+
+      if (hasKinks) {
+        console.log('Markers form self-intersecting polygon - potential hole traversal');
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('Error checking for hole traversal in markers:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Build a solid polygon from markers (no holes)
+   */
+  private buildSolidPolygonFromMarkers(markers: L.Marker[]): any {
+    try {
+      const markerCoords = markers.map((marker) => {
+        const latlng = marker.getLatLng();
+        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
+      });
+
+      // Ensure the polygon is closed
+      if (markerCoords.length > 0) {
+        const first = markerCoords[0];
+        const last = markerCoords[markerCoords.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          markerCoords.push([first[0], first[1]]);
+        }
+      }
+
+      const geoJSON = {
+        type: 'Feature' as const,
+        properties: {},
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [markerCoords], // Single ring - no holes
+        },
+      };
+
+      console.log('Built solid polygon from markers - no holes preserved');
+      return geoJSON;
+    } catch (error) {
+      console.error('Error building solid polygon from markers:', error);
+      return null;
+    }
   }
 }
