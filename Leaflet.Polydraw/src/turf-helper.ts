@@ -91,12 +91,21 @@ export class TurfHelper {
         return [feature];
       }
 
-      const unkink = turf.unkinkPolygon(cleanedFeature);
-      const coordinates = [];
-      turf.featureEach(unkink, (current) => {
-        coordinates.push(current);
-      });
-      return coordinates;
+      // 🎯 HOLE-AWARE SPLITTING: Check if the polygon has holes
+      const hasHoles = this.polygonHasHoles(cleanedFeature);
+
+      if (hasHoles) {
+        // For polygons with holes, we need special handling
+        return this.getKinksWithHolePreservation(cleanedFeature);
+      } else {
+        // For simple polygons, use the standard unkink approach
+        const unkink = turf.unkinkPolygon(cleanedFeature);
+        const coordinates = [];
+        turf.featureEach(unkink, (current) => {
+          coordinates.push(current);
+        });
+        return coordinates;
+      }
     } catch (error) {
       console.warn('Error processing kinks:', error.message);
       // Return the original feature as a fallback
@@ -501,6 +510,173 @@ export class TurfHelper {
     });
     const bezierPoly = turf.lineToPolygon(bezierLine);
     return bezierPoly;
+  }
+
+  /**
+   * Check if a polygon has holes (more than one ring)
+   */
+  private polygonHasHoles(feature: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      if (feature.geometry.type === 'Polygon') {
+        // A polygon has holes if it has more than one ring (outer + holes)
+        return feature.geometry.coordinates.length > 1;
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        // Check if any polygon in the multipolygon has holes
+        return feature.geometry.coordinates.some((polygon) => polygon.length > 1);
+      }
+      return false;
+    } catch (error) {
+      console.warn('Error checking for holes:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Handle kinks in polygons with holes while preserving hole structure
+   */
+  private getKinksWithHolePreservation(
+    feature: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon>[] {
+    try {
+      // For polygons with holes, we need to:
+      // 1. Split only the outer ring if it has kinks
+      // 2. Determine which resulting polygons should contain which holes
+      // 3. Reconstruct polygons with their appropriate holes
+
+      if (feature.geometry.type === 'Polygon') {
+        const coordinates = feature.geometry.coordinates;
+        const outerRing = coordinates[0];
+        const holes = coordinates.slice(1);
+
+        // Create a temporary polygon with just the outer ring to check for kinks
+        const outerPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [outerRing],
+          },
+          properties: feature.properties || {},
+        };
+
+        // Check if the outer ring has kinks
+        if (this.hasKinks(outerPolygon)) {
+          console.log('Outer ring has kinks, splitting...');
+
+          // Split ONLY the outer ring (not the holes)
+          const unkink = turf.unkinkPolygon(outerPolygon);
+          const splitPolygons: Feature<Polygon | MultiPolygon>[] = [];
+
+          console.log('Unkink produced', unkink.features.length, 'polygons');
+
+          turf.featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
+            console.log('Processing split polygon with area:', turf.area(splitPolygon));
+
+            // For each split polygon, determine which holes belong to it
+            const polygonWithHoles = this.assignHolesToPolygon(splitPolygon, holes);
+            splitPolygons.push(polygonWithHoles);
+          });
+
+          console.log('Final result:', splitPolygons.length, 'polygons with holes assigned');
+          return splitPolygons;
+        } else {
+          // No kinks in outer ring, return original
+          return [feature];
+        }
+      } else if (feature.geometry.type === 'MultiPolygon') {
+        // Handle MultiPolygon case
+        const allResults: Feature<Polygon | MultiPolygon>[] = [];
+
+        for (const polygonCoords of feature.geometry.coordinates) {
+          const singlePolygon: Feature<Polygon> = {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: polygonCoords,
+            },
+            properties: feature.properties || {},
+          };
+
+          const results = this.getKinksWithHolePreservation(singlePolygon);
+          allResults.push(...results);
+        }
+
+        return allResults;
+      }
+
+      return [feature];
+    } catch (error) {
+      console.warn('Error in getKinksWithHolePreservation:', error.message);
+      return [feature];
+    }
+  }
+
+  /**
+   * Assign holes to a polygon based on containment
+   */
+  private assignHolesToPolygon(polygon: Feature<Polygon>, holes: Position[][]): Feature<Polygon> {
+    try {
+      const assignedHoles: Position[][] = [];
+
+      for (const hole of holes) {
+        // Test multiple points from the hole to ensure accurate containment
+        let isHoleContained = false;
+
+        // Test several points from the hole ring
+        const testPoints = [
+          hole[0], // First point
+          hole[Math.floor(hole.length / 2)], // Middle point
+          hole[hole.length - 2], // Second to last point (last is usually same as first)
+        ];
+
+        for (const testPoint of testPoints) {
+          if (testPoint && testPoint.length >= 2) {
+            const holePoint = turf.point(testPoint);
+
+            // Check if the hole point is within the polygon
+            if (turf.booleanPointInPolygon(holePoint, polygon)) {
+              isHoleContained = true;
+              break;
+            }
+          }
+        }
+
+        if (isHoleContained) {
+          assignedHoles.push(hole);
+          console.log('Assigned hole to polygon - hole area:', this.calculateRingArea(hole));
+        } else {
+          console.log('Hole NOT contained in polygon - hole area:', this.calculateRingArea(hole));
+        }
+      }
+
+      // Return polygon with assigned holes
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [polygon.geometry.coordinates[0], ...assignedHoles],
+        },
+        properties: polygon.properties || {},
+      };
+    } catch (error) {
+      console.warn('Error assigning holes to polygon:', error.message);
+      // Return polygon without holes if assignment fails
+      return polygon;
+    }
+  }
+
+  /**
+   * Calculate the area of a ring using the shoelace formula
+   */
+  private calculateRingArea(ring: Position[]): number {
+    let area = 0;
+    const n = ring.length;
+
+    for (let i = 0; i < n - 1; i++) {
+      area += ring[i][0] * ring[i + 1][1];
+      area -= ring[i + 1][0] * ring[i][1];
+    }
+
+    return Math.abs(area) / 2;
   }
 
   /**

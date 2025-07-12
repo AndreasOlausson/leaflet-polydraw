@@ -373,6 +373,7 @@ export class MarkerManager {
     }
 
     try {
+      // 🎯 CRITICAL FIX: Preserve original structure before removal
       const originalLatLngs = (polygon as any)._polydrawOriginalStructure || polygon.getLatLngs();
 
       let feature: any;
@@ -409,6 +410,11 @@ export class MarkerManager {
             coordinates: [markerCoordinates], // Simple polygon: [[[lng, lat], ...]]
           },
         };
+
+        // 🎯 CRITICAL FIX: Restore original structure to new GeoJSON
+        if (originalLatLngs) {
+          (geoJSON as any)._polydrawOriginalStructure = originalLatLngs;
+        }
       }
 
       if (geoJSON) {
