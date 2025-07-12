@@ -1376,6 +1376,11 @@ class Polydraw extends L.Control {
     // Create and add polygon
     const polygon = this.getPolygon(geoJSON);
     (polygon as any)._polydrawOptimizationLevel = optimizationLevel;
+
+    if ((geoJSON as any)._polydrawOriginalStructure) {
+      (polygon as any)._polydrawOriginalStructure = (geoJSON as any)._polydrawOriginalStructure;
+    }
+
     featureGroup.addLayer(polygon);
 
     // Enable polygon dragging if configured
@@ -1417,46 +1422,72 @@ class Polydraw extends L.Control {
     optimizationLevel: number,
   ): void {
     markerLatlngs.forEach((polygonRings: any, ringGroupIndex: number) => {
-      // Handle flattened structure from split polygons
-      if (
-        polygonRings.length > 0 &&
-        polygonRings[0] &&
-        typeof polygonRings[0] === 'object' &&
-        'lat' in polygonRings[0]
-      ) {
-        // Flattened structure - treat as single ring
-        const polyElement = polygonRings as ILatLng[];
-        if (polyElement.length > 0) {
-          this.addMarker(polyElement, featureGroup, optimizationLevel);
-        }
+      if (!polygonRings) {
         return;
       }
 
-      // Normal nested structure
-      polygonRings.forEach((polyElement: ILatLng[], i: number) => {
-        const isHoleRing = i > 0;
+      // Check if this is a direct LatLng array (flattened structure)
+      const isDirectLatLngArray =
+        Array.isArray(polygonRings) &&
+        polygonRings.length > 0 &&
+        polygonRings[0] &&
+        typeof polygonRings[0] === 'object' &&
+        'lat' in polygonRings[0] &&
+        'lng' in polygonRings[0];
 
-        if (!Array.isArray(polyElement) || polyElement.length === 0) {
+      if (isDirectLatLngArray) {
+        // Flattened structure - use ring group index to determine marker type
+        const isHoleRing = ringGroupIndex > 0;
+
+        const polyElement = polygonRings as ILatLng[];
+        if (polyElement.length > 0) {
+          // Add red polyline overlay for hole rings
+          if (isHoleRing) {
+            const holePolyline = L.polyline(polyElement, {
+              color: this.config.holeOptions.color,
+              weight: this.config.holeOptions.weight || 2,
+              opacity: this.config.holeOptions.opacity || 1,
+            });
+            featureGroup.addLayer(holePolyline);
+          }
+
+          // Add markers based on ring type
+          if (isHoleRing) {
+            this.addHoleMarker(polyElement, featureGroup, optimizationLevel);
+          } else {
+            this.addMarker(polyElement, featureGroup, optimizationLevel);
+          }
+        }
+      } else {
+        if (!polygonRings || !Array.isArray(polygonRings)) {
           return;
         }
 
-        // Add red polyline overlay for hole rings
-        if (isHoleRing) {
-          const holePolyline = L.polyline(polyElement, {
-            color: this.config.holeOptions.color,
-            weight: this.config.holeOptions.weight || 2,
-            opacity: this.config.holeOptions.opacity || 1,
-          });
-          featureGroup.addLayer(holePolyline);
-        }
+        polygonRings.forEach((polyElement: ILatLng[], i: number) => {
+          const isHoleRing = i > 0;
 
-        // Add markers
-        if (isHoleRing) {
-          this.addHoleMarker(polyElement, featureGroup, optimizationLevel);
-        } else {
-          this.addMarker(polyElement, featureGroup, optimizationLevel);
-        }
-      });
+          if (!polyElement || !Array.isArray(polyElement) || polyElement.length === 0) {
+            return;
+          }
+
+          // Add red polyline overlay for hole rings
+          if (isHoleRing) {
+            const holePolyline = L.polyline(polyElement, {
+              color: this.config.holeOptions.color,
+              weight: this.config.holeOptions.weight || 2,
+              opacity: this.config.holeOptions.opacity || 1,
+            });
+            featureGroup.addLayer(holePolyline);
+          }
+
+          // Add markers based on ring type
+          if (isHoleRing) {
+            this.addHoleMarker(polyElement, featureGroup, optimizationLevel);
+          } else {
+            this.addMarker(polyElement, featureGroup, optimizationLevel);
+          }
+        });
+      }
     });
   }
 
@@ -1488,6 +1519,7 @@ class Polydraw extends L.Control {
 
     // Method 2: If direct comparison fails, try to match by polygon geometry
     // This handles cases where feature groups are recreated during operations
+
     try {
       // Get the polygon from the feature group
       const layers = featureGroup.getLayers();
@@ -1515,12 +1547,13 @@ class Polydraw extends L.Control {
             return polygonData.id;
           }
         } catch (error) {
-          console.warn('🔍 findPolygonIdByFeatureGroup() - Error comparing geometry:', error);
+          console.warn('findPolygonIdByFeatureGroup() - Error comparing geometry:', error);
         }
       }
     } catch (error) {
-      console.warn('🔍 findPolygonIdByFeatureGroup() - Error in geometry comparison:', error);
+      console.warn('findPolygonIdByFeatureGroup() - Error in geometry comparison:', error);
     }
+
     return null;
   }
 

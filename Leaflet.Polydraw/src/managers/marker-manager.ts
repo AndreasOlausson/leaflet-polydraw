@@ -262,56 +262,77 @@ export class MarkerManager {
     try {
       this.isUpdatingPolygon = true;
 
-      requestAnimationFrame(() => {
-        try {
-          const posarrays = polygon.getLatLngs();
+      const originalStructure = (polygon as any)._polydrawOriginalStructure;
+      const posarrays = polygon.getLatLngs();
 
-          // Check if this is a simple polygon (flat structure from split operations)
-          if (this.isSimplePolygonStructure(posarrays)) {
-            // For simple polygons, just map markers directly to coordinates
-            const newCoords = markers.map((marker) => marker.getLatLng());
-
-            if (newCoords.length > 0 && this.isValidCoordinateArray(newCoords)) {
-              (polygon as any).setLatLngs(newCoords);
-              return;
-            }
-          }
-
-          const rebuiltCoords = this.rebuildCoordinatesFromMarkers(polygon, markers);
-          if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
-            (polygon as any).setLatLngs(rebuiltCoords);
-          } else {
-            return;
-          }
-
-          // Update polylines for holes if they exist
-          const polylines = allLayers.filter(
-            (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
-          );
-
-          if (
-            polylines.length > 0 &&
-            rebuiltCoords &&
-            rebuiltCoords[0] &&
-            rebuiltCoords[0].length > 1
-          ) {
-            let polylineIndex = 0;
-            for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
-              if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
-                (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
-                polylineIndex++;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('handleMarkerDrag: Error updating polygon coordinates:', error);
-        } finally {
-          this.isUpdatingPolygon = false;
+      if (originalStructure && this.hasHoleStructure(originalStructure)) {
+        const rebuiltCoords = this.rebuildCoordinatesFromMarkersWithOriginalStructure(
+          originalStructure,
+          markers,
+        );
+        if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
+          (polygon as any).setLatLngs(rebuiltCoords);
         }
-      });
+
+        // Update polylines for holes if they exist
+        const polylines = allLayers.filter(
+          (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
+        );
+
+        if (
+          polylines.length > 0 &&
+          rebuiltCoords &&
+          rebuiltCoords[0] &&
+          rebuiltCoords[0].length > 1
+        ) {
+          let polylineIndex = 0;
+          for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
+            if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
+              (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
+              polylineIndex++;
+            }
+          }
+        }
+      } else if (this.isSimplePolygonStructure(posarrays)) {
+        // For simple polygons, just map markers directly to coordinates
+        const newCoords = markers.map((marker) => marker.getLatLng());
+
+        if (newCoords.length > 0 && this.isValidCoordinateArray(newCoords)) {
+          (polygon as any).setLatLngs(newCoords);
+        }
+      } else {
+        const rebuiltCoords = this.rebuildCoordinatesFromMarkers(polygon, markers);
+        if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
+          (polygon as any).setLatLngs(rebuiltCoords);
+        }
+
+        // Update polylines for holes if they exist
+        const polylines = allLayers.filter(
+          (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
+        );
+
+        if (
+          polylines.length > 0 &&
+          rebuiltCoords &&
+          rebuiltCoords[0] &&
+          rebuiltCoords[0].length > 1
+        ) {
+          let polylineIndex = 0;
+          for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
+            if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
+              (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
+              polylineIndex++;
+            }
+          }
+        }
+      }
     } catch (error) {
-      console.error('handleMarkerDrag: Error in requestAnimationFrame setup:', error);
-      this.isUpdatingPolygon = false;
+      console.error('handleMarkerDrag: Error updating polygon coordinates:', error);
+    } finally {
+      // 🎯 Ensure flag is reset even if setLatLngs triggers more events
+      setTimeout(() => {
+        this.isUpdatingPolygon = false;
+      }, 50);
     }
   }
 
@@ -352,21 +373,60 @@ export class MarkerManager {
     }
 
     try {
-      const originalLatLngs = polygon.getLatLngs();
+      const originalLatLngs = (polygon as any)._polydrawOriginalStructure || polygon.getLatLngs();
 
       let feature: any;
 
-      if (this.hasHoleStructure(originalLatLngs)) {
-        // Step 1: Remove the original polygon
-        onFeatureGroupRemove(featureGroup);
+      // Step 1: Remove the original polygon
+      onFeatureGroupRemove(featureGroup);
 
-        // Step 2: Explode, update, and reconstruct
-        this.explodeUpdateAndReconstruct(
-          originalLatLngs,
-          markers,
-          onPolygonLayerAdd,
-          optimizationLevel,
-        );
+      // Step 2: Build GeoJSON from current marker positions
+      const markerCoordinates = markers.map((marker) => {
+        const latlng = marker.getLatLng();
+        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
+      });
+
+      // Step 3: Rebuild the polygon structure based on original structure
+      let geoJSON: any;
+
+      if (this.hasHoleStructure(originalLatLngs)) {
+        geoJSON = this.buildPolygonWithHoles(originalLatLngs, markers);
+      } else {
+        // Ensure the polygon is closed
+        if (markerCoordinates.length > 0) {
+          const first = markerCoordinates[0];
+          const last = markerCoordinates[markerCoordinates.length - 1];
+          if (first[0] !== last[0] || first[1] !== last[1]) {
+            markerCoordinates.push([first[0], first[1]]);
+          }
+        }
+
+        geoJSON = {
+          type: 'Feature' as const,
+          properties: {},
+          geometry: {
+            type: 'Polygon' as const,
+            coordinates: [markerCoordinates], // Simple polygon: [[[lng, lat], ...]]
+          },
+        };
+      }
+
+      if (geoJSON) {
+        // Step 4: Add the polygon using the same path as new polygons
+        // Check for kinks and handle them
+        if (this.turfHelper.hasKinks(geoJSON)) {
+          const unkink = this.turfHelper.getKinks(geoJSON);
+          unkink.forEach((unkinkedPolygon) => {
+            onPolygonLayerAdd(
+              this.turfHelper.getTurfPolygon(unkinkedPolygon),
+              false,
+              false,
+              optimizationLevel,
+            );
+          });
+        } else {
+          onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
+        }
       } else {
         // Simple polygon - build coordinates directly from markers
         const markerCoordinates = markers.map((marker) => {
@@ -1054,6 +1114,71 @@ export class MarkerManager {
   }
 
   /**
+   * Rebuild coordinates from markers using the original structure to prevent menu marker connection issues
+   */
+  private rebuildCoordinatesFromMarkersWithOriginalStructure(
+    originalStructure: any,
+    markers: L.Marker[],
+  ): any[] | null {
+    try {
+      const newPos = [];
+      let testarray = [];
+      let hole = [];
+      const layerLength = markers;
+      let markerOffset = 0;
+
+      if (
+        originalStructure.length === 1 &&
+        Array.isArray(originalStructure[0]) &&
+        originalStructure[0].length > 1
+      ) {
+        hole = [];
+
+        for (let ringIndex = 0; ringIndex < originalStructure[0].length; ringIndex++) {
+          testarray = [];
+          const currentRing = originalStructure[0][ringIndex];
+
+          // Map markers for this ring using the original structure
+          for (let j = 0; j < currentRing.length; j++) {
+            if (markerOffset + j < layerLength.length) {
+              testarray.push(layerLength[markerOffset + j].getLatLng());
+            }
+          }
+
+          if (testarray.length > 0) {
+            hole.push(testarray);
+          }
+
+          // Move marker offset for next ring
+          markerOffset += currentRing.length;
+        }
+
+        newPos.push(hole);
+      } else {
+        // Fallback to simple structure
+
+        hole = [];
+        testarray = [];
+
+        // Simple flat polygon - just map all markers to one ring
+        for (let j = 0; j < layerLength.length; j++) {
+          testarray.push(layerLength[j].getLatLng());
+        }
+
+        if (testarray.length > 0) {
+          hole.push(testarray);
+          newPos.push(hole);
+        }
+      }
+
+      return newPos.length > 0 ? newPos : null;
+    } catch (error) {
+      console.warn('rebuildCoordinatesFromMarkersWithOriginalStructure - Error:', error);
+      return null;
+    }
+  }
+
+  /**
    * Fix coordinate structure by rebuilding it properly from markers
    * Based on the working implementation from polydraw2 repo
    */
@@ -1083,15 +1208,19 @@ export class MarkerManager {
               testarray.push(layerLength[markerOffset + j].getLatLng());
             }
           }
+
           if (testarray.length > 0) {
             hole.push(testarray);
           }
+
           // Move marker offset for next ring
           markerOffset += currentRing.length;
         }
+
         newPos.push(hole);
       } else if (posarrays.length > 1) {
         // Multiple top-level rings (different structure)
+
         for (let index = 0; index < posarrays.length; index++) {
           testarray = [];
           hole = [];
@@ -1114,10 +1243,12 @@ export class MarkerManager {
               }
               hole.push(testarray);
             }
+
             newPos.push(hole);
           } else {
             // Subsequent rings (holes)
             length += posarrays[index - 1].length;
+
             for (let j = length; j < posarrays[index].length + length; j++) {
               if (j < layerLength.length) {
                 testarray.push(layerLength[j].getLatLng());
@@ -1129,17 +1260,21 @@ export class MarkerManager {
         }
       } else {
         // Simple flat structure
+
         hole = [];
         testarray = [];
+
         // Simple flat polygon - just map all markers to one ring
         for (let j = 0; j < layerLength.length; j++) {
           testarray.push(layerLength[j].getLatLng());
         }
+
         if (testarray.length > 0) {
           hole.push(testarray);
           newPos.push(hole);
         }
       }
+
       return newPos.length > 0 ? newPos : null;
     } catch (error) {
       console.warn('rebuildCoordinatesFromMarkers - Error:', error);
@@ -1353,6 +1488,7 @@ export class MarkerManager {
           return true;
         }
       }
+
       return false;
     } catch (error) {
       console.warn('MarkerManager.hasHoleStructure - Error:', error);
@@ -1371,29 +1507,64 @@ export class MarkerManager {
         return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
       });
 
-      // Rebuild ring structure based on original structure
       let markerIndex = 0;
       const rings: number[][][] = [];
 
-      // Process each ring from the original structure
-      for (let ringIdx = 0; ringIdx < originalLatLngs.length; ringIdx++) {
-        const originalRing = originalLatLngs[ringIdx];
+      // Check if it's the nested structure: [Array(N)] where Array(N) contains multiple rings
+      if (
+        Array.isArray(originalLatLngs) &&
+        originalLatLngs.length === 1 &&
+        Array.isArray(originalLatLngs[0]) &&
+        originalLatLngs[0].length > 1
+      ) {
+        // Process each ring from the nested structure
+        const ringArray = originalLatLngs[0]; // This is [ring1, ring2, ...]
 
-        if (Array.isArray(originalRing) && originalRing.length > 0) {
-          const ringCoords: number[][] = [];
-          // Take coordinates for this ring from markers
-          for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
-            ringCoords.push(markerCoords[markerIndex]);
-            markerIndex++;
-          }
-          // Ensure ring is closed
-          if (ringCoords.length > 0) {
-            const first = ringCoords[0];
-            const last = ringCoords[ringCoords.length - 1];
-            if (first[0] !== last[0] || first[1] !== last[1]) {
-              ringCoords.push([first[0], first[1]]);
+        for (let ringIdx = 0; ringIdx < ringArray.length; ringIdx++) {
+          const originalRing = ringArray[ringIdx];
+
+          if (Array.isArray(originalRing) && originalRing.length > 0) {
+            const ringCoords: number[][] = [];
+
+            // Take coordinates for this ring from markers
+            for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
+              ringCoords.push(markerCoords[markerIndex]);
+              markerIndex++;
             }
-            rings.push(ringCoords);
+
+            // Ensure ring is closed
+            if (ringCoords.length > 0) {
+              const first = ringCoords[0];
+              const last = ringCoords[ringCoords.length - 1];
+              if (first[0] !== last[0] || first[1] !== last[1]) {
+                ringCoords.push([first[0], first[1]]);
+              }
+              rings.push(ringCoords);
+            }
+          }
+        }
+      } else {
+        for (let ringIdx = 0; ringIdx < originalLatLngs.length; ringIdx++) {
+          const originalRing = originalLatLngs[ringIdx];
+
+          if (Array.isArray(originalRing) && originalRing.length > 0) {
+            const ringCoords: number[][] = [];
+
+            // Take coordinates for this ring from markers
+            for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
+              ringCoords.push(markerCoords[markerIndex]);
+              markerIndex++;
+            }
+
+            // Ensure ring is closed
+            if (ringCoords.length > 0) {
+              const first = ringCoords[0];
+              const last = ringCoords[ringCoords.length - 1];
+              if (first[0] !== last[0] || first[1] !== last[1]) {
+                ringCoords.push([first[0], first[1]]);
+              }
+              rings.push(ringCoords);
+            }
           }
         }
       }
@@ -1408,6 +1579,7 @@ export class MarkerManager {
         for (let i = 0; i < rings.length; i++) {
           const ring = rings[i];
           const isClockwise = this.isClockwise(ring);
+
           if (i === 0) {
             // Outer ring should be counterclockwise
             if (isClockwise) {
@@ -1431,6 +1603,8 @@ export class MarkerManager {
           coordinates: rings, // [outerRing, holeRing1, holeRing2, ...]
         },
       };
+
+      (geoJSON as any)._polydrawOriginalStructure = originalLatLngs;
 
       return geoJSON;
     } catch (error) {
@@ -1502,14 +1676,50 @@ export class MarkerManager {
   private explodePolygonIntoParts(originalLatLngs: any): any[] {
     const parts = [];
 
-    // Extract each ring as a separate part
-    for (let ringIdx = 0; ringIdx < originalLatLngs[0].length; ringIdx++) {
-      const ring = originalLatLngs[0][ringIdx];
-      parts.push({
-        ringIndex: ringIdx,
-        isHole: ringIdx > 0,
-        coordinates: ring.map((latlng: any) => [latlng.lng, latlng.lat]), // Convert to GeoJSON format
-      });
+    if (Array.isArray(originalLatLngs) && originalLatLngs.length > 0) {
+      // Check if it's a nested structure: [Array(2)] where Array(2) contains [ring1, ring2]
+      if (Array.isArray(originalLatLngs[0]) && originalLatLngs[0].length > 0) {
+        const firstElement = originalLatLngs[0][0];
+
+        // If first element is an array of LatLng objects, it's nested structure
+        if (Array.isArray(firstElement) && firstElement.length > 0 && 'lat' in firstElement[0]) {
+          // Extract each ring as a separate part
+          for (let ringIdx = 0; ringIdx < originalLatLngs[0].length; ringIdx++) {
+            const ring = originalLatLngs[0][ringIdx];
+            if (Array.isArray(ring)) {
+              parts.push({
+                ringIndex: ringIdx,
+                isHole: ringIdx > 0,
+                coordinates: ring.map((latlng: any) => [latlng.lng, latlng.lat]), // Convert to GeoJSON format
+              });
+            }
+          }
+        }
+        // If first element is a LatLng object, check if it's a multi-ring flattened structure
+        else if ('lat' in firstElement) {
+          // Check if this is a multi-ring flattened structure [ring1, ring2, ...]
+          if (originalLatLngs.length > 1) {
+            // Process each ring separately
+            for (let ringIdx = 0; ringIdx < originalLatLngs.length; ringIdx++) {
+              const ring = originalLatLngs[ringIdx];
+              if (Array.isArray(ring) && ring.length > 0) {
+                parts.push({
+                  ringIndex: ringIdx,
+                  isHole: ringIdx > 0,
+                  coordinates: ring.map((latlng: any) => [latlng.lng, latlng.lat]),
+                });
+              }
+            }
+          } else {
+            // Single ring flattened structure
+            parts.push({
+              ringIndex: 0,
+              isHole: false,
+              coordinates: originalLatLngs[0].map((latlng: any) => [latlng.lng, latlng.lat]),
+            });
+          }
+        }
+      }
     }
 
     return parts;
@@ -1570,8 +1780,10 @@ export class MarkerManager {
 
     for (const part of sortedParts) {
       let coords = part.coordinates;
+
       // Ensure proper winding direction for GeoJSON compliance
       const isClockwise = this.isClockwise(coords);
+
       if (part.isHole) {
         // Hole rings should be clockwise in GeoJSON
         if (!isClockwise) {
@@ -1583,6 +1795,7 @@ export class MarkerManager {
           coords = coords.reverse();
         }
       }
+
       rings.push(coords);
     }
 
