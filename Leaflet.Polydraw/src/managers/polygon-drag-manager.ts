@@ -538,6 +538,8 @@ export class PolygonDragManager {
       // Get new coordinates from dragged polygon
       const newGeoJSON = polygon.toGeoJSON();
 
+      const originalStructure = (polygon as any)._polydrawOriginalStructure;
+
       // Check if modifier key was held during drag
       if (this.isModifierDragActive()) {
         // Modifier key held - perform subtract operation (keep existing logic for now)
@@ -571,6 +573,10 @@ export class PolygonDragManager {
         this.isModifierKeyHeld = false;
         return;
       } else {
+        if (originalStructure) {
+          (newGeoJSON as any)._polydrawOriginalStructure = originalStructure;
+        }
+
         const simpleOps = new SimplePolygonOperations(
           this.getArrayOfFeatureGroups(),
           this.map,
