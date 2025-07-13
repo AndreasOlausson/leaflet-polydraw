@@ -662,12 +662,22 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    // Check if merging should be applied (unless explicitly disabled)
-    if (!noMerge && this.config.mergePolygons && this.arrayOfFeatureGroups.length > 0) {
-      // Use existing merge logic for now
+    console.log('addPolygon called with:', {
+      simplify,
+      noMerge,
+      mergePolygons: this.mergePolygons,
+      kinks: this.kinks,
+      currentPolygonHasKinks: this.currentPolygonHasKinks,
+      arrayOfFeatureGroupsLength: this.arrayOfFeatureGroups.length,
+    });
+
+    const hasKinks = this.currentPolygonHasKinks || this.kinks;
+
+    if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !hasKinks) {
+      console.log('Merging polygon with existing polygons');
       this.merge(latlngs);
     } else {
-      // Add directly without merging
+      console.log('Adding polygon directly without merging');
       this.addPolygonLayer(latlngs, simplify);
     }
   }
@@ -950,7 +960,7 @@ class Polydraw extends L.Control {
       () => this.polygonInformation.deletePolygonInformationStorage(),
       (featureGroup) => this.removeFeatureGroup(featureGroup),
       (geoJSON, simplify, dynamicTolerance, optimizationLevel) =>
-        this.addPolygonLayer(geoJSON, simplify, dynamicTolerance, optimizationLevel),
+        this.addPolygon(geoJSON, simplify, false), // Use addPolygon instead of addPolygonLayer to enable merge
       () => this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups),
       () => this.arrayOfFeatureGroups,
       this.config,
@@ -1037,10 +1047,6 @@ class Polydraw extends L.Control {
     // Create and add polygon
     const polygon = this.getPolygon(geoJSON);
     (polygon as any)._polydrawOptimizationLevel = optimizationLevel;
-
-    if ((geoJSON as any)._polydrawOriginalStructure) {
-      (polygon as any)._polydrawOriginalStructure = (geoJSON as any)._polydrawOriginalStructure;
-    }
 
     featureGroup.addLayer(polygon);
 
@@ -1218,14 +1224,111 @@ class Polydraw extends L.Control {
     return null;
   }
 
+  /**
+   * Debug function to log feature group structure
+   */
+  private logFeatureGroupStructure(label: string) {
+    console.log(`=== ${label} ===`);
+    console.log(`Total feature groups: ${this.arrayOfFeatureGroups.length}`);
+
+    this.arrayOfFeatureGroups.forEach((featureGroup, index) => {
+      try {
+        const geoJSON = featureGroup.toGeoJSON() as any;
+        if (geoJSON && geoJSON.features && geoJSON.features[0]) {
+          const coords = geoJSON.features[0].geometry.coordinates;
+          const structure = this.analyzeCoordinateStructure(coords);
+          console.log(`FeatureGroup ${index}: ${structure}`);
+
+          // Log first 3 and closing coordinate of each ring
+          if (coords && coords[0]) {
+            const ring = coords[0];
+            if (ring.length > 0) {
+              const first3 = ring.slice(0, 3);
+              const closing = ring.slice(-1);
+              console.log(
+                `  Ring coords: first3=${JSON.stringify(first3)}, closing=${JSON.stringify(closing)}`,
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`FeatureGroup ${index}: ERROR - ${error.message}`);
+      }
+    });
+    console.log(`=== End ${label} ===`);
+  }
+
+  /**
+   * Analyze coordinate structure for debugging
+   */
+  private analyzeCoordinateStructure(coords: any): string {
+    if (!Array.isArray(coords)) return 'NOT_ARRAY';
+
+    let structure = '[';
+    if (coords.length > 0) {
+      if (Array.isArray(coords[0])) {
+        structure += '[';
+        if (coords[0].length > 0) {
+          if (Array.isArray(coords[0][0])) {
+            structure += '[';
+            if (coords[0][0].length > 0) {
+              if (typeof coords[0][0][0] === 'number') {
+                structure += 'NUMBER';
+              } else {
+                structure += 'OTHER';
+              }
+            }
+            structure += ']';
+          } else {
+            structure += 'NOT_ARRAY';
+          }
+        }
+        structure += ']';
+      } else {
+        structure += 'NOT_ARRAY';
+      }
+    }
+    structure += ']';
+
+    return `${structure} (length: ${coords.length})`;
+  }
+
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
+    this.logFeatureGroupStructure('BEFORE MERGE');
+
+    // Simple check - just make sure we have something to work with
+    if (!latlngs || !latlngs.geometry) {
+      console.warn('merge: No geometry, adding directly');
+      this.addPolygonLayer(latlngs, true);
+      return;
+    }
+
     const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
     // Find all polygons that intersect with the new polygon
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       try {
         const featureCollection = featureGroup.toGeoJSON() as any;
-        const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+        if (
+          !featureCollection ||
+          !featureCollection.features ||
+          featureCollection.features.length === 0
+        ) {
+          return;
+        }
+
+        const firstFeature = featureCollection.features[0];
+        if (!firstFeature || !firstFeature.geometry) {
+          return;
+        }
+
+        // Skip validation - just try to use the polygon for intersection check
+        // The original Angular version didn't have this validation
+
+        const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+
+        // Try to use the polygon even if validation fails - be more lenient for merge operations
+        // The key is to attempt intersection detection rather than skip entirely
 
         // Check for intersection using multiple methods
         let hasIntersection = false;
@@ -1234,6 +1337,7 @@ class Polydraw extends L.Control {
         try {
           hasIntersection = this.turfHelper.polygonIntersect(existingPolygon, latlngs);
         } catch (error) {
+          console.warn('merge: polygonIntersect failed:', error.message);
           // Method 1 failed, try method 2
         }
 
@@ -1250,7 +1354,20 @@ class Polydraw extends L.Control {
               hasIntersection = true;
             }
           } catch (error) {
-            // Method 2 failed, continue
+            console.warn('merge: getIntersection failed:', error.message);
+            // Method 2 failed, try method 3
+          }
+        }
+
+        // Method 3: Simple bounding box overlap check as fallback
+        if (!hasIntersection) {
+          try {
+            hasIntersection = this.checkBoundingBoxOverlap(existingPolygon, latlngs);
+            if (hasIntersection) {
+              console.log('merge: Using bounding box overlap detection as fallback');
+            }
+          } catch (error) {
+            console.warn('merge: bounding box check failed:', error.message);
           }
         }
 
@@ -1258,11 +1375,13 @@ class Polydraw extends L.Control {
           intersectingFeatureGroups.push(featureGroup);
         }
       } catch (error) {
+        console.warn('merge: Error checking intersection:', error.message);
         // Skip problematic polygons
       }
     });
 
     if (intersectingFeatureGroups.length > 0) {
+      console.log(`merge: Found ${intersectingFeatureGroups.length} intersecting polygons`);
       // Merge with intersecting polygons
       let mergedPolygon = latlngs;
 
@@ -1280,6 +1399,7 @@ class Polydraw extends L.Control {
           // Remove the merged polygon
           this.removeFeatureGroup(featureGroup);
         } catch (error) {
+          console.warn('merge: Error during union operation:', error.message);
           // Skip problematic merges
         }
       });
@@ -1289,6 +1409,135 @@ class Polydraw extends L.Control {
     } else {
       // No intersections - just add the polygon normally
       this.addPolygonLayer(latlngs, true);
+    }
+
+    this.logFeatureGroupStructure('AFTER MERGE');
+  }
+
+  /**
+   * Validate GeoJSON polygon structure (duplicate from marker-manager for use in merge)
+   */
+  private isValidGeoJSONPolygon(geoJSON: any): boolean {
+    try {
+      if (!geoJSON || !geoJSON.geometry || geoJSON.geometry.type !== 'Polygon') {
+        return false;
+      }
+
+      const coordinates = geoJSON.geometry.coordinates;
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return false;
+      }
+
+      // Check each ring
+      for (const ring of coordinates) {
+        if (!Array.isArray(ring) || ring.length < 4) {
+          // Need at least 4 coordinates (3 + closing)
+          return false;
+        }
+
+        // Check each coordinate
+        for (const coord of ring) {
+          if (
+            !Array.isArray(coord) ||
+            coord.length < 2 ||
+            typeof coord[0] !== 'number' ||
+            typeof coord[1] !== 'number' ||
+            isNaN(coord[0]) ||
+            isNaN(coord[1])
+          ) {
+            return false;
+          }
+        }
+
+        // Check if ring is closed (first and last coordinates should be the same)
+        const first = ring[0];
+        const last = ring[ring.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('Error validating GeoJSON polygon:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Simple bounding box overlap check as fallback for intersection detection
+   */
+  private checkBoundingBoxOverlap(polygon1: any, polygon2: any): boolean {
+    try {
+      // Get bounding boxes for both polygons
+      const bbox1 = this.getBoundingBox(polygon1);
+      const bbox2 = this.getBoundingBox(polygon2);
+
+      if (!bbox1 || !bbox2) {
+        return false;
+      }
+
+      // Check if bounding boxes overlap
+      return !(
+        bbox1.maxLng < bbox2.minLng ||
+        bbox2.maxLng < bbox1.minLng ||
+        bbox1.maxLat < bbox2.minLat ||
+        bbox2.maxLat < bbox1.minLat
+      );
+    } catch (error) {
+      console.warn('checkBoundingBoxOverlap failed:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Get bounding box for a polygon
+   */
+  private getBoundingBox(
+    polygon: any,
+  ): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
+    try {
+      if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
+        return null;
+      }
+
+      const coordinates = polygon.geometry.coordinates[0]; // First ring (outer ring)
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return null;
+      }
+
+      let minLat = Infinity;
+      let maxLat = -Infinity;
+      let minLng = Infinity;
+      let maxLng = -Infinity;
+
+      for (const coord of coordinates) {
+        if (Array.isArray(coord) && coord.length >= 2) {
+          const lng = coord[0];
+          const lat = coord[1];
+
+          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+          }
+        }
+      }
+
+      if (
+        minLat === Infinity ||
+        maxLat === -Infinity ||
+        minLng === Infinity ||
+        maxLng === -Infinity
+      ) {
+        return null;
+      }
+
+      return { minLat, maxLat, minLng, maxLng };
+    } catch (error) {
+      console.warn('getBoundingBox failed:', error.message);
+      return null;
     }
   }
 

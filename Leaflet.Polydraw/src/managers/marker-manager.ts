@@ -207,7 +207,8 @@ export class MarkerManager {
   }
 
   /**
-   * Handle marker drag operations - update polygon coordinates based on marker positions
+   * Handle marker drag operations - simplified approach based on Angular version
+   * Keeps performance optimizations and validation from current version
    */
   handleMarkerDrag(featureGroup: L.FeatureGroup) {
     if (this.isUpdatingPolygon) {
@@ -239,69 +240,18 @@ export class MarkerManager {
     try {
       this.isUpdatingPolygon = true;
 
-      const originalStructure = (polygon as any)._polydrawOriginalStructure;
-      const posarrays = polygon.getLatLngs();
+      // 🎯 SIMPLIFIED APPROACH: Use Angular version's logic but with validation
+      const newPos = this.rebuildCoordinatesFromMarkersSimple(polygon, markers);
 
-      if (originalStructure && this.hasHoleStructure(originalStructure)) {
-        const rebuiltCoords = this.rebuildCoordinatesFromMarkersWithOriginalStructure(
-          originalStructure,
-          markers,
-        );
-        if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
-          (polygon as any).setLatLngs(rebuiltCoords);
-        }
+      if (newPos && this.isValidLatLngsStructure(newPos)) {
+        polygon.setLatLngs(newPos);
 
         // Update polylines for holes if they exist
         const polylines = allLayers.filter(
           (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
-        );
+        ) as L.Polyline[];
 
-        if (
-          polylines.length > 0 &&
-          rebuiltCoords &&
-          rebuiltCoords[0] &&
-          rebuiltCoords[0].length > 1
-        ) {
-          let polylineIndex = 0;
-          for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
-            if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
-              (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
-              polylineIndex++;
-            }
-          }
-        }
-      } else if (this.isSimplePolygonStructure(posarrays)) {
-        // For simple polygons, just map markers directly to coordinates
-        const newCoords = markers.map((marker) => marker.getLatLng());
-
-        if (newCoords.length > 0 && this.isValidCoordinateArray(newCoords)) {
-          (polygon as any).setLatLngs(newCoords);
-        }
-      } else {
-        const rebuiltCoords = this.rebuildCoordinatesFromMarkers(polygon, markers);
-        if (rebuiltCoords && this.isValidLatLngsStructure(rebuiltCoords)) {
-          (polygon as any).setLatLngs(rebuiltCoords);
-        }
-
-        // Update polylines for holes if they exist
-        const polylines = allLayers.filter(
-          (layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon),
-        );
-
-        if (
-          polylines.length > 0 &&
-          rebuiltCoords &&
-          rebuiltCoords[0] &&
-          rebuiltCoords[0].length > 1
-        ) {
-          let polylineIndex = 0;
-          for (let ringIndex = 1; ringIndex < rebuiltCoords[0].length; ringIndex++) {
-            if (polylineIndex < polylines.length && rebuiltCoords[0][ringIndex]) {
-              (polylines[polylineIndex] as any).setLatLngs(rebuiltCoords[0][ringIndex]);
-              polylineIndex++;
-            }
-          }
-        }
+        this.updateHolePolylines(polylines, newPos);
       }
     } catch (error) {
       console.error('handleMarkerDrag: Error updating polygon coordinates:', error);
@@ -315,6 +265,7 @@ export class MarkerManager {
 
   /**
    * Handle marker drag end operations - process polygon after marker drag completion
+   * SIMPLIFIED VERSION with merge functionality inspired by Angular version
    */
   handleMarkerDragEnd(
     featureGroup: L.FeatureGroup,
@@ -350,68 +301,19 @@ export class MarkerManager {
     }
 
     try {
-      // 🎯 CRITICAL FIX: Preserve original structure before removal
-      const originalLatLngs = (polygon as any)._polydrawOriginalStructure || polygon.getLatLngs();
-
-      let feature: any;
+      // Get current polygon structure from Leaflet
+      const originalLatLngs = polygon.getLatLngs();
 
       // Step 1: Remove the original polygon
       onFeatureGroupRemove(featureGroup);
 
       // Step 2: Build GeoJSON from current marker positions
-      const markerCoordinates = markers.map((marker) => {
-        const latlng = marker.getLatLng();
-        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
-      });
-
-      // Step 3: Rebuild the polygon structure based on original structure
       let geoJSON: any;
 
       if (this.hasHoleStructure(originalLatLngs)) {
         geoJSON = this.buildPolygonWithHoles(originalLatLngs, markers);
       } else {
-        // Ensure the polygon is closed
-        if (markerCoordinates.length > 0) {
-          const first = markerCoordinates[0];
-          const last = markerCoordinates[markerCoordinates.length - 1];
-          if (first[0] !== last[0] || first[1] !== last[1]) {
-            markerCoordinates.push([first[0], first[1]]);
-          }
-        }
-
-        geoJSON = {
-          type: 'Feature' as const,
-          properties: {},
-          geometry: {
-            type: 'Polygon' as const,
-            coordinates: [markerCoordinates], // Simple polygon: [[[lng, lat], ...]]
-          },
-        };
-
-        // 🎯 CRITICAL FIX: Restore original structure to new GeoJSON
-        if (originalLatLngs) {
-          (geoJSON as any)._polydrawOriginalStructure = originalLatLngs;
-        }
-      }
-
-      if (geoJSON) {
-        // Step 4: Add the polygon using the same path as new polygons
-        // Check for kinks and handle them
-        if (this.turfHelper.hasKinks(geoJSON)) {
-          const unkink = this.turfHelper.getKinks(geoJSON);
-          unkink.forEach((unkinkedPolygon) => {
-            onPolygonLayerAdd(
-              this.turfHelper.getTurfPolygon(unkinkedPolygon),
-              false,
-              false,
-              optimizationLevel,
-            );
-          });
-        } else {
-          onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
-        }
-      } else {
-        // Simple polygon - build coordinates directly from markers
+        // Build simple polygon from markers
         const markerCoordinates = markers.map((marker) => {
           const latlng = marker.getLatLng();
           return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
@@ -426,44 +328,49 @@ export class MarkerManager {
           }
         }
 
-        const feature = {
+        geoJSON = {
           type: 'Feature' as const,
           properties: {},
           geometry: {
             type: 'Polygon' as const,
-            coordinates: [markerCoordinates], // Simple polygon: [[[lng, lat], ...]]
+            coordinates: [markerCoordinates],
           },
         };
+      }
 
-        // Handle end of marker drag, check for kinks and update polygons
-        onFeatureGroupRemove(featureGroup);
+      if (!geoJSON) {
+        console.warn('handleMarkerDragEnd: Failed to create GeoJSON');
+        onPolygonInfoCreate();
+        return;
+      }
 
-        // Check if the current polygon has kinks (self-intersections) after marker drag
-        if (this.turfHelper.hasKinks(feature)) {
-          const unkink = this.turfHelper.getKinks(feature);
-          // Handle unkinked polygons - split kinked polygon into valid parts
-          unkink.forEach((unkinkedPolygon) => {
-            // 🎯 CRITICAL: Check if this polygon underwent hole traversal
-            if ((unkinkedPolygon as any)._polydrawHoleTraversalOccurred) {
-              console.log(
-                'Polygon underwent hole traversal - adding as solid polygon (no hole structure)',
-              );
-              // Add as solid polygon without preserving any hole structure
-              onPolygonLayerAdd(unkinkedPolygon, false, false, optimizationLevel);
-            } else {
-              // Normal polygon - preserve structure
-              onPolygonLayerAdd(
-                this.turfHelper.getTurfPolygon(unkinkedPolygon),
-                false,
-                false,
-                optimizationLevel,
-              );
-            }
-          });
-        } else {
-          // No interaction - just add the polygon normally
-          onPolygonLayerAdd(feature, false, false, optimizationLevel);
-        }
+      // Step 3: Check for kinks first
+      if (this.turfHelper.hasKinks(geoJSON)) {
+        console.log('Polygon has kinks after drag, splitting...');
+        const unkink = this.turfHelper.getKinks(geoJSON);
+        unkink.forEach((unkinkedPolygon) => {
+          // For each unkinked polygon, check for merge
+          this.addPolygonWithMergeCheck(
+            this.turfHelper.getTurfPolygon(unkinkedPolygon),
+            getArrayOfFeatureGroups,
+            onPolygonLayerAdd,
+            onFeatureGroupRemove,
+            optimizationLevel,
+            config,
+            featureGroup, // Pass original feature group to exclude from merge check
+          );
+        });
+      } else {
+        // Step 4: Check for merge with existing polygons (inspired by Angular version)
+        this.addPolygonWithMergeCheck(
+          geoJSON,
+          getArrayOfFeatureGroups,
+          onPolygonLayerAdd,
+          onFeatureGroupRemove,
+          optimizationLevel,
+          config,
+          featureGroup, // Pass original feature group to exclude from merge check
+        );
       }
     } catch (error) {
       console.error('handleMarkerDragEnd: Error processing polygon after drag:', error);
@@ -501,6 +408,233 @@ export class MarkerManager {
 
     // Updated feature groups after drag
     onPolygonInfoCreate();
+  }
+
+  /**
+   * Add polygon with merge check - simplified version inspired by Angular
+   * FIXED: Now checks for merge BEFORE removing the original polygon
+   */
+  private addPolygonWithMergeCheck(
+    geoJSON: any,
+    getArrayOfFeatureGroups?: () => any[],
+    onPolygonLayerAdd?: (
+      geoJSON: any,
+      simplify: boolean,
+      dynamicTolerance: boolean,
+      optimizationLevel: number,
+    ) => void,
+    onFeatureGroupRemove?: (featureGroup: L.FeatureGroup) => void,
+    optimizationLevel: number = 0,
+    config?: any,
+    originalFeatureGroup?: L.FeatureGroup, // NEW: Pass the original feature group to exclude from merge check
+  ) {
+    // Validate the input geoJSON before proceeding
+    if (!this.isValidGeoJSONPolygon(geoJSON)) {
+      console.warn('addPolygonWithMergeCheck: Invalid geoJSON polygon, skipping merge check');
+      if (onPolygonLayerAdd) {
+        onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
+      }
+      return;
+    }
+
+    // Check if merge is enabled and we have other polygons to check against
+    // For simplicity, always check for merge if we have the required functions
+    const shouldCheckMerge = getArrayOfFeatureGroups && onFeatureGroupRemove && onPolygonLayerAdd;
+
+    if (!shouldCheckMerge) {
+      // No merge check - just add the polygon
+      if (onPolygonLayerAdd) {
+        onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
+      }
+      return;
+    }
+
+    const arrayOfFeatureGroups = getArrayOfFeatureGroups();
+    if (!arrayOfFeatureGroups || arrayOfFeatureGroups.length === 0) {
+      // No existing polygons to merge with
+      onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
+      return;
+    }
+
+    // Check for intersections with existing polygons (inspired by Angular merge method)
+    // EXCLUDE the original feature group from the merge check
+    const intersectingFeatureGroups: any[] = [];
+    const polygonFeatures: any[] = [];
+
+    for (const featureGroup of arrayOfFeatureGroups) {
+      // Skip the original feature group (the one being dragged)
+      if (originalFeatureGroup && featureGroup === originalFeatureGroup) {
+        continue;
+      }
+
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        if (
+          !featureCollection ||
+          !featureCollection.features ||
+          featureCollection.features.length === 0
+        ) {
+          continue;
+        }
+
+        const firstFeature = featureCollection.features[0];
+        if (!firstFeature || !firstFeature.geometry) {
+          continue;
+        }
+
+        // Validate the existing feature before intersection check
+        if (!this.isValidGeoJSONPolygon(firstFeature)) {
+          console.warn('addPolygonWithMergeCheck: Skipping invalid existing polygon');
+          continue;
+        }
+
+        // Handle both simple polygons and polygons with holes
+        if (firstFeature.geometry.coordinates.length > 1) {
+          // Polygon with holes - check each part
+          for (const element of firstFeature.geometry.coordinates) {
+            try {
+              const feature = this.turfHelper.getMultiPolygon([element]);
+              if (this.isValidGeoJSONPolygon(feature)) {
+                const hasIntersection = this.turfHelper.polygonIntersect(feature, geoJSON);
+                if (hasIntersection) {
+                  intersectingFeatureGroups.push(featureGroup);
+                  polygonFeatures.push(feature);
+                  break; // Found intersection, no need to check other parts
+                }
+              }
+            } catch (error) {
+              console.warn('Error checking intersection with polygon part:', error);
+              continue;
+            }
+          }
+        } else {
+          // Simple polygon
+          try {
+            const feature = this.turfHelper.getTurfPolygon(firstFeature);
+            if (this.isValidGeoJSONPolygon(feature)) {
+              const hasIntersection = this.turfHelper.polygonIntersect(feature, geoJSON);
+              if (hasIntersection) {
+                intersectingFeatureGroups.push(featureGroup);
+                polygonFeatures.push(feature);
+              }
+            }
+          } catch (error) {
+            console.warn('Error checking intersection with simple polygon:', error);
+            continue;
+          }
+        }
+      } catch (error) {
+        console.warn('Error checking intersection with feature group:', error);
+        continue;
+      }
+    }
+
+    if (intersectingFeatureGroups.length > 0) {
+      console.log(`Found ${intersectingFeatureGroups.length} intersecting polygons, merging...`);
+      this.performSimpleMerge(
+        geoJSON,
+        intersectingFeatureGroups,
+        polygonFeatures,
+        onPolygonLayerAdd,
+        onFeatureGroupRemove,
+        optimizationLevel,
+      );
+    } else {
+      // No intersections - just add the polygon
+      onPolygonLayerAdd(geoJSON, false, false, optimizationLevel);
+    }
+  }
+
+  /**
+   * Validate GeoJSON polygon structure
+   */
+  private isValidGeoJSONPolygon(geoJSON: any): boolean {
+    try {
+      if (!geoJSON || !geoJSON.geometry || geoJSON.geometry.type !== 'Polygon') {
+        return false;
+      }
+
+      const coordinates = geoJSON.geometry.coordinates;
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return false;
+      }
+
+      // Check each ring
+      for (const ring of coordinates) {
+        if (!Array.isArray(ring) || ring.length < 4) {
+          // Need at least 4 coordinates (3 + closing)
+          return false;
+        }
+
+        // Check each coordinate
+        for (const coord of ring) {
+          if (
+            !Array.isArray(coord) ||
+            coord.length < 2 ||
+            typeof coord[0] !== 'number' ||
+            typeof coord[1] !== 'number' ||
+            isNaN(coord[0]) ||
+            isNaN(coord[1])
+          ) {
+            return false;
+          }
+        }
+
+        // Check if ring is closed (first and last coordinates should be the same)
+        const first = ring[0];
+        const last = ring[ring.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('Error validating GeoJSON polygon:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Perform simple merge operation - inspired by Angular unionPolygons method
+   */
+  private performSimpleMerge(
+    draggedPolygon: any,
+    intersectingFeatureGroups: any[],
+    polygonFeatures: any[],
+    onPolygonLayerAdd: (
+      geoJSON: any,
+      simplify: boolean,
+      dynamicTolerance: boolean,
+      optimizationLevel: number,
+    ) => void,
+    onFeatureGroupRemove: (featureGroup: L.FeatureGroup) => void,
+    optimizationLevel: number,
+  ) {
+    let mergedPolygon = draggedPolygon;
+
+    // Merge with all intersecting polygons (inspired by Angular unionPolygons)
+    for (let i = 0; i < intersectingFeatureGroups.length; i++) {
+      const featureGroup = intersectingFeatureGroups[i];
+      const polygonFeature = polygonFeatures[i];
+
+      try {
+        // Perform union operation
+        const unionResult = this.turfHelper.union(mergedPolygon, polygonFeature);
+        if (unionResult) {
+          mergedPolygon = unionResult;
+
+          // Remove the merged feature group
+          onFeatureGroupRemove(featureGroup);
+        }
+      } catch (error) {
+        console.warn('Error during union operation:', error);
+        // Continue with other merges
+      }
+    }
+
+    // Add the final merged polygon
+    onPolygonLayerAdd(mergedPolygon, false, false, optimizationLevel);
   }
 
   /**
@@ -1317,82 +1451,105 @@ export class MarkerManager {
   }
 
   /**
-   * Build polygon with holes from markers
+   * Build polygon with holes from markers - SIMPLIFIED AND FIXED
    */
   private buildPolygonWithHoles(originalLatLngs: any, markers: L.Marker[]): any {
     try {
+      console.log('buildPolygonWithHoles called with:', {
+        originalLatLngs,
+        markerCount: markers.length,
+        hasHoleStructure: this.hasHoleStructure(originalLatLngs),
+      });
+
       // Map markers to coordinates
       const markerCoords = markers.map((marker) => {
         const latlng = marker.getLatLng();
         return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
       });
 
+      // Validate we have enough coordinates
+      if (markerCoords.length < 3) {
+        console.warn(
+          'buildPolygonWithHoles - Not enough coordinates for polygon:',
+          markerCoords.length,
+        );
+        return null;
+      }
+
       let markerIndex = 0;
       const rings: number[][][] = [];
 
-      // Check if it's the nested structure: [Array(N)] where Array(N) contains multiple rings
-      if (
-        Array.isArray(originalLatLngs) &&
-        originalLatLngs.length === 1 &&
-        Array.isArray(originalLatLngs[0]) &&
-        originalLatLngs[0].length > 1
-      ) {
-        // Process each ring from the nested structure
-        const ringArray = originalLatLngs[0]; // This is [ring1, ring2, ...]
+      if (this.hasHoleStructure(originalLatLngs)) {
+        // Try to determine ring sizes from original structure
+        const ringInfo = this.analyzeRingStructure(originalLatLngs);
+        console.log('Ring structure analysis:', ringInfo);
 
-        for (let ringIdx = 0; ringIdx < ringArray.length; ringIdx++) {
-          const originalRing = ringArray[ringIdx];
-
-          if (Array.isArray(originalRing) && originalRing.length > 0) {
+        if (ringInfo.length > 0) {
+          for (const info of ringInfo) {
             const ringCoords: number[][] = [];
 
-            // Take coordinates for this ring from markers
-            for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
+            // Take the expected number of coordinates for this ring
+            for (let i = 0; i < info.size && markerIndex < markerCoords.length; i++) {
               ringCoords.push(markerCoords[markerIndex]);
               markerIndex++;
             }
 
-            // Ensure ring is closed
-            if (ringCoords.length > 0) {
+            // Ensure ring is closed and has minimum coordinates
+            if (ringCoords.length >= 3) {
               const first = ringCoords[0];
               const last = ringCoords[ringCoords.length - 1];
               if (first[0] !== last[0] || first[1] !== last[1]) {
                 ringCoords.push([first[0], first[1]]);
               }
-              rings.push(ringCoords);
+
+              // Final validation - must have at least 4 coordinates (3 + closing)
+              if (ringCoords.length >= 4) {
+                rings.push(ringCoords);
+              } else {
+                console.warn('Ring has insufficient coordinates:', ringCoords.length);
+              }
             }
           }
         }
-      } else {
-        for (let ringIdx = 0; ringIdx < originalLatLngs.length; ringIdx++) {
-          const originalRing = originalLatLngs[ringIdx];
+      }
 
-          if (Array.isArray(originalRing) && originalRing.length > 0) {
-            const ringCoords: number[][] = [];
+      // If no rings were created, fall back to simple polygon
+      if (rings.length === 0) {
+        console.log('No rings created from hole structure, creating simple polygon');
+        const ringCoords: number[][] = [...markerCoords];
 
-            // Take coordinates for this ring from markers
-            for (let i = 0; i < originalRing.length && markerIndex < markerCoords.length; i++) {
-              ringCoords.push(markerCoords[markerIndex]);
-              markerIndex++;
-            }
-
-            // Ensure ring is closed
-            if (ringCoords.length > 0) {
-              const first = ringCoords[0];
-              const last = ringCoords[ringCoords.length - 1];
-              if (first[0] !== last[0] || first[1] !== last[1]) {
-                ringCoords.push([first[0], first[1]]);
-              }
-              rings.push(ringCoords);
-            }
+        // Ensure ring is closed
+        if (ringCoords.length >= 3) {
+          const first = ringCoords[0];
+          const last = ringCoords[ringCoords.length - 1];
+          if (first[0] !== last[0] || first[1] !== last[1]) {
+            ringCoords.push([first[0], first[1]]);
           }
+
+          // Final validation - must have at least 4 coordinates (3 + closing)
+          if (ringCoords.length >= 4) {
+            rings.push(ringCoords);
+          } else {
+            console.warn('Simple polygon has insufficient coordinates:', ringCoords.length);
+            return null;
+          }
+        } else {
+          console.warn('Not enough marker coordinates for simple polygon:', ringCoords.length);
+          return null;
         }
       }
 
       if (rings.length === 0) {
-        console.warn('MarkerManager.buildPolygonWithHoles - No rings created');
+        console.warn('MarkerManager.buildPolygonWithHoles - No valid rings created');
         return null;
       }
+
+      console.log(
+        'Created rings:',
+        rings.length,
+        'with sizes:',
+        rings.map((r) => r.length),
+      );
 
       // Ensure proper winding direction for GeoJSON compliance
       if (rings.length > 1) {
@@ -1424,13 +1581,55 @@ export class MarkerManager {
         },
       };
 
-      (geoJSON as any)._polydrawOriginalStructure = originalLatLngs;
-
       return geoJSON;
     } catch (error) {
       console.error('MarkerManager.buildPolygonWithHoles - Error:', error);
       return null;
     }
+  }
+  /**
+   * Analyze the ring structure to determine how to split markers
+   */
+  private analyzeRingStructure(originalLatLngs: any): Array<{ size: number; isHole: boolean }> {
+    const ringInfo: Array<{ size: number; isHole: boolean }> = [];
+
+    try {
+      // Check if it's the nested structure: [Array(N)] where Array(N) contains multiple rings
+      if (
+        Array.isArray(originalLatLngs) &&
+        originalLatLngs.length === 1 &&
+        Array.isArray(originalLatLngs[0]) &&
+        originalLatLngs[0].length > 1
+      ) {
+        // Process each ring from the nested structure
+        const ringArray = originalLatLngs[0]; // This is [ring1, ring2, ...]
+
+        for (let ringIdx = 0; ringIdx < ringArray.length; ringIdx++) {
+          const originalRing = ringArray[ringIdx];
+          if (Array.isArray(originalRing) && originalRing.length > 0) {
+            ringInfo.push({
+              size: originalRing.length,
+              isHole: ringIdx > 0,
+            });
+          }
+        }
+      } else if (Array.isArray(originalLatLngs) && originalLatLngs.length > 1) {
+        // Multiple top-level rings
+        for (let ringIdx = 0; ringIdx < originalLatLngs.length; ringIdx++) {
+          const originalRing = originalLatLngs[ringIdx];
+          if (Array.isArray(originalRing) && originalRing.length > 0) {
+            ringInfo.push({
+              size: originalRing.length,
+              isHole: ringIdx > 0,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Error analyzing ring structure:', error);
+    }
+
+    return ringInfo;
   }
 
   /**
@@ -1592,6 +1791,81 @@ export class MarkerManager {
     };
 
     return geoJSON;
+  }
+
+  /**
+   * Simplified coordinate rebuilding - FIXED VERSION
+   * Handles the actual Leaflet coordinate structure properly
+   */
+  private rebuildCoordinatesFromMarkersSimple(polygon: any, markers: L.Marker[]): any[] | null {
+    try {
+      const posarrays = polygon.getLatLngs();
+
+      // Simple case: just map all markers to coordinates in the same structure as original
+      if (posarrays.length === 1 && Array.isArray(posarrays[0])) {
+        // Check if this is a simple polygon: [[LatLng, LatLng, ...]]
+        if (
+          posarrays[0].length > 0 &&
+          posarrays[0][0] &&
+          typeof posarrays[0][0] === 'object' &&
+          'lat' in posarrays[0][0]
+        ) {
+          // Simple polygon structure: [[LatLng, LatLng, ...]]
+          const newCoords = markers.map((marker) => marker.getLatLng());
+          return [newCoords];
+        }
+
+        // Check if this is a polygon with holes: [[[LatLng, LatLng, ...], [LatLng, LatLng, ...]]]
+        if (posarrays[0].length > 0 && Array.isArray(posarrays[0][0])) {
+          // Polygon with holes - rebuild each ring
+          const newRings = [];
+          let markerIndex = 0;
+
+          for (let ringIdx = 0; ringIdx < posarrays[0].length; ringIdx++) {
+            const originalRing = posarrays[0][ringIdx];
+            const newRing = [];
+
+            // Map markers for this ring
+            for (let i = 0; i < originalRing.length && markerIndex < markers.length; i++) {
+              newRing.push(markers[markerIndex].getLatLng());
+              markerIndex++;
+            }
+
+            if (newRing.length > 0) {
+              newRings.push(newRing);
+            }
+          }
+
+          return [newRings];
+        }
+      }
+
+      // Fallback: simple flat structure
+      const newCoords = markers.map((marker) => marker.getLatLng());
+      return [newCoords];
+    } catch (error) {
+      console.warn('rebuildCoordinatesFromMarkersSimple - Error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update hole polylines when polygon coordinates change
+   */
+  private updateHolePolylines(polylines: L.Polyline[], newPos: any[]): void {
+    if (polylines.length > 0 && newPos && newPos[0] && newPos[0].length > 1) {
+      let polylineIndex = 0;
+      for (let ringIndex = 1; ringIndex < newPos[0].length; ringIndex++) {
+        if (polylineIndex < polylines.length && newPos[0][ringIndex]) {
+          try {
+            (polylines[polylineIndex] as any).setLatLngs(newPos[0][ringIndex]);
+            polylineIndex++;
+          } catch (error) {
+            console.warn('updateHolePolylines - Error updating polyline:', error);
+          }
+        }
+      }
+    }
   }
 
   // ========================================================================
