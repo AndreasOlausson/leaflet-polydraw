@@ -93,44 +93,11 @@ export class SimplifiedMarkerManager {
   }
 
   /**
-   * Get polygon from feature group
-   */
-  private getPolygonFromFeatureGroup(featureGroup: PolydrawFeatureGroup): L.Polygon | null {
-    const layers = featureGroup.getLayers();
-    const polygon = layers.find((layer) => layer instanceof L.Polygon) as L.Polygon;
-    return polygon || null;
-  }
-
-  /**
    * Get markers from feature group
    */
   private getMarkersFromFeatureGroup(featureGroup: PolydrawFeatureGroup): L.Marker[] {
     const layers = featureGroup.getLayers();
     return layers.filter((layer) => layer instanceof L.Marker) as L.Marker[];
-  }
-
-  /**
-   * Validate coordinate array
-   */
-  private isValidCoordinateArray(coords: ILatLng[]): boolean {
-    if (!Array.isArray(coords) || coords.length === 0) {
-      return false;
-    }
-
-    for (const coord of coords) {
-      if (
-        !coord ||
-        typeof coord !== 'object' ||
-        typeof coord.lat !== 'number' ||
-        typeof coord.lng !== 'number' ||
-        isNaN(coord.lat) ||
-        isNaN(coord.lng)
-      ) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   /**
@@ -147,4 +114,39 @@ export class SimplifiedMarkerManager {
 
     return null;
   }
+
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
+  // /**
+  //  * Get polygon from feature group
+  //  */
+  // private getPolygonFromFeatureGroup(featureGroup: PolydrawFeatureGroup): L.Polygon | null {
+  //   const layers = featureGroup.getLayers();
+  //   const polygon = layers.find((layer) => layer instanceof L.Polygon) as L.Polygon;
+  //   return polygon || null;
+  // }
+  // /**
+  //  * Validate coordinate array
+  //  */
+  // private isValidCoordinateArray(coords: ILatLng[]): boolean {
+  //   if (!Array.isArray(coords) || coords.length === 0) {
+  //     return false;
+  //   }
+
+  //   for (const coord of coords) {
+  //     if (
+  //       !coord ||
+  //       typeof coord !== 'object' ||
+  //       typeof coord.lat !== 'number' ||
+  //       typeof coord.lng !== 'number' ||
+  //       isNaN(coord.lat) ||
+  //       isNaN(coord.lng)
+  //     ) {
+  //       return false;
+  //     }
+  //   }
+
+  //   return true;
+  // }
 }

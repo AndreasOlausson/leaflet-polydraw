@@ -1275,178 +1275,6 @@ export class MarkerManager {
   }
 
   /**
-   * Check for interactions between dragged polygon and existing polygons (for marker drag operations)
-   */
-  private checkMarkerDragInteractions(
-    draggedPolygon: any,
-    arrayOfFeatureGroups: any[],
-    config: any,
-  ) {
-    const result = {
-      shouldMerge: false,
-      shouldCreateHole: false,
-      intersectingFeatureGroups: [] as any[],
-      containingFeatureGroup: null as any,
-    };
-
-    if (!config.dragPolygons?.autoMergeOnIntersect && !config.dragPolygons?.autoHoleOnContained) {
-      return result;
-    }
-
-    // Check interactions with all other polygons
-    for (const featureGroup of arrayOfFeatureGroups) {
-      try {
-        const featureCollection = featureGroup.toGeoJSON() as any;
-
-        // Validate feature collection
-        if (
-          !featureCollection ||
-          !featureCollection.features ||
-          featureCollection.features.length === 0
-        ) {
-          continue;
-        }
-
-        const firstFeature = featureCollection.features[0];
-        if (!firstFeature || !firstFeature.geometry) {
-          continue;
-        }
-
-        const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
-
-        // Check if dragged polygon is completely contained within existing polygon
-        if (config.dragPolygons.autoHoleOnContained) {
-          try {
-            const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
-            if (
-              difference &&
-              difference.geometry.type === 'Polygon' &&
-              difference.geometry.coordinates.length > 1
-            ) {
-              result.shouldCreateHole = true;
-              result.containingFeatureGroup = featureGroup;
-              break; // Hole takes precedence over merge
-            }
-          } catch (error) {
-            // Continue with other checks
-          }
-        }
-
-        // Check if polygons intersect (but dragged is not completely contained)
-        if (config.dragPolygons.autoMergeOnIntersect) {
-          let hasIntersection = false;
-
-          try {
-            // Method 1: Use the existing polygonIntersect method
-            hasIntersection = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
-          } catch (error) {
-            // Method 1 failed, try alternative
-          }
-
-          if (!hasIntersection) {
-            try {
-              // Method 2: Use direct intersection check
-              const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
-              hasIntersection =
-                intersection &&
-                intersection.geometry &&
-                (intersection.geometry.type === 'Polygon' ||
-                  intersection.geometry.type === 'MultiPolygon');
-            } catch (error) {
-              // Method 2 failed, continue
-            }
-          }
-
-          if (hasIntersection) {
-            result.shouldMerge = true;
-            result.intersectingFeatureGroups.push(featureGroup);
-          }
-        }
-      } catch (error) {
-        console.warn('Error checking marker drag interactions:', error.message);
-        continue;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Perform merge operation when dragged polygon intersects with others (for marker drag operations)
-   */
-  private performMarkerDragMerge(
-    draggedPolygon: any,
-    intersectingFeatureGroups: any[],
-    onPolygonLayerAdd: (
-      geoJSON: any,
-      simplify: boolean,
-      dynamicTolerance: boolean,
-      optimizationLevel: number,
-    ) => void,
-    optimizationLevel: number,
-  ) {
-    let mergedPolygon = draggedPolygon;
-
-    // Merge with all intersecting polygons
-    for (const featureGroup of intersectingFeatureGroups) {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-
-      // Perform union operation
-      const unionResult = this.turfHelper.union(mergedPolygon, existingPolygon);
-      if (unionResult) {
-        mergedPolygon = unionResult;
-
-        // Remove the merged feature group
-        try {
-          this.map.removeLayer(featureGroup);
-        } catch (error) {
-          // Silently handle layer removal errors
-        }
-      }
-    }
-
-    // Add the final merged polygon
-    onPolygonLayerAdd(mergedPolygon, false, false, optimizationLevel);
-  }
-
-  /**
-   * Perform hole creation when dragged polygon is completely within another (for marker drag operations)
-   */
-  private performMarkerDragHole(
-    draggedPolygon: any,
-    containingFeatureGroup: any,
-    onPolygonLayerAdd: (
-      geoJSON: any,
-      simplify: boolean,
-      dynamicTolerance: boolean,
-      optimizationLevel: number,
-    ) => void,
-    optimizationLevel: number,
-  ) {
-    const featureCollection = containingFeatureGroup.toGeoJSON() as any;
-    const containingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-
-    // Perform difference operation (subtract dragged polygon from containing polygon)
-    const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
-
-    if (differenceResult) {
-      // Remove the original containing polygon
-      try {
-        this.map.removeLayer(containingFeatureGroup);
-      } catch (error) {
-        // Silently handle layer removal errors
-      }
-
-      // Add the polygon with the new hole
-      onPolygonLayerAdd(differenceResult, false, false, optimizationLevel);
-    } else {
-      // Fallback: just add the dragged polygon normally
-      onPolygonLayerAdd(draggedPolygon, false, false, optimizationLevel);
-    }
-  }
-
-  /**
    * Check if the polygon structure has holes
    */
   private hasHoleStructure(latLngs: any): boolean {
@@ -1625,44 +1453,6 @@ export class MarkerManager {
   }
 
   /**
-   * Explode, update, and reconstruct approach for polygons with holes
-   * 1. Explode polygon into separate parts (outer + inner)
-   * 2. Update the dragged part with new coordinates
-   * 3. Reconstruct a new polygon with hole using updated part + unchanged part
-   */
-  private explodeUpdateAndReconstruct(
-    originalLatLngs: any,
-    markers: L.Marker[],
-    onPolygonLayerAdd: (
-      geoJSON: any,
-      simplify: boolean,
-      dynamicTolerance: boolean,
-      optimizationLevel: number,
-    ) => void,
-    optimizationLevel: number,
-  ) {
-    try {
-      // Step 1: Explode the polygon into separate parts
-      const explodedParts = this.explodePolygonIntoParts(originalLatLngs);
-
-      // Step 2: Update the dragged part with new marker coordinates
-      const updatedParts = this.updatePartsWithMarkers(explodedParts, markers);
-
-      // Step 3: Reconstruct a new polygon with hole
-      const reconstructedPolygon = this.reconstructPolygonWithHole(updatedParts);
-
-      // Step 4: Add the final polygon
-      if (reconstructedPolygon) {
-        onPolygonLayerAdd(reconstructedPolygon, false, false, optimizationLevel);
-      } else {
-        console.error('explodeUpdateAndReconstruct - Failed to reconstruct polygon');
-      }
-    } catch (error) {
-      console.error('explodeUpdateAndReconstruct - Error:', error);
-    }
-  }
-
-  /**
    * Step 1: Explode polygon into separate parts
    */
   private explodePolygonIntoParts(originalLatLngs: any): any[] {
@@ -1804,90 +1594,304 @@ export class MarkerManager {
     return geoJSON;
   }
 
-  /**
-   * Check if markers indicate that hole traversal occurred
-   */
-  private checkForHoleTraversalInMarkers(markers: L.Marker[], originalLatLngs: any): boolean {
-    try {
-      // Simple heuristic: if we have markers but the original structure had holes,
-      // and the markers form a self-intersecting pattern, it might be hole traversal
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
 
-      if (!this.hasHoleStructure(originalLatLngs)) {
-        return false; // No holes to traverse
-      }
+  // /**
+  //  * Check if markers indicate that hole traversal occurred
+  //  */
+  // private checkForHoleTraversalInMarkers(markers: L.Marker[], originalLatLngs: any): boolean {
+  //   try {
+  //     // Simple heuristic: if we have markers but the original structure had holes,
+  //     // and the markers form a self-intersecting pattern, it might be hole traversal
 
-      // Check if marker positions create a self-intersecting polygon
-      const markerCoords = markers.map((marker) => {
-        const latlng = marker.getLatLng();
-        return [latlng.lng, latlng.lat];
-      });
+  //     if (!this.hasHoleStructure(originalLatLngs)) {
+  //       return false; // No holes to traverse
+  //     }
 
-      // Ensure closed polygon for testing
-      if (markerCoords.length > 0) {
-        const first = markerCoords[0];
-        const last = markerCoords[markerCoords.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          markerCoords.push([first[0], first[1]]);
-        }
-      }
+  //     // Check if marker positions create a self-intersecting polygon
+  //     const markerCoords = markers.map((marker) => {
+  //       const latlng = marker.getLatLng();
+  //       return [latlng.lng, latlng.lat];
+  //     });
 
-      const testPolygon = {
-        type: 'Feature' as const,
-        properties: {},
-        geometry: {
-          type: 'Polygon' as const,
-          coordinates: [markerCoords],
-        },
-      };
+  //     // Ensure closed polygon for testing
+  //     if (markerCoords.length > 0) {
+  //       const first = markerCoords[0];
+  //       const last = markerCoords[markerCoords.length - 1];
+  //       if (first[0] !== last[0] || first[1] !== last[1]) {
+  //         markerCoords.push([first[0], first[1]]);
+  //       }
+  //     }
 
-      // If the marker polygon has kinks, it might indicate hole traversal
-      const hasKinks = this.turfHelper.hasKinks(testPolygon);
+  //     const testPolygon = {
+  //       type: 'Feature' as const,
+  //       properties: {},
+  //       geometry: {
+  //         type: 'Polygon' as const,
+  //         coordinates: [markerCoords],
+  //       },
+  //     };
 
-      if (hasKinks) {
-        console.log('Markers form self-intersecting polygon - potential hole traversal');
-        return true;
-      }
+  //     // If the marker polygon has kinks, it might indicate hole traversal
+  //     const hasKinks = this.turfHelper.hasKinks(testPolygon);
 
-      return false;
-    } catch (error) {
-      console.warn('Error checking for hole traversal in markers:', error.message);
-      return false;
-    }
-  }
+  //     if (hasKinks) {
+  //       console.log('Markers form self-intersecting polygon - potential hole traversal');
+  //       return true;
+  //     }
 
-  /**
-   * Build a solid polygon from markers (no holes)
-   */
-  private buildSolidPolygonFromMarkers(markers: L.Marker[]): any {
-    try {
-      const markerCoords = markers.map((marker) => {
-        const latlng = marker.getLatLng();
-        return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
-      });
+  //     return false;
+  //   } catch (error) {
+  //     console.warn('Error checking for hole traversal in markers:', error.message);
+  //     return false;
+  //   }
+  // }
 
-      // Ensure the polygon is closed
-      if (markerCoords.length > 0) {
-        const first = markerCoords[0];
-        const last = markerCoords[markerCoords.length - 1];
-        if (first[0] !== last[0] || first[1] !== last[1]) {
-          markerCoords.push([first[0], first[1]]);
-        }
-      }
+  // /**
+  //  * Build a solid polygon from markers (no holes)
+  //  */
+  // private buildSolidPolygonFromMarkers(markers: L.Marker[]): any {
+  //   try {
+  //     const markerCoords = markers.map((marker) => {
+  //       const latlng = marker.getLatLng();
+  //       return [latlng.lng, latlng.lat]; // GeoJSON format: [lng, lat]
+  //     });
 
-      const geoJSON = {
-        type: 'Feature' as const,
-        properties: {},
-        geometry: {
-          type: 'Polygon' as const,
-          coordinates: [markerCoords], // Single ring - no holes
-        },
-      };
+  //     // Ensure the polygon is closed
+  //     if (markerCoords.length > 0) {
+  //       const first = markerCoords[0];
+  //       const last = markerCoords[markerCoords.length - 1];
+  //       if (first[0] !== last[0] || first[1] !== last[1]) {
+  //         markerCoords.push([first[0], first[1]]);
+  //       }
+  //     }
 
-      console.log('Built solid polygon from markers - no holes preserved');
-      return geoJSON;
-    } catch (error) {
-      console.error('Error building solid polygon from markers:', error);
-      return null;
-    }
-  }
+  //     const geoJSON = {
+  //       type: 'Feature' as const,
+  //       properties: {},
+  //       geometry: {
+  //         type: 'Polygon' as const,
+  //         coordinates: [markerCoords], // Single ring - no holes
+  //       },
+  //     };
+
+  //     console.log('Built solid polygon from markers - no holes preserved');
+  //     return geoJSON;
+  //   } catch (error) {
+  //     console.error('Error building solid polygon from markers:', error);
+  //     return null;
+  //   }
+  // }
+
+  // /**
+  //  * Explode, update, and reconstruct approach for polygons with holes
+  //  * 1. Explode polygon into separate parts (outer + inner)
+  //  * 2. Update the dragged part with new coordinates
+  //  * 3. Reconstruct a new polygon with hole using updated part + unchanged part
+  //  */
+  // private explodeUpdateAndReconstruct(
+  //   originalLatLngs: any,
+  //   markers: L.Marker[],
+  //   onPolygonLayerAdd: (
+  //     geoJSON: any,
+  //     simplify: boolean,
+  //     dynamicTolerance: boolean,
+  //     optimizationLevel: number,
+  //   ) => void,
+  //   optimizationLevel: number,
+  // ) {
+  //   try {
+  //     // Step 1: Explode the polygon into separate parts
+  //     const explodedParts = this.explodePolygonIntoParts(originalLatLngs);
+
+  //     // Step 2: Update the dragged part with new marker coordinates
+  //     const updatedParts = this.updatePartsWithMarkers(explodedParts, markers);
+
+  //     // Step 3: Reconstruct a new polygon with hole
+  //     const reconstructedPolygon = this.reconstructPolygonWithHole(updatedParts);
+
+  //     // Step 4: Add the final polygon
+  //     if (reconstructedPolygon) {
+  //       onPolygonLayerAdd(reconstructedPolygon, false, false, optimizationLevel);
+  //     } else {
+  //       console.error('explodeUpdateAndReconstruct - Failed to reconstruct polygon');
+  //     }
+  //   } catch (error) {
+  //     console.error('explodeUpdateAndReconstruct - Error:', error);
+  //   }
+  // }
+
+  // /**
+  //  * Check for interactions between dragged polygon and existing polygons (for marker drag operations)
+  //  */
+  // private checkMarkerDragInteractions(
+  //   draggedPolygon: any,
+  //   arrayOfFeatureGroups: any[],
+  //   config: any,
+  // ) {
+  //   const result = {
+  //     shouldMerge: false,
+  //     shouldCreateHole: false,
+  //     intersectingFeatureGroups: [] as any[],
+  //     containingFeatureGroup: null as any,
+  //   };
+
+  //   if (!config.dragPolygons?.autoMergeOnIntersect && !config.dragPolygons?.autoHoleOnContained) {
+  //     return result;
+  //   }
+
+  //   // Check interactions with all other polygons
+  //   for (const featureGroup of arrayOfFeatureGroups) {
+  //     try {
+  //       const featureCollection = featureGroup.toGeoJSON() as any;
+
+  //       // Validate feature collection
+  //       if (
+  //         !featureCollection ||
+  //         !featureCollection.features ||
+  //         featureCollection.features.length === 0
+  //       ) {
+  //         continue;
+  //       }
+
+  //       const firstFeature = featureCollection.features[0];
+  //       if (!firstFeature || !firstFeature.geometry) {
+  //         continue;
+  //       }
+
+  //       const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+
+  //       // Check if dragged polygon is completely contained within existing polygon
+  //       if (config.dragPolygons.autoHoleOnContained) {
+  //         try {
+  //           const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+  //           if (
+  //             difference &&
+  //             difference.geometry.type === 'Polygon' &&
+  //             difference.geometry.coordinates.length > 1
+  //           ) {
+  //             result.shouldCreateHole = true;
+  //             result.containingFeatureGroup = featureGroup;
+  //             break; // Hole takes precedence over merge
+  //           }
+  //         } catch (error) {
+  //           // Continue with other checks
+  //         }
+  //       }
+
+  //       // Check if polygons intersect (but dragged is not completely contained)
+  //       if (config.dragPolygons.autoMergeOnIntersect) {
+  //         let hasIntersection = false;
+
+  //         try {
+  //           // Method 1: Use the existing polygonIntersect method
+  //           hasIntersection = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+  //         } catch (error) {
+  //           // Method 1 failed, try alternative
+  //         }
+
+  //         if (!hasIntersection) {
+  //           try {
+  //             // Method 2: Use direct intersection check
+  //             const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
+  //             hasIntersection =
+  //               intersection &&
+  //               intersection.geometry &&
+  //               (intersection.geometry.type === 'Polygon' ||
+  //                 intersection.geometry.type === 'MultiPolygon');
+  //           } catch (error) {
+  //             // Method 2 failed, continue
+  //           }
+  //         }
+
+  //         if (hasIntersection) {
+  //           result.shouldMerge = true;
+  //           result.intersectingFeatureGroups.push(featureGroup);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.warn('Error checking marker drag interactions:', error.message);
+  //       continue;
+  //     }
+  //   }
+
+  //   return result;
+  // }
+
+  // /**
+  //  * Perform merge operation when dragged polygon intersects with others (for marker drag operations)
+  //  */
+  // private performMarkerDragMerge(
+  //   draggedPolygon: any,
+  //   intersectingFeatureGroups: any[],
+  //   onPolygonLayerAdd: (
+  //     geoJSON: any,
+  //     simplify: boolean,
+  //     dynamicTolerance: boolean,
+  //     optimizationLevel: number,
+  //   ) => void,
+  //   optimizationLevel: number,
+  // ) {
+  //   let mergedPolygon = draggedPolygon;
+
+  //   // Merge with all intersecting polygons
+  //   for (const featureGroup of intersectingFeatureGroups) {
+  //     const featureCollection = featureGroup.toGeoJSON() as any;
+  //     const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+  //     // Perform union operation
+  //     const unionResult = this.turfHelper.union(mergedPolygon, existingPolygon);
+  //     if (unionResult) {
+  //       mergedPolygon = unionResult;
+
+  //       // Remove the merged feature group
+  //       try {
+  //         this.map.removeLayer(featureGroup);
+  //       } catch (error) {
+  //         // Silently handle layer removal errors
+  //       }
+  //     }
+  //   }
+
+  //   // Add the final merged polygon
+  //   onPolygonLayerAdd(mergedPolygon, false, false, optimizationLevel);
+  // }
+
+  // /**
+  //  * Perform hole creation when dragged polygon is completely within another (for marker drag operations)
+  //  */
+  // private performMarkerDragHole(
+  //   draggedPolygon: any,
+  //   containingFeatureGroup: any,
+  //   onPolygonLayerAdd: (
+  //     geoJSON: any,
+  //     simplify: boolean,
+  //     dynamicTolerance: boolean,
+  //     optimizationLevel: number,
+  //   ) => void,
+  //   optimizationLevel: number,
+  // ) {
+  //   const featureCollection = containingFeatureGroup.toGeoJSON() as any;
+  //   const containingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+  //   // Perform difference operation (subtract dragged polygon from containing polygon)
+  //   const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
+
+  //   if (differenceResult) {
+  //     // Remove the original containing polygon
+  //     try {
+  //       this.map.removeLayer(containingFeatureGroup);
+  //     } catch (error) {
+  //       // Silently handle layer removal errors
+  //     }
+
+  //     // Add the polygon with the new hole
+  //     onPolygonLayerAdd(differenceResult, false, false, optimizationLevel);
+  //   } else {
+  //     // Fallback: just add the dragged polygon normally
+  //     onPolygonLayerAdd(draggedPolygon, false, false, optimizationLevel);
+  //   }
+  // }
 }

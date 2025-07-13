@@ -2,7 +2,6 @@ import * as L from 'leaflet';
 import { DrawMode } from '../enums';
 import { TurfHelper } from '../turf-helper';
 import type {
-  ILatLng,
   PolydrawConfig,
   PolydrawPolygon,
   PolydrawFeatureGroup,
@@ -748,175 +747,6 @@ export class PolygonDragManager {
     // Don't add the dragged polygon back - it was used for subtraction
   }
 
-  /**
-   * Check for interactions between dragged polygon and existing polygons
-   */
-  private checkDragInteractions(
-    draggedPolygon: Feature<Polygon | MultiPolygon>,
-    excludeFeatureGroup: L.FeatureGroup,
-  ) {
-    const result = {
-      shouldMerge: false,
-      shouldCreateHole: false,
-      intersectingFeatureGroups: [] as L.FeatureGroup[],
-      containingFeatureGroup: null as L.FeatureGroup | null,
-    };
-
-    if (
-      !this.config.dragPolygons.autoMergeOnIntersect &&
-      !this.config.dragPolygons.autoHoleOnContained
-    ) {
-      return result;
-    }
-
-    // Clean up any empty feature groups before checking interactions
-    this.cleanupEmptyFeatureGroups();
-
-    const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
-
-    // Check interactions with all other polygons
-    for (const featureGroup of arrayOfFeatureGroups) {
-      if (featureGroup === excludeFeatureGroup) continue;
-
-      try {
-        const featureCollection = featureGroup.toGeoJSON() as any;
-
-        // DEBUG: Add validation before accessing features[0]
-        if (
-          !featureCollection ||
-          !featureCollection.features ||
-          featureCollection.features.length === 0
-        ) {
-          console.warn(
-            'DEBUG: Invalid feature collection in checkDragInteractions:',
-            featureCollection,
-          );
-          continue; // Skip this feature group
-        }
-
-        const firstFeature = featureCollection.features[0];
-        if (!firstFeature || !firstFeature.geometry) {
-          console.warn('DEBUG: Invalid first feature in checkDragInteractions:', firstFeature);
-          continue; // Skip this feature group
-        }
-
-        const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
-
-        // Check if dragged polygon is completely contained within existing polygon
-        // Use difference operation to check containment
-        if (this.config.dragPolygons.autoHoleOnContained) {
-          try {
-            const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
-            if (
-              difference &&
-              difference.geometry.type === 'Polygon' &&
-              difference.geometry.coordinates.length > 1
-            ) {
-              // If difference creates a polygon with holes, the dragged polygon was likely contained
-              result.shouldCreateHole = true;
-              result.containingFeatureGroup = featureGroup;
-              break; // Hole takes precedence over merge
-            }
-          } catch (error) {
-            // Continue with other checks
-          }
-        }
-
-        // Check if polygons intersect (but dragged is not completely contained)
-        if (this.config.dragPolygons.autoMergeOnIntersect) {
-          // Use multiple intersection detection methods for better reliability
-          let hasIntersection = false;
-
-          try {
-            // Method 1: Use the existing polygonIntersect method
-            hasIntersection = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
-          } catch (error) {
-            // Method 1 failed, try alternative
-          }
-
-          if (!hasIntersection) {
-            try {
-              // Method 2: Use direct intersection check
-              const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
-              hasIntersection =
-                intersection &&
-                intersection.geometry &&
-                (intersection.geometry.type === 'Polygon' ||
-                  intersection.geometry.type === 'MultiPolygon');
-            } catch (error) {
-              // Method 2 failed, continue
-            }
-          }
-
-          if (hasIntersection) {
-            result.shouldMerge = true;
-            result.intersectingFeatureGroups.push(featureGroup);
-          }
-        }
-      } catch (error) {
-        console.warn('Error checking drag interactions:', error.message);
-        continue;
-      }
-    }
-
-    return result;
-  }
-
-  /**
-   * Perform merge operation when dragged polygon intersects with others
-   */
-  private performDragMerge(
-    draggedPolygon: Feature<Polygon | MultiPolygon>,
-    intersectingFeatureGroups: L.FeatureGroup[],
-  ) {
-    let mergedPolygon = draggedPolygon;
-
-    // Merge with all intersecting polygons
-    for (const featureGroup of intersectingFeatureGroups) {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-
-      // Perform union operation
-      const unionResult = this.turfHelper.union(mergedPolygon, existingPolygon);
-      if (unionResult) {
-        mergedPolygon = unionResult;
-
-        if (this.removePolygonFromStateManagerCallback) {
-          this.removePolygonFromStateManagerCallback(featureGroup);
-        }
-      }
-    }
-
-    // Add the final merged polygon
-    this.addPolygonLayer(mergedPolygon, false);
-  }
-
-  /**
-   * Perform hole creation when dragged polygon is completely within another
-   */
-  private performDragHole(
-    draggedPolygon: Feature<Polygon | MultiPolygon>,
-    containingFeatureGroup: L.FeatureGroup,
-  ) {
-    const featureCollection = containingFeatureGroup.toGeoJSON() as any;
-    const containingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-
-    // Perform difference operation (subtract dragged polygon from containing polygon)
-    const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
-
-    if (differenceResult) {
-      if (this.removePolygonFromStateManagerCallback) {
-        this.removePolygonFromStateManagerCallback(containingFeatureGroup);
-      }
-
-      // Add the polygon with the new hole
-      this.addPolygonLayer(differenceResult, false);
-    } else {
-      // Fallback: just add the dragged polygon normally
-      this.addPolygonLayer(draggedPolygon, false);
-    }
-  }
-
   private addPolygonLayer(geoJSON: any, simplify: boolean): void {
     if (this.addPolygonLayerCallback) {
       this.addPolygonLayerCallback(geoJSON, simplify);
@@ -928,15 +758,6 @@ export class PolygonDragManager {
   private updatePolygonInformation(): void {
     if (this.updatePolygonInformationCallback) {
       this.updatePolygonInformationCallback();
-    }
-  }
-
-  /**
-   * Remove polygon from state manager (placeholder for future integration)
-   */
-  private removePolygonFromStateManager(featureGroup: L.FeatureGroup): void {
-    if (this.removePolygonFromStateManagerCallback) {
-      this.removePolygonFromStateManagerCallback(featureGroup);
     }
   }
 
@@ -987,4 +808,185 @@ export class PolygonDragManager {
     arrayOfFeatureGroups.length = 0;
     arrayOfFeatureGroups.push(...validFeatureGroups);
   }
+
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
+
+  // /**
+  //  * Remove polygon from state manager (placeholder for future integration)
+  //  */
+  // private removePolygonFromStateManager(featureGroup: L.FeatureGroup): void {
+  //   if (this.removePolygonFromStateManagerCallback) {
+  //     this.removePolygonFromStateManagerCallback(featureGroup);
+  //   }
+  // }
+  // /**
+  //  * Check for interactions between dragged polygon and existing polygons
+  //  */
+  // private checkDragInteractions(
+  //   draggedPolygon: Feature<Polygon | MultiPolygon>,
+  //   excludeFeatureGroup: L.FeatureGroup,
+  // ) {
+  //   const result = {
+  //     shouldMerge: false,
+  //     shouldCreateHole: false,
+  //     intersectingFeatureGroups: [] as L.FeatureGroup[],
+  //     containingFeatureGroup: null as L.FeatureGroup | null,
+  //   };
+
+  //   if (
+  //     !this.config.dragPolygons.autoMergeOnIntersect &&
+  //     !this.config.dragPolygons.autoHoleOnContained
+  //   ) {
+  //     return result;
+  //   }
+
+  //   // Clean up any empty feature groups before checking interactions
+  //   this.cleanupEmptyFeatureGroups();
+
+  //   const arrayOfFeatureGroups = this.getArrayOfFeatureGroups();
+
+  //   // Check interactions with all other polygons
+  //   for (const featureGroup of arrayOfFeatureGroups) {
+  //     if (featureGroup === excludeFeatureGroup) continue;
+
+  //     try {
+  //       const featureCollection = featureGroup.toGeoJSON() as any;
+
+  //       // DEBUG: Add validation before accessing features[0]
+  //       if (
+  //         !featureCollection ||
+  //         !featureCollection.features ||
+  //         featureCollection.features.length === 0
+  //       ) {
+  //         console.warn(
+  //           'DEBUG: Invalid feature collection in checkDragInteractions:',
+  //           featureCollection,
+  //         );
+  //         continue; // Skip this feature group
+  //       }
+
+  //       const firstFeature = featureCollection.features[0];
+  //       if (!firstFeature || !firstFeature.geometry) {
+  //         console.warn('DEBUG: Invalid first feature in checkDragInteractions:', firstFeature);
+  //         continue; // Skip this feature group
+  //       }
+
+  //       const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+
+  //       // Check if dragged polygon is completely contained within existing polygon
+  //       // Use difference operation to check containment
+  //       if (this.config.dragPolygons.autoHoleOnContained) {
+  //         try {
+  //           const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
+  //           if (
+  //             difference &&
+  //             difference.geometry.type === 'Polygon' &&
+  //             difference.geometry.coordinates.length > 1
+  //           ) {
+  //             // If difference creates a polygon with holes, the dragged polygon was likely contained
+  //             result.shouldCreateHole = true;
+  //             result.containingFeatureGroup = featureGroup;
+  //             break; // Hole takes precedence over merge
+  //           }
+  //         } catch (error) {
+  //           // Continue with other checks
+  //         }
+  //       }
+
+  //       // Check if polygons intersect (but dragged is not completely contained)
+  //       if (this.config.dragPolygons.autoMergeOnIntersect) {
+  //         // Use multiple intersection detection methods for better reliability
+  //         let hasIntersection = false;
+
+  //         try {
+  //           // Method 1: Use the existing polygonIntersect method
+  //           hasIntersection = this.turfHelper.polygonIntersect(draggedPolygon, existingPolygon);
+  //         } catch (error) {
+  //           // Method 1 failed, try alternative
+  //         }
+
+  //         if (!hasIntersection) {
+  //           try {
+  //             // Method 2: Use direct intersection check
+  //             const intersection = this.turfHelper.getIntersection(draggedPolygon, existingPolygon);
+  //             hasIntersection =
+  //               intersection &&
+  //               intersection.geometry &&
+  //               (intersection.geometry.type === 'Polygon' ||
+  //                 intersection.geometry.type === 'MultiPolygon');
+  //           } catch (error) {
+  //             // Method 2 failed, continue
+  //           }
+  //         }
+
+  //         if (hasIntersection) {
+  //           result.shouldMerge = true;
+  //           result.intersectingFeatureGroups.push(featureGroup);
+  //         }
+  //       }
+  //     } catch (error) {
+  //       console.warn('Error checking drag interactions:', error.message);
+  //       continue;
+  //     }
+  //   }
+
+  //   return result;
+  // }
+
+  // /**
+  //  * Perform merge operation when dragged polygon intersects with others
+  //  */
+  // private performDragMerge(
+  //   draggedPolygon: Feature<Polygon | MultiPolygon>,
+  //   intersectingFeatureGroups: L.FeatureGroup[],
+  // ) {
+  //   let mergedPolygon = draggedPolygon;
+
+  //   // Merge with all intersecting polygons
+  //   for (const featureGroup of intersectingFeatureGroups) {
+  //     const featureCollection = featureGroup.toGeoJSON() as any;
+  //     const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+  //     // Perform union operation
+  //     const unionResult = this.turfHelper.union(mergedPolygon, existingPolygon);
+  //     if (unionResult) {
+  //       mergedPolygon = unionResult;
+
+  //       if (this.removePolygonFromStateManagerCallback) {
+  //         this.removePolygonFromStateManagerCallback(featureGroup);
+  //       }
+  //     }
+  //   }
+
+  //   // Add the final merged polygon
+  //   this.addPolygonLayer(mergedPolygon, false);
+  // }
+
+  // /**
+  //  * Perform hole creation when dragged polygon is completely within another
+  //  */
+  // private performDragHole(
+  //   draggedPolygon: Feature<Polygon | MultiPolygon>,
+  //   containingFeatureGroup: L.FeatureGroup,
+  // ) {
+  //   const featureCollection = containingFeatureGroup.toGeoJSON() as any;
+  //   const containingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+  //   // Perform difference operation (subtract dragged polygon from containing polygon)
+  //   const differenceResult = this.turfHelper.polygonDifference(containingPolygon, draggedPolygon);
+
+  //   if (differenceResult) {
+  //     if (this.removePolygonFromStateManagerCallback) {
+  //       this.removePolygonFromStateManagerCallback(containingFeatureGroup);
+  //     }
+
+  //     // Add the polygon with the new hole
+  //     this.addPolygonLayer(differenceResult, false);
+  //   } else {
+  //     // Fallback: just add the dragged polygon normally
+  //     this.addPolygonLayer(draggedPolygon, false);
+  //   }
+  // }
 }

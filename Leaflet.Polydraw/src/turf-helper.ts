@@ -1074,36 +1074,6 @@ export class TurfHelper {
   }
 
   /**
-   * Create a "bite" by subtracting the intersected part of the hole from the polygon
-   */
-  private createBiteFromHoleIntersection(
-    polygon: Feature<Polygon>,
-    hole: Feature<Polygon>,
-  ): Feature<Polygon> | null {
-    try {
-      // Get the intersection between the hole and the polygon
-      const intersection = this.getIntersection(hole, polygon);
-
-      if (!intersection) {
-        return polygon; // No intersection, return original polygon
-      }
-
-      // Subtract the intersection from the polygon to create the "bite"
-      const result = this.polygonDifference(polygon, intersection);
-
-      if (result && result.geometry.type === 'Polygon') {
-        console.log('Created bite - removed area:', turf.area(intersection));
-        return result as Feature<Polygon>;
-      }
-
-      return polygon; // Fallback to original if difference operation fails
-    } catch (error) {
-      console.warn('Error creating bite from hole intersection:', error.message);
-      return polygon;
-    }
-  }
-
-  /**
    * Subtract intersecting holes from a polygon to create proper "bite" shapes
    */
   private subtractIntersectingHoles(
@@ -1305,5 +1275,38 @@ export class TurfHelper {
     }
 
     return feature;
+  }
+
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
+  /**
+   * Create a "bite" by subtracting the intersected part of the hole from the polygon
+   */
+  private createBiteFromHoleIntersection(
+    polygon: Feature<Polygon>,
+    hole: Feature<Polygon>,
+  ): Feature<Polygon> | null {
+    try {
+      // Get the intersection between the hole and the polygon
+      const intersection = this.getIntersection(hole, polygon);
+
+      if (!intersection) {
+        return polygon; // No intersection, return original polygon
+      }
+
+      // Subtract the intersection from the polygon to create the "bite"
+      const result = this.polygonDifference(polygon, intersection);
+
+      if (result && result.geometry.type === 'Polygon') {
+        console.log('Created bite - removed area:', turf.area(intersection));
+        return result as Feature<Polygon>;
+      }
+
+      return polygon; // Fallback to original if difference operation fails
+    } catch (error) {
+      console.warn('Error creating bite from hole intersection:', error.message);
+      return polygon;
+    }
   }
 }

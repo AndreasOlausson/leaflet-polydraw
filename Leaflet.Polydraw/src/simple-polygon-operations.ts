@@ -71,39 +71,41 @@ export class SimplePolygonOperations {
       this.addPolygonLayerCallback(geoJSON, false);
     }
   }
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
+  // /**
+  //  * Analyze coordinate structure for debugging
+  //  */
+  // private analyzeCoordinateStructure(coords: any): string {
+  //   if (!Array.isArray(coords)) return 'NOT_ARRAY';
 
-  /**
-   * Analyze coordinate structure for debugging
-   */
-  private analyzeCoordinateStructure(coords: any): string {
-    if (!Array.isArray(coords)) return 'NOT_ARRAY';
+  //   let structure = '[';
+  //   if (coords.length > 0) {
+  //     if (Array.isArray(coords[0])) {
+  //       structure += '[';
+  //       if (coords[0].length > 0) {
+  //         if (Array.isArray(coords[0][0])) {
+  //           structure += '[';
+  //           if (coords[0][0].length > 0) {
+  //             if (typeof coords[0][0][0] === 'number') {
+  //               structure += 'NUMBER';
+  //             } else {
+  //               structure += 'OTHER';
+  //             }
+  //           }
+  //           structure += ']';
+  //         } else {
+  //           structure += 'NOT_ARRAY';
+  //         }
+  //       }
+  //       structure += ']';
+  //     } else {
+  //       structure += 'NOT_ARRAY';
+  //     }
+  //   }
+  //   structure += ']';
 
-    let structure = '[';
-    if (coords.length > 0) {
-      if (Array.isArray(coords[0])) {
-        structure += '[';
-        if (coords[0].length > 0) {
-          if (Array.isArray(coords[0][0])) {
-            structure += '[';
-            if (coords[0][0].length > 0) {
-              if (typeof coords[0][0][0] === 'number') {
-                structure += 'NUMBER';
-              } else {
-                structure += 'OTHER';
-              }
-            }
-            structure += ']';
-          } else {
-            structure += 'NOT_ARRAY';
-          }
-        }
-        structure += ']';
-      } else {
-        structure += 'NOT_ARRAY';
-      }
-    }
-    structure += ']';
-
-    return `${structure} (length: ${coords.length})`;
-  }
+  //   return `${structure} (length: ${coords.length})`;
+  // }
 }

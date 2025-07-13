@@ -129,25 +129,6 @@ class Polydraw extends L.Control {
     );
   }
 
-  /**
-   * Handle polygon completion from drawing events manager
-   */
-  private handlePolygonComplete(geoPos: Feature<Polygon | MultiPolygon>) {
-    this.currentPolygonHasKinks = false;
-
-    switch (this.getDrawMode()) {
-      case DrawMode.Add:
-        this.addPolygon(geoPos, true);
-        break;
-      case DrawMode.Subtract:
-        this.subtractPolygon(geoPos);
-        break;
-      default:
-        break;
-    }
-    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-  }
-
   configurate(config: Partial<PolydrawConfig>) {
     this.config = { ...defaultConfig, ...config } as PolydrawConfig;
   }
@@ -524,13 +505,6 @@ class Polydraw extends L.Control {
     this.stateManager.setPolygonHasKinks(hasKinks);
   }
 
-  private get drawModeListeners(): DrawModeChangeHandler[] {
-    // This getter is used by the onAdd method to access listeners for UI setup
-    // We need to maintain compatibility with existing code that expects an array
-    // The actual event management is now handled by the State Manager
-    return this.legacyDrawModeListeners;
-  }
-
   // Legacy listeners array for backward compatibility
   private legacyDrawModeListeners: DrawModeChangeHandler[] = [];
 
@@ -711,25 +685,6 @@ class Polydraw extends L.Control {
     this.setDrawMode(DrawMode.Off);
   }
 
-  private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
-    // Extract LatLng coordinates from GeoJSON feature
-    let coord: ILatLng[][];
-    if (feature) {
-      if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
-      } else if (
-        feature.geometry.coordinates[0].length > 1 &&
-        feature.geometry.type === 'Polygon'
-      ) {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
-      } else {
-        coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
-      }
-    }
-
-    return coord;
-  }
-
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
     // Find the polygon ID by feature group
     const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
@@ -778,71 +733,6 @@ class Polydraw extends L.Control {
     this.setDrawMode(DrawMode.Off);
   }
 
-  /**
-   * Analyze coordinate structure for debugging
-   */
-  private analyzeCoordinateStructure(coords: any): string {
-    if (!Array.isArray(coords)) return 'NOT_ARRAY';
-
-    let structure = '[';
-    if (coords.length > 0) {
-      if (Array.isArray(coords[0])) {
-        structure += '[';
-        if (coords[0].length > 0) {
-          if (Array.isArray(coords[0][0])) {
-            structure += '[';
-            if (coords[0][0].length > 0) {
-              if (typeof coords[0][0][0] === 'number') {
-                structure += 'NUMBER';
-              } else {
-                structure += 'OTHER';
-              }
-            }
-            structure += ']';
-          } else {
-            structure += 'NOT_ARRAY';
-          }
-        }
-        structure += ']';
-      } else {
-        structure += 'NOT_ARRAY';
-      }
-    }
-    structure += ']';
-
-    return `${structure} (length: ${coords.length})`;
-  }
-
-  /**
-   * Analyze Leaflet coordinate structure for debugging
-   */
-  private analyzeLeafletCoordinateStructure(coords: any): string {
-    if (!Array.isArray(coords)) return 'NOT_ARRAY';
-
-    let structure = '[';
-    if (coords.length > 0) {
-      if (Array.isArray(coords[0])) {
-        structure += '[';
-        if (coords[0].length > 0) {
-          if (coords[0][0] && typeof coords[0][0] === 'object' && 'lat' in coords[0][0]) {
-            structure += 'LATLNG_OBJECT';
-          } else if (Array.isArray(coords[0][0])) {
-            structure += '[LATLNG_OBJECT]';
-          } else {
-            structure += 'OTHER';
-          }
-        }
-        structure += ']';
-      } else if (coords[0] && typeof coords[0] === 'object' && 'lat' in coords[0]) {
-        structure += 'LATLNG_OBJECT';
-      } else {
-        structure += 'OTHER';
-      }
-    }
-    structure += ']';
-
-    return `${structure} (length: ${coords.length})`;
-  }
   private getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
@@ -1005,30 +895,6 @@ class Polydraw extends L.Control {
     //TODO ...
   }
 
-  /**
-   * Wrapper methods for edge functionality - for backward compatibility with tests
-   */
-  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
-    this.ensureManagersInitialized();
-    if (this.polygonEdgeManager) {
-      this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
-    }
-  }
-
-  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    this.ensureManagersInitialized();
-    if (this.polygonEdgeManager) {
-      this.polygonEdgeManager.onEdgeClick(e, edgePolyline);
-    }
-  }
-
-  private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    this.ensureManagersInitialized();
-    if (this.polygonEdgeManager) {
-      this.polygonEdgeManager.highlightEdgeOnHover(edgePolyline, isHovering);
-    }
-  }
-
   private events(onoff: boolean) {
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
@@ -1140,25 +1006,6 @@ class Polydraw extends L.Control {
     });
   }
 
-  /**
-   * Modifier key drag functionality - Public wrappers for testing
-   */
-
-  // Test wrapper methods for polygon drag functionality
-  private detectModifierKey(event: MouseEvent): boolean {
-    this.ensureManagersInitialized();
-    return this.polygonDragManager
-      ? (this.polygonDragManager as any).detectModifierKey(event)
-      : false;
-  }
-
-  private setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    this.ensureManagersInitialized();
-    if (this.polygonDragManager) {
-      (this.polygonDragManager as any).setSubtractVisualMode(polygon, enabled);
-    }
-  }
-
   private performModifierSubtract(draggedPolygon: any, intersectingPolygons: any[]): void {
     this.ensureManagersInitialized();
     if (this.polygonDragManager) {
@@ -1176,118 +1023,6 @@ class Polydraw extends L.Control {
       ? (this.polygonDragManager as any).isModifierDragActive()
       : false;
     return managerState || this.currentModifierDragMode;
-  }
-
-  private handleModifierToggleDuringDrag(event: MouseEvent): void {
-    this.ensureManagersInitialized();
-    if (this.polygonDragManager) {
-      (this.polygonDragManager as any).handleModifierToggleDuringDrag(event);
-    }
-    // Also update local state for tests that check it
-    const isModifierPressed = this.detectModifierKey(event);
-    this.currentModifierDragMode = isModifierPressed;
-  }
-
-  private onPolygonMouseDown(event: any, polygon: any): void {
-    this.ensureManagersInitialized();
-
-    // Update local state for tests that check these properties
-    const isModifierPressed = this.detectModifierKey(event.originalEvent || event);
-    this.currentModifierDragMode = isModifierPressed;
-    this.isModifierKeyHeld = isModifierPressed;
-
-    if (this.polygonDragManager) {
-      (this.polygonDragManager as any).onPolygonMouseDown(event, polygon);
-    }
-  }
-
-  private onPolygonMouseUp(event: any): void {
-    this.ensureManagersInitialized();
-    if (this.polygonDragManager) {
-      // Ensure currentDragPolygon is set for the manager to process the mouse up
-      const manager = this.polygonDragManager as any;
-
-      // For tests: if currentDragPolygon is set on polydraw, use it
-      if (this.currentDragPolygon && !manager.currentDragPolygon) {
-        manager.currentDragPolygon = this.currentDragPolygon;
-        // Set drag data to indicate dragging is active
-        if (this.currentDragPolygon._polydrawDragData) {
-          this.currentDragPolygon._polydrawDragData.isDragging = true;
-        }
-      } else if (!manager.currentDragPolygon && event.target) {
-        manager.currentDragPolygon = event.target;
-      }
-
-      // For tests: call updatePolygonCoordinates if currentDragPolygon exists
-      if (manager.currentDragPolygon && manager.currentDragPolygon._polydrawDragData?.isDragging) {
-        this.updatePolygonCoordinates(
-          manager.currentDragPolygon,
-          manager.currentDragPolygon._polydrawFeatureGroup,
-          manager.currentDragPolygon._polydrawLatLngs,
-        );
-      }
-
-      manager.onPolygonMouseUp(event);
-    }
-  }
-  private updatePolygonCoordinates(polygon: any, featureGroup: any, originalLatLngs: any): void {
-    this.ensureManagersInitialized();
-
-    // Check if modifier drag mode is active - check both State Manager and local state for tests
-    const isModifierActive =
-      this.isModifierDragActive() || this.stateManager.isModifierDragActive();
-
-    if (isModifierActive) {
-      // Get new coordinates from dragged polygon
-      const newGeoJSON = polygon.toGeoJSON ? polygon.toGeoJSON() : originalLatLngs;
-
-      // Find intersecting polygons for modifier subtract
-      const intersectingFeatureGroups = this.findIntersectingPolygons
-        ? this.findIntersectingPolygons(newGeoJSON, featureGroup)
-        : [];
-
-      // Perform modifier subtract operation
-      this.performModifierSubtract(newGeoJSON, intersectingFeatureGroups);
-
-      // Reset modifier state after operation
-      this.currentModifierDragMode = false;
-      this.isModifierKeyHeld = false;
-
-      return;
-    }
-
-    if (this.polygonDragManager) {
-      try {
-        (this.polygonDragManager as any).updatePolygonCoordinates(
-          polygon,
-          featureGroup,
-          originalLatLngs,
-        );
-      } catch (error) {
-        console.warn('Failed to update polygon coordinates:', error.message);
-
-        // Fallback behavior for tests - use dragStartPosition if available
-        // The test expects exactly this format: [[[{ lat: 0, lng: 0 }]]]
-        if (this.dragStartPosition && polygon.setLatLngs) {
-          polygon.setLatLngs(this.dragStartPosition);
-        } else if (polygon.setLatLngs) {
-          // Fallback to the expected test format
-          polygon.setLatLngs([[[{ lat: 0, lng: 0 }]]]);
-        }
-      }
-    }
-  }
-
-  private checkDragInteractions(draggedPolygon: any, excludeFeatureGroup: any): any {
-    this.ensureManagersInitialized();
-    return this.polygonDragManager
-      ? (this.polygonDragManager as any).checkDragInteractions(draggedPolygon, excludeFeatureGroup)
-      : {
-          shouldMerge: false,
-          shouldCreateHole: false,
-          intersectingFeatureGroups: [],
-          containingFeatureGroup: null,
-        };
   }
 
   /**
@@ -1481,30 +1216,6 @@ class Polydraw extends L.Control {
     }
 
     return null;
-  }
-
-  /**
-   * Remove polygon from PolygonStateManager when dragging (to prevent duplicates)
-   */
-  private removePolygonFromStateManager(featureGroup: PolydrawFeatureGroup): void {
-    if (!this.polygonStateManager) {
-      return;
-    }
-
-    const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
-    if (polygonId) {
-      this.polygonStateManager.removePolygon(polygonId);
-    }
-  }
-
-  private findIntersectingPolygons(draggedPolygon: any, excludeFeatureGroup: any): any[] {
-    this.ensureManagersInitialized();
-    return this.polygonDragManager
-      ? (this.polygonDragManager as any).findIntersectingPolygons(
-          draggedPolygon,
-          excludeFeatureGroup,
-        )
-      : [];
   }
 
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
@@ -1886,6 +1597,293 @@ class Polydraw extends L.Control {
 
     return outerWrapper;
   }
+
+  // ========================================================================
+  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
+  // ========================================================================
+
+  // /**
+  //  * Handle polygon completion from drawing events manager
+  //  */
+  // private handlePolygonComplete(geoPos: Feature<Polygon | MultiPolygon>) {
+  //   this.currentPolygonHasKinks = false;
+
+  //   switch (this.getDrawMode()) {
+  //     case DrawMode.Add:
+  //       this.addPolygon(geoPos, true);
+  //       break;
+  //     case DrawMode.Subtract:
+  //       this.subtractPolygon(geoPos);
+  //       break;
+  //     default:
+  //       break;
+  //   }
+  //   this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+  // }
+
+  // private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
+  //   // Extract LatLng coordinates from GeoJSON feature
+  //   let coord: ILatLng[][];
+  //   if (feature) {
+  //     if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     } else if (
+  //       feature.geometry.coordinates[0].length > 1 &&
+  //       feature.geometry.type === 'Polygon'
+  //     ) {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0]) as ILatLng[][];
+  //     } else {
+  //       coord = L.GeoJSON.coordsToLatLngs(feature.geometry.coordinates[0][0]) as ILatLng[][];
+  //     }
+  //   }
+
+  //   return coord;
+  // }
+
+  // private removePolygonFromStateManager(featureGroup: PolydrawFeatureGroup): void {
+  //   if (!this.polygonStateManager) {
+  //     return;
+  //   }
+
+  //   const polygonId = this.findPolygonIdByFeatureGroup(featureGroup);
+  //   if (polygonId) {
+  //     this.polygonStateManager.removePolygon(polygonId);
+  //   }
+  // }
+
+  // private checkDragInteractions(draggedPolygon: any, excludeFeatureGroup: any): any {
+  //   this.ensureManagersInitialized();
+  //   return this.polygonDragManager
+  //     ? (this.polygonDragManager as any).checkDragInteractions(draggedPolygon, excludeFeatureGroup)
+  //     : {
+  //         shouldMerge: false,
+  //         shouldCreateHole: false,
+  //         intersectingFeatureGroups: [],
+  //         containingFeatureGroup: null,
+  //       };
+  // }
+
+  // private onPolygonMouseUp(event: any): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonDragManager) {
+  //     // Ensure currentDragPolygon is set for the manager to process the mouse up
+  //     const manager = this.polygonDragManager as any;
+
+  //     // For tests: if currentDragPolygon is set on polydraw, use it
+  //     if (this.currentDragPolygon && !manager.currentDragPolygon) {
+  //       manager.currentDragPolygon = this.currentDragPolygon;
+  //       // Set drag data to indicate dragging is active
+  //       if (this.currentDragPolygon._polydrawDragData) {
+  //         this.currentDragPolygon._polydrawDragData.isDragging = true;
+  //       }
+  //     } else if (!manager.currentDragPolygon && event.target) {
+  //       manager.currentDragPolygon = event.target;
+  //     }
+
+  //     // For tests: call updatePolygonCoordinates if currentDragPolygon exists
+  //     if (manager.currentDragPolygon && manager.currentDragPolygon._polydrawDragData?.isDragging) {
+  //       this.updatePolygonCoordinates(
+  //         manager.currentDragPolygon,
+  //         manager.currentDragPolygon._polydrawFeatureGroup,
+  //         manager.currentDragPolygon._polydrawLatLngs,
+  //       );
+  //     }
+
+  //     manager.onPolygonMouseUp(event);
+  //   }
+  // }
+
+  // private onPolygonMouseDown(event: any, polygon: any): void {
+  //   this.ensureManagersInitialized();
+
+  //   // Update local state for tests that check these properties
+  //   const isModifierPressed = this.detectModifierKey(event.originalEvent || event);
+  //   this.currentModifierDragMode = isModifierPressed;
+  //   this.isModifierKeyHeld = isModifierPressed;
+
+  //   if (this.polygonDragManager) {
+  //     (this.polygonDragManager as any).onPolygonMouseDown(event, polygon);
+  //   }
+  // }
+
+  // private handleModifierToggleDuringDrag(event: MouseEvent): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonDragManager) {
+  //     (this.polygonDragManager as any).handleModifierToggleDuringDrag(event);
+  //   }
+  //   // Also update local state for tests that check it
+  //   const isModifierPressed = this.detectModifierKey(event);
+  //   this.currentModifierDragMode = isModifierPressed;
+  // }
+
+  // private setSubtractVisualMode(polygon: any, enabled: boolean): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonDragManager) {
+  //     (this.polygonDragManager as any).setSubtractVisualMode(polygon, enabled);
+  //   }
+  // }
+
+  // private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonEdgeManager) {
+  //     this.polygonEdgeManager.highlightEdgeOnHover(edgePolyline, isHovering);
+  //   }
+  // }
+
+  // private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonEdgeManager) {
+  //     this.polygonEdgeManager.onEdgeClick(e, edgePolyline);
+  //   }
+  // }
+
+  // private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
+  //   this.ensureManagersInitialized();
+  //   if (this.polygonEdgeManager) {
+  //     this.polygonEdgeManager.addEdgeClickListeners(polygon, featureGroup);
+  //   }
+  // }
+
+  // /**
+  //  * Analyze Leaflet coordinate structure for debugging
+  //  */
+  // private analyzeLeafletCoordinateStructure(coords: any): string {
+  //   if (!Array.isArray(coords)) return 'NOT_ARRAY';
+
+  //   let structure = '[';
+  //   if (coords.length > 0) {
+  //     if (Array.isArray(coords[0])) {
+  //       structure += '[';
+  //       if (coords[0].length > 0) {
+  //         if (coords[0][0] && typeof coords[0][0] === 'object' && 'lat' in coords[0][0]) {
+  //           structure += 'LATLNG_OBJECT';
+  //         } else if (Array.isArray(coords[0][0])) {
+  //           structure += '[LATLNG_OBJECT]';
+  //         } else {
+  //           structure += 'OTHER';
+  //         }
+  //       }
+  //       structure += ']';
+  //     } else if (coords[0] && typeof coords[0] === 'object' && 'lat' in coords[0]) {
+  //       structure += 'LATLNG_OBJECT';
+  //     } else {
+  //       structure += 'OTHER';
+  //     }
+  //   }
+  //   structure += ']';
+
+  //   return `${structure} (length: ${coords.length})`;
+  // }
+
+  // /**
+  //  * Analyze coordinate structure for debugging
+  //  */
+  // private analyzeCoordinateStructure(coords: any): string {
+  //   if (!Array.isArray(coords)) return 'NOT_ARRAY';
+
+  //   let structure = '[';
+  //   if (coords.length > 0) {
+  //     if (Array.isArray(coords[0])) {
+  //       structure += '[';
+  //       if (coords[0].length > 0) {
+  //         if (Array.isArray(coords[0][0])) {
+  //           structure += '[';
+  //           if (coords[0][0].length > 0) {
+  //             if (typeof coords[0][0][0] === 'number') {
+  //               structure += 'NUMBER';
+  //             } else {
+  //               structure += 'OTHER';
+  //             }
+  //           }
+  //           structure += ']';
+  //         } else {
+  //           structure += 'NOT_ARRAY';
+  //         }
+  //       }
+  //       structure += ']';
+  //     } else {
+  //       structure += 'NOT_ARRAY';
+  //     }
+  //   }
+  //   structure += ']';
+
+  //   return `${structure} (length: ${coords.length})`;
+  // }
+
+  // private get drawModeListeners(): DrawModeChangeHandler[] {
+  //   // This getter is used by the onAdd method to access listeners for UI setup
+  //   // We need to maintain compatibility with existing code that expects an array
+  //   // The actual event management is now handled by the State Manager
+  //   return this.legacyDrawModeListeners;
+  // // }
+
+  // private findIntersectingPolygons(draggedPolygon: any, excludeFeatureGroup: any): any[] {
+  //   this.ensureManagersInitialized();
+  //   return this.polygonDragManager
+  //     ? (this.polygonDragManager as any).findIntersectingPolygons(
+  //         draggedPolygon,
+  //         excludeFeatureGroup,
+  //       )
+  //     : [];
+  // }
+  // private updatePolygonCoordinates(polygon: any, featureGroup: any, originalLatLngs: any): void {
+  //   this.ensureManagersInitialized();
+
+  //   // Check if modifier drag mode is active - check both State Manager and local state for tests
+  //   const isModifierActive =
+  //     this.isModifierDragActive() || this.stateManager.isModifierDragActive();
+
+  //   if (isModifierActive) {
+  //     // Get new coordinates from dragged polygon
+  //     const newGeoJSON = polygon.toGeoJSON ? polygon.toGeoJSON() : originalLatLngs;
+
+  //     // Find intersecting polygons for modifier subtract
+  //     const intersectingFeatureGroups = this.findIntersectingPolygons
+  //       ? this.findIntersectingPolygons(newGeoJSON, featureGroup)
+  //       : [];
+
+  //     // Perform modifier subtract operation
+  //     this.performModifierSubtract(newGeoJSON, intersectingFeatureGroups);
+
+  //     // Reset modifier state after operation
+  //     this.currentModifierDragMode = false;
+  //     this.isModifierKeyHeld = false;
+
+  //     return;
+  //   }
+
+  //   if (this.polygonDragManager) {
+  //     try {
+  //       (this.polygonDragManager as any).updatePolygonCoordinates(
+  //         polygon,
+  //         featureGroup,
+  //         originalLatLngs,
+  //       );
+  //     } catch (error) {
+  //       console.warn('Failed to update polygon coordinates:', error.message);
+
+  //       // Fallback behavior for tests - use dragStartPosition if available
+  //       // The test expects exactly this format: [[[{ lat: 0, lng: 0 }]]]
+  //       if (this.dragStartPosition && polygon.setLatLngs) {
+  //         polygon.setLatLngs(this.dragStartPosition);
+  //       } else if (polygon.setLatLngs) {
+  //         // Fallback to the expected test format
+  //         polygon.setLatLngs([[[{ lat: 0, lng: 0 }]]]);
+  //       }
+  //     }
+  //   }
+  // }
+
+  // /**
+  //  * Modifier key drag functionality - Public wrappers for testing
+  //  */
+  // // Test wrapper methods for polygon drag functionality
+  // private detectModifierKey(event: MouseEvent): boolean {
+  //   this.ensureManagersInitialized();
+  //   return this.polygonDragManager
+  //     ? (this.polygonDragManager as any).detectModifierKey(event)
+  //     : false;
+  // }
 }
 
 (L.control as any).polydraw = function (options: L.ControlOptions) {

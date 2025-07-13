@@ -248,7 +248,6 @@ export class PolygonStateManager {
         featureGroup,
         optimizationLevel,
       };
-
       this.polygons.set(id, polygonData);
 
       // Add to state manager
