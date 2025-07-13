@@ -210,78 +210,6 @@ class Polydraw extends L.Control {
       this.removeAllFeatureGroups();
     };
 
-    // const onStarClick = () => {
-    //   // Add a predefined star-shaped polygon
-    //   // const star: ILatLng[][][] = [[[
-    //   //   { lat: 58.391747, lng: 15.613276 },
-    //   //   { lat: 58.396747, lng: 15.617276 },
-    //   //   { lat: 58.398747, lng: 15.609276 },
-    //   //   { lat: 58.400747, lng: 15.617276 },
-    //   //   { lat: 58.404747, lng: 15.613276 },
-    //   //   { lat: 58.402747, lng: 15.621276 },
-    //   //   { lat: 58.406747, lng: 15.625276 },
-    //   //   { lat: 58.402747, lng: 15.629276 },
-    //   //   { lat: 58.404747, lng: 15.637276 },
-    //   //   { lat: 58.400747, lng: 15.633276 },
-    //   //   { lat: 58.398747, lng: 15.641276 },
-    //   //   { lat: 58.396747, lng: 15.633276 },
-    //   //   { lat: 58.391747, lng: 15.637276 },
-    //   //   { lat: 58.393747, lng: 15.629276 },
-    //   //   { lat: 58.389747, lng: 15.625276 },
-    //   //   { lat: 58.393747, lng: 15.621276 },
-    //   //   { lat: 58.391747, lng: 15.613276 }
-    //   // ]]];
-    //   const star: ILatLng[][][] = [[[
-    //     { lat: 0, lng: 0 },
-    //     { lat: 0, lng: 20 },
-    //     { lat: 20, lng: 20 },
-    //     { lat: 20, lng: 0 },
-    //     { lat: 0, lng: 0 }
-    //   ]]];
-    //   this.addAutoPolygon(star as any);
-    // };
-
-    // const onHoleClick = () => {
-    //   // Add a predefined polygon with a hole
-    //   const pn0254: ILatLng[][][] = [[
-    //     [
-    //       { lat: 58.402514, lng: 15.606188 },
-    //       { lat: 58.400691, lng: 15.607462 },
-    //       { lat: 58.400957, lng: 15.608783 },
-    //       { lat: 58.400674, lng: 15.610521 },
-    //       { lat: 58.401060, lng: 15.611603 },
-    //       { lat: 58.400907, lng: 15.612135 },
-    //       { lat: 58.400623, lng: 15.611772 },
-    //       { lat: 58.400534, lng: 15.613026 },
-    //       { lat: 58.401247, lng: 15.613070 },
-    //       { lat: 58.401030, lng: 15.613723 },
-    //       { lat: 58.401579, lng: 15.615028 },
-    //       { lat: 58.401997, lng: 15.612879 },
-    //       { lat: 58.402192, lng: 15.613048 },
-    //       { lat: 58.402807, lng: 15.611604 },
-    //       { lat: 58.403252, lng: 15.612538 },
-    //       { lat: 58.403960, lng: 15.611810 },
-    //       { lat: 58.403596, lng: 15.609680 },
-    //       { lat: 58.403315, lng: 15.610102 },
-    //       { lat: 58.402876, lng: 15.609084 },
-    //       { lat: 58.403180, lng: 15.608155 },
-    //       { lat: 58.403028, lng: 15.607659 },
-    //       { lat: 58.402723, lng: 15.608029 },
-    //       { lat: 58.402514, lng: 15.606188 }
-    //     ],
-    //     [
-    //       { lat: 58.401980, lng: 15.611379 },
-    //       { lat: 58.402183, lng: 15.610801 },
-    //       { lat: 58.402351, lng: 15.611059 },
-    //       { lat: 58.401779, lng: 15.612904 },
-    //       { lat: 58.401219, lng: 15.612407 },
-    //       { lat: 58.401301, lng: 15.611257 },
-    //       { lat: 58.401980, lng: 15.611379 }
-    //     ]
-    //   ]];
-    //   this.addAutoPolygon(pn0254 as any);
-    // };
-
     createButtons(
       container,
       this.subContainer,
@@ -289,8 +217,6 @@ class Polydraw extends L.Control {
       onDrawClick,
       onSubtractClick,
       onEraseClick,
-      // null,
-      // null,
     );
 
     // Register UI update listener with the State Manager's event system

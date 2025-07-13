@@ -19,29 +19,6 @@ export class MarkerManager {
     private map: L.Map,
   ) {}
 
-  // /**
-  //  * Get marker index based on position configuration
-  //  */
-  // getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
-  //   const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
-  //   const compass = new Compass(
-  //     bounds.getSouth(),
-  //     bounds.getWest(),
-  //     bounds.getNorth(),
-  //     bounds.getEast(),
-  //   );
-  //   const compassDirection = compass.getDirection(position);
-  //   const latLngPoint: ILatLng = {
-  //     lat: compassDirection.lat,
-  //     lng: compassDirection.lng,
-  //   };
-  //   const targetPoint = this.turfHelper.getCoord(latLngPoint);
-  //   const fc = this.turfHelper.getFeaturePointCollection(latlngs);
-  //   const nearestPointIdx = this.turfHelper.getNearestPointIndex(targetPoint, fc as any);
-
-  //   return nearestPointIdx;
-  // }
-
   /**
    * Get marker index based on position configuration (used internally)
    */
