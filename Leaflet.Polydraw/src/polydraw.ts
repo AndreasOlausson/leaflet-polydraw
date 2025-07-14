@@ -393,6 +393,12 @@ class PolydrawSimple extends L.Control {
     console.log('getPolygons: ', latlngs);
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
     polygon.setStyle(this.config.polygonOptions);
+    
+    // Enable polygon dragging if configured
+    if (this.config.modes.dragPolygons) {
+      this.enablePolygonDragging(polygon, latlngs);
+    }
+    
     return polygon;
   }
 
@@ -633,23 +639,69 @@ class PolydrawSimple extends L.Control {
   }
 
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    let addHole = latlngs;
+    console.log('subtract called with:', latlngs);
+    
+    // Find only the polygons that actually intersect with the subtract area
+    const intersectingFeatureGroups: L.FeatureGroup[] = [];
+    
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      const layer = featureCollection.features[0];
-      const poly = this.getLatLngsFromJson(layer);
-      const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-      const newPolygon = this.turfHelper.polygonDifference(feature, addHole);
-      this.deletePolygon(poly);
-      this.removeFeatureGroupOnMerge(featureGroup);
-      addHole = newPolygon;
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+          return;
+        }
+
+        const firstFeature = featureCollection.features[0];
+        if (!firstFeature.geometry || !firstFeature.geometry.coordinates) {
+          return;
+        }
+
+        const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+        
+        // Check if the subtract area intersects with this polygon
+        const hasIntersection = this.checkPolygonIntersection(existingPolygon, latlngs);
+        
+        if (hasIntersection) {
+          console.log('Found intersecting polygon for subtract operation');
+          intersectingFeatureGroups.push(featureGroup);
+        }
+      } catch (error) {
+        console.warn('subtract: Error checking intersection:', error);
+      }
     });
 
-    const newLatlngs: Feature<Polygon | MultiPolygon> = addHole;
-    const coords = this.turfHelper.getCoords(newLatlngs);
-    coords.forEach((value) => {
-      this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), true);
+    console.log(`subtract: Found ${intersectingFeatureGroups.length} intersecting polygons`);
+
+    // Only apply subtract to intersecting polygons
+    intersectingFeatureGroups.forEach((featureGroup) => {
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        const layer = featureCollection.features[0];
+        const poly = this.getLatLngsFromJson(layer);
+        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+        
+        // Perform the difference operation (subtract)
+        const newPolygon = this.turfHelper.polygonDifference(feature, latlngs);
+        
+        // Remove the original polygon
+        this.removeFeatureGroup(featureGroup);
+        
+        // Add the result (polygon with hole or remaining parts)
+        if (newPolygon) {
+          const coords = this.turfHelper.getCoords(newPolygon);
+          coords.forEach((value) => {
+            this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), true);
+          });
+        }
+      } catch (error) {
+        console.warn('subtract: Error during subtract operation:', error);
+      }
     });
+
+    // If no intersections found, just ignore the subtract operation
+    if (intersectingFeatureGroups.length === 0) {
+      console.log('subtract: No intersecting polygons found, ignoring subtract operation');
+    }
   }
 
   private events(onoff: boolean) {
@@ -1132,6 +1184,264 @@ class PolydrawSimple extends L.Control {
     wrapper.appendChild(markerContent);
 
     return outerWrapper;
+  }
+
+  // SIMPLE POLYGON DRAGGING - NO MANAGERS!
+  private enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>) {
+    if (!this.config.modes.dragPolygons) return;
+
+    // Store original data for dragging
+    polygon._polydrawOriginalLatLngs = latlngs;
+    polygon._polydrawDragData = {
+      isDragging: false,
+      startPosition: null,
+      startLatLngs: null,
+    };
+
+    // Add mouse down event to start dragging
+    polygon.on('mousedown', (e: any) => {
+      if (this.getDrawMode() !== DrawMode.Off) return;
+
+      // Prevent event bubbling
+      L.DomEvent.stopPropagation(e);
+      L.DomEvent.preventDefault(e);
+
+      // Initialize drag
+      polygon._polydrawDragData.isDragging = true;
+      polygon._polydrawDragData.startPosition = e.latlng;
+      polygon._polydrawDragData.startLatLngs = polygon.getLatLngs();
+
+      // Disable map dragging
+      if (this.map.dragging) {
+        this.map.dragging.disable();
+      }
+
+      // Set drag cursor
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+      } catch (error) {
+        // Handle DOM errors
+      }
+
+      // Add global mouse move and up handlers
+      this.map.on('mousemove', this.onPolygonMouseMove, this);
+      this.map.on('mouseup', this.onPolygonMouseUp, this);
+
+      // Store current dragging polygon
+      this.currentDragPolygon = polygon;
+    });
+
+    // Set hover cursor
+    polygon.on('mouseover', () => {
+      if (!polygon._polydrawDragData.isDragging && this.getDrawMode() === DrawMode.Off) {
+        try {
+          const container = this.map.getContainer();
+          container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
+        } catch (error) {
+          // Handle DOM errors
+        }
+      }
+    });
+
+    polygon.on('mouseout', () => {
+      if (!polygon._polydrawDragData.isDragging && this.getDrawMode() === DrawMode.Off) {
+        try {
+          const container = this.map.getContainer();
+          container.style.cursor = '';
+        } catch (error) {
+          // Handle DOM errors
+        }
+      }
+    });
+  }
+
+  // Simple polygon drag state
+  private currentDragPolygon: any = null;
+
+  private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
+    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+
+    const polygon = this.currentDragPolygon;
+    const dragData = polygon._polydrawDragData;
+
+    // Calculate offset
+    const startPos = dragData.startPosition;
+    const currentPos = e.latlng;
+    const offsetLat = currentPos.lat - startPos.lat;
+    const offsetLng = currentPos.lng - startPos.lng;
+
+    // Apply offset to all polygon coordinates
+    const newLatLngs = this.offsetPolygonCoordinates(dragData.startLatLngs, offsetLat, offsetLng);
+    polygon.setLatLngs(newLatLngs);
+
+    // Update markers and hole lines in real-time during drag
+    this.updateMarkersAndHoleLinesDuringDrag(polygon, offsetLat, offsetLng);
+  };
+
+  private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
+    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+
+    const polygon = this.currentDragPolygon;
+    const dragData = polygon._polydrawDragData;
+
+    // Clean up drag state
+    dragData.isDragging = false;
+
+    // Remove global handlers
+    this.map.off('mousemove', this.onPolygonMouseMove, this);
+    this.map.off('mouseup', this.onPolygonMouseUp, this);
+
+    // Re-enable map dragging
+    if (this.map.dragging) {
+      this.map.dragging.enable();
+    }
+
+    // Reset cursor
+    try {
+      const container = this.map.getContainer();
+      container.style.cursor = '';
+    } catch (error) {
+      // Handle DOM errors
+    }
+
+    // Update polygon coordinates using simple approach: delete -> modify -> add
+    this.updatePolygonAfterDrag(polygon);
+
+    // Clear stored original positions for next drag
+    if (polygon._polydrawOriginalMarkerPositions) {
+      polygon._polydrawOriginalMarkerPositions.clear();
+      delete polygon._polydrawOriginalMarkerPositions;
+    }
+    if (polygon._polydrawOriginalHoleLinePositions) {
+      polygon._polydrawOriginalHoleLinePositions.clear();
+      delete polygon._polydrawOriginalHoleLinePositions;
+    }
+    if (polygon._polydrawCurrentDragSession) {
+      delete polygon._polydrawCurrentDragSession;
+    }
+
+    // Clear current drag polygon
+    this.currentDragPolygon = null;
+  };
+
+  private offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
+    if (!latLngs) return latLngs;
+
+    if (Array.isArray(latLngs[0])) {
+      // Multi-dimensional array (polygon with holes or multipolygon)
+      return latLngs.map((ring: any) => this.offsetPolygonCoordinates(ring, offsetLat, offsetLng));
+    } else if (latLngs.lat !== undefined && latLngs.lng !== undefined) {
+      // Single coordinate
+      return {
+        lat: latLngs.lat + offsetLat,
+        lng: latLngs.lng + offsetLng,
+      };
+    } else {
+      // Array of coordinates
+      return latLngs.map((coord: any) =>
+        this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
+      );
+    }
+  }
+
+  private updateMarkersAndHoleLinesDuringDrag(polygon: any, offsetLat: number, offsetLng: number) {
+    try {
+      // Find the feature group containing this polygon
+      let featureGroup: L.FeatureGroup | null = null;
+      
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      // Store original positions if not already stored - use unique key per drag session
+      const dragSessionKey = '_polydrawDragSession_' + Date.now();
+      if (!polygon._polydrawCurrentDragSession) {
+        polygon._polydrawCurrentDragSession = dragSessionKey;
+        polygon._polydrawOriginalMarkerPositions = new Map();
+        polygon._polydrawOriginalHoleLinePositions = new Map();
+        
+        // Only store positions for THIS feature group's layers
+        featureGroup.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            polygon._polydrawOriginalMarkerPositions.set(layer, layer.getLatLng());
+          } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+            polygon._polydrawOriginalHoleLinePositions.set(layer, layer.getLatLngs());
+          }
+        });
+      }
+
+      // Update ONLY the markers and hole lines in THIS feature group
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          const originalPos = polygon._polydrawOriginalMarkerPositions.get(layer);
+          if (originalPos) {
+            const newLatLng = {
+              lat: originalPos.lat + offsetLat,
+              lng: originalPos.lng + offsetLng
+            };
+            layer.setLatLng(newLatLng);
+          }
+        } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+          const originalPositions = polygon._polydrawOriginalHoleLinePositions.get(layer);
+          if (originalPositions) {
+            const newLatLngs = originalPositions.map((latlng: L.LatLng) => ({
+              lat: latlng.lat + offsetLat,
+              lng: latlng.lng + offsetLng
+            }));
+            layer.setLatLngs(newLatLngs);
+          }
+        }
+      });
+    } catch (error) {
+      // Silently handle errors during real-time updates
+    }
+  }
+
+  private updatePolygonAfterDrag(polygon: any) {
+    try {
+      // Get the feature group that contains this polygon
+      let featureGroup: L.FeatureGroup | null = null;
+      
+      // Find the feature group containing this polygon
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        console.warn('Could not find feature group for dragged polygon');
+        return;
+      }
+
+      // Get new coordinates from dragged polygon
+      const newGeoJSON = polygon.toGeoJSON();
+
+      // Simple approach: remove old, add new
+      this.removeFeatureGroup(featureGroup);
+      
+      // Add the updated polygon (with noMerge=true to prevent unwanted merging during drag)
+      const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
+      this.addPolygon(feature, false, true);
+
+      // Update polygon information
+      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    } catch (error) {
+      console.warn('Failed to update polygon after drag:', error.message);
+    }
   }
 }
 

@@ -1,13 +1,24 @@
 client:789 [vite] connecting...
 client:912 [vite] connected.
-polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:695 [LatLng]
+polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
 polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:385 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _leaflet_id: 83, …}
-polydraw.ts:361 This is a good place to add area info icon
-polydraw.ts:365 Array:  [NewClass]
-polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:392 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 This is a good place to add area info icon
+polydraw.ts:373 Array:  [NewClass]
+polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:695 [LatLng]
+polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:406 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:463 🔍 checkPolygonIntersection called
+polydraw.ts:464 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:465 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
 turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
 turf-helper.ts:102 🔍 Polygon has holes: false
 turf-helper.ts:109 🎯 Taking SIMPLE polygon path
@@ -16,10 +27,37 @@ turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinat
 turf-helper.ts:102 🔍 Polygon has holes: false
 turf-helper.ts:109 🎯 Taking SIMPLE polygon path
 turf-helper.ts:116 🎯 Simple path result: 1 polygons
-polydraw.ts:417 []
+polydraw.ts:470 polygonIntersect result: false
+polydraw.ts:482 getIntersection result: null
+polydraw.ts:496 Bounding boxes: {bbox1: {…}, bbox2: {…}}
+polydraw.ts:506 Bounding box overlap check: false
+polydraw.ts:536 ❌ No intersection detected
+polydraw.ts:453 Intersecting polygons found: 0
 polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:385 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _leaflet_id: 99, …}
-polydraw.ts:361 This is a good place to add area info icon
-polydraw.ts:365 Array:  (2) [NewClass, NewClass]
-main.ts:141 Polydraw: xo {options: {…}, _initHooksCalled: true, map: NewClass, tracer: NewClass, kinks: false, …}
+polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 This is a good place to add area info icon
+polydraw.ts:373 Array:  (2) [NewClass, NewClass]
+polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:695 [LatLng]
+polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:930 deletePolygon:  (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:941 [Array(98)]
+polydraw.ts:954 Test:  [Array(98)]
+polydraw.ts:955 (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:958 equals:  false  length:  1
+polydraw.ts:941 [Array(97)]
+polydraw.ts:954 Test:  [Array(97)]
+polydraw.ts:955 (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:958 equals:  false  length:  1
+polydraw.ts:930 deletePolygon:  (98) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:941 [Array(97)]
+polydraw.ts:954 Test:  [Array(97)]
+polydraw.ts:955 (98) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:958 equals:  false  length:  1
+polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 This is a good place to add area info icon
+polydraw.ts:373 Array:  [NewClass]
