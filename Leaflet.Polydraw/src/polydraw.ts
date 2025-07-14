@@ -131,6 +131,41 @@ class PolydrawSimple extends L.Control {
     return super.addTo(map);
   }
 
+  // Add the missing addAutoPolygon method
+  public addAutoPolygon(geographicBorders: L.LatLng[][][], options?: { visualOptimizationLevel?: number }): void {
+    // Validate input
+    if (!geographicBorders || geographicBorders.length === 0) {
+      throw new Error('Cannot add empty polygon array');
+    }
+
+    // Ensure map is properly initialized
+    if (!this.map) {
+      throw new Error('Map not initialized');
+    }
+
+    // Extract options with defaults
+    const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
+
+    geographicBorders.forEach((group, groupIndex) => {
+      try {
+        // Convert L.LatLng[][][] to coordinate format for TurfHelper
+        const coords = group.map(ring => 
+          ring.map(latlng => [latlng.lng, latlng.lat])
+        );
+        
+        const polygon2 = this.turfHelper.getMultiPolygon([coords]);
+
+        // Use the proper addPolygon method which includes merging logic
+        this.addPolygon(polygon2, false, false);
+
+        this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+      } catch (error) {
+        console.error('Error adding auto polygon:', error);
+        throw error;
+      }
+    });
+  }
+
   setDrawMode(mode: DrawMode) {
     this.drawMode = mode;
     this.emitDrawModeChanged();
@@ -319,6 +354,14 @@ class PolydrawSimple extends L.Control {
         if (i === 0) {
           this.addMarker(polyElement, featureGroup);
         } else {
+          // Add red polyline overlay for hole rings
+          const holePolyline = L.polyline(polyElement, {
+            color: this.config.holeOptions.color,
+            weight: this.config.holeOptions.weight || 2,
+            opacity: this.config.holeOptions.opacity || 1,
+          });
+          featureGroup.addLayer(holePolyline);
+          
           this.addHoleMarker(polyElement, featureGroup);
           console.log('Hull: ', polyElement);
         }
@@ -360,30 +403,232 @@ class PolydrawSimple extends L.Control {
     let polyIntersection: boolean = false;
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      const featureCollection = featureGroup.toGeoJSON() as any;
-      if (featureCollection.features[0].geometry.coordinates.length > 1) {
-        featureCollection.features[0].geometry.coordinates.forEach((element) => {
-          const feature = this.turfHelper.getMultiPolygon([element]);
-          polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-          if (polyIntersection) {
-            newArray.push(featureGroup);
-            polygonFeature.push(feature);
-          }
-        });
-      } else {
-        const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
-        polyIntersection = this.turfHelper.polygonIntersect(feature, latlngs);
-        if (polyIntersection) {
-          newArray.push(featureGroup);
-          polygonFeature.push(feature);
+      try {
+        const featureCollection = featureGroup.toGeoJSON() as any;
+        if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+          return;
         }
+
+        const firstFeature = featureCollection.features[0];
+        if (!firstFeature.geometry || !firstFeature.geometry.coordinates) {
+          return;
+        }
+
+        if (firstFeature.geometry.coordinates.length > 1) {
+          firstFeature.geometry.coordinates.forEach((element) => {
+            try {
+              const feature = this.turfHelper.getMultiPolygon([element]);
+              polyIntersection = this.checkPolygonIntersection(feature, latlngs);
+              if (polyIntersection) {
+                newArray.push(featureGroup);
+                polygonFeature.push(feature);
+              }
+            } catch (error) {
+              console.warn('merge: Error processing multi-polygon element:', error);
+            }
+          });
+        } else {
+          try {
+            const feature = this.turfHelper.getTurfPolygon(firstFeature);
+            polyIntersection = this.checkPolygonIntersection(feature, latlngs);
+            if (polyIntersection) {
+              newArray.push(featureGroup);
+              polygonFeature.push(feature);
+            }
+          } catch (error) {
+            console.warn('merge: Error processing single polygon:', error);
+          }
+        }
+      } catch (error) {
+        console.warn('merge: Error processing feature group:', error);
       }
     });
-    console.log(newArray);
+    
+    console.log('Intersecting polygons found:', newArray.length);
     if (newArray.length > 0) {
       this.unionPolygons(newArray, latlngs, polygonFeature);
     } else {
       this.addPolygonLayer(latlngs, true);
+    }
+  }
+
+  // Improved intersection detection with multiple fallback methods
+  private checkPolygonIntersection(polygon1: Feature<Polygon | MultiPolygon>, polygon2: Feature<Polygon | MultiPolygon>): boolean {
+    console.log('🔍 checkPolygonIntersection called');
+    console.log('Polygon1:', polygon1);
+    console.log('Polygon2:', polygon2);
+
+    // Method 1: Try the original polygonIntersect
+    try {
+      const result = this.turfHelper.polygonIntersect(polygon1, polygon2);
+      console.log('polygonIntersect result:', result);
+      if (result) {
+        console.log('✅ Intersection detected via polygonIntersect');
+        return true;
+      }
+    } catch (error) {
+      console.warn('❌ polygonIntersect failed:', error.message);
+    }
+
+    // Method 2: Try direct intersection check
+    try {
+      const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
+      console.log('getIntersection result:', intersection);
+      if (intersection && intersection.geometry && 
+          (intersection.geometry.type === 'Polygon' || intersection.geometry.type === 'MultiPolygon')) {
+        console.log('✅ Intersection detected via getIntersection');
+        return true;
+      }
+    } catch (error) {
+      console.warn('❌ getIntersection failed:', error.message);
+    }
+
+    // Method 3: Bounding box overlap check as fallback
+    try {
+      const bbox1 = this.getBoundingBox(polygon1);
+      const bbox2 = this.getBoundingBox(polygon2);
+      console.log('Bounding boxes:', { bbox1, bbox2 });
+      
+      if (bbox1 && bbox2) {
+        const overlaps = !(
+          bbox1.maxLng < bbox2.minLng ||
+          bbox2.maxLng < bbox1.minLng ||
+          bbox1.maxLat < bbox2.minLat ||
+          bbox2.maxLat < bbox1.minLat
+        );
+        
+        console.log('Bounding box overlap check:', overlaps);
+        if (overlaps) {
+          console.log('✅ Intersection detected via bounding box overlap');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn('❌ Bounding box check failed:', error.message);
+    }
+
+    // Method 4: Simple distance-based check as final fallback
+    try {
+      const center1 = this.getPolygonCenter(polygon1);
+      const center2 = this.getPolygonCenter(polygon2);
+      
+      if (center1 && center2) {
+        const distance = Math.sqrt(
+          Math.pow(center1.lng - center2.lng, 2) + Math.pow(center1.lat - center2.lat, 2)
+        );
+        
+        // If polygons are very close (within 0.01 degrees), consider them overlapping
+        if (distance < 0.01) {
+          console.log('✅ Intersection detected via distance check (distance:', distance, ')');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn('❌ Distance check failed:', error.message);
+    }
+
+    console.log('❌ No intersection detected');
+    return false;
+  }
+
+  // Helper method to get polygon center
+  private getPolygonCenter(polygon: Feature<Polygon | MultiPolygon>): { lat: number; lng: number } | null {
+    try {
+      if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
+        return null;
+      }
+
+      let coordinates;
+      if (polygon.geometry.type === 'Polygon') {
+        coordinates = polygon.geometry.coordinates[0]; // First ring (outer ring)
+      } else if (polygon.geometry.type === 'MultiPolygon') {
+        coordinates = polygon.geometry.coordinates[0][0]; // First polygon, first ring
+      } else {
+        return null;
+      }
+
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return null;
+      }
+
+      let sumLat = 0;
+      let sumLng = 0;
+      let count = 0;
+
+      for (const coord of coordinates) {
+        if (Array.isArray(coord) && coord.length >= 2) {
+          const lng = coord[0];
+          const lat = coord[1];
+
+          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
+            sumLng += lng;
+            sumLat += lat;
+            count++;
+          }
+        }
+      }
+
+      if (count === 0) {
+        return null;
+      }
+
+      return {
+        lat: sumLat / count,
+        lng: sumLng / count
+      };
+    } catch (error) {
+      console.warn('getPolygonCenter failed:', error.message);
+      return null;
+    }
+  }
+
+  // Helper method to get bounding box from polygon
+  private getBoundingBox(polygon: Feature<Polygon | MultiPolygon>): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
+    try {
+      if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
+        return null;
+      }
+
+      let coordinates;
+      if (polygon.geometry.type === 'Polygon') {
+        coordinates = polygon.geometry.coordinates[0]; // First ring (outer ring)
+      } else if (polygon.geometry.type === 'MultiPolygon') {
+        coordinates = polygon.geometry.coordinates[0][0]; // First polygon, first ring
+      } else {
+        return null;
+      }
+
+      if (!Array.isArray(coordinates) || coordinates.length === 0) {
+        return null;
+      }
+
+      let minLat = Infinity;
+      let maxLat = -Infinity;
+      let minLng = Infinity;
+      let maxLng = -Infinity;
+
+      for (const coord of coordinates) {
+        if (Array.isArray(coord) && coord.length >= 2) {
+          const lng = coord[0];
+          const lat = coord[1];
+
+          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
+            minLng = Math.min(minLng, lng);
+            maxLng = Math.max(maxLng, lng);
+            minLat = Math.min(minLat, lat);
+            maxLat = Math.max(maxLat, lat);
+          }
+        }
+      }
+
+      if (minLat === Infinity || maxLat === -Infinity || minLng === Infinity || maxLng === -Infinity) {
+        return null;
+      }
+
+      return { minLat, maxLat, minLng, maxLng };
+    } catch (error) {
+      console.warn('getBoundingBox failed:', error.message);
+      return null;
     }
   }
 
@@ -818,7 +1063,8 @@ class PolydrawSimple extends L.Control {
 
   private addHoleMarker(latlngs: ILatLng[], FeatureGroup: L.FeatureGroup) {
     latlngs.forEach((latlng, i) => {
-      const iconClasses = this.config.markers.markerIcon.styleClasses;
+      // Use holeIcon styles instead of regular markerIcon styles
+      const iconClasses = this.config.markers.holeIcon.styleClasses;
       const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
       const marker = new L.Marker(latlng, {
         icon: IconFactory.createDivIcon(processedClasses),
