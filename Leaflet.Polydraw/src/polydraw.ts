@@ -180,6 +180,11 @@ class Polydraw extends L.Control {
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
 
     geographicBorders.forEach((group, groupIndex) => {
+      if (!group || !group[0] || group[0].length < 4) {
+        throw new Error(
+          `Invalid polygon data at index ${groupIndex}: A polygon must have at least 3 unique vertices.`,
+        );
+      }
       try {
         // Convert L.LatLng[][][] to coordinate format for TurfHelper
         const coords = group.map((ring) => ring.map((latlng) => [latlng.lng, latlng.lat]));
