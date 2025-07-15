@@ -1333,9 +1333,43 @@ class Polydraw extends L.Control {
   // Menu marker popup button methods
   private convertToSimplifiedPolygon(latlngs: ILatLng[]) {
     this.deletePolygon([latlngs]);
-    const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+
+    // A valid polygon needs at least 4 points (3 unique vertices + closing point)
+    if (latlngs.length <= 4) {
+      // Cannot simplify, so just add the original polygon back
+      const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+      const newPolygon = this.turfHelper.getMultiPolygon(coords);
+      this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
+      return;
+    }
+
+    // Remove every other point to simplify
+    const simplifiedLatLngs: ILatLng[] = [];
+    for (let i = 0; i < latlngs.length; i += 2) {
+      simplifiedLatLngs.push(latlngs[i]);
+    }
+
+    // Ensure the simplified polygon is closed
+    const firstPoint = simplifiedLatLngs[0];
+    const lastPoint = simplifiedLatLngs[simplifiedLatLngs.length - 1];
+    if (firstPoint.lat !== lastPoint.lat || firstPoint.lng !== lastPoint.lng) {
+      simplifiedLatLngs.push(firstPoint);
+    }
+
+    // Check if the simplified polygon is still valid
+    if (simplifiedLatLngs.length < 4) {
+      // Simplification resulted in an invalid polygon, add the original back
+      const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+      const newPolygon = this.turfHelper.getMultiPolygon(coords);
+      this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
+      return;
+    }
+
+    const coords = [
+      [simplifiedLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])],
+    ];
     const newPolygon = this.turfHelper.getMultiPolygon(coords);
-    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), true, true);
+    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
   }
 
   private convertToBoundsPolygon(latlngs: ILatLng[]) {
