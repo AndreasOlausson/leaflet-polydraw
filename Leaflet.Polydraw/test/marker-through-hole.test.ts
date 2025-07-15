@@ -90,21 +90,12 @@ describe('Marker Dragged Through Hole', () => {
           if (coords.length === 1) {
             // Solid polygon (no holes)
             solidPolygonsCount++;
-            console.log(
-              'Found solid polygon with area:',
-              Math.abs(calculatePolygonArea(coords[0])),
-            );
           } else if (coords.length > 1) {
             // Polygon with holes
             polygonsWithHoles++;
-            console.log('Found polygon with', coords.length - 1, 'holes');
           }
         }
       }
-
-      console.log('Total polygons:', totalPolygons);
-      console.log('Solid polygons:', solidPolygonsCount);
-      console.log('Polygons with holes:', polygonsWithHoles);
 
       // 🎯 THE FIX: When marker is dragged completely through hole, we should get:
       // Expected: 2 solid polygons (north piece + south cut) like cutting cake
@@ -113,22 +104,6 @@ describe('Marker Dragged Through Hole', () => {
       expect(totalPolygons).toBeGreaterThanOrEqual(1); // Should result in 1+ polygons
       expect(solidPolygonsCount).toBeGreaterThanOrEqual(1); // Should be solid (no holes)
       expect(polygonsWithHoles).toBe(0); // No holes should remain
-
-      // The key success: NO polygons with holes (hole area disappeared)
-      console.log('✅ Cake cutting successful - hole area became "nothing"');
     });
   });
 });
-
-// Helper function to calculate polygon area using shoelace formula
-function calculatePolygonArea(coordinates: number[][]): number {
-  let area = 0;
-  const n = coordinates.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    area += coordinates[i][0] * coordinates[i + 1][1];
-    area -= coordinates[i + 1][0] * coordinates[i][1];
-  }
-
-  return Math.abs(area) / 2;
-}
