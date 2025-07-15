@@ -128,6 +128,14 @@ class Polydraw extends L.Control {
       this.removeAllFeatureGroups();
     };
 
+    const onPointToPointClick = (e?: Event) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      console.log('Point to Point button clicked');
+    };
+
     createButtons(
       container,
       this.subContainer,
@@ -135,6 +143,7 @@ class Polydraw extends L.Control {
       onDrawClick,
       onSubtractClick,
       onEraseClick,
+      onPointToPointClick,
     );
 
     // Simple UI update listener

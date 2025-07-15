@@ -9,6 +9,7 @@ export enum DrawMode {
   Subtract = 4,
   AppendMarker = 8,
   LoadPredefined = 16,
+  PointToPoint = 32,
 }
 /**
  * Enum for marker positions.

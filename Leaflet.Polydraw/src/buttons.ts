@@ -18,8 +18,7 @@ export function createButtons(
   onDrawClick: () => void,
   onSubtractClick: () => void,
   onEraseClick: () => void,
-  // onStartClick: (() => void) | null,
-  // onHoleClick: (() => void) | null,
+  onPointToPointClick: () => void,
 ) {
   const activate = L.DomUtil.create('a', 'icon-activate', container);
   activate.href = '#';
@@ -42,6 +41,13 @@ export function createButtons(
   subtract.innerHTML =
     '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M15.0722 3.9967L20.7508 9.83395L17.0544 13.5304L13.0758 17.5H21.0041V19H7.93503L4.00195 15.0669L15.0722 3.9967ZM10.952 17.5L15.4628 12.9994L11.8268 9.3634L6.12327 15.0669L8.55635 17.5H10.952Z" fill="#1F2328"></path> </g></svg>';
   L.DomEvent.on(subtract, 'click', L.DomEvent.stop).on(subtract, 'click', onSubtractClick);
+
+  const p2p = L.DomUtil.create('a', 'icon-p2p', subContainer);
+  p2p.href = '#';
+  p2p.title = 'Point to Point';
+  p2p.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M5 17V7M5 17C3.89543 17 3 17.8954 3 19C3 20.1046 3.89543 21 5 21C6.10457 21 7 20.1046 7 19M5 17C6.10457 17 7 17.8954 7 19M5 7C6.10457 7 7 6.10457 7 5M5 7C3.89543 7 3 6.10457 3 5C3 3.89543 3.89543 3 5 3C6.10457 3 7 3.89543 7 5M7 5H17M17 5C17 6.10457 17.8954 7 19 7C20.1046 7 21 6.10457 21 5C21 3.89543 20.1046 3 19 3C17.8954 3 17 3.89543 17 5ZM7 19H17M17 19C17 20.1046 17.8954 21 19 21C20.1046 21 21 20.1046 21 19C21 17.8954 20.1046 17 19 17C17.8954 17 17 17.8954 17 19ZM17.9247 6.6737L15.1955 10.3776M15.1955 13.6223L17.9222 17.3223M16 12C16 13.1046 15.1046 14 14 14C12.8954 14 12 13.1046 12 12C12 10.8954 12.8954 10 14 10C15.1046 10 16 10.8954 16 12Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>';
+  L.DomEvent.on(p2p, 'click', L.DomEvent.stop).on(p2p, 'click', onPointToPointClick);
 
   const erase = L.DomUtil.create('a', 'icon-erase', subContainer);
   erase.href = '#';
