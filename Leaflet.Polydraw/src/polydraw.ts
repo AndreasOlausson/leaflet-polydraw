@@ -1652,9 +1652,76 @@ class PolydrawSimple extends L.Control {
           color: this.config.polygonOptions.color,
         });
       }
+
+      // Also update marker colors
+      this.updateMarkerColorsForSubtractMode(polygon, enabled);
     } catch (error) {
       // Handle DOM errors in test environment
       console.warn('Could not set polygon visual mode:', error.message);
+    }
+  }
+
+  /**
+   * Update marker colors when entering/exiting subtract mode
+   */
+  private updateMarkerColorsForSubtractMode(polygon: any, subtractMode: boolean): void {
+    try {
+      // Find the feature group containing this polygon
+      let featureGroup: L.FeatureGroup | null = null;
+
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      // Check if we should hide markers during drag
+      const hideMarkersOnDrag =
+        this.config.dragPolygons?.modifierSubtract?.hideMarkersOnDrag ?? false;
+
+      // Update all markers in this feature group
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          const marker = layer as L.Marker;
+          const element = marker.getElement();
+
+          if (element) {
+            if (subtractMode) {
+              if (hideMarkersOnDrag) {
+                // Hide markers completely during modifier drag
+                element.style.display = 'none';
+                element.classList.add('subtract-mode-hidden');
+              } else {
+                // Change marker colors (original behavior)
+                element.style.backgroundColor =
+                  this.config.dragPolygons.modifierSubtract.subtractColor;
+                element.style.borderColor = this.config.dragPolygons.modifierSubtract.subtractColor;
+                element.classList.add('subtract-mode');
+              }
+            } else {
+              if (hideMarkersOnDrag) {
+                // Show markers again when not in subtract mode
+                element.style.display = '';
+                element.classList.remove('subtract-mode-hidden');
+              } else {
+                // Remove subtract mode styling (original behavior)
+                element.style.backgroundColor = '';
+                element.style.borderColor = '';
+                element.classList.remove('subtract-mode');
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('Could not update marker colors:', error.message);
     }
   }
 

@@ -135,6 +135,7 @@ export interface DragPolygonConfig {
   modifierSubtract: {
     enabled: boolean;
     subtractColor: string;
+    hideMarkersOnDrag: boolean;
   };
 }
 

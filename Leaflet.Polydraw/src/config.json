@@ -25,7 +25,8 @@
         "mac": "metaKey",
         "linux": "ctrlKey"
       },
-      "subtractColor": "#D9460F"
+      "subtractColor": "#D9460F",
+      "hideMarkersOnDrag": true
     }
   },
   "markers": {
