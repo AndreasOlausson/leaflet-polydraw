@@ -1,24 +1,23 @@
 client:789 [vite] connecting...
 client:912 [vite] connected.
-polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:695 [LatLng]
-polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:369 This is a good place to add area info icon
-polydraw.ts:373 Array:  [NewClass]
-polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:695 [LatLng]
-polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:329 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:406 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:463 🔍 checkPolygonIntersection called
-polydraw.ts:464 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:465 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:748 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:762 [LatLng]
+polydraw.ts:299 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:305 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:330 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:372 This is a good place to add area info icon
+polydraw.ts:379 Array:  [NewClass]
+polydraw.ts:748 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:762 [LatLng]
+polydraw.ts:299 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:305 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:663 subtract called with: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:472 🔍 checkPolygonIntersection called
+polydraw.ts:473 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:474 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
 turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
 turf-helper.ts:102 🔍 Polygon has holes: false
 turf-helper.ts:109 🎯 Taking SIMPLE polygon path
@@ -27,37 +26,1296 @@ turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinat
 turf-helper.ts:102 🔍 Polygon has holes: false
 turf-helper.ts:109 🎯 Taking SIMPLE polygon path
 turf-helper.ts:116 🎯 Simple path result: 1 polygons
-polydraw.ts:470 polygonIntersect result: false
-polydraw.ts:482 getIntersection result: null
-polydraw.ts:496 Bounding boxes: {bbox1: {…}, bbox2: {…}}
-polydraw.ts:506 Bounding box overlap check: false
-polydraw.ts:536 ❌ No intersection detected
-polydraw.ts:453 Intersecting polygons found: 0
-polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:369 This is a good place to add area info icon
-polydraw.ts:373 Array:  (2) [NewClass, NewClass]
-polydraw.ts:681 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:695 [LatLng]
-polydraw.ts:298 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:304 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:930 deletePolygon:  (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:941 [Array(98)]
-polydraw.ts:954 Test:  [Array(98)]
-polydraw.ts:955 (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:958 equals:  false  length:  1
-polydraw.ts:941 [Array(97)]
-polydraw.ts:954 Test:  [Array(97)]
-polydraw.ts:955 (99) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:958 equals:  false  length:  1
-polydraw.ts:930 deletePolygon:  (98) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:941 [Array(97)]
-polydraw.ts:954 Test:  [Array(97)]
-polydraw.ts:955 (98) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:958 equals:  false  length:  1
-polydraw.ts:346 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:393 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:349 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:369 This is a good place to add area info icon
-polydraw.ts:373 Array:  [NewClass]
+polydraw.ts:479 polygonIntersect result: false
+polydraw.ts:491 getIntersection result: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 ✅ Intersection detected via getIntersection
+polydraw.ts:686 Found intersecting polygon for subtract operation
+polydraw.ts:694 subtract: Found 1 intersecting polygons
+polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 Hull:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:372 This is a good place to add area info icon
+polydraw.ts:379 Array:  [NewClass]
+polydraw.ts:748 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:762 [LatLng]
+polydraw.ts:299 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:305 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:663 subtract called with: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:472 🔍 checkPolygonIntersection called
+polydraw.ts:473 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:474 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:102 🔍 Polygon has holes: false
+turf-helper.ts:109 🎯 Taking SIMPLE polygon path
+turf-helper.ts:116 🎯 Simple path result: 1 polygons
+turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:102 🔍 Polygon has holes: false
+turf-helper.ts:109 🎯 Taking SIMPLE polygon path
+turf-helper.ts:116 🎯 Simple path result: 1 polygons
+polydraw.ts:479 polygonIntersect result: false
+polydraw.ts:491 getIntersection result: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 ✅ Intersection detected via getIntersection
+polydraw.ts:686 Found intersecting polygon for subtract operation
+polydraw.ts:694 subtract: Found 1 intersecting polygons
+polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:372 This is a good place to add area info icon
+polydraw.ts:379 Array:  [NewClass]
+polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 Hull:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:372 This is a good place to add area info icon
+polydraw.ts:379 Array:  (2) [NewClass, NewClass]
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:778 [Array(2)]
+polydraw.ts:821 Polygon drag:  (95) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:821 Polygon drag:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:838 Uncaught TypeError: s[(d + 1)].getLatLng is not a function
+    at wo.markerDrag (polydraw.ts:838:47)
+    at NewClass.<anonymous> (polydraw.ts:1106:16)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._onDrag (leaflet.js?v=d09e8d0b:4927:35)
+    at NewClass.fire (leaflet.js?v=d09e8d0b:388:20)
+    at NewClass._updatePosition (leaflet.js?v=d09e8d0b:4008:16)
+    at NewClass._onMove (leaflet.js?v=d09e8d0b:4002:16)
+    at HTMLDocument.handler (leaflet.js?v=d09e8d0b:1734:21)
+markerDrag @ polydraw.ts:838
+(anonymous) @ polydraw.ts:1106
+fire @ leaflet.js?v=d09e8d0b:388
+_onDrag @ leaflet.js?v=d09e8d0b:4927
+fire @ leaflet.js?v=d09e8d0b:388
+_updatePosition @ leaflet.js?v=d09e8d0b:4008
+_onMove @ leaflet.js?v=d09e8d0b:4002
+handler @ leaflet.js?v=d09e8d0b:1734
+polydraw.ts:854 Markerdragend polygon:  [Array(2)]
+polydraw.ts:882 Markerdragend:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:330 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false true false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:369 Hull:  (75) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+polydraw.ts:372 This is a good place to add area info icon
+polydraw.ts:379 Array:  (2) [NewClass, NewClass]
+polydraw.ts:898 (2) [NewClass, NewClass]
