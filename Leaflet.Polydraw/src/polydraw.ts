@@ -882,13 +882,13 @@ class PolydrawSimple extends L.Control {
           const unkink = this.turfHelper.getKinks(feature);
           console.log('Unkink: ', unkink);
           unkink.forEach((polygon) => {
-            // Use noMerge=true to prevent merge during marker drag
-            this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, true);
+            // Allow merging after marker drag - this enables polygon merging when dragged into each other
+            this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, false);
           });
         } else {
           this.kinks = false;
-          // Use noMerge=true to prevent merge during marker drag
-          this.addPolygon(feature, false, true);
+          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          this.addPolygon(feature, false, false);
         }
       });
     } else {
@@ -902,13 +902,13 @@ class PolydrawSimple extends L.Control {
         const unkink = this.turfHelper.getKinks(feature);
         console.log('Unkink: ', unkink);
         unkink.forEach((polygon) => {
-          // Use noMerge=true to prevent merge during marker drag
-          this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, true);
+          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, false);
         });
       } else {
         this.kinks = false;
-        // Use noMerge=true to prevent merge during marker drag
-        this.addPolygon(feature, false, true);
+        // Allow merging after marker drag - this enables polygon merging when dragged into each other
+        this.addPolygon(feature, false, false);
       }
     }
     console.log(this.arrayOfFeatureGroups);
