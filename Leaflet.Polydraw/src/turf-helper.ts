@@ -30,33 +30,172 @@ export class TurfHelper {
     }
   }
 
+  /**
+   * Create polygon from drawing trace using configured method
+   */
+  createPolygonFromTrace(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+    const method = this.config.polygonCreation?.method || 'concaveman';
+
+    console.log(`Creating polygon using method: ${method}`);
+
+    switch (method) {
+      case 'concaveman':
+        return this.turfConcaveman(feature);
+      case 'convex':
+        return this.createConvexPolygon(feature);
+      case 'direct':
+        return this.createDirectPolygon(feature);
+      case 'buffer':
+        return this.createBufferedPolygon(feature);
+      default:
+        console.warn(`Unknown polygon creation method: ${method}, falling back to concaveman`);
+        return this.turfConcaveman(feature);
+    }
+  }
+
+  /**
+   * Original concaveman implementation
+   */
   turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
     const points = turf.explode(feature);
     const coordinates = points.features.map((f) => f.geometry.coordinates);
     return turf.multiPolygon([[concaveman(coordinates)]]);
   }
 
+  /**
+   * Create convex hull polygon (simplest, fewest edges)
+   */
+  private createConvexPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+    const points = turf.explode(feature);
+    const convexHull = turf.convex(points);
+
+    if (!convexHull) {
+      // Fallback to direct polygon if convex hull fails
+      return this.createDirectPolygon(feature);
+    }
+
+    return this.getTurfPolygon(convexHull);
+  }
+
+  /**
+   * Create polygon directly from line coordinates (moderate edge count)
+   */
+  private createDirectPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+    let coordinates: number[][];
+
+    if (feature.geometry.type === 'LineString') {
+      coordinates = feature.geometry.coordinates;
+    } else if (feature.geometry.type === 'Polygon') {
+      coordinates = feature.geometry.coordinates[0];
+    } else {
+      // Fallback: extract coordinates from any geometry
+      const points = turf.explode(feature);
+      coordinates = points.features.map((f) => f.geometry.coordinates);
+    }
+
+    // Ensure polygon is closed
+    if (coordinates.length > 0) {
+      const first = coordinates[0];
+      const last = coordinates[coordinates.length - 1];
+
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        coordinates.push([first[0], first[1]]);
+      }
+    }
+
+    // Need at least 4 points for a valid polygon (3 + closing point)
+    if (coordinates.length < 4) {
+      console.warn('Not enough points for direct polygon, falling back to concaveman');
+      return this.turfConcaveman(feature);
+    }
+
+    return turf.multiPolygon([[coordinates]]);
+  }
+
+  /**
+   * Create polygon using buffer method (smooth curves)
+   */
+  private createBufferedPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+    try {
+      // Convert to line if needed
+      let line: Feature<any>;
+
+      if (feature.geometry.type === 'LineString') {
+        line = feature;
+      } else {
+        // Convert polygon or other geometry to line
+        const points = turf.explode(feature);
+        const coordinates = points.features.map((f) => f.geometry.coordinates);
+        line = turf.lineString(coordinates);
+      }
+
+      // Apply small buffer to create polygon
+      const buffered = turf.buffer(line, 0.001, { units: 'kilometers' });
+
+      if (!buffered) {
+        return this.createDirectPolygon(feature);
+      }
+
+      return this.getTurfPolygon(buffered);
+    } catch (error) {
+      console.warn('Buffer polygon creation failed:', error.message);
+      return this.createDirectPolygon(feature);
+    }
+  }
+
   getSimplified(
     polygon: Feature<Polygon | MultiPolygon>,
     dynamicTolerance: boolean = false,
   ): Feature<Polygon | MultiPolygon> {
-    const numOfEdges = polygon.geometry.coordinates[0][0].length;
-    const tolerance = this.config.simplification.simplifyTolerance;
-    if (!dynamicTolerance) {
+    const simplificationMode = this.config.polygonCreation?.simplification?.mode || 'simple';
+
+    console.log(`Simplifying polygon using mode: ${simplificationMode}`);
+
+    if (simplificationMode === 'simple') {
+      // Simple single-pass simplification (like the original Angular version)
+      const tolerance = {
+        tolerance: this.config.polygonCreation?.simplification?.tolerance || 0.0001,
+        highQuality: this.config.polygonCreation?.simplification?.highQuality || false,
+        mutate: false,
+      };
+
+      console.log('Using simple simplification with tolerance:', tolerance.tolerance);
       const simplified = turf.simplify(polygon, tolerance);
       return simplified;
-    } else {
-      let simplified = turf.simplify(polygon, tolerance);
-      const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
-      const multipiler = this.config.simplification.dynamicMode.multipiler;
-      while (
-        simplified.geometry.coordinates[0][0].length > 4 &&
-        simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
-      ) {
-        tolerance.tolerance = tolerance.tolerance * multipiler;
-        simplified = turf.simplify(polygon, tolerance);
+    } else if (simplificationMode === 'dynamic') {
+      // Original dynamic simplification
+      const numOfEdges = polygon.geometry.coordinates[0][0].length;
+      const tolerance = this.config.simplification.simplifyTolerance;
+
+      if (!dynamicTolerance) {
+        const simplified = turf.simplify(polygon, tolerance);
+        return simplified;
+      } else {
+        let simplified = turf.simplify(polygon, tolerance);
+        const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
+        const multipiler = this.config.simplification.dynamicMode.multipiler;
+        while (
+          simplified.geometry.coordinates[0][0].length > 4 &&
+          simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
+        ) {
+          tolerance.tolerance = tolerance.tolerance * multipiler;
+          simplified = turf.simplify(polygon, tolerance);
+        }
+        return simplified;
       }
-      return simplified;
+    } else if (simplificationMode === 'none') {
+      // No simplification
+      console.log('No simplification applied');
+      return polygon;
+    } else {
+      // Fallback to simple mode
+      console.warn(`Unknown simplification mode: ${simplificationMode}, falling back to simple`);
+      const tolerance = {
+        tolerance: 0.0001,
+        highQuality: false,
+        mutate: false,
+      };
+      return turf.simplify(polygon, tolerance);
     }
   }
 

@@ -140,6 +140,14 @@
     "opacity": 1,
     "fillOpacity": 0.5
   },
+  "polygonCreation": {
+    "method": "concaveman",
+    "simplification": {
+      "mode": "simple",
+      "tolerance": 0.0001,
+      "highQuality": false
+    }
+  },
   "simplification": {
     "simplifyTolerance": {
       "tolerance": 0.0001,

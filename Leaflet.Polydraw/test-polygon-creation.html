@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Test Polygon Creation Methods</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      #map {
+        height: 400px;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+      .controls {
+        margin-bottom: 20px;
+      }
+      .controls button {
+        margin: 5px;
+        padding: 10px;
+      }
+      .info {
+        background: #f0f0f0;
+        padding: 10px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Polygon Creation Methods Test</h1>
+
+    <div class="controls">
+      <button onclick="setMethod('concaveman')">Concaveman (Current)</button>
+      <button onclick="setMethod('convex')">Convex Hull</button>
+      <button onclick="setMethod('direct')">Direct Polygon</button>
+      <button onclick="setMethod('buffer')">Buffer Method</button>
+    </div>
+
+    <div class="controls">
+      <button onclick="setSimplification('simple')">Simple Simplification</button>
+      <button onclick="setSimplification('dynamic')">Dynamic Simplification</button>
+      <button onclick="setSimplification('none')">No Simplification</button>
+    </div>
+
+    <div class="info">
+      <strong>Current Method:</strong> <span id="currentMethod">concaveman</span><br />
+      <strong>Current Simplification:</strong> <span id="currentSimplification">simple</span><br />
+      <strong>Instructions:</strong> Draw some polygons to test different creation methods and
+      simplification modes.
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+      import PolydrawSimple from './dist/polydraw.es.js';
+
+      // Initialize map
+      const map = L.map('map').setView([59.9139, 10.7522], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+      }).addTo(map);
+
+      // Initialize Polydraw with default config
+      let currentConfig = {
+        polygonCreation: {
+          method: 'concaveman',
+          simplification: {
+            mode: 'simple',
+            tolerance: 0.0001,
+            highQuality: false,
+          },
+        },
+      };
+
+      let polydraw = new PolydrawSimple({ config: currentConfig });
+      polydraw.addTo(map);
+
+      // Global functions for buttons
+      window.setMethod = function (method) {
+        currentConfig.polygonCreation.method = method;
+        document.getElementById('currentMethod').textContent = method;
+
+        // Recreate polydraw with new config
+        map.removeControl(polydraw);
+        polydraw = new PolydrawSimple({ config: currentConfig });
+        polydraw.addTo(map);
+
+        console.log('Switched to method:', method);
+      };
+
+      window.setSimplification = function (mode) {
+        currentConfig.polygonCreation.simplification.mode = mode;
+        document.getElementById('currentSimplification').textContent = mode;
+
+        // Recreate polydraw with new config
+        map.removeControl(polydraw);
+        polydraw = new PolydrawSimple({ config: currentConfig });
+        polydraw.addTo(map);
+
+        console.log('Switched to simplification mode:', mode);
+      };
+
+      // Log polygon creation events
+      polydraw.onDrawModeChangeListener((mode) => {
+        console.log('Draw mode changed to:', mode);
+      });
+    </script>
+  </body>
+</html>

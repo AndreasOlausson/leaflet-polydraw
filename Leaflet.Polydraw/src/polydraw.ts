@@ -355,7 +355,7 @@ class PolydrawSimple extends L.Control {
 
     let geoPos: Feature<Polygon | MultiPolygon>;
     try {
-      geoPos = this.turfHelper.turfConcaveman(tracerGeoJSON);
+      geoPos = this.turfHelper.createPolygonFromTrace(tracerGeoJSON);
     } catch (error) {
       // Handle polygon creation errors (e.g., invalid polygon)
       console.log('mouseUpLeave: Error creating polygon:', error.message);
