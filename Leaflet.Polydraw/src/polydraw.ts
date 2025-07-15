@@ -1262,9 +1262,23 @@ class Polydraw extends L.Control {
     markerContent.classList.add('content');
     const markerContentWrapper: HTMLDivElement = document.createElement('div');
     markerContentWrapper.classList.add('marker-menu-content');
+
     const simplify: HTMLDivElement = document.createElement('div');
     simplify.classList.add('marker-menu-button', 'simplify');
     simplify.title = 'Simplify';
+
+    const doubleElbows: HTMLDivElement = document.createElement('div');
+    doubleElbows.classList.add('marker-menu-button', 'double-elbows');
+    doubleElbows.title = 'DoubleElbows';
+
+    const bbox: HTMLDivElement = document.createElement('div');
+    bbox.classList.add('marker-menu-button', 'bbox');
+    bbox.title = 'Bounding box';
+
+    const bezier: HTMLDivElement = document.createElement('div');
+    bezier.classList.add('marker-menu-button', 'bezier');
+    bezier.title = 'Curve';
+
     const separator: HTMLDivElement = document.createElement('div');
     separator.classList.add('separator');
 
@@ -1274,6 +1288,24 @@ class Polydraw extends L.Control {
     markerContent.appendChild(markerContentWrapper);
     markerContentWrapper.appendChild(simplify);
     markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(doubleElbows);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bbox);
+    markerContentWrapper.appendChild(separator);
+    markerContentWrapper.appendChild(bezier);
+
+    simplify.onclick = () => {
+      this.convertToSimplifiedPolygon(latLngs);
+    };
+    bbox.onclick = () => {
+      this.convertToBoundsPolygon(latLngs);
+    };
+    doubleElbows.onclick = () => {
+      this.doubleElbows(latLngs);
+    };
+    bezier.onclick = () => {
+      this.bezierify(latLngs);
+    };
 
     return outerWrapper;
   }
@@ -1296,6 +1328,37 @@ class Polydraw extends L.Control {
     wrapper.appendChild(markerContent);
 
     return outerWrapper;
+  }
+
+  // Menu marker popup button methods
+  private convertToSimplifiedPolygon(latlngs: ILatLng[]) {
+    this.deletePolygon([latlngs]);
+    const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+    const newPolygon = this.turfHelper.getMultiPolygon(coords);
+    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), true, true);
+  }
+
+  private convertToBoundsPolygon(latlngs: ILatLng[]) {
+    this.deletePolygon([latlngs]);
+    const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+    const polygon = this.turfHelper.getMultiPolygon(coords);
+    const newPolygon = this.turfHelper.convertToBoundingBoxPolygon(polygon);
+    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
+  }
+
+  private doubleElbows(latlngs: ILatLng[]) {
+    this.deletePolygon([latlngs]);
+    const doubleLatLngs: ILatLng[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
+    const coords = [[doubleLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+    const newPolygon = this.turfHelper.getMultiPolygon(coords);
+    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
+  }
+
+  private bezierify(latlngs: ILatLng[]) {
+    this.deletePolygon([latlngs]);
+    const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+    const newPolygon = this.turfHelper.getBezierMultiPolygon(coords);
+    this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
 
   // SIMPLE POLYGON DRAGGING - NO MANAGERS!
