@@ -101,7 +101,7 @@ geoPos = this.turfHelper.createPolygonFromTrace(tracerGeoJSON);
 ### Basic Configuration:
 
 ```javascript
-const polydraw = new PolydrawSimple({
+const polydraw = new Polydraw({
   config: {
     polygonCreation: {
       method: 'direct', // Use direct polygon creation
@@ -126,7 +126,7 @@ currentConfig.polygonCreation.simplification.mode = 'none';
 
 // Recreate control with new config
 map.removeControl(polydraw);
-polydraw = new PolydrawSimple({ config: currentConfig });
+polydraw = new Polydraw({ config: currentConfig });
 polydraw.addTo(map);
 ```
 
