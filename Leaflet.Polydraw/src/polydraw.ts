@@ -84,17 +84,55 @@ class PolydrawSimple extends L.Control {
       }
     };
 
-    const onDrawClick = () => {
+    const onDrawClick = (e?: Event) => {
+      // Prevent multiple rapid clicks
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // If already in Add mode, turn it off instead of ignoring
+      if (this.getDrawMode() === DrawMode.Add) {
+        console.log('Already in Add mode, turning off draw mode');
+        this.setDrawMode(DrawMode.Off);
+        return;
+      }
+
       this.setDrawMode(DrawMode.Add);
       this.polygonInformation.saveCurrentState();
     };
 
-    const onSubtractClick = () => {
+    const onSubtractClick = (e?: Event) => {
+      // Prevent multiple rapid clicks
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // If already in Subtract mode, turn it off instead of ignoring
+      if (this.getDrawMode() === DrawMode.Subtract) {
+        console.log('Already in Subtract mode, turning off draw mode');
+        this.setDrawMode(DrawMode.Off);
+        return;
+      }
+
       this.setDrawMode(DrawMode.Subtract);
       this.polygonInformation.saveCurrentState();
     };
 
-    const onEraseClick = () => {
+    const onEraseClick = (e?: Event) => {
+      // Prevent multiple rapid clicks
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Only erase if there are polygons to erase
+      if (this.arrayOfFeatureGroups.length === 0) {
+        console.log('No polygons to erase, ignoring click');
+        return;
+      }
+
       this.removeAllFeatureGroups();
     };
 
@@ -299,9 +337,44 @@ class PolydrawSimple extends L.Control {
     console.log('mouseUpLeave', this.tracer.toGeoJSON());
     this.polygonInformation.deletePolygonInformationStorage();
 
-    const geoPos: Feature<Polygon | MultiPolygon> = this.turfHelper.turfConcaveman(
-      this.tracer.toGeoJSON() as any,
-    );
+    // Get tracer coordinates and validate before processing
+    const tracerGeoJSON = this.tracer.toGeoJSON() as any;
+
+    // Check if tracer has valid coordinates before processing
+    if (
+      !tracerGeoJSON ||
+      !tracerGeoJSON.geometry ||
+      !tracerGeoJSON.geometry.coordinates ||
+      tracerGeoJSON.geometry.coordinates.length < 3
+    ) {
+      // Not enough points to form a valid polygon, just stop drawing
+      console.log('mouseUpLeave: Not enough points for valid polygon, stopping draw');
+      this.stopDraw();
+      return;
+    }
+
+    let geoPos: Feature<Polygon | MultiPolygon>;
+    try {
+      geoPos = this.turfHelper.turfConcaveman(tracerGeoJSON);
+    } catch (error) {
+      // Handle polygon creation errors (e.g., invalid polygon)
+      console.log('mouseUpLeave: Error creating polygon:', error.message);
+      this.stopDraw();
+      return;
+    }
+
+    // Additional validation - check if the resulting polygon is valid
+    if (
+      !geoPos ||
+      !geoPos.geometry ||
+      !geoPos.geometry.coordinates ||
+      geoPos.geometry.coordinates.length === 0
+    ) {
+      console.log('mouseUpLeave: Invalid polygon result, stopping draw');
+      this.stopDraw();
+      return;
+    }
+
     console.log(geoPos);
     this.stopDraw();
 
@@ -745,6 +818,11 @@ class PolydrawSimple extends L.Control {
   }
 
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
+    // Check if we're still in a drawing mode before processing
+    if (this.getDrawMode() === DrawMode.Off) {
+      return;
+    }
+
     console.log('mouseDown', event);
 
     let startLatLng;
@@ -1116,6 +1194,14 @@ class PolydrawSimple extends L.Control {
       });
 
       FeatureGroup.addLayer(marker).addTo(this.map);
+
+      // Set high z-index for special markers to ensure they're always visible on top
+      if (i === menuMarkerIdx || i === deleteMarkerIdx || i === infoMarkerIdx) {
+        const element = marker.getElement();
+        if (element) {
+          element.style.zIndex = '10000';
+        }
+      }
 
       if (this.config.modes.dragElbow) {
         marker.on('drag', (e) => {
