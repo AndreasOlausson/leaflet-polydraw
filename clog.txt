@@ -1,176 +1,190 @@
 client:789 [vite] connecting...
 client:912 [vite] connected.
-polydraw.ts:748 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:762 [LatLng]
-polydraw.ts:299 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:305 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:330 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:372 This is a good place to add area info icon
-polydraw.ts:379 Array:  [NewClass]
-polydraw.ts:748 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:762 [LatLng]
-polydraw.ts:299 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:305 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:663 subtract called with: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:472 🔍 checkPolygonIntersection called
-polydraw.ts:473 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:474 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:102 🔍 Polygon has holes: false
-turf-helper.ts:109 🎯 Taking SIMPLE polygon path
-turf-helper.ts:116 🎯 Simple path result: 1 polygons
-turf-helper.ts:79 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:102 🔍 Polygon has holes: false
-turf-helper.ts:109 🎯 Taking SIMPLE polygon path
-turf-helper.ts:116 🎯 Simple path result: 1 polygons
-polydraw.ts:479 polygonIntersect result: false
-polydraw.ts:491 getIntersection result: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 ✅ Intersection detected via getIntersection
-polydraw.ts:686 Found intersecting polygon for subtract operation
-polydraw.ts:694 subtract: Found 1 intersecting polygons
-polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:372 This is a good place to add area info icon
-polydraw.ts:379 Array:  [NewClass]
-polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:372 This is a good place to add area info icon
-polydraw.ts:379 Array:  (2) [NewClass, NewClass]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:778 [Array(1)]
-polydraw.ts:831 Polygon drag:  (34) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-polydraw.ts:860 Hole 2:  [Array(34)]
-polydraw.ts:862 Nye posisjoner:  [Array(1)]
-polydraw.ts:870 Markerdragend polygon:  [Array(1)]
-polydraw.ts:898 Markerdragend:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:330 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false true false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:348 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:399 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:352 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:372 This is a good place to add area info icon
-polydraw.ts:379 Array:  (2) [NewClass, NewClass]
-polydraw.ts:914 (2) [NewClass, NewClass]
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:983 [LatLng]
+polydraw.ts:391 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:39 Creating polygon using method: concaveman
+polydraw.ts:432 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  [NewClass]
+polydraw.ts:1401 deletePolygon:  [Array(95)]
+polydraw.ts:1412 [Array(95)]
+polydraw.ts:1425 Test:  [Array(95)]
+polydraw.ts:1426 [Array(95)]
+polydraw.ts:1429 equals:  true  length:  1
+polydraw.ts:1433 []
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  [NewClass]
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:983 [LatLng]
+polydraw.ts:391 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:39 Creating polygon using method: concaveman
+polydraw.ts:432 {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:667 🔍 checkPolygonIntersection called
+polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+polydraw.ts:674 polygonIntersect result: false
+polydraw.ts:686 getIntersection result: null
+polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
+polydraw.ts:721 Bounding box overlap check: false
+polydraw.ts:751 ❌ No intersection detected
+polydraw.ts:654 Intersecting polygons found: 0
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  (2) [NewClass, NewClass]
+polydraw.ts:1401 deletePolygon:  [Array(86)]
+polydraw.ts:1412 [Array(4)]
+polydraw.ts:1425 Test:  [Array(4)]
+polydraw.ts:1426 [Array(86)]
+polydraw.ts:1429 equals:  false  length:  1
+polydraw.ts:1412 [Array(86)]
+polydraw.ts:1425 Test:  [Array(86)]
+polydraw.ts:1426 [Array(86)]
+polydraw.ts:1429 equals:  true  length:  1
+polydraw.ts:1433 []
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  (2) [NewClass, NewClass]
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:667 🔍 checkPolygonIntersection called
+polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+polydraw.ts:674 polygonIntersect result: false
+polydraw.ts:686 getIntersection result: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:695 ✅ Intersection detected via getIntersection
+polydraw.ts:654 Intersecting polygons found: 1
+polydraw.ts:1401 deletePolygon:  (5) [LatLng, LatLng, LatLng, LatLng, LatLng]
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  [NewClass]
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
+turf-helper.ts:39 Creating polygon using method: concaveman
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:667 🔍 checkPolygonIntersection called
+polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+polydraw.ts:674 polygonIntersect result: false
+polydraw.ts:686 getIntersection result: null
+polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
+polydraw.ts:721 Bounding box overlap check: false
+polydraw.ts:751 ❌ No intersection detected
+polydraw.ts:654 Intersecting polygons found: 0
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  (2) [NewClass, NewClass]
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:667 🔍 checkPolygonIntersection called
+polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+polydraw.ts:674 polygonIntersect result: false
+polydraw.ts:686 getIntersection result: null
+polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
+polydraw.ts:721 Bounding box overlap check: false
+polydraw.ts:751 ❌ No intersection detected
+polydraw.ts:654 Intersecting polygons found: 0
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  (2) [NewClass, NewClass]
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:667 🔍 checkPolygonIntersection called
+polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
+turf-helper.ts:241 🔍 Polygon has holes: false
+turf-helper.ts:248 🎯 Taking SIMPLE polygon path
+turf-helper.ts:255 🎯 Simple path result: 1 polygons
+polydraw.ts:674 polygonIntersect result: false
+polydraw.ts:686 getIntersection result: null
+polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
+polydraw.ts:721 Bounding box overlap check: true
+polydraw.ts:723 ✅ Intersection detected via bounding box overlap
+polydraw.ts:654 Intersecting polygons found: 1
+polydraw.ts:1401 deletePolygon:  (7) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
+turf-helper.ts:152 Simplifying polygon using mode: simple
+turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(2), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  [NewClass]
+polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
+polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
+polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(2), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:542 This is a good place to add area info icon
+polydraw.ts:556 Array:  [NewClass]

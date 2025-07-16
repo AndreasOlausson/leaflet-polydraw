@@ -721,7 +721,7 @@ class Polydraw extends L.Control {
         console.log('Bounding box overlap check:', overlaps);
         if (overlaps) {
           console.log('✅ Intersection detected via bounding box overlap');
-          return false;
+          return true;
         }
       }
     } catch (error) {

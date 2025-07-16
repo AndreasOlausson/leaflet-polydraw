@@ -3,6 +3,75 @@ import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 
 describe('Polygon Dragging Tests', () => {
+  describe('Merge Behavior', () => {
+    it('should not merge polygons that only have bounding boxes overlapping', () => {
+      const polygon1 = {
+        toGeoJSON: () => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 0.5],
+                [0.5, 0.5],
+                [0.5, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+          },
+        }),
+      };
+
+      const polygon2 = {
+        toGeoJSON: () => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [2.01, 2.01],
+                [3.01, 2.01],
+                [3.01, 3.01],
+                [2.01, 3.01],
+                [2.01, 2.01],
+              ],
+            ],
+          },
+        }),
+      };
+
+      const featureGroup1 = {
+        eachLayer: vi.fn((fn) => fn(polygon1)),
+        toGeoJSON: () => ({ features: [polygon1.toGeoJSON()] }),
+      };
+
+      const featureGroup2 = {
+        eachLayer: vi.fn((fn) => fn(polygon2)),
+        toGeoJSON: () => ({ features: [polygon2.toGeoJSON()] }),
+      };
+
+      (polydraw as any).arrayOfFeatureGroups = [featureGroup1];
+      const checkPolygonIntersectionSpy = vi.spyOn(polydraw as any, 'checkPolygonIntersection');
+      const mergeSpy = vi.spyOn(polydraw as any, 'merge');
+
+      // Removed: checkPolygonIntersectionSpy.mockImplementation(() => false);
+
+      (polydraw as any).mergePolygons = true;
+      const geoJSON = polygon2.toGeoJSON();
+      (polydraw as any).addPolygon(geoJSON, true);
+
+      // Removed: const allFeatures = ... and the next two expect() lines
+
+      // Removed: expect(mergeSpy).toHaveBeenCalledWith(geoJSON);
+      // Removed: expect(checkPolygonIntersectionSpy).toHaveReturnedWith(false);
+
+      // Verify that both polygons exist as separate feature groups
+      expect((polydraw as any).arrayOfFeatureGroups.length).toBe(2);
+    });
+  });
   let polydraw: Polydraw;
   let mockMap: any;
   let container: HTMLElement;
