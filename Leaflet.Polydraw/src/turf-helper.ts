@@ -20,7 +20,6 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> {
     try {
-      // In Turf 7.x, union expects a FeatureCollection with multiple features
       const featureCollection = turf.featureCollection([poly1, poly2]);
       const union = turf.union(featureCollection);
       return union ? this.getTurfPolygon(union) : null;
@@ -35,8 +34,6 @@ export class TurfHelper {
    */
   createPolygonFromTrace(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
     const method = this.config.polygonCreation?.method || 'concaveman';
-
-    console.log(`Creating polygon using method: ${method}`);
 
     switch (method) {
       case 'concaveman':
@@ -149,8 +146,6 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> {
     const simplificationMode = this.config.polygonCreation?.simplification?.mode || 'simple';
 
-    console.log(`Simplifying polygon using mode: ${simplificationMode}`);
-
     if (simplificationMode === 'simple') {
       // Simple single-pass simplification (like the original Angular version)
       const tolerance = {
@@ -159,7 +154,6 @@ export class TurfHelper {
         mutate: false,
       };
 
-      console.log('Using simple simplification with tolerance:', tolerance.tolerance);
       const simplified = turf.simplify(polygon, tolerance);
       return simplified;
     } else if (simplificationMode === 'dynamic') {
@@ -185,7 +179,7 @@ export class TurfHelper {
       }
     } else if (simplificationMode === 'none') {
       // No simplification
-      console.log('No simplification applied');
+
       return polygon;
     } else {
       // Fallback to simple mode
@@ -215,15 +209,8 @@ export class TurfHelper {
 
   getKinks(feature: Feature<Polygon | MultiPolygon>) {
     try {
-      console.log('🚀 getKinks called with feature:', {
-        type: feature?.geometry?.type,
-        coordinates: feature?.geometry?.coordinates?.length,
-        hasCoordinates: !!feature?.geometry?.coordinates,
-      });
-
       // Validate input feature
       if (!feature || !feature.geometry || !feature.geometry.coordinates) {
-        console.warn('Invalid feature passed to getKinks');
         return [feature];
       }
 
@@ -238,21 +225,17 @@ export class TurfHelper {
 
       // 🎯 HOLE-AWARE SPLITTING: Check if the polygon has holes
       const hasHoles = this.polygonHasHoles(cleanedFeature);
-      console.log('🔍 Polygon has holes:', hasHoles);
 
       if (hasHoles) {
-        console.log('🎯 Taking HOLE-AWARE path');
         // For polygons with holes, we need special handling
         return this.getKinksWithHolePreservation(cleanedFeature);
       } else {
-        console.log('🎯 Taking SIMPLE polygon path');
         // For simple polygons, use the standard unkink approach
         const unkink = turf.unkinkPolygon(cleanedFeature);
         const coordinates = [];
         turf.featureEach(unkink, (current) => {
           coordinates.push(current);
         });
-        console.log('🎯 Simple path result:', coordinates.length, 'polygons');
         return coordinates;
       }
     } catch (error) {
@@ -687,10 +670,6 @@ export class TurfHelper {
     feature: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon>[] {
     try {
-      console.log('🎯 HOLE-AWARE: Starting getKinksWithHolePreservation');
-      console.log('🎯 HOLE-AWARE: Feature type:', feature.geometry.type);
-      console.log('🎯 HOLE-AWARE: Coordinates length:', feature.geometry.coordinates.length);
-
       // For polygons with holes, we need to:
       // 1. Split only the outer ring if it has kinks
       // 2. Determine which resulting polygons should contain which holes
@@ -700,9 +679,6 @@ export class TurfHelper {
         const coordinates = feature.geometry.coordinates;
         const outerRing = coordinates[0];
         const holes = coordinates.slice(1);
-
-        console.log('🎯 HOLE-AWARE: Outer ring length:', outerRing.length);
-        console.log('🎯 HOLE-AWARE: Number of holes:', holes.length);
 
         // Create a temporary polygon with just the outer ring to check for kinks
         const outerPolygon: Feature<Polygon> = {
@@ -716,31 +692,24 @@ export class TurfHelper {
 
         // Check if the outer ring has kinks
         const outerHasKinks = this.hasKinks(outerPolygon);
-        console.log('🎯 HOLE-AWARE: Outer ring has kinks:', outerHasKinks);
 
         // 🎯 FALLBACK: Even without kinks, check if outer ring intersects holes (hole traversal)
         const outerRingIntersectsHoles = this.checkOuterRingHoleIntersection(outerRing, holes);
-        console.log('🎯 HOLE-AWARE: Outer ring intersects holes:', outerRingIntersectsHoles);
 
         if (outerHasKinks || outerRingIntersectsHoles) {
           if (outerHasKinks) {
-            console.log('Outer ring has kinks, splitting...');
+            /* empty */
           } else {
-            console.log(
-              '🎯 FALLBACK: No kinks but outer ring intersects holes - processing anyway...',
-            );
+            /* empty */
           }
 
-          // 🎯 SPECIAL CASE: Check if drag line goes completely through hole
+          // Check if drag line goes completely through hole
           const dragGoesCompletelyThroughHole = this.checkIfDragCompletelyThroughHole(
             outerRing,
             holes,
           );
 
           if (dragGoesCompletelyThroughHole) {
-            console.log(
-              'Drag goes completely through hole - creating solid polygons (cake cutting)',
-            );
             return this.handleCompleteHoleTraversal(outerPolygon, holes);
           }
 
@@ -748,24 +717,17 @@ export class TurfHelper {
           const unkink = turf.unkinkPolygon(outerPolygon);
           const splitPolygons: Feature<Polygon | MultiPolygon>[] = [];
 
-          console.log('Unkink produced', unkink.features.length, 'polygons');
-
           turf.featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
-            console.log('Processing split polygon with area:', turf.area(splitPolygon));
-
             // For each split polygon, subtract any intersecting holes to create proper "bites"
             const polygonWithBites = this.subtractIntersectingHoles(splitPolygon, holes);
             splitPolygons.push(polygonWithBites);
           });
 
-          console.log('Final result:', splitPolygons.length, 'polygons with holes assigned');
           return splitPolygons;
         } else {
-          console.log('🎯 HOLE-AWARE: No kinks and no hole intersection, returning original');
           return [feature];
         }
       } else if (feature.geometry.type === 'MultiPolygon') {
-        console.log('🎯 HOLE-AWARE: Handling MultiPolygon case');
         // Handle MultiPolygon case
         const allResults: Feature<Polygon | MultiPolygon>[] = [];
 
@@ -786,10 +748,9 @@ export class TurfHelper {
         return allResults;
       }
 
-      console.log('🎯 HOLE-AWARE: Fallback - returning original feature');
       return [feature];
     } catch (error) {
-      console.warn('🎯 HOLE-AWARE: Error in getKinksWithHolePreservation:', error.message);
+      console.warn('Error in getKinksWithHolePreservation:', error.message);
       return [feature];
     }
   }
@@ -799,27 +760,17 @@ export class TurfHelper {
    */
   private checkIfDragCompletelyThroughHole(outerRing: Position[], holes: Position[][]): boolean {
     try {
-      console.log('🔍 Checking for complete hole traversal...');
-      console.log('Outer ring length:', outerRing.length);
-      console.log('Number of holes:', holes.length);
-
       // Method 1: Check for duplicate points (most reliable method)
       const duplicatePoints = this.findDuplicatePoints(outerRing);
       if (duplicatePoints.length > 0) {
-        console.log(
-          '🎯 METHOD 1: Found duplicate points suggesting complete hole traversal:',
-          duplicatePoints.length,
-        );
         return true;
       }
 
       // Method 2: Check if the outer ring creates a line that intersects holes
       const selfIntersectionLine = this.findSelfIntersectionLine(outerRing);
       if (selfIntersectionLine && holes.length > 0) {
-        console.log('🎯 METHOD 2: Found self-intersection line, checking hole traversal...');
         for (const hole of holes) {
           if (this.lineCompletelyTraversesHole(selfIntersectionLine, hole)) {
-            console.log('🎯 METHOD 2: Found line that completely traverses hole');
             return true;
           }
         }
@@ -833,18 +784,13 @@ export class TurfHelper {
           properties: {},
         })
       ) {
-        console.log('🎯 METHOD 3: Found kinks, checking hole cuts...');
         for (const hole of holes) {
           if (this.holeIsCutByKinks(outerRing, hole)) {
-            console.log(
-              '🎯 METHOD 3: Found hole that is cut by kinks - complete traversal detected',
-            );
             return true;
           }
         }
       }
 
-      console.log('❌ No complete hole traversal detected');
       return false;
     } catch (error) {
       console.warn('Error checking complete hole traversal:', error.message);
@@ -914,7 +860,6 @@ export class TurfHelper {
 
       // If one endpoint is inside the hole and one is outside, it might traverse
       if (startInHole !== endInHole) {
-        console.log('Line endpoints on different sides of hole - potential traversal');
         return true;
       }
 
@@ -949,19 +894,17 @@ export class TurfHelper {
 
           if (distance < 0.01) {
             // Close to hole center
-            console.log('Found kink close to hole center');
+
             return true;
           }
 
           // Also check if kink point is inside the hole
           if (turf.booleanPointInPolygon(turf.point(kinkPoint), holePolygon)) {
-            console.log('Found kink inside hole boundary');
             return true;
           }
         } catch (distanceError) {
           // Fallback: just check if point is in polygon
           if (turf.booleanPointInPolygon(turf.point(kinkPoint), holePolygon)) {
-            console.log('Found kink inside hole boundary (fallback check)');
             return true;
           }
         }
@@ -1001,10 +944,7 @@ export class TurfHelper {
    */
   private checkOuterRingHoleIntersection(outerRing: Position[], holes: Position[][]): boolean {
     try {
-      console.log('🎯 FALLBACK: Checking outer ring hole intersection...');
-
       if (holes.length === 0) {
-        console.log('🎯 FALLBACK: No holes to check');
         return false;
       }
 
@@ -1017,7 +957,6 @@ export class TurfHelper {
         const intersection = this.getIntersection(outerPolygon, holePolygon);
 
         if (intersection) {
-          console.log('🎯 FALLBACK: Found intersection between outer ring and hole');
           return true;
         }
 
@@ -1027,16 +966,13 @@ export class TurfHelper {
           const pointInHole = turf.booleanPointInPolygon(turf.point(point), holePolygon);
 
           if (pointInHole) {
-            console.log('🎯 FALLBACK: Found outer ring point inside hole - potential traversal');
             return true;
           }
         }
       }
 
-      console.log('🎯 FALLBACK: No intersection found between outer ring and holes');
       return false;
     } catch (error) {
-      console.warn('🎯 FALLBACK: Error checking outer ring hole intersection:', error.message);
       return false;
     }
   }
@@ -1049,8 +985,6 @@ export class TurfHelper {
     holes: Position[][],
   ): Feature<Polygon>[] {
     try {
-      console.log('Handling complete hole traversal - creating solid pieces');
-
       // 🎯 RADICAL FIX: Instead of using union/unkink operations that might create connections,
       // let's create a simple solid polygon from just the outer ring and split that
 
@@ -1064,8 +998,6 @@ export class TurfHelper {
         properties: outerPolygon.properties || {},
       };
 
-      console.log('Created solid polygon (no holes) with area:', turf.area(solidPolygon));
-
       // Now split this simple solid polygon
       const unkink = turf.unkinkPolygon(solidPolygon);
       const resultPolygons: Feature<Polygon>[] = [];
@@ -1073,16 +1005,12 @@ export class TurfHelper {
       turf.featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
         // For complete hole traversal, we create solid polygons
         // The hole area becomes "nothing" (like cutting cake)
-        console.log('Creating solid polygon piece with area:', turf.area(splitPolygon));
-
-        // 🎯 CRITICAL: Mark these polygons as having undergone hole traversal
         // This tells the marker manager to NOT preserve hole structure
         (splitPolygon as any)._polydrawHoleTraversalOccurred = true;
 
         resultPolygons.push(splitPolygon);
       });
 
-      console.log('Created', resultPolygons.length, 'solid polygon pieces from hole traversal');
       return resultPolygons;
     } catch (error) {
       console.warn('Error handling complete hole traversal:', error.message);
@@ -1119,19 +1047,11 @@ export class TurfHelper {
         if (intersectionResult.isCompletelyContained) {
           // Hole is completely within the polygon - assign as normal hole
           assignedHoles.push(hole);
-          console.log(
-            'Assigned complete hole to polygon - hole area:',
-            this.calculateRingArea(hole),
-          );
         } else if (intersectionResult.hasIntersection) {
           // Hole is intersected by the split - ignore it (let it disappear naturally)
-          console.log(
-            'Hole intersected by split - ignoring hole (natural disappearance), hole area:',
-            this.calculateRingArea(hole),
-          );
           // Do nothing - the hole part just disappears, resulting in solid polygons
         } else {
-          console.log('Hole NOT related to polygon - hole area:', this.calculateRingArea(hole));
+          /* empty */
         }
       }
 
@@ -1229,13 +1149,6 @@ export class TurfHelper {
         const intersection = this.getIntersection(holePolygon, resultPolygon);
 
         if (intersection) {
-          console.log(
-            'Hole intersects with polygon, intersection area:',
-            turf.area(intersection),
-            'vs hole area:',
-            turf.area(holePolygon),
-          );
-
           // Instead of subtracting intersection, subtract the ENTIRE hole from the polygon
           // This creates the proper "bite" shape
           const difference = this.polygonDifference(resultPolygon, holePolygon);
@@ -1243,10 +1156,6 @@ export class TurfHelper {
           if (difference) {
             if (difference.geometry.type === 'Polygon') {
               resultPolygon = difference as Feature<Polygon>;
-              console.log(
-                'Created bite - polygon area after hole subtraction:',
-                turf.area(resultPolygon),
-              );
             } else if (difference.geometry.type === 'MultiPolygon') {
               // If difference results in MultiPolygon, take the largest piece
               const multiPoly = difference as Feature<MultiPolygon>;
@@ -1268,17 +1177,13 @@ export class TurfHelper {
 
               if (largestPolygon) {
                 resultPolygon = largestPolygon;
-                console.log(
-                  'Created bite from MultiPolygon - largest piece area:',
-                  turf.area(resultPolygon),
-                );
               }
             }
           } else {
-            console.log('Difference operation failed - keeping original polygon');
+            /* empty */
           }
         } else {
-          console.log('No intersection between hole and polygon');
+          /* empty */
         }
       }
 
@@ -1438,7 +1343,6 @@ export class TurfHelper {
       const result = this.polygonDifference(polygon, intersection);
 
       if (result && result.geometry.type === 'Polygon') {
-        console.log('Created bite - removed area:', turf.area(intersection));
         return result as Feature<Polygon>;
       }
 

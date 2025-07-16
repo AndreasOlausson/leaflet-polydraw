@@ -6,11 +6,6 @@ describe('Polygon Dragging Tests', () => {
   describe('Merge Behavior', () => {
     it('should not merge polygons that only have bounding boxes overlapping', () => {
       // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
-      // Based on the clog.txt, we need polygons where:
-      // - polygonIntersect result: false
-      // - getIntersection result: null
-      // - Bounding box overlap check: true
-      // Real coordinates from your polygons that have overlapping bounding boxes but no geometric intersection
       const polygon1 = {
         toGeoJSON: () => ({
           type: 'Feature',
@@ -56,8 +51,6 @@ describe('Polygon Dragging Tests', () => {
         polygon2.toGeoJSON(),
       );
 
-      // This test should FAIL with current production code (returns true for bounding box overlap)
-      // and PASS when you change the production code to return false for bounding box overlap
       expect(result).toBe(false); // We expect NO intersection for bounding box only overlap
     });
   });

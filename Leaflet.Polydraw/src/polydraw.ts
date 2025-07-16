@@ -94,7 +94,6 @@ class Polydraw extends L.Control {
 
       // If already in Add mode, turn it off instead of ignoring
       if (this.getDrawMode() === DrawMode.Add) {
-        console.log('Already in Add mode, turning off draw mode');
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -112,7 +111,6 @@ class Polydraw extends L.Control {
 
       // If already in Subtract mode, turn it off instead of ignoring
       if (this.getDrawMode() === DrawMode.Subtract) {
-        console.log('Already in Subtract mode, turning off draw mode');
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -130,7 +128,6 @@ class Polydraw extends L.Control {
 
       // Only erase if there are polygons to erase
       if (this.arrayOfFeatureGroups.length === 0) {
-        console.log('No polygons to erase, ignoring click');
         return;
       }
 
@@ -145,7 +142,6 @@ class Polydraw extends L.Control {
 
       // If already in PointToPoint mode, turn it off instead of ignoring
       if (this.getDrawMode() === DrawMode.PointToPoint) {
-        console.log('Already in PointToPoint mode, turning off draw mode');
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -388,7 +384,6 @@ class Polydraw extends L.Control {
   }
 
   private mouseUpLeave(event: any) {
-    console.log('mouseUpLeave', this.tracer.toGeoJSON());
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
@@ -402,7 +397,6 @@ class Polydraw extends L.Control {
       tracerGeoJSON.geometry.coordinates.length < 3
     ) {
       // Not enough points to form a valid polygon, just stop drawing
-      console.log('mouseUpLeave: Not enough points for valid polygon, stopping draw');
       this.stopDraw();
       return;
     }
@@ -412,7 +406,6 @@ class Polydraw extends L.Control {
       geoPos = this.turfHelper.createPolygonFromTrace(tracerGeoJSON);
     } catch (error) {
       // Handle polygon creation errors (e.g., invalid polygon)
-      console.log('mouseUpLeave: Error creating polygon:', error.message);
       this.stopDraw();
       return;
     }
@@ -424,12 +417,10 @@ class Polydraw extends L.Control {
       !geoPos.geometry.coordinates ||
       geoPos.geometry.coordinates.length === 0
     ) {
-      console.log('mouseUpLeave: Invalid polygon result, stopping draw');
       this.stopDraw();
       return;
     }
 
-    console.log(geoPos);
     this.stopDraw();
 
     switch (this.getDrawMode()) {
@@ -454,8 +445,6 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
-    console.log('addPolygon', latlngs, simplify, noMerge, this.kinks, this.config);
-
     if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
       this.merge(latlngs);
     } else {
@@ -471,41 +460,33 @@ class Polydraw extends L.Control {
   ) {
     // Validate input
     if (!latlngs || !latlngs.geometry || !latlngs.geometry.coordinates) {
-      console.warn('addPolygonLayer: Invalid polygon data, skipping');
       return;
     }
 
     const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
-    console.log('AddPolygonLayer: ', latLngs);
 
     let polygon;
     try {
       polygon = this.getPolygon(latLngs);
       if (!polygon) {
-        console.warn('addPolygonLayer: Failed to create polygon, skipping');
         return;
       }
       (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
       featureGroup.addLayer(polygon);
     } catch (error) {
-      console.warn('addPolygonLayer: Error creating polygon:', error.message);
       return;
     }
-
-    console.log(polygon);
 
     // Safely get marker coordinates
     let markerLatlngs;
     try {
       markerLatlngs = polygon.getLatLngs();
       if (!markerLatlngs || !Array.isArray(markerLatlngs)) {
-        console.warn('addPolygonLayer: Invalid marker coordinates, skipping markers');
         markerLatlngs = [];
       }
     } catch (error) {
-      console.warn('addPolygonLayer: Error getting marker coordinates:', error.message);
       markerLatlngs = [];
     }
 
@@ -533,42 +514,30 @@ class Polydraw extends L.Control {
               featureGroup.addLayer(holePolyline);
 
               this.addHoleMarker(polyElement, featureGroup);
-              console.log('Hull: ', polyElement);
             }
-          } catch (markerError) {
-            console.warn('addPolygonLayer: Error adding markers for ring:', markerError.message);
-          }
+          } catch (markerError) {}
         });
-        console.log('This is a good place to add area info icon');
       });
-    } catch (error) {
-      console.warn('addPolygonLayer: Error processing markers:', error.message);
-    }
+    } catch (error) {}
 
     // Add edge click listeners for polygon edge interactions
     try {
       this.addEdgeClickListeners(polygon, featureGroup);
-    } catch (error) {
-      console.warn('addPolygonLayer: Error adding edge click listeners:', error.message);
-    }
+    } catch (error) {}
 
     this.arrayOfFeatureGroups.push(featureGroup);
-    console.log('Array: ', this.arrayOfFeatureGroups);
     this.setDrawMode(DrawMode.Off);
 
     try {
       featureGroup.on('click', (e) => {
         this.polygonClicked(e, latLngs);
       });
-    } catch (error) {
-      console.warn('addPolygonLayer: Error adding click listener:', error.message);
-    }
+    } catch (error) {}
 
     // Add to map - this should be done after all setup is complete
     try {
       featureGroup.addTo(this.map);
     } catch (error) {
-      console.warn('Error adding feature group to map (test environment):', error.message);
       // The polygon is still added to arrayOfFeatureGroups for functionality
     }
   }
@@ -591,7 +560,6 @@ class Polydraw extends L.Control {
   }
 
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
-    console.log('getPolygons: ', latlngs);
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
     polygon.setStyle(this.config.polygonOptions);
 
@@ -604,7 +572,6 @@ class Polydraw extends L.Control {
   }
 
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
-    console.log('merge', latlngs);
     const polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
@@ -630,9 +597,7 @@ class Polydraw extends L.Control {
                 newArray.push(featureGroup);
                 polygonFeature.push(feature);
               }
-            } catch (error) {
-              console.warn('merge: Error processing multi-polygon element:', error);
-            }
+            } catch (error) {}
           });
         } else {
           try {
@@ -642,16 +607,11 @@ class Polydraw extends L.Control {
               newArray.push(featureGroup);
               polygonFeature.push(feature);
             }
-          } catch (error) {
-            console.warn('merge: Error processing single polygon:', error);
-          }
+          } catch (error) {}
         }
-      } catch (error) {
-        console.warn('merge: Error processing feature group:', error);
-      }
+      } catch (error) {}
     });
 
-    console.log('Intersecting polygons found:', newArray.length);
     if (newArray.length > 0) {
       this.unionPolygons(newArray, latlngs, polygonFeature);
     } else {
@@ -664,26 +624,17 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    console.log('🔍 checkPolygonIntersection called');
-    console.log('Polygon1:', polygon1);
-    console.log('Polygon2:', polygon2);
-
     // Method 1: Try the original polygonIntersect
     try {
       const result = this.turfHelper.polygonIntersect(polygon1, polygon2);
-      console.log('polygonIntersect result:', result);
       if (result) {
-        console.log('✅ Intersection detected via polygonIntersect');
         return true;
       }
-    } catch (error) {
-      console.warn('❌ polygonIntersect failed:', error.message);
-    }
+    } catch (error) {}
 
     // Method 2: Try direct intersection check
     try {
       const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
-      console.log('getIntersection result:', intersection);
       if (
         intersection &&
         intersection.geometry &&
@@ -692,23 +643,16 @@ class Polydraw extends L.Control {
         // Check if the intersection has meaningful area (not just touching edges/points)
         const coords = intersection.geometry.coordinates;
         if (coords && coords.length > 0 && coords[0] && coords[0].length >= 4) {
-          console.log('✅ Intersection detected via getIntersection');
           return true;
         } else {
-          console.log(
-            '⚠️ Intersection exists but has no meaningful area (just touching edges/points)',
-          );
         }
       }
-    } catch (error) {
-      console.warn('❌ getIntersection failed:', error.message);
-    }
+    } catch (error) {}
 
     // Method 3: Bounding box overlap check as fallback
     try {
       const bbox1 = this.getBoundingBox(polygon1);
       const bbox2 = this.getBoundingBox(polygon2);
-      console.log('Bounding boxes:', { bbox1, bbox2 });
 
       if (bbox1 && bbox2) {
         const overlaps = !(
@@ -718,15 +662,11 @@ class Polydraw extends L.Control {
           bbox2.maxLat < bbox1.minLat
         );
 
-        console.log('Bounding box overlap check:', overlaps);
         if (overlaps) {
-          console.log('✅ Intersection detected via bounding box overlap');
-          return false;
+          return true;
         }
       }
-    } catch (error) {
-      console.warn('❌ Bounding box check failed:', error.message);
-    }
+    } catch (error) {}
 
     // Method 4: Simple distance-based check as final fallback
     try {
@@ -740,15 +680,11 @@ class Polydraw extends L.Control {
 
         // If polygons are very close (within 0.01 degrees), consider them overlapping
         if (distance < 0.01) {
-          console.log('✅ Intersection detected via distance check (distance:', distance, ')');
           return true;
         }
       }
-    } catch (error) {
-      console.warn('❌ Distance check failed:', error.message);
-    }
+    } catch (error) {}
 
-    console.log('❌ No intersection detected');
     return false;
   }
 
@@ -800,7 +736,6 @@ class Polydraw extends L.Control {
         lng: sumLng / count,
       };
     } catch (error) {
-      console.warn('getPolygonCenter failed:', error.message);
       return null;
     }
   }
@@ -857,14 +792,11 @@ class Polydraw extends L.Control {
 
       return { minLat, maxLat, minLng, maxLng };
     } catch (error) {
-      console.warn('getBoundingBox failed:', error.message);
       return null;
     }
   }
 
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
-    console.log('subtract called with:', latlngs);
-
     // Find only the polygons that actually intersect with the subtract area
     const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
@@ -886,15 +818,10 @@ class Polydraw extends L.Control {
         const hasIntersection = this.checkPolygonIntersection(existingPolygon, latlngs);
 
         if (hasIntersection) {
-          console.log('Found intersecting polygon for subtract operation');
           intersectingFeatureGroups.push(featureGroup);
         }
-      } catch (error) {
-        console.warn('subtract: Error checking intersection:', error);
-      }
+      } catch (error) {}
     });
-
-    console.log(`subtract: Found ${intersectingFeatureGroups.length} intersecting polygons`);
 
     // Only apply subtract to intersecting polygons
     intersectingFeatureGroups.forEach((featureGroup) => {
@@ -917,15 +844,8 @@ class Polydraw extends L.Control {
             this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), true);
           });
         }
-      } catch (error) {
-        console.warn('subtract: Error during subtract operation:', error);
-      }
+      } catch (error) {}
     });
-
-    // If no intersections found, just ignore the subtract operation
-    if (intersectingFeatureGroups.length === 0) {
-      console.log('subtract: No intersecting polygons found, ignoring subtract operation');
-    }
   }
 
   private events(onoff: boolean) {
@@ -956,8 +876,6 @@ class Polydraw extends L.Control {
       return;
     }
 
-    console.log('mouseDown', event);
-
     let clickLatLng;
     if ('latlng' in event && event.latlng) {
       clickLatLng = event.latlng;
@@ -980,7 +898,6 @@ class Polydraw extends L.Control {
 
     // Handle normal drawing modes (Add, Subtract)
     this.tracer.setLatLngs([clickLatLng]);
-    console.log(this.tracer.getLatLngs());
     this.startDraw();
   }
 
@@ -1171,7 +1088,6 @@ class Polydraw extends L.Control {
     let hole = [];
     const layerLength = FeatureGroup.getLayers() as any;
     const posarrays = layerLength[0].getLatLngs();
-    console.log(posarrays);
     let length = 0;
 
     // Filter out only markers from the layers (exclude polylines for holes)
@@ -1181,11 +1097,9 @@ class Polydraw extends L.Control {
       for (let index = 0; index < posarrays.length; index++) {
         testarray = [];
         hole = [];
-        console.log('Posisjoner: ', posarrays[index]);
         if (index === 0) {
           if (posarrays[0].length > 1) {
             for (let i = 0; i < posarrays[0].length; i++) {
-              console.log('Posisjoner 2: ', posarrays[index][i]);
               for (let j = 0; j < posarrays[0][i].length; j++) {
                 if (markers[j]) {
                   testarray.push(markers[j].getLatLng());
@@ -1201,11 +1115,9 @@ class Polydraw extends L.Control {
             }
             hole.push(testarray);
           }
-          console.log('Hole: ', hole);
           newPos.push(hole);
         } else {
           length += posarrays[index - 1][0].length;
-          console.log('STart index: ', length);
           for (let j = length; j < posarrays[index][0].length + length; j++) {
             if (markers[j]) {
               testarray.push(markers[j].getLatLng());
@@ -1220,7 +1132,6 @@ class Polydraw extends L.Control {
       let length2 = 0;
       for (let index = 0; index < posarrays[0].length; index++) {
         testarray = [];
-        console.log('Polygon drag: ', posarrays[0][index]);
         if (index === 0) {
           if (posarrays[0][index].length > 1) {
             for (let j = 0; j < posarrays[0][index].length; j++) {
@@ -1246,16 +1157,13 @@ class Polydraw extends L.Control {
         hole.push(testarray);
       }
       newPos.push(hole);
-      console.log('Hole 2: ', hole);
     }
-    console.log('Nye posisjoner: ', newPos);
     layerLength[0].setLatLngs(newPos);
   }
 
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
     this.polygonInformation.deletePolygonInformationStorage();
     const featureCollection = FeatureGroup.toGeoJSON() as any;
-    console.log('Markerdragend polygon: ', featureCollection.features[0].geometry.coordinates);
 
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(FeatureGroup);
@@ -1263,12 +1171,10 @@ class Polydraw extends L.Control {
     if (featureCollection.features[0].geometry.coordinates.length > 1) {
       featureCollection.features[0].geometry.coordinates.forEach((element) => {
         const feature = this.turfHelper.getMultiPolygon([element]);
-        console.log('Markerdragend: ', feature);
 
         if (this.turfHelper.hasKinks(feature)) {
           this.kinks = true;
           const unkink = this.turfHelper.getKinks(feature);
-          console.log('Unkink: ', unkink);
           unkink.forEach((polygon) => {
             // Allow merging after marker drag - this enables polygon merging when dragged into each other
             this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, false);
@@ -1283,12 +1189,10 @@ class Polydraw extends L.Control {
       const feature = this.turfHelper.getMultiPolygon(
         featureCollection.features[0].geometry.coordinates,
       );
-      console.log('Markerdragend: ', feature);
 
       if (this.turfHelper.hasKinks(feature)) {
         this.kinks = true;
         const unkink = this.turfHelper.getKinks(feature);
-        console.log('Unkink: ', unkink);
         unkink.forEach((polygon) => {
           // Allow merging after marker drag - this enables polygon merging when dragged into each other
           this.addPolygon(this.turfHelper.getTurfPolygon(polygon), false, false);
@@ -1299,7 +1203,6 @@ class Polydraw extends L.Control {
         this.addPolygon(feature, false, false);
       }
     }
-    console.log(this.arrayOfFeatureGroups);
     this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
@@ -1398,7 +1301,6 @@ class Polydraw extends L.Control {
   }
 
   deletePolygon(polygon: ILatLng[][]) {
-    console.log('deletePolygon: ', polygon);
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
         const layer = featureGroup.getLayers()[0] as any;
@@ -1409,7 +1311,6 @@ class Polydraw extends L.Control {
           let polygon3;
           const test = [...latlng];
 
-          console.log(latlng);
           if (latlng.length > 1) {
             if (latlng[0][0] !== latlng[0][latlng[0].length - 1]) {
               test[0].push(latlng[0][0]);
@@ -1422,15 +1323,10 @@ class Polydraw extends L.Control {
             polygon3 = test;
           }
 
-          console.log('Test: ', polygon3);
-          console.log(polygon);
-
           const equals = this.polygonArrayEquals(polygon3, polygon);
-          console.log('equals: ', equals, ' length: ', length);
           if (equals && length === 1) {
             this.polygonInformation.deleteTrashcan(polygon);
             this.removeFeatureGroup(featureGroup);
-            console.log(featureGroup.getLayers());
           } else if (equals && length > 1) {
             this.polygonInformation.deleteTrashCanOnMulti([polygon]);
             latlngs.splice(index, 1);
