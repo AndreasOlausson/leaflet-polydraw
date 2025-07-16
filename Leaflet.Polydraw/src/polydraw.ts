@@ -689,8 +689,16 @@ class Polydraw extends L.Control {
         intersection.geometry &&
         (intersection.geometry.type === 'Polygon' || intersection.geometry.type === 'MultiPolygon')
       ) {
-        console.log('✅ Intersection detected via getIntersection');
-        return true;
+        // Check if the intersection has meaningful area (not just touching edges/points)
+        const coords = intersection.geometry.coordinates;
+        if (coords && coords.length > 0 && coords[0] && coords[0].length >= 4) {
+          console.log('✅ Intersection detected via getIntersection');
+          return true;
+        } else {
+          console.log(
+            '⚠️ Intersection exists but has no meaningful area (just touching edges/points)',
+          );
+        }
       }
     } catch (error) {
       console.warn('❌ getIntersection failed:', error.message);
