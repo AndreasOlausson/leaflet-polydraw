@@ -27,9 +27,26 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
   });
 
   afterEach(() => {
-    if (map) {
-      map.remove();
+    // Clean up polydraw first to avoid map cleanup issues
+    if (polydraw && map) {
+      try {
+        map.removeControl(polydraw);
+      } catch (error) {
+        // Ignore cleanup errors in test environment
+      }
     }
+
+    // Clean up map
+    if (map) {
+      try {
+        map.off(); // Remove all event listeners
+        map.remove();
+      } catch (error) {
+        // Ignore cleanup errors in test environment
+      }
+    }
+
+    // Clean up DOM
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
