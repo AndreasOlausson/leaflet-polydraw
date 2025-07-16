@@ -5,6 +5,12 @@ import Polydraw from '../src/polydraw';
 describe('Polygon Dragging Tests', () => {
   describe('Merge Behavior', () => {
     it('should not merge polygons that only have bounding boxes overlapping', () => {
+      // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
+      // Based on the clog.txt, we need polygons where:
+      // - polygonIntersect result: false
+      // - getIntersection result: null
+      // - Bounding box overlap check: true
+      // Real coordinates from your polygons that have overlapping bounding boxes but no geometric intersection
       const polygon1 = {
         toGeoJSON: () => ({
           type: 'Feature',
@@ -12,19 +18,20 @@ describe('Polygon Dragging Tests', () => {
             type: 'Polygon',
             coordinates: [
               [
-                [0, 0],
-                [2, 0],
-                [2, 0.5],
-                [0.5, 0.5],
-                [0.5, 2],
-                [0, 2],
-                [0, 0],
+                [15.008698, 58.163446], // lng, lat format for GeoJSON
+                [15.284729, 58.163446],
+                [15.284729, 58.586161],
+                [15.952149, 58.586161],
+                [15.952149, 58.687669],
+                [15.008698, 58.687664],
+                [15.008698, 58.163446], // Close the polygon
               ],
             ],
           },
         }),
       };
 
+      // Second polygon with coordinates that create bounding box overlap but no geometric intersection
       const polygon2 = {
         toGeoJSON: () => ({
           type: 'Feature',
@@ -32,44 +39,26 @@ describe('Polygon Dragging Tests', () => {
             type: 'Polygon',
             coordinates: [
               [
-                [2.01, 2.01],
-                [3.01, 2.01],
-                [3.01, 3.01],
-                [2.01, 3.01],
-                [2.01, 2.01],
+                [15.630799, 58.356368],
+                [15.967255, 58.292247],
+                [15.971375, 58.421092],
+                [15.836793, 58.483546],
+                [15.630799, 58.356368], // Close the polygon
               ],
             ],
           },
         }),
       };
 
-      const featureGroup1 = {
-        eachLayer: vi.fn((fn) => fn(polygon1)),
-        toGeoJSON: () => ({ features: [polygon1.toGeoJSON()] }),
-      };
+      // Test the checkPolygonIntersection method directly
+      const result = (polydraw as any).checkPolygonIntersection(
+        polygon1.toGeoJSON(),
+        polygon2.toGeoJSON(),
+      );
 
-      const featureGroup2 = {
-        eachLayer: vi.fn((fn) => fn(polygon2)),
-        toGeoJSON: () => ({ features: [polygon2.toGeoJSON()] }),
-      };
-
-      (polydraw as any).arrayOfFeatureGroups = [featureGroup1];
-      const checkPolygonIntersectionSpy = vi.spyOn(polydraw as any, 'checkPolygonIntersection');
-      const mergeSpy = vi.spyOn(polydraw as any, 'merge');
-
-      // Removed: checkPolygonIntersectionSpy.mockImplementation(() => false);
-
-      (polydraw as any).mergePolygons = true;
-      const geoJSON = polygon2.toGeoJSON();
-      (polydraw as any).addPolygon(geoJSON, true);
-
-      // Removed: const allFeatures = ... and the next two expect() lines
-
-      // Removed: expect(mergeSpy).toHaveBeenCalledWith(geoJSON);
-      // Removed: expect(checkPolygonIntersectionSpy).toHaveReturnedWith(false);
-
-      // Verify that both polygons exist as separate feature groups
-      expect((polydraw as any).arrayOfFeatureGroups.length).toBe(2);
+      // This test should FAIL with current production code (returns true for bounding box overlap)
+      // and PASS when you change the production code to return false for bounding box overlap
+      expect(result).toBe(false); // We expect NO intersection for bounding box only overlap
     });
   });
   let polydraw: Polydraw;
