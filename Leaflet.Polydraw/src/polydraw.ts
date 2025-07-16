@@ -515,15 +515,21 @@ class Polydraw extends L.Control {
 
               this.addHoleMarker(polyElement, featureGroup);
             }
-          } catch (markerError) {}
+          } catch (markerError) {
+            /* empty */
+          }
         });
       });
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     // Add edge click listeners for polygon edge interactions
     try {
       this.addEdgeClickListeners(polygon, featureGroup);
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     this.arrayOfFeatureGroups.push(featureGroup);
     this.setDrawMode(DrawMode.Off);
@@ -532,7 +538,9 @@ class Polydraw extends L.Control {
       featureGroup.on('click', (e) => {
         this.polygonClicked(e, latLngs);
       });
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     // Add to map - this should be done after all setup is complete
     try {
@@ -597,7 +605,9 @@ class Polydraw extends L.Control {
                 newArray.push(featureGroup);
                 polygonFeature.push(feature);
               }
-            } catch (error) {}
+            } catch (error) {
+              /* empty */
+            }
           });
         } else {
           try {
@@ -607,9 +617,13 @@ class Polydraw extends L.Control {
               newArray.push(featureGroup);
               polygonFeature.push(feature);
             }
-          } catch (error) {}
+          } catch (error) {
+            /* empty */
+          }
         }
-      } catch (error) {}
+      } catch (error) {
+        /* empty */
+      }
     });
 
     if (newArray.length > 0) {
@@ -630,7 +644,9 @@ class Polydraw extends L.Control {
       if (result) {
         return true;
       }
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     // Method 2: Try direct intersection check
     try {
@@ -645,9 +661,12 @@ class Polydraw extends L.Control {
         if (coords && coords.length > 0 && coords[0] && coords[0].length >= 4) {
           return true;
         } else {
+          /* empty */
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     // Method 3: Bounding box overlap check as fallback
     try {
@@ -663,10 +682,12 @@ class Polydraw extends L.Control {
         );
 
         if (overlaps) {
-          return true;
+          return false;
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     // Method 4: Simple distance-based check as final fallback
     try {
@@ -683,7 +704,9 @@ class Polydraw extends L.Control {
           return true;
         }
       }
-    } catch (error) {}
+    } catch (error) {
+      /* empty */
+    }
 
     return false;
   }
@@ -820,7 +843,9 @@ class Polydraw extends L.Control {
         if (hasIntersection) {
           intersectingFeatureGroups.push(featureGroup);
         }
-      } catch (error) {}
+      } catch (error) {
+        /* empty */
+      }
     });
 
     // Only apply subtract to intersecting polygons
@@ -844,7 +869,9 @@ class Polydraw extends L.Control {
             this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), true);
           });
         }
-      } catch (error) {}
+      } catch (error) {
+        /* empty */
+      }
     });
   }
 
