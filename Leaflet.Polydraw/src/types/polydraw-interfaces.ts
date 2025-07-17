@@ -274,6 +274,20 @@ export interface PolydrawMarker extends L.Marker {
 }
 
 /**
+ * Enhanced polyline with edge metadata interface
+ */
+export interface PolydrawEdgePolyline extends L.Polyline {
+  _polydrawEdgeInfo?: {
+    ringIndex: number;
+    edgeIndex: number;
+    startPoint: ILatLng;
+    endPoint: ILatLng;
+    parentPolygon: L.Polygon;
+    parentFeatureGroup: L.FeatureGroup;
+  };
+}
+
+/**
  * Compass direction interface
  */
 export interface CompassDirection {

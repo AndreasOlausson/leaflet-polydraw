@@ -11,7 +11,13 @@ import { PolygonUtil } from './polygon.util';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
 
-import type { ILatLng, PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
+import type {
+  ILatLng,
+  PolydrawConfig,
+  DrawModeChangeHandler,
+  PolydrawPolygon,
+  PolydrawEdgePolyline,
+} from './types/polydraw-interfaces';
 
 class Polydraw extends L.Control {
   private map: L.Map;
@@ -467,13 +473,13 @@ class Polydraw extends L.Control {
 
     const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
-    let polygon;
+    let polygon: PolydrawPolygon;
     try {
-      polygon = this.getPolygon(latLngs);
+      polygon = this.getPolygon(latLngs) as PolydrawPolygon;
       if (!polygon) {
         return;
       }
-      (polygon as any)._polydrawOptimizationLevel = visualOptimizationLevel;
+      polygon._polydrawOptimizationLevel = visualOptimizationLevel;
       featureGroup.addLayer(polygon);
     } catch (error) {
       return;
@@ -2209,7 +2215,7 @@ class Polydraw extends L.Control {
         });
 
         // Store edge information for later use
-        (edgePolyline as any)._polydrawEdgeInfo = {
+        (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo = {
           ringIndex,
           edgeIndex: i,
           startPoint: edgeStart,
@@ -2243,7 +2249,7 @@ class Polydraw extends L.Control {
    * Integrated from PolygonEdgeManager
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    const edgeInfo = (edgePolyline as any)._polydrawEdgeInfo;
+    const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
     if (!edgeInfo) return;
     const newPoint = e.latlng;
     const parentPolygon = edgeInfo.parentPolygon;
@@ -2262,7 +2268,8 @@ class Polydraw extends L.Control {
             newPoint.lat,
           ]);
           if (newPolygon) {
-            const optimizationLevel = (parentPolygon as any)._polydrawOptimizationLevel || 0;
+            const polydrawPolygon = parentPolygon as PolydrawPolygon;
+            const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             this.removeFeatureGroup(parentFeatureGroup);
             this.addPolygonLayer(newPolygon, false, false, optimizationLevel);
           }
@@ -2297,7 +2304,10 @@ class Polydraw extends L.Control {
   }
 }
 
-(L.control as any).polydraw = function (options: L.ControlOptions) {
+// Add the polydraw method to L.control with proper typing
+(L.control as any).polydraw = function (
+  options?: L.ControlOptions & { config?: PolydrawConfig },
+): Polydraw {
   return new Polydraw(options);
 };
 
