@@ -5,7 +5,8 @@
   "modes": {
     "attachElbow": true,
     "dragElbow": true,
-    "dragPolygons": true
+    "dragPolygons": true,
+    "edgeDeletion": true
   },
   "dragPolygons": {
     "realTimeUpdate": false,
@@ -28,6 +29,13 @@
       "subtractColor": "#D9460F",
       "hideMarkersOnDrag": true
     }
+  },
+  "edgeDeletion": {
+    "enabled": true,
+    "modifierKey": "auto",
+    "hoverColor": "#D9460F",
+    "confirmDeletion": false,
+    "minVertices": 3
   },
   "markers": {
     "deleteMarker": true,

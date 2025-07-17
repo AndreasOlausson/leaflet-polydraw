@@ -35,6 +35,8 @@ class Polydraw extends L.Control {
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: DrawModeChangeHandler[] = [];
   private _boundKeyDownHandler: (e: KeyboardEvent) => void;
+  private _boundKeyUpHandler: (e: KeyboardEvent) => void;
+  private isModifierKeyHeld: boolean = false;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
     super(options);
@@ -542,7 +544,7 @@ class Polydraw extends L.Control {
 
     try {
       featureGroup.on('click', (e) => {
-        this.polygonClicked(e, latLngs);
+        this.elbowClicked(e, latLngs);
       });
     } catch (error) {
       /* empty */
@@ -568,9 +570,223 @@ class Polydraw extends L.Control {
   //   }
   // }
 
-  private polygonClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
-    // Simplified - only handle basic polygon click
-    // Most functionality moved to edge click handlers
+  private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
+    console.log('polygonClicked', e, poly);
+
+    // Guard: Check if modifier key is active
+    if (!this.isModifierKeyPressed(e.originalEvent)) {
+      return;
+    }
+
+    console.log('Modifier key detected - proceeding with edge deletion');
+
+    // 1. Collect the required info - preserve the whole structure including holes
+    const clickedLatLng = e.latlng;
+    const allRings = poly.geometry.coordinates[0]; // Get all rings (outer + holes)
+
+    // Find which ring and vertex was clicked
+    let targetRingIndex = -1;
+    let targetVertexIndex = -1;
+
+    for (let ringIndex = 0; ringIndex < allRings.length; ringIndex++) {
+      const ring = allRings[ringIndex];
+      const vertexIndex = ring.findIndex(
+        (coord) =>
+          Math.abs(coord[1] - clickedLatLng.lat) < 0.0001 &&
+          Math.abs(coord[0] - clickedLatLng.lng) < 0.0001,
+      );
+
+      if (vertexIndex !== -1) {
+        targetRingIndex = ringIndex;
+        targetVertexIndex = vertexIndex;
+        break;
+      }
+    }
+
+    if (targetRingIndex === -1 || targetVertexIndex === -1) {
+      console.log('Vertex not found');
+      return;
+    }
+
+    // Check if deletion would create invalid polygon (need at least 3 unique + closing)
+    const targetRing = allRings[targetRingIndex];
+    if (targetRing.length <= 4) {
+      console.log('Cannot delete - polygon would become invalid');
+      return;
+    }
+
+    // 2. Create a new structure preserving all rings but modifying the target ring
+    const newAllRings = allRings.map((ring, ringIndex) => {
+      if (ringIndex === targetRingIndex) {
+        // Remove the clicked vertex from this ring
+        const newRing = [...ring];
+        newRing.splice(targetVertexIndex, 1);
+        return newRing;
+      } else {
+        // Keep other rings unchanged
+        return [...ring];
+      }
+    });
+
+    // Convert to L.LatLng format for addAutoPolygon
+    const latLngArray: L.LatLng[][][] = [
+      newAllRings.map((ring) => ring.map((coord) => new L.LatLng(coord[1], coord[0]))),
+    ];
+
+    // 3. Delete the current polygon
+    const currentFeatureGroup = this.findFeatureGroupForPoly(poly);
+    if (currentFeatureGroup) {
+      this.removeFeatureGroup(currentFeatureGroup);
+    }
+
+    // 4. Call addAutoPolygon
+    this.addAutoPolygon(latLngArray);
+  }
+
+  /**
+   * Find the feature group that contains the given polygon
+   */
+  private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      const featureCollection = featureGroup.toGeoJSON() as any;
+      if (featureCollection && featureCollection.features && featureCollection.features[0]) {
+        const feature = featureCollection.features[0];
+        // Simple comparison - could be made more robust if needed
+        if (
+          JSON.stringify(feature.geometry.coordinates) === JSON.stringify(poly.geometry.coordinates)
+        ) {
+          return featureGroup;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Detect if modifier key is pressed (Ctrl on Windows/Linux, Cmd on Mac)
+   */
+  private isModifierKeyPressed(event: MouseEvent): boolean {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+
+    if (isMac) {
+      return event.metaKey; // Cmd key on Mac
+    } else {
+      return event.ctrlKey; // Ctrl key on Windows/Linux
+    }
+  }
+
+  /**
+   * Delete edge at marker position - for test compatibility
+   */
+  private deleteEdgeAtMarker(marker: L.Marker, featureGroup: L.FeatureGroup): void {
+    // Create a mock event to reuse the elbowClicked logic
+    const mockEvent = {
+      latlng: marker.getLatLng(),
+      originalEvent: { ctrlKey: true, metaKey: true }, // Simulate modifier key
+    };
+
+    // Get the polygon from the feature group
+    let polygon: L.Polygon | null = null;
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        polygon = layer;
+      }
+    });
+
+    if (!polygon) return;
+
+    const poly = polygon.toGeoJSON();
+    this.elbowClicked(mockEvent, poly);
+  }
+
+  /**
+   * Find marker index in coordinates - for test compatibility
+   */
+  private findMarkerIndexInCoords(coords: any, markerLatLng: any): number {
+    if (!coords || !Array.isArray(coords)) return -1;
+
+    return coords.findIndex(
+      (coord) =>
+        Math.abs(coord.lat - markerLatLng.lat) < 0.0001 &&
+        Math.abs(coord.lng - markerLatLng.lng) < 0.0001,
+    );
+  }
+
+  /**
+   * Check if polygon would be valid after deleting a vertex - for test compatibility
+   */
+  private isValidPolygonAfterDeletion(latLngs: any, deleteIndex: number): boolean {
+    try {
+      if (!latLngs || !Array.isArray(latLngs)) return false;
+
+      // Need at least 4 coordinates (3 unique vertices + closing point) after deletion
+      const minVertices = 3;
+      const uniqueVertices = latLngs.length - 1; // Subtract closing point
+
+      // After deletion, we need at least minVertices unique vertices
+      // So we need uniqueVertices > minVertices (not >=)
+      return uniqueVertices > minVertices;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Create new coordinates array without deleted vertex - for test compatibility
+   */
+  private createCoordsWithoutVertex(coords: any[], deleteIndex: number): any[] {
+    if (!coords || !Array.isArray(coords) || deleteIndex < 0 || deleteIndex >= coords.length) {
+      return coords;
+    }
+
+    const newCoords = [...coords];
+    newCoords.splice(deleteIndex, 1);
+    return newCoords;
+  }
+
+  /**
+   * Handle marker click for edge deletion - for test compatibility
+   */
+  private onMarkerClickForEdgeDeletion(marker: L.Marker, clickEvent: any): void {
+    // Check if modifier key is pressed
+    if (!this.isModifierKeyPressed(clickEvent.originalEvent)) {
+      return;
+    }
+
+    // Find the feature group containing this marker
+    let targetFeatureGroup: L.FeatureGroup | null = null;
+
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      featureGroup.eachLayer((layer) => {
+        if (layer === marker) {
+          targetFeatureGroup = featureGroup;
+        }
+      });
+      if (targetFeatureGroup) break;
+    }
+
+    if (targetFeatureGroup) {
+      this.deleteEdgeAtMarker(marker, targetFeatureGroup);
+    }
+  }
+
+  /**
+   * Handle marker hover for edge deletion - test compatibility method with correct signature
+   */
+  private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
+    const element = marker.getElement();
+    if (!element) return;
+
+    if (isHovering && this.isModifierKeyHeld) {
+      element.style.backgroundColor = '#D9460F';
+      element.style.borderColor = '#D9460F';
+      element.classList.add('edge-deletion-hover');
+    } else if (!isHovering) {
+      element.style.backgroundColor = '';
+      element.style.borderColor = '';
+      element.classList.remove('edge-deletion-hover');
+    }
   }
 
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
@@ -939,11 +1155,14 @@ class Polydraw extends L.Control {
   }
 
   private setupKeyboardHandlers() {
+    this._boundKeyUpHandler = this.handleKeyUp.bind(this);
     document.addEventListener('keydown', this._boundKeyDownHandler);
+    document.addEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private removeKeyboardHandlers() {
     document.removeEventListener('keydown', this._boundKeyDownHandler);
+    document.removeEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private handleKeyDown(e: KeyboardEvent) {
@@ -952,7 +1171,82 @@ class Polydraw extends L.Control {
         this.cancelPointToPointDrawing();
       }
     }
+
+    // Track modifier key state for edge deletion visual feedback
+    const isModifierPressed = this.isModifierKeyPressed(e as any);
+    if (isModifierPressed && !this.isModifierKeyHeld) {
+      this.isModifierKeyHeld = true;
+      this.updateAllMarkersForEdgeDeletion(true);
+    }
   }
+
+  private handleKeyUp(e: KeyboardEvent) {
+    // Track modifier key state for edge deletion visual feedback
+    const isModifierPressed = this.isModifierKeyPressed(e as any);
+    if (!isModifierPressed && this.isModifierKeyHeld) {
+      this.isModifierKeyHeld = false;
+      this.updateAllMarkersForEdgeDeletion(false);
+    }
+  }
+
+  /**
+   * Update all markers to show/hide edge deletion visual feedback
+   */
+  private updateAllMarkersForEdgeDeletion(showFeedback: boolean) {
+    this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          this.updateMarkerForEdgeDeletion(layer, showFeedback);
+        }
+      });
+    });
+  }
+
+  /**
+   * Update individual marker for edge deletion visual feedback
+   */
+  private updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean) {
+    const element = marker.getElement();
+    if (!element) return;
+
+    if (showFeedback) {
+      // Add hover listeners for edge deletion feedback
+      element.addEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
+      element.addEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
+    } else {
+      // Remove hover listeners and reset style
+      element.removeEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
+      element.removeEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
+      element.style.backgroundColor = '';
+      element.style.borderColor = '';
+    }
+  }
+
+  /**
+   * Handle marker hover when modifier key is held - event handler version
+   */
+  private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
+    if (!this.isModifierKeyHeld) return;
+
+    const element = e.target as HTMLElement;
+    if (element) {
+      element.style.backgroundColor = '#D9460F'; // Reddish color
+      element.style.borderColor = '#D9460F';
+      element.classList.add('edge-deletion-hover');
+    }
+  };
+
+  /**
+   * Handle marker leave when modifier key is held - event handler version
+   */
+  private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
+    const element = e.target as HTMLElement;
+    if (element) {
+      element.style.backgroundColor = '';
+      element.style.borderColor = '';
+      element.classList.remove('edge-deletion-hover');
+    }
+  };
 
   private cancelPointToPointDrawing() {
     this.clearP2pMarkers();
@@ -1725,7 +2019,6 @@ class Polydraw extends L.Control {
 
   // Simple polygon drag state
   private currentDragPolygon: any = null;
-  private isModifierKeyHeld: boolean = false;
   private currentModifierDragMode: boolean = false;
 
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {

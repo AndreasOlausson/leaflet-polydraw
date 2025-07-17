@@ -111,6 +111,7 @@ export interface ModeConfig {
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
+  edgeDeletion: boolean;
 }
 
 /**
@@ -133,6 +134,17 @@ export interface DragPolygonConfig {
 }
 
 /**
+ * Edge deletion configuration interface
+ */
+export interface EdgeDeletionConfig {
+  enabled: boolean;
+  modifierKey: 'ctrl' | 'cmd' | 'auto';
+  hoverColor: string;
+  confirmDeletion: boolean;
+  minVertices: number;
+}
+
+/**
  * Complete Polydraw configuration interface
  */
 export interface PolydrawConfig {
@@ -145,6 +157,7 @@ export interface PolydrawConfig {
   markers: MarkerOptions;
   modes: ModeConfig;
   dragPolygons: DragPolygonConfig;
+  edgeDeletion: EdgeDeletionConfig;
   units: {
     metric: boolean;
     imperial: boolean;
