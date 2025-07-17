@@ -3,22 +3,15 @@ import { DrawMode, MarkerPosition } from '../enums';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 
 /**
- * Core coordinate interface extending Leaflet's LatLng
+ * Bounding box data structure compatible with Leaflet's LatLngBounds
+ * Uses Leaflet's naming convention: south/north for latitude, west/east for longitude
  */
-export interface ILatLng {
-  lat: number;
-  lng: number;
-}
-
-/**
- * Bounding box interface for geometric calculations
- */
-export interface IBounds {
-  minLat: number;
-  maxLat: number;
-  minLng: number;
-  maxLng: number;
-}
+export type BoundsLiteral = {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+};
 
 /**
  * Configuration interface for auto-polygon options
@@ -34,7 +27,7 @@ export interface AutoPolygonOptions {
  */
 export interface MarkerConfig {
   type: 'standard' | 'menu' | 'delete' | 'info' | 'hole';
-  position: ILatLng;
+  position: L.LatLngLiteral;
   draggable: boolean;
   zIndex: number;
   styleClasses: string;
@@ -176,13 +169,13 @@ export type PolygonEventHandler = (event: L.LeafletEvent) => void;
  */
 export interface PolygonInfo {
   id: string;
-  polygon: ILatLng[][];
+  polygon: L.LatLngLiteral[][];
   area: number;
   perimeter: number;
   hasHoles: boolean;
   holeCount: number;
-  centroid: ILatLng;
-  bounds: IBounds;
+  centroid: L.LatLngLiteral;
+  bounds: BoundsLiteral;
 }
 
 /**
@@ -229,8 +222,8 @@ export interface IntersectionAnalysis {
  */
 export interface DragState {
   isDragging: boolean;
-  startPosition: ILatLng | null;
-  currentPosition: ILatLng | null;
+  startPosition: L.LatLngLiteral | null;
+  currentPosition: L.LatLngLiteral | null;
   draggedPolygon: L.Polygon | null;
   modifierKeyHeld: boolean;
   dragMode: 'move' | 'subtract';
@@ -259,7 +252,7 @@ export interface PolydrawPolygon extends L.Polygon {
   _polydrawLatLngs?: Feature<Polygon | MultiPolygon>;
   _polydrawDragData?: {
     isDragging: boolean;
-    startPosition: ILatLng | null;
+    startPosition: L.LatLngLiteral | null;
     startLatLngs: any;
   };
 }
@@ -280,8 +273,8 @@ export interface PolydrawEdgePolyline extends L.Polyline {
   _polydrawEdgeInfo?: {
     ringIndex: number;
     edgeIndex: number;
-    startPoint: ILatLng;
-    endPoint: ILatLng;
+    startPoint: L.LatLngLiteral;
+    endPoint: L.LatLngLiteral;
     parentPolygon: L.Polygon;
     parentFeatureGroup: L.FeatureGroup;
   };

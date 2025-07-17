@@ -2,13 +2,13 @@
  * GeometryUtils - Simple geometric calculation utilities
  * This is a small, focused module with no external dependencies
  */
-import type { ILatLng } from './types/polydraw-interfaces';
+import type { LatLngLiteral } from 'leaflet';
 
 export class GeometryUtils {
   /**
    * Calculate angle between three points
    */
-  static calculateAngle(p1: ILatLng, p2: ILatLng, p3: ILatLng): number {
+  static calculateAngle(p1: L.LatLngLiteral, p2: L.LatLngLiteral, p3: L.LatLngLiteral): number {
     const v1 = { x: p1.lng - p2.lng, y: p1.lat - p2.lat };
     const v2 = { x: p3.lng - p2.lng, y: p3.lat - p2.lat };
 
@@ -25,7 +25,11 @@ export class GeometryUtils {
   /**
    * Calculate distance from point to line between two other points
    */
-  static calculateDistanceFromLine(p1: ILatLng, point: ILatLng, p2: ILatLng): number {
+  static calculateDistanceFromLine(
+    p1: L.LatLngLiteral,
+    point: L.LatLngLiteral,
+    p2: L.LatLngLiteral,
+  ): number {
     const A = point.lng - p1.lng;
     const B = point.lat - p1.lat;
     const C = p2.lng - p1.lng;
@@ -58,7 +62,7 @@ export class GeometryUtils {
   /**
    * Calculate centroid of polygon
    */
-  static calculateCentroid(latlngs: ILatLng[]): ILatLng {
+  static calculateCentroid(latlngs: L.LatLngLiteral[]): L.LatLngLiteral {
     let sumLat = 0,
       sumLng = 0;
     for (const point of latlngs) {
@@ -74,7 +78,7 @@ export class GeometryUtils {
   /**
    * Calculate distance between two points
    */
-  static calculateDistance(p1: ILatLng, p2: ILatLng): number {
+  static calculateDistance(p1: L.LatLngLiteral, p2: L.LatLngLiteral): number {
     const dx = p1.lng - p2.lng;
     const dy = p1.lat - p2.lat;
     return Math.sqrt(dx * dx + dy * dy);

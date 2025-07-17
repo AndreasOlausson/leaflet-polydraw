@@ -1,7 +1,6 @@
 import { MarkerPosition } from './enums';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
-import type { ILatLng } from './polygon-helpers';
 
 /**
  * Utility for polygon bounds.
@@ -9,14 +8,14 @@ import type { ILatLng } from './polygon-helpers';
 
 // For ICompass, from interface, but for now, define
 type ICompass = {
-  East: ILatLng;
-  North: ILatLng;
-  NorthEast: ILatLng;
-  NorthWest: ILatLng;
-  South: ILatLng;
-  SouthEast: ILatLng;
-  SouthWest: ILatLng;
-  West: ILatLng;
+  East: L.LatLngLiteral;
+  North: L.LatLngLiteral;
+  NorthEast: L.LatLngLiteral;
+  NorthWest: L.LatLngLiteral;
+  South: L.LatLngLiteral;
+  SouthEast: L.LatLngLiteral;
+  SouthWest: L.LatLngLiteral;
+  West: L.LatLngLiteral;
 };
 
 export class PolyDrawUtil {
@@ -26,7 +25,7 @@ export class PolyDrawUtil {
    * @param padding Padding factor.
    * @returns The LatLngBounds.
    */
-  static getBounds(polygon: ILatLng[], padding: number = 0): L.LatLngBounds {
+  static getBounds(polygon: L.LatLngLiteral[], padding: number = 0): L.LatLngBounds {
     const tmpLatLng: L.LatLng[] = [];
     polygon.forEach((ll) => {
       if (isNaN(ll.lat) || isNaN(ll.lng)) {
@@ -107,8 +106,8 @@ export class Compass {
   private getPositionAsArray(
     startPosition: MarkerPosition = MarkerPosition.NorthEast,
     clockwise: boolean = false,
-  ): ILatLng[] {
-    const positions: ILatLng[] = [];
+  ): L.LatLngLiteral[] {
+    const positions: L.LatLngLiteral[] = [];
     if (clockwise) {
       positions.push(this.direction.SouthWest);
       positions.push(this.direction.West);

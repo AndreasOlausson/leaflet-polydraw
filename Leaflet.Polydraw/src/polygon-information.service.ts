@@ -1,5 +1,6 @@
-import { PolygonInfo, PolygonDrawStates, type ILatLng } from './polygon-helpers';
+import { PolygonInfo, PolygonDrawStates } from './polygon-helpers';
 import { MapStateService } from './map-state';
+import * as L from 'leaflet';
 
 /**
  * Service for managing polygon information and draw states.
@@ -38,13 +39,13 @@ export class PolygonInformationService {
    * Updates the polygons and notifies the map state service.
    */
   updatePolygons(): void {
-    let newPolygons: ILatLng[][][] = null;
+    let newPolygons: L.LatLngLiteral[][][] = null;
 
     if (this.polygonInformationStorage.length > 0) {
       newPolygons = [];
 
       this.polygonInformationStorage.forEach((v) => {
-        const test: ILatLng[][] = [];
+        const test: L.LatLngLiteral[][] = [];
 
         v.polygon.forEach((poly) => {
           poly.forEach((polygon) => {
@@ -79,7 +80,7 @@ export class PolygonInformationService {
     // State saved
   }
 
-  deleteTrashcan(polygon: ILatLng[][]): void {
+  deleteTrashcan(polygon: L.LatLngLiteral[][]): void {
     const idx = this.polygonInformationStorage.findIndex((v) => v.polygon[0] === polygon);
     if (idx !== -1) {
       this.polygonInformationStorage.splice(idx, 1);
@@ -87,7 +88,7 @@ export class PolygonInformationService {
     }
   }
 
-  deleteTrashCanOnMulti(polygon: ILatLng[][][]): void {
+  deleteTrashCanOnMulti(polygon: L.LatLngLiteral[][][]): void {
     let index = 0;
 
     // DeleteTrashCan

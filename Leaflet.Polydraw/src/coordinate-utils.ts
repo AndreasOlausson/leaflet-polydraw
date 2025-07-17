@@ -3,7 +3,7 @@
  * This is a small, focused module for coordinate-related operations
  */
 import * as L from 'leaflet';
-import type { ILatLng } from './types/polydraw-interfaces';
+import type { LatLngLiteral } from 'leaflet';
 import { GeometryUtils } from './geometry-utils';
 import type { TurfHelper } from './turf-helper';
 
@@ -11,7 +11,7 @@ export class CoordinateUtils {
   /**
    * Convert coordinate arrays to proper format for polygon creation
    */
-  static convertToCoords(latlngs: ILatLng[][], turfHelper: TurfHelper): any[] {
+  static convertToCoords(latlngs: L.LatLngLiteral[][], turfHelper: TurfHelper): any[] {
     const coords = [];
 
     // latlngs length
@@ -70,7 +70,7 @@ export class CoordinateUtils {
   /**
    * Get latitude/longitude information string
    */
-  static getLatLngInfoString(latlng: ILatLng): string {
+  static getLatLngInfoString(latlng: L.LatLngLiteral): string {
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
 

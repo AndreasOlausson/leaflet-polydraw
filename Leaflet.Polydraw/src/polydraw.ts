@@ -12,11 +12,11 @@ import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
 
 import type {
-  ILatLng,
   PolydrawConfig,
   DrawModeChangeHandler,
   PolydrawPolygon,
   PolydrawEdgePolyline,
+  PolydrawFeatureGroup,
 } from './types/polydraw-interfaces';
 
 class Polydraw extends L.Control {
@@ -502,7 +502,7 @@ class Polydraw extends L.Control {
         if (!polygon || !Array.isArray(polygon)) {
           return;
         }
-        polygon.forEach((polyElement: ILatLng[], i: number) => {
+        polygon.forEach((polyElement: L.LatLngLiteral[], i: number) => {
           if (!polyElement || !Array.isArray(polyElement) || polyElement.length === 0) {
             return;
           }
@@ -1239,7 +1239,7 @@ class Polydraw extends L.Control {
     this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
-  private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): ILatLng[][] {
+  private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): L.LatLngLiteral[][] {
     let coord;
     if (feature) {
       if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
@@ -1333,7 +1333,7 @@ class Polydraw extends L.Control {
     return poly1.toString() === poly2.toString();
   }
 
-  deletePolygon(polygon: ILatLng[][]) {
+  deletePolygon(polygon: L.LatLngLiteral[][]) {
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
         const layer = featureGroup.getLayers()[0] as any;
@@ -1384,7 +1384,7 @@ class Polydraw extends L.Control {
     }
   }
 
-  private getMarkerIndex(latlngs: ILatLng[], position: MarkerPosition): number {
+  private getMarkerIndex(latlngs: L.LatLngLiteral[], position: MarkerPosition): number {
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
       bounds.getSouth(),
@@ -1393,7 +1393,7 @@ class Polydraw extends L.Control {
       bounds.getEast(),
     );
     const compassDirection = compass.getDirection(position);
-    const latLngPoint: ILatLng = {
+    const latLngPoint: L.LatLngLiteral = {
       lat: compassDirection.lat,
       lng: compassDirection.lng,
     };
@@ -1403,7 +1403,7 @@ class Polydraw extends L.Control {
     return nearestPointIdx;
   }
 
-  private addMarker(latlngs: ILatLng[], FeatureGroup: L.FeatureGroup) {
+  private addMarker(latlngs: L.LatLngLiteral[], FeatureGroup: L.FeatureGroup) {
     const menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
     const deleteMarkerIdx = this.getMarkerIndex(
       latlngs,
@@ -1475,7 +1475,7 @@ class Polydraw extends L.Control {
     });
   }
 
-  private addHoleMarker(latlngs: ILatLng[], FeatureGroup: L.FeatureGroup) {
+  private addHoleMarker(latlngs: L.LatLngLiteral[], FeatureGroup: L.FeatureGroup) {
     latlngs.forEach((latlng, i) => {
       // Use holeIcon styles instead of regular markerIcon styles
       const iconClasses = this.config.markers.holeIcon.styleClasses;
@@ -1497,11 +1497,11 @@ class Polydraw extends L.Control {
     });
   }
 
-  private getLatLngInfoString(latlng: ILatLng): string {
+  private getLatLngInfoString(latlng: L.LatLngLiteral): string {
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
 
-  private generateMenuMarkerPopup(latLngs: ILatLng[]): HTMLDivElement {
+  private generateMenuMarkerPopup(latLngs: L.LatLngLiteral[]): HTMLDivElement {
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
     const wrapper: HTMLDivElement = document.createElement('div');
@@ -1581,7 +1581,7 @@ class Polydraw extends L.Control {
   }
 
   // Menu marker popup button methods
-  private convertToSimplifiedPolygon(latlngs: ILatLng[]) {
+  private convertToSimplifiedPolygon(latlngs: L.LatLngLiteral[]) {
     this.deletePolygon([latlngs]);
 
     // A valid polygon needs at least 4 points (3 unique vertices + closing point)
@@ -1594,7 +1594,7 @@ class Polydraw extends L.Control {
     }
 
     // Remove every other point to simplify
-    const simplifiedLatLngs: ILatLng[] = [];
+    const simplifiedLatLngs: L.LatLngLiteral[] = [];
     for (let i = 0; i < latlngs.length; i += 2) {
       simplifiedLatLngs.push(latlngs[i]);
     }
@@ -1622,7 +1622,7 @@ class Polydraw extends L.Control {
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
   }
 
-  private convertToBoundsPolygon(latlngs: ILatLng[]) {
+  private convertToBoundsPolygon(latlngs: L.LatLngLiteral[]) {
     this.deletePolygon([latlngs]);
     const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
     const polygon = this.turfHelper.getMultiPolygon(coords);
@@ -1630,15 +1630,15 @@ class Polydraw extends L.Control {
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false);
   }
 
-  private doubleElbows(latlngs: ILatLng[]) {
+  private doubleElbows(latlngs: L.LatLngLiteral[]) {
     this.deletePolygon([latlngs]);
-    const doubleLatLngs: ILatLng[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
+    const doubleLatLngs: L.LatLngLiteral[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
     const coords = [[doubleLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
     const newPolygon = this.turfHelper.getMultiPolygon(coords);
     this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), false, false);
   }
 
-  private bezierify(latlngs: ILatLng[]) {
+  private bezierify(latlngs: L.LatLngLiteral[]) {
     this.deletePolygon([latlngs]);
     const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
     const newPolygon = this.turfHelper.getBezierMultiPolygon(coords);
@@ -1922,7 +1922,12 @@ class Polydraw extends L.Control {
 
       // Add the updated polygon (with noMerge=false to allow merging during drag)
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
+
+      // Temporarily allow merging by ignoring kinks for drag operations
+      const originalKinks = this.kinks;
+      this.kinks = false;
       this.addPolygon(feature, false, false);
+      this.kinks = originalKinks;
 
       // Update polygon information
       this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
@@ -2155,7 +2160,7 @@ class Polydraw extends L.Control {
     const rawLatLngs = polygon.getLatLngs();
 
     // Handle different polygon structures - Leaflet can return different nesting levels
-    let processedRings: ILatLng[][];
+    let processedRings: L.LatLngLiteral[][];
 
     if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
       if (Array.isArray(rawLatLngs[0])) {
@@ -2168,10 +2173,10 @@ class Polydraw extends L.Control {
             // This is the case: we have LatLng objects, but they're nested one level too deep
             // The structure is [Array(1)] -> [Array(N)] -> N LatLng objects
             // We need to extract from rawLatLngs[0], not rawLatLngs
-            processedRings = rawLatLngs[0] as ILatLng[][];
+            processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
           } else {
             // Fallback for other structures
-            processedRings = rawLatLngs[0] as ILatLng[][];
+            processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
           }
         } else if (
           rawLatLngs[0][0] &&
@@ -2179,16 +2184,16 @@ class Polydraw extends L.Control {
           'lat' in rawLatLngs[0][0]
         ) {
           // Structure: [[{lat, lng}, ...]] (single ring wrapped in array)
-          processedRings = rawLatLngs as ILatLng[][];
+          processedRings = rawLatLngs as L.LatLngLiteral[][];
         } else {
           // Fallback: rawLatLngs[0] contains the actual coordinate arrays
-          processedRings = rawLatLngs[0] as ILatLng[][];
+          processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
         }
       } else if (rawLatLngs[0] && typeof rawLatLngs[0] === 'object' && 'lat' in rawLatLngs[0]) {
         // Structure: [{lat, lng}, ...] (direct coordinate array)
-        processedRings = [rawLatLngs as ILatLng[]];
+        processedRings = [rawLatLngs as L.LatLngLiteral[]];
       } else {
-        processedRings = [rawLatLngs as ILatLng[]];
+        processedRings = [rawLatLngs as L.LatLngLiteral[]];
       }
     } else {
       return;
@@ -2300,6 +2305,78 @@ class Polydraw extends L.Control {
         weight: 10,
         opacity: 0,
       });
+    }
+  }
+}
+
+/**
+ * Simple polygon operations following the pattern:
+ * 1. Delete polygon
+ * 2. Modify using input
+ * 3. Add "the fresh, modified" polygon
+ */
+class SimplePolygonOperations {
+  constructor(
+    private arrayOfFeatureGroups: PolydrawFeatureGroup[],
+    private map: L.Map,
+    private addPolygonLayerCallback: (
+      geoJSON: Feature<Polygon | MultiPolygon>,
+      simplify: boolean,
+    ) => void,
+    private removeFeatureGroupCallback: (featureGroup: PolydrawFeatureGroup) => void,
+    private addPolygonWithMergeCallback?: (
+      geoJSON: Feature<Polygon | MultiPolygon>,
+      simplify: boolean,
+      noMerge: boolean,
+    ) => void,
+  ) {}
+
+  /**
+   * Update polygon coordinates using the simple approach
+   * @param targetFeatureGroup The feature group to update
+   * @param newCoordinates New coordinates in GeoJSON format
+   */
+  updatePolygonCoordinates(
+    targetFeatureGroup: PolydrawFeatureGroup,
+    newCoordinates: Feature<Polygon | MultiPolygon>,
+  ): void {
+    // Step 1: Delete the old polygon
+    this.deletePolygon(targetFeatureGroup);
+
+    // Step 2: Modify is already done (newCoordinates contains the modified data)
+
+    // Step 3: Add the fresh, modified polygon
+    this.addPolygon(newCoordinates);
+  }
+
+  /**
+   * Step 1: Delete polygon
+   */
+  private deletePolygon(featureGroup: PolydrawFeatureGroup): void {
+    this.removeFeatureGroupCallback(featureGroup);
+  }
+
+  /**
+   * Step 3: Add "the fresh, modified" polygon
+   */
+  private addPolygon(geoJSON: Feature<Polygon | MultiPolygon>): void {
+    // Check if there are other polygons to potentially merge with
+    if (this.arrayOfFeatureGroups.length > 0) {
+      // Use the same merge logic as the main addPolygon method
+      this.checkAndPerformMerge(geoJSON);
+    } else {
+      this.addPolygonLayerCallback(geoJSON, false);
+    }
+  }
+
+  /**
+   * Check for merge conditions and perform merge if needed
+   */
+  private checkAndPerformMerge(geoJSON: Feature<Polygon | MultiPolygon>): void {
+    if (this.addPolygonWithMergeCallback) {
+      this.addPolygonWithMergeCallback(geoJSON, false, false); // false = simplify, false = noMerge (allow merge)
+    } else {
+      this.addPolygonLayerCallback(geoJSON, false);
     }
   }
 }

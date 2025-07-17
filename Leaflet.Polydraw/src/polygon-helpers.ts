@@ -1,11 +1,12 @@
 import { PolygonUtil } from './polygon.util';
+import * as L from 'leaflet';
 
 /**
  * Class to hold information about a polygon, including area, perimeter, and trashcan point.
  */
 export class PolygonInfo {
-  polygon: ILatLng[][][] = [];
-  trashcanPoint: ILatLng[] = [];
+  polygon: L.LatLngLiteral[][][] = [];
+  trashcanPoint: L.LatLngLiteral[] = [];
   sqmArea: number[] = [];
   perimeter: number[] = [];
   constructor(polygon) {
@@ -68,7 +69,7 @@ export class PolygonInfo {
   setSqmArea(area: number): void {
     this.sqmArea[0] = area;
   }
-  private getTrashcanPoint(polygon: ILatLng[]): ILatLng {
+  private getTrashcanPoint(polygon: L.LatLngLiteral[]): L.LatLngLiteral {
     if (!Array.isArray(polygon) || polygon.length === 0) {
       console.warn('getTrashcanPoint: Invalid polygon array:', polygon);
       return { lat: 0, lng: 0 }; // Return default coordinates
@@ -97,8 +98,8 @@ export class PolygonInfo {
       return { lat: 0, lng: 0 }; // Return default coordinates
     }
 
-    let previousPoint: ILatLng;
-    let nextPoint: ILatLng;
+    let previousPoint: L.LatLngLiteral;
+    let nextPoint: L.LatLngLiteral;
 
     if (idx > 0) {
       previousPoint = validCoords[idx - 1];
@@ -123,12 +124,12 @@ export class PolygonInfo {
 
     return midpoint;
   }
-  private calculatePolygonArea(polygon: ILatLng[]): number {
-    const area = PolygonUtil.getSqmArea(polygon as any);
+  private calculatePolygonArea(polygon: L.LatLngLiteral[]): number {
+    const area = PolygonUtil.getSqmArea(polygon);
     return area;
   }
-  private calculatePolygonPerimeter(polygon: ILatLng[]): number {
-    const perimeter = PolygonUtil.getPerimeter(polygon as any);
+  private calculatePolygonPerimeter(polygon: L.LatLngLiteral[]): number {
+    const perimeter = PolygonUtil.getPerimeter(polygon);
     return perimeter;
   }
 }
@@ -192,12 +193,4 @@ export class PolygonDrawStates {
   forceCanUseFreeDraw(): void {
     this.canUsePolyDraw = true;
   }
-}
-
-/**
- * Interface for latitude and longitude.
- */
-export interface ILatLng {
-  lat: number;
-  lng: number;
 }

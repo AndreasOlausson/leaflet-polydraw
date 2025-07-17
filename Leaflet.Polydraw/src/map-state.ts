@@ -1,5 +1,4 @@
 import * as L from 'leaflet';
-import { type ILatLng } from './polygon-helpers';
 
 /**
  * Service for managing map state and notifying listeners.
@@ -40,7 +39,7 @@ export class MapStateService {
    * Updates the polygons in the map state.
    * @param polygons Array of polygons.
    */
-  updatePolygons(polygons: ILatLng[][][]): void {
+  updatePolygons(polygons: L.LatLngLiteral[][][]): void {
     // Additional polygon handling can be added here if needed
   }
 }

@@ -4,7 +4,14 @@ import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import { MarkerPosition } from './enums';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
-import type { ILatLng } from './polygon-helpers';
+import type { LatLngLiteral } from 'leaflet';
+
+/**
+ * Enhanced GeoJSON feature with polydraw-specific metadata
+ */
+interface PolydrawFeature extends Feature<Polygon | MultiPolygon> {
+  _polydrawHoleTraversalOccurred?: boolean;
+}
 
 // For Compass, etc., will add later, so comment out related methods if needed
 
@@ -268,9 +275,9 @@ export class TurfHelper {
   }
 
   /**
-   * Calculate midpoint between two ILatLng points
+   * Calculate midpoint between two LatLngLiteral points
    */
-  getMidpoint(point1: ILatLng, point2: ILatLng): ILatLng {
+  getMidpoint(point1: L.LatLngLiteral, point2: L.LatLngLiteral): L.LatLngLiteral {
     const p1 = turf.point([point1.lng, point1.lat]);
     const p2 = turf.point([point2.lng, point2.lat]);
 
@@ -573,21 +580,21 @@ export class TurfHelper {
   }
 
   /**
-   * Convert ILatLng object to Turf.js coordinate array format.
+   * Convert LatLngLiteral object to Turf.js coordinate array format.
    *
    * This method serves as a semantic interface for coordinate conversion,
    * ensuring consistent lng/lat order when interfacing with Turf.js functions.
    * While simple, it provides a clear contract and future-proofing for any
    * coordinate validation or transformation that might be needed later.
    *
-   * @param point - ILatLng object with lat/lng properties
+   * @param point - LatLngLiteral object with lat/lng properties
    * @returns Turf.js coordinate array in [lng, lat] format
    */
-  getCoord(point: ILatLng): turf.Coord {
+  getCoord(point: L.LatLngLiteral): turf.Coord {
     return [point.lng, point.lat];
   }
 
-  getFeaturePointCollection(points: ILatLng[]): any {
+  getFeaturePointCollection(points: L.LatLngLiteral[]): any {
     const pts = [];
     points.forEach((v) => {
       const p = turf.point([v.lng, v.lat], {});
@@ -607,8 +614,8 @@ export class TurfHelper {
     return length;
   }
 
-  getDoubleElbowLatLngs(points: ILatLng[]): ILatLng[] {
-    const doubleized: ILatLng[] = [];
+  getDoubleElbowLatLngs(points: L.LatLngLiteral[]): L.LatLngLiteral[] {
+    const doubleized: L.LatLngLiteral[] = [];
     const len = points.length;
     const effectiveLen =
       points[0].lat === points[len - 1].lat && points[0].lng === points[len - 1].lng
@@ -1006,7 +1013,7 @@ export class TurfHelper {
         // For complete hole traversal, we create solid polygons
         // The hole area becomes "nothing" (like cutting cake)
         // This tells the marker manager to NOT preserve hole structure
-        (splitPolygon as any)._polydrawHoleTraversalOccurred = true;
+        (splitPolygon as PolydrawFeature)._polydrawHoleTraversalOccurred = true;
 
         resultPolygons.push(splitPolygon);
       });
@@ -1023,7 +1030,7 @@ export class TurfHelper {
             coordinates: [outerPolygon.geometry.coordinates[0]], // Only outer ring
           },
         };
-        (fallbackPolygon as any)._polydrawHoleTraversalOccurred = true;
+        (fallbackPolygon as PolydrawFeature)._polydrawHoleTraversalOccurred = true;
         return [fallbackPolygon];
       } catch (fallbackError) {
         return [outerPolygon];

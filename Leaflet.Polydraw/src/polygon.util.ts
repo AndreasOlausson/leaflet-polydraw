@@ -1,5 +1,4 @@
 import * as L from 'leaflet';
-import { type ILatLng } from './polygon-helpers';
 import { TurfHelper } from './turf-helper';
 import defaultConfig from './config.json';
 
@@ -14,7 +13,7 @@ export class PolygonUtil {
    * @param polygon Array of LatLng points.
    * @returns The center LatLng.
    */
-  static getCenter(polygon: ILatLng[]) {
+  static getCenter(polygon: L.LatLngLiteral[]) {
     const pi = Math.PI;
     let x = 0;
     let y = 0;
@@ -35,7 +34,7 @@ export class PolygonUtil {
     let lat = Math.atan2(z, hyp);
     lat = (lat * 180) / pi;
     lng = (lng * 180) / pi;
-    const center: ILatLng = { lat: lat, lng: lng };
+    const center: L.LatLngLiteral = { lat: lat, lng: lng };
 
     return center;
   }
@@ -44,55 +43,55 @@ export class PolygonUtil {
    * @param polygon Array of LatLng points.
    * @returns The southwest LatLng.
    */
-  static getSouthWest(polygon: ILatLng[]): ILatLng {
+  static getSouthWest(polygon: L.LatLngLiteral[]): L.LatLngLiteral {
     const bounds = this.getBounds(polygon);
     return bounds.getSouthWest();
   }
-  static getNorthEast(polygon: ILatLng[]): ILatLng {
+  static getNorthEast(polygon: L.LatLngLiteral[]): L.LatLngLiteral {
     const bounds = this.getBounds(polygon);
     return bounds.getNorthEast();
   }
-  static getNorthWest(polygon: ILatLng[]): ILatLng {
+  static getNorthWest(polygon: L.LatLngLiteral[]): L.LatLngLiteral {
     const bounds = this.getBounds(polygon);
     return bounds.getNorthWest();
   }
-  static getSouthEast(polygon: ILatLng[]): ILatLng {
+  static getSouthEast(polygon: L.LatLngLiteral[]): L.LatLngLiteral {
     const bounds = this.getBounds(polygon);
     return bounds.getSouthEast();
   }
-  static getNorth(polygon: ILatLng[]): number {
+  static getNorth(polygon: L.LatLngLiteral[]): number {
     const bounds = this.getBounds(polygon);
     return bounds.getNorth();
   }
-  static getSouth(polygon: ILatLng[]): number {
+  static getSouth(polygon: L.LatLngLiteral[]): number {
     const bounds = this.getBounds(polygon);
     return bounds.getSouth();
   }
-  static getWest(polygon: ILatLng[]): number {
+  static getWest(polygon: L.LatLngLiteral[]): number {
     const bounds = this.getBounds(polygon);
     return bounds.getWest();
   }
-  static getEast(polygon: ILatLng[]): number {
+  static getEast(polygon: L.LatLngLiteral[]): number {
     const bounds = this.getBounds(polygon);
     return bounds.getEast();
   }
-  static getSqmArea(polygon: ILatLng[]): number {
+  static getSqmArea(polygon: L.LatLngLiteral[]): number {
     const poly: L.Polygon = new L.Polygon(polygon);
     const geoJsonPoly = poly.toGeoJSON();
 
-    const area = this.turfHelper.getPolygonArea(geoJsonPoly as any);
+    const area = this.turfHelper.getPolygonArea(geoJsonPoly);
 
     return area;
   }
-  static getPerimeter(polygon: ILatLng[]): number {
+  static getPerimeter(polygon: L.LatLngLiteral[]): number {
     const poly: L.Polygon = new L.Polygon(polygon);
     const geoJsonPoly = poly.toGeoJSON();
 
-    const perimeter = this.turfHelper.getPolygonPerimeter(geoJsonPoly as any);
+    const perimeter = this.turfHelper.getPolygonPerimeter(geoJsonPoly);
 
     return perimeter * 1000; // Convert from kilometers to meters to match original behavior
   }
-  static getPolygonChecksum(polygon: ILatLng[]): number {
+  static getPolygonChecksum(polygon: L.LatLngLiteral[]): number {
     const uniqueLatLngs = polygon.filter((v, i, a) => {
       return a.indexOf(a.find((x) => x.lat === v.lat && x.lng === v.lng)) === i;
     });
@@ -102,17 +101,17 @@ export class PolygonUtil {
       uniqueLatLngs.reduce((a, b) => +a + +b.lng, 0)
     );
   }
-  static getMidPoint(point1: ILatLng, point2: ILatLng): ILatLng {
+  static getMidPoint(point1: L.LatLngLiteral, point2: L.LatLngLiteral): L.LatLngLiteral {
     const midpoint = this.turfHelper.getMidpoint(point1, point2);
 
-    const returnPoint: ILatLng = {
+    const returnPoint: L.LatLngLiteral = {
       lat: midpoint.lat,
       lng: midpoint.lng,
     };
 
     return returnPoint;
   }
-  static getBounds(polygon: ILatLng[]): L.LatLngBounds {
+  static getBounds(polygon: L.LatLngLiteral[]): L.LatLngBounds {
     const tmpLatLng: L.LatLng[] = [];
 
     polygon.forEach((ll) => {
