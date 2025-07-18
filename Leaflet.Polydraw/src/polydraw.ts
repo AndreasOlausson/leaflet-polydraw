@@ -584,10 +584,11 @@ class Polydraw extends L.Control {
     const clickedLatLng = e.latlng;
     const allRings = poly.geometry.coordinates[0]; // Get all rings (outer + holes)
 
-    // Find which ring and vertex was clicked
+    // Find which ring and vertex was clicked - check ALL rings (outer + holes)
     let targetRingIndex = -1;
     let targetVertexIndex = -1;
 
+    // Check all rings in the polygon (outer ring + holes)
     for (let ringIndex = 0; ringIndex < allRings.length; ringIndex++) {
       const ring = allRings[ringIndex];
       const vertexIndex = ring.findIndex(
@@ -772,7 +773,7 @@ class Polydraw extends L.Control {
   }
 
   /**
-   * Handle marker hover for edge deletion - test compatibility method with correct signature
+   * Handle marker hover for edge deletion - production method
    */
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
     const element = marker.getElement();
