@@ -307,68 +307,120 @@ export class TurfHelper {
         return false;
       }
 
-      const poly = [];
-      const poly2 = [];
-      const latlngsCoords = turf.getCoords(latlngs);
-      latlngsCoords.forEach((element) => {
-        // Create proper GeoJSON Feature
-        const feat: Feature<Polygon> = {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [element[0]],
-          },
-          properties: {},
-        };
-        poly.push(feat);
-      });
-      const polygonCoords = turf.getCoords(polygon);
-      polygonCoords.forEach((element) => {
-        // Create proper GeoJSON Feature
-        const feat: Feature<Polygon> = {
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [element[0]],
-          },
-          properties: {},
-        };
-        poly2.push(feat);
-      });
+      // Method 1: Try direct intersection using turf.intersect with FeatureCollection
+      try {
+        const featureCollection = turf.featureCollection([polygon, latlngs]);
+        const intersection = turf.intersect(featureCollection);
 
-      let intersect = false;
-      loop1: for (let i = 0; i < poly.length; i++) {
-        // Validate the created feature before using it
-        if (!poly[i] || !poly[i].geometry || !poly[i].geometry.coordinates) {
-          continue;
+        if (
+          intersection &&
+          intersection.geometry &&
+          (intersection.geometry.type === 'Polygon' ||
+            intersection.geometry.type === 'MultiPolygon')
+        ) {
+          // Check if the intersection has meaningful area
+          const area = turf.area(intersection);
+          if (area > 0.000001) {
+            // Very small threshold for meaningful intersection
+            return true;
+          }
+        }
+      } catch (error) {
+        // Continue to fallback methods
+      }
+
+      // Method 2: Check if any vertices of one polygon are inside the other
+      try {
+        const coords1 = turf.getCoords(polygon);
+        const coords2 = turf.getCoords(latlngs);
+
+        // Check if any vertex of polygon2 is inside polygon1
+        for (const ring2 of coords2) {
+          for (const coord of ring2[0]) {
+            // First ring (outer ring)
+            const point = turf.point(coord);
+            if (turf.booleanPointInPolygon(point, polygon)) {
+              return true;
+            }
+          }
         }
 
-        if (this.getKinks(poly[i]).length < 2) {
-          for (let j = 0; j < poly2.length; j++) {
-            // Validate the created feature before using it
-            if (!poly2[j] || !poly2[j].geometry || !poly2[j].geometry.coordinates) {
-              continue;
+        // Check if any vertex of polygon1 is inside polygon2
+        for (const ring1 of coords1) {
+          for (const coord of ring1[0]) {
+            // First ring (outer ring)
+            const point = turf.point(coord);
+            if (turf.booleanPointInPolygon(point, latlngs)) {
+              return true;
             }
+          }
+        }
+      } catch (error) {
+        // Continue to next method
+      }
 
-            if (this.getKinks(poly2[j]).length < 2) {
-              try {
-                // Use individual polygon features for intersect
-                const test = turf.intersect(poly[i], poly2[j]);
-                if (test?.geometry.type === 'Polygon') {
-                  intersect = true;
+      // Method 3: Check for edge intersections using line intersection
+      try {
+        const coords1 = turf.getCoords(polygon);
+        const coords2 = turf.getCoords(latlngs);
+
+        for (const ring1 of coords1) {
+          const outerRing1 = ring1[0]; // Get outer ring
+          for (let i = 0; i < outerRing1.length - 1; i++) {
+            const line1 = turf.lineString([outerRing1[i], outerRing1[i + 1]]);
+
+            for (const ring2 of coords2) {
+              const outerRing2 = ring2[0]; // Get outer ring
+              for (let j = 0; j < outerRing2.length - 1; j++) {
+                const line2 = turf.lineString([outerRing2[j], outerRing2[j + 1]]);
+
+                try {
+                  const intersection = turf.lineIntersect(line1, line2);
+                  if (intersection && intersection.features && intersection.features.length > 0) {
+                    return true;
+                  }
+                } catch (lineError) {
+                  // Continue checking other line pairs
                 }
-                if (intersect) {
-                  break loop1;
-                }
-              } catch (error) {
-                // Continue to next iteration if intersect fails
-                continue;
               }
             }
           }
         }
+      } catch (error) {
+        // Continue to fallback
       }
-      return intersect;
+
+      // Method 4: Bounding box overlap check as final fallback
+      // Only use this for very close polygons, not just any bounding box overlap
+      try {
+        const bbox1 = turf.bbox(polygon);
+        const bbox2 = turf.bbox(latlngs);
+
+        // Check if bounding boxes overlap
+        const overlaps = !(
+          bbox1[2] < bbox2[0] || // bbox1.maxX < bbox2.minX
+          bbox2[2] < bbox1[0] || // bbox2.maxX < bbox1.minX
+          bbox1[3] < bbox2[1] || // bbox1.maxY < bbox2.minY
+          bbox2[3] < bbox1[1] // bbox2.maxY < bbox1.minY
+        );
+
+        if (overlaps) {
+          // Additional check: only return true if polygons are very close
+          // Calculate the distance between polygon centers
+          const center1 = turf.centroid(polygon);
+          const center2 = turf.centroid(latlngs);
+          const distance = turf.distance(center1, center2, { units: 'kilometers' });
+
+          // Only consider it an intersection if polygons are very close (within 100 meters)
+          if (distance < 0.1) {
+            return true;
+          }
+        }
+      } catch (error) {
+        console.warn('Error in bounding box check:', error.message);
+      }
+
+      return false;
     } catch (error) {
       console.warn('Error in polygonIntersect:', error.message);
       return false;

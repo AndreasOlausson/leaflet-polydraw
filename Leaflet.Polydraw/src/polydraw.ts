@@ -1557,14 +1557,181 @@ class Polydraw extends L.Control {
       const featureCollection = featureGroup.toGeoJSON();
       const layer = featureCollection.features[0];
       const poly = this.getLatLngsFromJson(layer);
-      const union = this.turfHelper.union(addNew, polygonFeature[i]);
-      this.deletePolygonOnMerge(poly);
-      this.removeFeatureGroup(featureGroup);
-      addNew = union;
+
+      // Check if this is a case where we should create a donut instead of a simple union
+      const shouldCreateDonut = this.shouldCreateDonutPolygon(addNew, polygonFeature[i]);
+
+      if (shouldCreateDonut) {
+        // Create donut polygon by making the smaller polygon a hole in the larger one
+        const donutPolygon = this.createDonutPolygon(addNew, polygonFeature[i]);
+        if (donutPolygon) {
+          this.deletePolygonOnMerge(poly);
+          this.removeFeatureGroup(featureGroup);
+          addNew = donutPolygon;
+        } else {
+          // Fallback to regular union if donut creation fails
+          const union = this.turfHelper.union(addNew, polygonFeature[i]);
+          this.deletePolygonOnMerge(poly);
+          this.removeFeatureGroup(featureGroup);
+          addNew = union;
+        }
+      } else {
+        // Regular union operation
+        const union = this.turfHelper.union(addNew, polygonFeature[i]);
+        this.deletePolygonOnMerge(poly);
+        this.removeFeatureGroup(featureGroup);
+        addNew = union;
+      }
     });
 
     const newLatlngs: Feature<Polygon | MultiPolygon> = addNew;
     this.addPolygonLayer(newLatlngs, true);
+  }
+
+  /**
+   * Determine if two polygons should create a donut instead of a regular union
+   */
+  private shouldCreateDonutPolygon(
+    polygon1: Feature<Polygon | MultiPolygon>,
+    polygon2: Feature<Polygon | MultiPolygon>,
+  ): boolean {
+    try {
+      // Check if one polygon is completely within the other
+      const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
+      const poly2WithinPoly1 = this.turfHelper.isPolygonCompletelyWithin(polygon2, polygon1);
+
+      // If one is completely within the other, we should create a donut
+      if (poly1WithinPoly2 || poly2WithinPoly1) {
+        return true;
+      }
+
+      // Check for C-to-O scenario: if polygons intersect and one "closes" the other
+      const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
+      if (intersection) {
+        // If the intersection is significant relative to the smaller polygon,
+        // this might be a C-to-O scenario
+        const area1 = this.turfHelper.getPolygonArea(polygon1);
+        const area2 = this.turfHelper.getPolygonArea(polygon2);
+        const intersectionArea = this.turfHelper.getPolygonArea(intersection);
+
+        const smallerArea = Math.min(area1, area2);
+        const intersectionRatio = intersectionArea / smallerArea;
+
+        // If intersection covers a significant portion of the smaller polygon (>30%),
+        // this might be a closing scenario
+        if (intersectionRatio > 0.3) {
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.warn('Error in shouldCreateDonutPolygon:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Create a donut polygon from two intersecting polygons
+   */
+  private createDonutPolygon(
+    polygon1: Feature<Polygon | MultiPolygon>,
+    polygon2: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> | null {
+    try {
+      // Determine which polygon should be the outer ring and which should be the hole
+      const area1 = this.turfHelper.getPolygonArea(polygon1);
+      const area2 = this.turfHelper.getPolygonArea(polygon2);
+
+      let outerPolygon: Feature<Polygon | MultiPolygon>;
+      let innerPolygon: Feature<Polygon | MultiPolygon>;
+
+      if (area1 > area2) {
+        outerPolygon = polygon1;
+        innerPolygon = polygon2;
+      } else {
+        outerPolygon = polygon2;
+        innerPolygon = polygon1;
+      }
+
+      // Check if the smaller polygon is completely within the larger one
+      const innerWithinOuter = this.turfHelper.isPolygonCompletelyWithin(
+        innerPolygon,
+        outerPolygon,
+      );
+
+      if (innerWithinOuter) {
+        // Create donut by making inner polygon a hole in outer polygon
+        return this.createDonutFromContainment(outerPolygon, innerPolygon);
+      } else {
+        // Handle C-to-O scenario: create union first, then subtract intersection
+        return this.createDonutFromIntersection(outerPolygon, innerPolygon);
+      }
+    } catch (error) {
+      console.warn('Error in createDonutPolygon:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Create donut when one polygon is completely within another
+   */
+  private createDonutFromContainment(
+    outerPolygon: Feature<Polygon | MultiPolygon>,
+    innerPolygon: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> | null {
+    try {
+      // Get coordinates from both polygons
+      const outerCoords = this.turfHelper.getCoords(outerPolygon);
+      const innerCoords = this.turfHelper.getCoords(innerPolygon);
+
+      // Create donut polygon: outer ring + inner ring as hole
+      const donutCoords = [
+        outerCoords[0][0], // Outer ring
+        innerCoords[0][0], // Inner ring as hole
+      ];
+
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: donutCoords,
+        },
+        properties: {},
+      };
+    } catch (error) {
+      console.warn('Error in createDonutFromContainment:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Create donut from intersecting polygons (C-to-O scenario)
+   */
+  private createDonutFromIntersection(
+    polygon1: Feature<Polygon | MultiPolygon>,
+    polygon2: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> | null {
+    try {
+      // First, create union of the two polygons
+      const union = this.turfHelper.union(polygon1, polygon2);
+      if (!union) {
+        return null;
+      }
+
+      // Get the intersection area
+      const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
+      if (!intersection) {
+        return union; // No intersection, return regular union
+      }
+
+      // Create donut by subtracting intersection from union
+      const donut = this.turfHelper.polygonDifference(union, intersection);
+      return donut;
+    } catch (error) {
+      console.warn('Error in createDonutFromIntersection:', error.message);
+      return null;
+    }
   }
 
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
