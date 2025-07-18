@@ -271,7 +271,10 @@ class Polydraw extends L.Control {
           L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
           this.events(true);
           try {
-            this.tracer.setStyle({ color: defaultConfig.polyLineOptions.color });
+            this.tracer.setStyle({
+              color: defaultConfig.polyLineOptions.color,
+              dashArray: null, // Reset to solid line
+            });
           } catch (error) {
             // Handle case where tracer renderer is not initialized
           }
@@ -281,7 +284,10 @@ class Polydraw extends L.Control {
           L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
           this.events(true);
           try {
-            this.tracer.setStyle({ color: '#D9460F' });
+            this.tracer.setStyle({
+              color: '#D9460F',
+              dashArray: null, // Reset to solid line
+            });
           } catch (error) {
             // Handle case where tracer renderer is not initialized
           }
