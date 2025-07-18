@@ -1926,8 +1926,10 @@ class Polydraw extends L.Control {
         marker.bindPopup(menuPopup, { className: 'alter-marker' });
       }
       if (i === infoMarkerIdx && this.config.markers.infoMarker) {
-        const area = PolygonUtil.getSqmArea(latlngs);
-        const perimeter = PolygonUtil.getPerimeter(latlngs);
+        // Get the complete polygon GeoJSON to properly handle holes
+        const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(FeatureGroup);
+        const area = this.turfHelper.getPolygonArea(polygonGeoJSON);
+        const perimeter = this.getTotalPolygonPerimeter(polygonGeoJSON);
         const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
@@ -2791,6 +2793,115 @@ class Polydraw extends L.Control {
         weight: 10,
         opacity: 0,
       });
+    }
+  }
+
+  // ========================================================================
+  // POLYGON INFO CALCULATION HELPERS - FOR HOLES SUPPORT
+  // ========================================================================
+
+  /**
+   * Get the complete polygon GeoJSON from a feature group
+   * This properly handles polygons with holes
+   */
+  private getPolygonGeoJSONFromFeatureGroup(
+    featureGroup: L.FeatureGroup,
+  ): Feature<Polygon | MultiPolygon> {
+    try {
+      // Find the polygon layer in the feature group
+      let polygon: L.Polygon | null = null;
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+          polygon = layer;
+        }
+      });
+
+      if (!polygon) {
+        // Fallback: create a simple polygon from the first ring
+        throw new Error('No polygon found in feature group');
+      }
+
+      // Get the complete GeoJSON including holes
+      return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+    } catch (error) {
+      console.warn('Error getting polygon GeoJSON from feature group:', error.message);
+      // Fallback: return a simple polygon
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0, 1],
+              [1, 1],
+              [1, 0],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+    }
+  }
+
+  /**
+   * Calculate total perimeter for polygons with holes (GIS standard)
+   * Total perimeter = outer ring perimeter + all hole perimeters
+   */
+  private getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
+    try {
+      if (!polygonGeoJSON || !polygonGeoJSON.geometry) {
+        return 0;
+      }
+
+      let totalPerimeter = 0;
+
+      if (polygonGeoJSON.geometry.type === 'Polygon') {
+        // For a single polygon, sum all ring perimeters
+        const coordinates = polygonGeoJSON.geometry.coordinates;
+
+        for (const ring of coordinates) {
+          // Create a temporary polygon for each ring to calculate its perimeter
+          const ringPolygon: Feature<Polygon> = {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [ring],
+            },
+            properties: {},
+          };
+
+          const ringPerimeter = this.turfHelper.getPolygonPerimeter(ringPolygon);
+          totalPerimeter += ringPerimeter;
+        }
+      } else if (polygonGeoJSON.geometry.type === 'MultiPolygon') {
+        // For multipolygon, sum all polygons' total perimeters
+        const coordinates = polygonGeoJSON.geometry.coordinates;
+
+        for (const polygonCoords of coordinates) {
+          for (const ring of polygonCoords) {
+            const ringPolygon: Feature<Polygon> = {
+              type: 'Feature',
+              geometry: {
+                type: 'Polygon',
+                coordinates: [ring],
+              },
+              properties: {},
+            };
+
+            const ringPerimeter = this.turfHelper.getPolygonPerimeter(ringPolygon);
+            totalPerimeter += ringPerimeter;
+          }
+        }
+      }
+
+      // Convert from kilometers to meters to match original behavior
+      return totalPerimeter * 1000;
+    } catch (error) {
+      console.warn('Error calculating total polygon perimeter:', error.message);
+      // Fallback to turf helper calculation
+      return this.turfHelper.getPolygonPerimeter(polygonGeoJSON) * 1000;
     }
   }
 }
