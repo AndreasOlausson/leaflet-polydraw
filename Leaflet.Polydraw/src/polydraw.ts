@@ -2041,6 +2041,25 @@ class Polydraw extends L.Control {
     const markerContent: HTMLDivElement = document.createElement('div');
     markerContent.classList.add('content');
 
+    // Create content wrapper for the info
+    const infoContentWrapper: HTMLDivElement = document.createElement('div');
+    infoContentWrapper.classList.add('info-marker-content');
+
+    // Add area information
+    const areaDiv: HTMLDivElement = document.createElement('div');
+    areaDiv.classList.add('info-item', 'area');
+    areaDiv.innerHTML = `<strong>Area:</strong> ${_area.metricArea} ${_area.metricUnit}`;
+
+    // Add perimeter information
+    const perimeterDiv: HTMLDivElement = document.createElement('div');
+    perimeterDiv.classList.add('info-item', 'perimeter');
+    perimeterDiv.innerHTML = `<strong>Perimeter:</strong> ${_perimeter.metricLength} ${_perimeter.metricUnit}`;
+
+    // Assemble the popup
+    infoContentWrapper.appendChild(areaDiv);
+    infoContentWrapper.appendChild(perimeterDiv);
+    markerContent.appendChild(infoContentWrapper);
+
     outerWrapper.appendChild(wrapper);
     wrapper.appendChild(invertedCorner);
     wrapper.appendChild(markerContent);
