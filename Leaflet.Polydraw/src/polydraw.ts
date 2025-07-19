@@ -197,7 +197,6 @@ class Polydraw extends L.Control {
     this.removeKeyboardHandlers();
   }
 
-  // Add the missing addAutoPolygon method
   public addAutoPolygon(
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
@@ -563,18 +562,6 @@ class Polydraw extends L.Control {
       // The polygon is still added to arrayOfFeatureGroups for functionality
     }
   }
-
-  // UNUSED - Comment out unused polygonClicked method
-  // private polygonClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
-  //   if (this.config.modes.attachElbow) {
-  //     const newPoint = e.latlng;
-  //     if (poly.geometry.type === 'MultiPolygon') {
-  //       const newPolygon = this.turfHelper.injectPointToPolygon(poly, [newPoint.lng, newPoint.lat]);
-  //       this.deletePolygon(this.getLatLngsFromJson(poly));
-  //       this.addPolygonLayer(newPolygon, false);
-  //     }
-  //   }
-  // }
 
   private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
     console.log('polygonClicked', e, poly);

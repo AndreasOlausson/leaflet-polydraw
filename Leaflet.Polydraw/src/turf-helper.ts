@@ -13,8 +13,6 @@ interface PolydrawFeature extends Feature<Polygon | MultiPolygon> {
   _polydrawHoleTraversalOccurred?: boolean;
 }
 
-// For Compass, etc., will add later, so comment out related methods if needed
-
 export class TurfHelper {
   private config: typeof defaultConfig = null;
 
