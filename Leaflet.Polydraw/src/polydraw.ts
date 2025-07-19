@@ -1858,13 +1858,132 @@ class Polydraw extends L.Control {
     return nearestPointIdx;
   }
 
+  /**
+   * Ensure special markers (menu, delete, info) don't overlap by implementing fallback positioning
+   * If two markers get the same position, move one to a different position far away
+   */
+  private ensureMarkerSeparation(
+    polygonLength: number,
+    markers: {
+      menu: { index: number; enabled: boolean };
+      delete: { index: number; enabled: boolean };
+      info: { index: number; enabled: boolean };
+    },
+  ): { menu: number; delete: number; info: number } {
+    // Get list of enabled markers with their indices
+    const enabledMarkers: Array<{ type: string; index: number }> = [];
+
+    if (markers.menu.enabled) {
+      enabledMarkers.push({ type: 'menu', index: markers.menu.index });
+    }
+    if (markers.delete.enabled) {
+      enabledMarkers.push({ type: 'delete', index: markers.delete.index });
+    }
+    if (markers.info.enabled) {
+      enabledMarkers.push({ type: 'info', index: markers.info.index });
+    }
+
+    // If less than 2 markers enabled, no overlap possible
+    if (enabledMarkers.length < 2) {
+      return {
+        menu: markers.menu.index,
+        delete: markers.delete.index,
+        info: markers.info.index,
+      };
+    }
+
+    // Check for overlaps and resolve them
+    const resolvedIndices = { ...markers };
+    const usedIndices = new Set<number>();
+
+    // Process markers in priority order: info, delete, menu
+    const processingOrder = ['info', 'delete', 'menu'];
+
+    for (const markerType of processingOrder) {
+      const marker = resolvedIndices[markerType as keyof typeof resolvedIndices];
+
+      if (!marker.enabled) continue;
+
+      // If this index is already used, find a new one
+      if (usedIndices.has(marker.index)) {
+        const newIndex = this.findAlternativeMarkerPosition(
+          polygonLength,
+          marker.index,
+          usedIndices,
+        );
+        resolvedIndices[markerType as keyof typeof resolvedIndices].index = newIndex;
+        usedIndices.add(newIndex);
+      } else {
+        usedIndices.add(marker.index);
+      }
+    }
+
+    return {
+      menu: resolvedIndices.menu.index,
+      delete: resolvedIndices.delete.index,
+      info: resolvedIndices.info.index,
+    };
+  }
+
+  /**
+   * Find an alternative position for a marker that doesn't conflict with used positions
+   */
+  private findAlternativeMarkerPosition(
+    polygonLength: number,
+    originalIndex: number,
+    usedIndices: Set<number>,
+  ): number {
+    // Strategy: Try positions at regular intervals around the polygon
+    // Start with positions that are far from the original
+    const maxAttempts = polygonLength;
+    const step = Math.max(1, Math.floor(polygonLength / 8)); // Try every 1/8th of polygon
+
+    // Try positions moving away from the original index
+    for (let attempt = 1; attempt < maxAttempts; attempt++) {
+      // Try both directions from original position
+      const candidates = [
+        (originalIndex + attempt * step) % polygonLength,
+        (originalIndex - attempt * step + polygonLength) % polygonLength,
+      ];
+
+      for (const candidate of candidates) {
+        if (!usedIndices.has(candidate)) {
+          return candidate;
+        }
+      }
+    }
+
+    // Fallback: find any unused index
+    for (let i = 0; i < polygonLength; i++) {
+      if (!usedIndices.has(i)) {
+        return i;
+      }
+    }
+
+    // Ultimate fallback: return original index (shouldn't happen in practice)
+    return originalIndex;
+  }
+
   private addMarker(latlngs: L.LatLngLiteral[], FeatureGroup: L.FeatureGroup) {
-    const menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
-    const deleteMarkerIdx = this.getMarkerIndex(
+    // Get initial marker positions
+    let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
+    let deleteMarkerIdx = this.getMarkerIndex(
       latlngs,
       this.config.markers.markerDeleteIcon.position,
     );
-    const infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+    let infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+
+    // Apply fallback separation logic to ensure markers don't overlap
+    const separatedIndices = this.ensureMarkerSeparation(latlngs.length, {
+      menu: { index: menuMarkerIdx, enabled: this.config.markers.menuMarker },
+      delete: { index: deleteMarkerIdx, enabled: this.config.markers.deleteMarker },
+      info: { index: infoMarkerIdx, enabled: this.config.markers.infoMarker },
+    });
+
+    // Update indices with separated values
+    menuMarkerIdx = separatedIndices.menu;
+    deleteMarkerIdx = separatedIndices.delete;
+    infoMarkerIdx = separatedIndices.info;
 
     latlngs.forEach((latlng, i) => {
       let iconClasses = this.config.markers.markerIcon.styleClasses;

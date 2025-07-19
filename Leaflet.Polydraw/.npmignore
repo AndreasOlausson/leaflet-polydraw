@@ -1,0 +1,38 @@
+# Source files
+src/
+test/
+coverage/
+
+# Development files
+.eslintrc.cjs
+.prettierrc
+tsconfig.json
+tsconfig.build.json
+vite.config.mjs
+vitest.config.ts
+
+# Demo and test files
+demo-drag.html
+test-polygon-creation.html
+*.test.ts
+*.spec.ts
+
+# Documentation (keep README.md and LICENCE)
+POINT_TO_POINT_REQUIREMENTS.md
+POLYGON_CREATION_IMPLEMENTATION.md
+POLYGON_MERGING_IMPROVEMENTS.md
+TEST_VALIDATION_REPORT.md
+
+# Development directories
+node_modules/
+.git/
+.vscode/
+
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Scripts
+scripts/

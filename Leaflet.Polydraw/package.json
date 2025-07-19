@@ -1,11 +1,36 @@
 {
   "name": "leaflet-polydraw",
-  "version": "0.5.0",
+  "version": "1.0.0",
   "type": "module",
-  "description": "Leaflet Polydraw plugin",
+  "description": "Advanced polygon drawing and editing plugin for Leaflet with drag-and-drop, smart merging, and comprehensive editing tools",
   "main": "dist/polydraw.es.js",
   "module": "dist/polydraw.es.js",
   "types": "dist/types/index.d.ts",
+  "keywords": [
+    "leaflet",
+    "polygon",
+    "drawing",
+    "editing",
+    "geospatial",
+    "mapping",
+    "gis",
+    "drag-drop",
+    "merge",
+    "geometry"
+  ],
+  "homepage": "https://github.com/andreasolausson/leaflet-polydraw",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andreasolausson/leaflet-polydraw.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andreasolausson/leaflet-polydraw/issues"
+  },
+  "author": {
+    "name": "Andreas Olausson",
+    "url": "https://github.com/andreasolausson"
+  },
+  "license": "MIT",
   "scripts": {
     "build": "tsc && vite build",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default } from \"./polydraw\";' > dist/types/index.d.ts",
