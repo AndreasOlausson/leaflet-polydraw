@@ -200,7 +200,7 @@ class Polydraw extends L.Control {
     this.removeKeyboardHandlers();
   }
 
-  public addAutoPolygon(
+  public addPredefinedPolygon(
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
   ): void {
@@ -659,7 +659,7 @@ class Polydraw extends L.Control {
       }
     });
 
-    // Convert to L.LatLng format for addAutoPolygon
+    // Convert to L.LatLng format for addPredefinedPolygon
     const latLngArray: L.LatLng[][][] = [
       newAllRings.map((ring) => ring.map((coord) => new L.LatLng(coord[1], coord[0]))),
     ];
@@ -670,8 +670,8 @@ class Polydraw extends L.Control {
       this.removeFeatureGroup(currentFeatureGroup);
     }
 
-    // 4. Call addAutoPolygon
-    this.addAutoPolygon(latLngArray);
+    // 4. Call addPredefinedPolygon
+    this.addPredefinedPolygon(latLngArray);
   }
 
   /**

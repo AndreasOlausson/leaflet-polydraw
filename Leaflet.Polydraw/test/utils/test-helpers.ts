@@ -114,7 +114,7 @@ export class TestHelpers {
         return coords;
       });
 
-      polydraw.addAutoPolygon([closedCoordinates]);
+      polydraw.addPredefinedPolygon([closedCoordinates]);
     } catch (error) {
       console.error('Error adding auto polygon:', error);
       // Don't throw - let the test continue

@@ -566,7 +566,7 @@ describe('Edge Deletion Tests', () => {
       // Test that integration methods exist
       expect(typeof (polydraw as any).deleteEdgeAtMarker).toBe('function');
       expect(typeof (polydraw as any).findFeatureGroupForPoly).toBe('function');
-      expect(typeof (polydraw as any).addAutoPolygon).toBe('function');
+      expect(typeof (polydraw as any).addPredefinedPolygon).toBe('function');
       expect(typeof (polydraw as any).removeFeatureGroup).toBe('function');
     });
 
@@ -622,18 +622,18 @@ describe('Edge Deletion Tests', () => {
       });
 
       const removeFeatureGroupSpy = vi.spyOn(polydraw as any, 'removeFeatureGroup');
-      const addAutoPolygonSpy = vi.spyOn(polydraw as any, 'addAutoPolygon');
+      const addPredefinedPolygonSpy = vi.spyOn(polydraw as any, 'addPredefinedPolygon');
       const findFeatureGroupSpy = vi.spyOn(polydraw as any, 'findFeatureGroupForPoly');
 
       removeFeatureGroupSpy.mockImplementation(() => {});
-      addAutoPolygonSpy.mockImplementation(() => {});
+      addPredefinedPolygonSpy.mockImplementation(() => {});
       findFeatureGroupSpy.mockReturnValue(mockFeatureGroup);
 
       (polydraw as any).deleteEdgeAtMarker(mockMarker, mockFeatureGroup);
 
       // Should not remove the polygon if marker is not found
       expect(removeFeatureGroupSpy).not.toHaveBeenCalled();
-      expect(addAutoPolygonSpy).not.toHaveBeenCalled();
+      expect(addPredefinedPolygonSpy).not.toHaveBeenCalled();
     });
   });
 });

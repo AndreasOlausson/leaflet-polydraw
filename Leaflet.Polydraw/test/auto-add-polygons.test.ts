@@ -193,7 +193,7 @@ describe('Auto-add polygons functionality', () => {
     ];
 
     expect(() => {
-      polydraw.addAutoPolygon(octagon);
+      polydraw.addPredefinedPolygon(octagon);
     }).not.toThrow();
   });
 
@@ -218,14 +218,14 @@ describe('Auto-add polygons functionality', () => {
     ];
 
     expect(() => {
-      polydraw.addAutoPolygon(squareWithHole);
+      polydraw.addPredefinedPolygon(squareWithHole);
     }).not.toThrow();
   });
 
   it('should throw an error for invalid polygon data', () => {
     const invalidData: any = [[[L.latLng(58.4, 15.6)]]]; // Not enough points
     expect(() => {
-      polydraw.addAutoPolygon(invalidData);
+      polydraw.addPredefinedPolygon(invalidData);
     }).toThrow();
   });
 
@@ -236,7 +236,7 @@ describe('Auto-add polygons functionality', () => {
       [[L.latLng(58.5, 15.7), L.latLng(58.51, 15.7), L.latLng(58.51, 15.71), L.latLng(58.5, 15.7)]],
     ];
 
-    polydraw.addAutoPolygon(polygons);
+    polydraw.addPredefinedPolygon(polygons);
     expect(addPolygonSpy).toHaveBeenCalledTimes(2);
   });
 });

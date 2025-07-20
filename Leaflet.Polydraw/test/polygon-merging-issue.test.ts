@@ -194,7 +194,7 @@ describe('Polygon Merging Issue - C to O Shape', () => {
     ];
 
     // Add the C-shaped polygon
-    polydraw.addAutoPolygon(cShapePolygon);
+    polydraw.addPredefinedPolygon(cShapePolygon);
 
     // Verify we have one polygon
     expect((polydraw as any).arrayOfFeatureGroups.length).toBe(1);
@@ -214,7 +214,7 @@ describe('Polygon Merging Issue - C to O Shape', () => {
     ];
 
     // Add the closing polygon - this should merge with the C to create a donut
-    polydraw.addAutoPolygon(closingPolygon);
+    polydraw.addPredefinedPolygon(closingPolygon);
 
     // After merging, we should have one merged polygon (not a donut with holes)
     // The user specifically wants small + large overlapping polygons to merge, not create holes
@@ -312,10 +312,10 @@ describe('Polygon Merging Issue - C to O Shape', () => {
       ],
     ];
 
-    polydraw.addAutoPolygon(rect1);
+    polydraw.addPredefinedPolygon(rect1);
     expect((polydraw as any).arrayOfFeatureGroups.length).toBe(1);
 
-    polydraw.addAutoPolygon(rect2);
+    polydraw.addPredefinedPolygon(rect2);
 
     // Should merge into one larger polygon
     const featureGroups = (polydraw as any).arrayOfFeatureGroups;

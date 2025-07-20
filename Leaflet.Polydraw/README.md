@@ -56,7 +56,7 @@ declare module 'leaflet-polydraw' {
     constructor(options?: L.ControlOptions & { config?: any });
     addTo(map: L.Map): this;
     configurate(config: any): void;
-    addAutoPolygon(geographicBorders: L.LatLng[][][]): void;
+    addPredefinedPolygon(geographicBorders: L.LatLng[][][]): void;
     setDrawMode(mode: any): void;
     enablePolygonDraggingMode(enable?: boolean): void;
     // ... other methods
@@ -440,7 +440,7 @@ Enable or disable polygon dragging.
 polyDrawControl.enablePolygonDraggingMode(true);
 ```
 
-#### `addAutoPolygon(geographicBorders: L.LatLng[][][])`
+#### `addPredefinedPolygon(geographicBorders: L.LatLng[][][])`
 
 Programmatically add polygons to the map.
 
@@ -455,7 +455,7 @@ const polygon = [
     ],
   ],
 ];
-polyDrawControl.addAutoPolygon(polygon);
+polyDrawControl.addPredefinedPolygon(polygon);
 ```
 
 #### `configurate(config: any)`

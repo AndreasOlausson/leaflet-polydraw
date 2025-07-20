@@ -412,7 +412,7 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
 
     it('should merge with existing polygons when mergePolygons is enabled', () => {
       // First, create an existing polygon using the regular drawing method
-      polydraw.addAutoPolygon([
+      polydraw.addPredefinedPolygon([
         [
           [
             L.latLng(59.329, 18.068),
