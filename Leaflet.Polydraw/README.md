@@ -1,51 +1,41 @@
-# Leaflet.Polydraw
+[![Leaflet Polydraw](./docs/images/logo.jpg)](https://github.com/AndreasOlausson/leaflet-polydraw)
 
-> PolyDraw is a free-hand drawing tool that allows you to draw shapes which are converted to polygons on your Leaflet map. The tool supports concaving by default, subtracting (donut polygons) and are fully editable by adding edges, dragging edges.
+# Leaflet Polydraw
 
-PolyDraw was initially heavily inspired by [Leaflet.FreeDraw (Adam Timberlake "Wildhoney")](https://github.com/Wildhoney/Leaflet.FreeDraw) and [leaflet-freehandshapes (Benjamin DeLong "bozdoz")](https://github.com/bozdoz/leaflet-freehandshapes), so a big thank you and kudos for you!
+> **Advanced Leaflet plugin for interactive polygon drawing with point-to-point creation, smart merging, and comprehensive editing tools**
 
-This is a native Leaflet plugin ported from an Angular service implementation.
+Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet maps into interactive polygon drawing and editing environments. With intelligent merging, drag-and-drop functionality, and comprehensive editing tools, it's perfect for GIS applications, mapping tools, and spatial data collection.
 
-## Author
+[![npm version](https://badge.fury.io/js/leaflet-polydraw.svg)](https://badge.fury.io/js/leaflet-polydraw)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 
-Created and maintained by [Andreas Olausson](https://github.com/andreasolausson).  
-Feel free to reach out via GitHub for suggestions, feedback or collaboration.
+## Key Features
+
+[![Feature Overview](./docs/images/feature-overview.png)](./docs/images/feature-overview.png)
+
+- **Point-to-Point Drawing**: Precise polygon creation with click-by-click vertex placement
+- **Smart Polygon Merging**: Automatic detection and merging of overlapping polygons (including C-to-O shape completion)
+- **Drag & Drop**: Intuitive polygon repositioning with intelligent spatial interactions
+- **Advanced Editing**: Drag vertices, add/remove points, and reshape polygons
+- **Smart Markers**: Intelligent marker separation prevents overlapping on small polygons
+- **Hole Support**: Create complex polygons with holes and nested shapes
+- **Performance Optimized**: Efficient rendering and interaction handling
+- **Well Tested**: Comprehensive test suite with 194+ passing tests
+- **TypeScript Ready**: Full TypeScript support with type definitions
 
 ## Table of Contents
 
-1. [Summary](#summary)
-2. [Installation](#installation)
-3. [Getting started](#getting-started)
-   1. [Basic Usage](#basic-usage)
-   2. [Configuration](#configuration)
-   3. [Configuration explained](#config-explained)
-   4. [Draw modes](#draw-modes)
-   5. [Enums](#enums)
+1. [Installation](#installation)
+2. [Quick Start](#quick-start)
+3. [Configuration](#configuration)
 4. [Features](#features)
-   1. [Polygon Dragging](#polygon-dragging)
-   2. [Smart Merge Systems](#smart-merge-systems)
-   3. [Polygon Operations](#polygon-operations)
-   4. [Visual Feedback](#visual-feedback)
 5. [API Reference](#api-reference)
 6. [Markers](#markers)
-7. [Marker position](#marker-position)
-
-## Summary
-
-PolyDraw is a powerful Leaflet plugin that enables free-hand drawing of polygons with advanced features like:
-
-- **Free-hand drawing**: Draw natural shapes with your mouse or touch
-- **Concave polygons**: Automatically creates concave polygons from your drawings
-- **Hole support**: Create donut-shaped polygons by subtracting areas
-- **Editable polygons**: Drag vertices to modify shapes after creation
-- **🆕 Polygon dragging**: Drag entire polygons to reposition them with smart interactions
-- **🆕 Drag-to-merge**: Automatically merge polygons when dragged together
-- **🆕 Drag-to-hole**: Create holes by dragging polygons inside others
-- **Merge polygons**: Automatically merge overlapping polygons during drawing
-- **Simplification**: Reduce polygon complexity while maintaining shape
-- **Double the vertices**: Insert midpoints between each pair of vertices to increase shape resolution
-- **Bounding box conversion**: Convert polygons to their bounding rectangles
-- **Bezier curves**: Smooth polygon edges with bezier interpolation (alpha phase)
+7. [Events](#events)
+8. [Examples](#examples)
+9. [Browser Support](#browser-support)
+10. [Contributing](#contributing)
 
 ## Installation
 
@@ -55,17 +45,10 @@ npm install leaflet-polydraw
 
 ### TypeScript Support
 
-This package includes TypeScript declarations. However, due to potential conflicts with different versions of `@types/leaflet`, you may need to create a custom declaration file in your project.
-
-If you encounter the error:
-
-```
-Could not find a declaration file for module 'leaflet-polydraw'
-```
-
-Create a file `src/leaflet-polydraw.d.ts` in your project with the following content:
+This package includes TypeScript declarations. If you encounter declaration issues, create a custom declaration file:
 
 ```typescript
+// src/leaflet-polydraw.d.ts
 declare module 'leaflet-polydraw' {
   import * as L from 'leaflet';
 
@@ -73,20 +56,37 @@ declare module 'leaflet-polydraw' {
     constructor(options?: L.ControlOptions & { config?: any });
     addTo(map: L.Map): this;
     configurate(config: any): void;
-    onAdd(map: L.Map): HTMLElement;
     addAutoPolygon(geographicBorders: L.LatLng[][][]): void;
     setDrawMode(mode: any): void;
-    deletePolygon(polygon: any): void;
-    removeAllFeatureGroups(): void;
-    getDrawMode(): any;
     enablePolygonDraggingMode(enable?: boolean): void;
+    // ... other methods
+  }
+
+  export enum DrawMode {
+    Off = 0,
+    Add = 1,
+    Edit = 2,
+    Subtract = 4,
+    AppendMarker = 8,
+    LoadPredefined = 16,
+    PointToPoint = 32,
+  }
+
+  export enum MarkerPosition {
+    SouthWest = 0,
+    South = 1,
+    SouthEast = 2,
+    East = 3,
+    NorthEast = 4,
+    North = 5,
+    NorthWest = 6,
+    West = 7,
+    Hole = 8,
   }
 }
 ```
 
-This ensures proper TypeScript support while avoiding version conflicts with `@types/leaflet`.
-
-## Getting started
+## Quick Start
 
 ### Basic Usage
 
@@ -96,11 +96,9 @@ import Polydraw from 'leaflet-polydraw';
 
 // Create your map
 const map = L.map('map').setView([59.911491, 10.757933], 16);
-
-// Add a tile layer
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-// Add the PolyDraw control to your map
+// Add the PolyDraw control
 const polyDrawControl = L.control
   .polydraw({
     position: 'topright',
@@ -113,16 +111,11 @@ polyDrawControl.onDrawModeChanged((mode) => {
 });
 ```
 
-### Advanced Usage with Custom Configuration
+### Advanced Configuration
 
 ```javascript
-import * as L from 'leaflet';
 import Polydraw, { DrawMode, MarkerPosition } from 'leaflet-polydraw';
 
-const map = L.map('map').setView([59.911491, 10.757933], 16);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-// Create PolyDraw with custom configuration
 const polyDrawControl = L.control
   .polydraw({
     position: 'topright',
@@ -130,9 +123,9 @@ const polyDrawControl = L.control
       touchSupport: true,
       mergePolygons: true,
       modes: {
+        dragPolygons: true,
         attachElbow: true,
         dragElbow: true,
-        dragPolygons: true,
       },
       dragPolygons: {
         autoMergeOnIntersect: true,
@@ -159,76 +152,205 @@ const polyDrawControl = L.control
     },
   })
   .addTo(map);
-
-// Programmatically control drawing modes
-polyDrawControl.setDrawMode(DrawMode.Add);
-
-// Enable/disable polygon dragging
-polyDrawControl.enablePolygonDraggingMode(true);
-
-// Add predefined polygons - octagon example
-const octagonPolygon = [
-  [
-    [
-      { lat: 59.911491, lng: 10.757933 }, // Center point
-      { lat: 59.912491, lng: 10.757933 }, // North
-      { lat: 59.912198, lng: 10.759433 }, // North-East
-      { lat: 59.911491, lng: 10.759933 }, // East
-      { lat: 59.910784, lng: 10.759433 }, // South-East
-      { lat: 59.910491, lng: 10.757933 }, // South
-      { lat: 59.910784, lng: 10.756433 }, // South-West
-      { lat: 59.911491, lng: 10.755933 }, // West
-      { lat: 59.912198, lng: 10.756433 }, // North-West
-      { lat: 59.912491, lng: 10.757933 }, // Close the polygon
-    ],
-  ],
-];
-polyDrawControl.addAutoPolygon(octagonPolygon);
 ```
 
 ## Configuration
 
-### Default configuration
-
-The plugin comes with sensible defaults, but you can customize every aspect:
+### Default Configuration
 
 ```javascript
-const polyDrawControl = L.control.polydraw({
-  config: {
-    touchSupport: true,
-    mergePolygons: true,
-    kinks: false,
-    modes: {
-      attachElbow: false,
-      dragElbow: true,
-      dragPolygons: true,
-    },
-    dragPolygons: {
-      autoMergeOnIntersect: true,
-      autoHoleOnContained: true,
-      markerBehavior: 'hide',
-      hoverCursor: 'grab',
-      dragCursor: 'move',
-    },
-    markers: {
-      deleteMarker: true,
-      infoMarker: true,
-      menuMarker: true,
-      coordsTitle: true,
-    },
-    polygonOptions: {
-      color: '#50622b',
-      fillColor: '#b4cd8a',
-      smoothFactor: 0.3,
-    },
-    // ... see full configuration below
+{
+  "touchSupport": true,
+  "mergePolygons": true,
+  "kinks": false,
+  "modes": {
+    "attachElbow": false,
+    "dragElbow": true,
+    "dragPolygons": true
   },
-});
+  "dragPolygons": {
+    "autoMergeOnIntersect": true,
+    "autoHoleOnContained": true,
+    "markerBehavior": "hide",
+    "hoverCursor": "grab",
+    "dragCursor": "move",
+    "opacity": 0.7,
+    "markerAnimationDuration": 200
+  },
+  "markers": {
+    "deleteMarker": true,
+    "infoMarker": true,
+    "menuMarker": true,
+    "coordsTitle": true,
+    "zIndexOffset": 0
+  },
+  "polygonOptions": {
+    "color": "#50622b",
+    "fillColor": "#b4cd8a",
+    "smoothFactor": 0.3,
+    "noClip": true
+  },
+  "simplification": {
+    "simplifyTolerance": {
+      "tolerance": 0.0001,
+      "highQuality": false,
+      "mutate": false
+    }
+  }
+}
 ```
 
-### External configuration file
+### Configuration Options
 
-You can also load configuration from an external JSON file:
+| Key                                                                | Type    | Default                        | Description                                               |
+| ------------------------------------------------------------------ | ------- | ------------------------------ | --------------------------------------------------------- |
+| **touchSupport**                                                   | boolean | `true`                         | Enable touch support for mobile devices                   |
+| **mergePolygons**                                                  | boolean | `true`                         | Auto-merge polygons during drawing when they intersect    |
+| **kinks**                                                          | boolean | `false`                        | Allow self-intersecting polygons                          |
+| **modes**                                                          | object  |                                | Feature toggles                                           |
+| &nbsp;&nbsp;attachElbow                                            | boolean | `true`                         | Enable clicking on edges to add vertices                  |
+| &nbsp;&nbsp;dragElbow                                              | boolean | `true`                         | Enable dragging vertices                                  |
+| &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                         | Enable dragging entire polygons                           |
+| &nbsp;&nbsp;edgeDeletion                                           | boolean | `true`                         | Enable edge deletion with modifier keys                   |
+| **dragPolygons**                                                   | object  |                                | Polygon dragging configuration                            |
+| &nbsp;&nbsp;realTimeUpdate                                         | boolean | `false`                        | Update polygon position in real-time during drag          |
+| &nbsp;&nbsp;showDragHandle                                         | boolean | `false`                        | Show visual drag handle on polygons                       |
+| &nbsp;&nbsp;opacity                                                | number  | `0.7`                          | Polygon opacity during drag (0-1)                         |
+| &nbsp;&nbsp;dragCursor                                             | string  | `"move"`                       | Cursor during active dragging                             |
+| &nbsp;&nbsp;hoverCursor                                            | string  | `"grab"`                       | Cursor when hovering over draggable polygons              |
+| &nbsp;&nbsp;markerBehavior                                         | string  | `"hide"`                       | Marker behavior during drag: `"hide"`, `"show"`, `"fade"` |
+| &nbsp;&nbsp;markerAnimationDuration                                | number  | `200`                          | Duration of marker animations in milliseconds             |
+| &nbsp;&nbsp;autoMergeOnIntersect                                   | boolean | `true`                         | Auto-merge when dragging polygons together                |
+| &nbsp;&nbsp;autoHoleOnContained                                    | boolean | `false`                        | Create holes when dragging inside polygons                |
+| &nbsp;&nbsp;dragInteractionBehavior                                | string  | `"auto"`                       | How drag interactions are handled                         |
+| &nbsp;&nbsp;**modifierSubtract**                                   | object  |                                | Modifier key subtract configuration                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable modifier key subtract mode                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;**keys**                                   | object  |                                | Platform-specific modifier keys                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;windows                        | string  | `"ctrlKey"`                    | Windows modifier key                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mac                            | string  | `"metaKey"`                    | Mac modifier key                                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;linux                          | string  | `"ctrlKey"`                    | Linux modifier key                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;subtractColor                              | string  | `"#D9460F"`                    | Color for subtract mode visualization                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;hideMarkersOnDrag                          | boolean | `true`                         | Hide markers during subtract drag                         |
+| **edgeDeletion**                                                   | object  |                                | Edge deletion configuration                               |
+| &nbsp;&nbsp;enabled                                                | boolean | `true`                         | Enable edge deletion functionality                        |
+| &nbsp;&nbsp;modifierKey                                            | string  | `"auto"`                       | Modifier key: `"ctrl"`, `"cmd"`, `"auto"`                 |
+| &nbsp;&nbsp;hoverColor                                             | string  | `"#D9460F"`                    | Color when hovering over deletable edges                  |
+| &nbsp;&nbsp;confirmDeletion                                        | boolean | `false`                        | Require confirmation before deleting                      |
+| &nbsp;&nbsp;minVertices                                            | number  | `3`                            | Minimum vertices required after deletion                  |
+| **markers**                                                        | object  |                                | Marker configuration                                      |
+| &nbsp;&nbsp;deleteMarker                                           | boolean | `true`                         | Show delete marker                                        |
+| &nbsp;&nbsp;infoMarker                                             | boolean | `true`                         | Show info marker with area/perimeter                      |
+| &nbsp;&nbsp;menuMarker                                             | boolean | `true`                         | Show menu marker with operations                          |
+| &nbsp;&nbsp;coordsTitle                                            | boolean | `true`                         | Show coordinate tooltips on markers                       |
+| &nbsp;&nbsp;zIndexOffset                                           | number  | `0`                            | Global z-index offset for markers                         |
+| &nbsp;&nbsp;**markerIcon**                                         | object  |                                | Standard marker configuration                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker"]`           | CSS classes for standard markers                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `null`                         | Z-index offset override                                   |
+| &nbsp;&nbsp;**holeIcon**                                           | object  |                                | Hole marker configuration                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "hole"]`   | CSS classes for hole markers                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `null`                         | Z-index offset override                                   |
+| &nbsp;&nbsp;**markerInfoIcon**                                     | object  |                                | Info marker configuration                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `3`                            | Marker position (see MarkerPosition enum)                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;showArea                                   | boolean | `true`                         | Display area information                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;showPerimeter                              | boolean | `true`                         | Display perimeter information                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;useMetrics                                 | boolean | `true`                         | Use metric units                                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;usePerimeterMinValue                       | boolean | `false`                        | Use minimum value for small perimeters                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;areaLabel                                  | string  | `"Area"`                       | Label for area display                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;perimeterLabel                             | string  | `"Perimeter"`                  | Label for perimeter display                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;**values**                                 | object  |                                | Default values configuration                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**min**                        | object  |                                | Minimum value settings                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;metric             | string  | `"50"`                         | Minimum metric value                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;imperial           | string  | `"100"`                        | Minimum imperial value                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**unknown**                    | object  |                                | Unknown value settings                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;metric             | string  | `"-"`                          | Unknown metric placeholder                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;imperial           | string  | `"-"`                          | Unknown imperial placeholder                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;**units**                                  | object  |                                | Unit configuration                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unknownUnit                    | string  | `""`                           | Unknown unit placeholder                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**metric**                     | object  |                                | Metric units                                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;onlyMetrics        | boolean | `true`                         | Use only m² and km² for area                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**perimeter**      | object  |                                | Perimeter units                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m      | string  | `"m"`                          | Meter unit                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;km     | string  | `"km"`                         | Kilometer unit                                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**area**           | object  |                                | Area units                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;m2     | string  | `"m²"`                         | Square meter unit                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;km2    | string  | `"km²"`                        | Square kilometer unit                                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;daa    | string  | `"daa"`                        | Decare unit                                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ha     | string  | `"ha"`                         | Hectare unit                                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**imperial**                   | object  |                                | Imperial units                                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**perimeter**      | object  |                                | Perimeter units                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feet   | string  | `"ft"`                         | Feet unit                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yards  | string  | `"yd"`                         | Yards unit                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;miles  | string  | `"mi"`                         | Miles unit                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**area**           | object  |                                | Area units                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;feet2  | string  | `"ft²"`                        | Square feet unit                                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yards2 | string  | `"yd²"`                        | Square yards unit                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;acres  | string  | `"ac"`                         | Acres unit                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;miles2 | string  | `"mi²"`                        | Square miles unit                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "info"]`   | CSS classes for info marker                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for info marker                            |
+| &nbsp;&nbsp;**markerMenuIcon**                                     | object  |                                | Menu marker configuration                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `7`                            | Marker position (see MarkerPosition enum)                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "menu"]`   | CSS classes for menu marker                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for menu marker                            |
+| &nbsp;&nbsp;**markerDeleteIcon**                                   | object  |                                | Delete marker configuration                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `5`                            | Marker position (see MarkerPosition enum)                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "delete"]` | CSS classes for delete marker                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for delete marker                          |
+| &nbsp;&nbsp;**visualOptimization**                                 | object  |                                | Visual optimization settings                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;sharpAngleThreshold                        | number  | `30`                           | Angle threshold for optimization                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;thresholdBoundingBox                       | number  | `0.05`                         | Bounding box threshold                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;thresholdDistance                          | number  | `0.05`                         | Distance threshold                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;useDistance                                | boolean | `true`                         | Use distance-based optimization                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;useBoundingBox                             | boolean | `false`                        | Use bounding box optimization                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `false`                        | Use angle-based optimization                              |
+| **polyLineOptions**                                                | object  |                                | Polyline styling options                                  |
+| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Polyline color                                            |
+| &nbsp;&nbsp;opacity                                                | number  | `1`                            | Polyline opacity                                          |
+| &nbsp;&nbsp;smoothFactor                                           | number  | `0`                            | Polyline smoothing factor                                 |
+| &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable polyline clipping                                 |
+| &nbsp;&nbsp;clickable                                              | boolean | `false`                        | Make polyline clickable                                   |
+| &nbsp;&nbsp;weight                                                 | number  | `2`                            | Polyline weight in pixels                                 |
+| **subtractLineOptions**                                            | object  |                                | Subtract mode polyline styling                            |
+| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Subtract polyline color                                   |
+| &nbsp;&nbsp;opacity                                                | number  | `1`                            | Subtract polyline opacity                                 |
+| &nbsp;&nbsp;smoothFactor                                           | number  | `0`                            | Subtract polyline smoothing                               |
+| &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable subtract polyline clipping                        |
+| &nbsp;&nbsp;clickable                                              | boolean | `false`                        | Make subtract polyline clickable                          |
+| &nbsp;&nbsp;weight                                                 | number  | `2`                            | Subtract polyline weight                                  |
+| **polygonOptions**                                                 | object  |                                | Polygon styling options                                   |
+| &nbsp;&nbsp;smoothFactor                                           | number  | `0.3`                          | Polygon smoothing factor                                  |
+| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Polygon border color                                      |
+| &nbsp;&nbsp;fillColor                                              | string  | `"#b4cd8a"`                    | Polygon fill color                                        |
+| &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable polygon clipping                                  |
+| **holeOptions**                                                    | object  |                                | Hole styling options                                      |
+| &nbsp;&nbsp;color                                                  | string  | `"#aa0000"`                    | Hole border color                                         |
+| &nbsp;&nbsp;fillColor                                              | string  | `"#ffcccc"`                    | Hole fill color                                           |
+| &nbsp;&nbsp;weight                                                 | number  | `2`                            | Hole border weight                                        |
+| &nbsp;&nbsp;opacity                                                | number  | `1`                            | Hole border opacity                                       |
+| &nbsp;&nbsp;fillOpacity                                            | number  | `0.5`                          | Hole fill opacity                                         |
+| **polygonCreation**                                                | object  |                                | Polygon creation settings                                 |
+| &nbsp;&nbsp;method                                                 | string  | `"concaveman"`                 | Creation method                                           |
+| &nbsp;&nbsp;**simplification**                                     | object  |                                | Creation simplification                                   |
+| &nbsp;&nbsp;&nbsp;&nbsp;mode                                       | string  | `"simple"`                     | Simplification mode                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.0001`                       | Simplification tolerance                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;highQuality                                | boolean | `false`                        | High quality simplification                               |
+| **simplification**                                                 | object  |                                | General simplification settings                           |
+| &nbsp;&nbsp;**simplifyTolerance**                                  | object  |                                | Tolerance settings                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.0001`                       | Simplification tolerance                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;highQuality                                | boolean | `false`                        | High quality mode                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;mutate                                     | boolean | `false`                        | Allow input mutation                                      |
+| &nbsp;&nbsp;**dynamicMode**                                        | object  |                                | Dynamic simplification                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;fractionGuard                              | number  | `0.9`                          | Fraction guard value                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;multipiler                                 | number  | `2`                            | Tolerance multiplier                                      |
+| **boundingBox**                                                    | object  |                                | Bounding box settings                                     |
+| &nbsp;&nbsp;addMidPointMarkers                                     | boolean | `true`                         | Add midpoint markers to bounding box                      |
+| **bezier**                                                         | object  |                                | Bezier curve settings                                     |
+| &nbsp;&nbsp;resolution                                             | number  | `10000`                        | Bezier curve resolution                                   |
+| &nbsp;&nbsp;sharpness                                              | number  | `0.75`                         | Bezier curve sharpness                                    |
+
+### External Configuration
+
+Load configuration from an external JSON file:
 
 ```javascript
 const polyDrawControl = L.control.polydraw({
@@ -236,48 +358,28 @@ const polyDrawControl = L.control.polydraw({
 });
 ```
 
-## Config explained
+## Features
 
-| Key                                             | Type    | Default   | Description                                                                      |
-| ----------------------------------------------- | ------- | --------- | -------------------------------------------------------------------------------- |
-| touchSupport                                    | boolean | `true`    | Allow touch support for mobile devices.                                          |
-| mergePolygons                                   | boolean | `true`    | PolyDraw attempts to merge polygons if they are intersecting **during drawing**. |
-| kinks                                           | boolean | `false`   | Allow self-intersecting polygons.                                                |
-| **modes**                                       | object  |           | Turn on or off features                                                          |
-| &nbsp;&nbsp;&nbsp;attachElbow                   | boolean | `false`   | When enabled, clicking on polygon edges adds new vertices                        |
-| &nbsp;&nbsp;&nbsp;dragElbow                     | boolean | `true`    | When enabled, dragging vertices is allowed                                       |
-| &nbsp;&nbsp;&nbsp;dragPolygons                  | boolean | `true`    | When enabled, entire polygons can be dragged to reposition them                  |
-| **dragPolygons**                                | object  |           | 🆕 Configuration for polygon dragging behavior                                   |
-| &nbsp;&nbsp;&nbsp;autoMergeOnIntersect          | boolean | `true`    | Automatically merge polygons when dragged into each other                        |
-| &nbsp;&nbsp;&nbsp;autoHoleOnContained           | boolean | `true`    | Create holes when dragging polygons completely inside others                     |
-| &nbsp;&nbsp;&nbsp;markerBehavior                | string  | `"hide"`  | How markers behave during drag: `"hide"` or `"drag"`                             |
-| &nbsp;&nbsp;&nbsp;hoverCursor                   | string  | `"grab"`  | Cursor when hovering over draggable polygons                                     |
-| &nbsp;&nbsp;&nbsp;dragCursor                    | string  | `"move"`  | Cursor during active dragging                                                    |
-| &nbsp;&nbsp;&nbsp;opacity                       | number  | `0.7`     | Polygon opacity during drag (0-1)                                                |
-| &nbsp;&nbsp;&nbsp;markerAnimationDuration       | number  | `200`     | Duration of marker fade animations in milliseconds                               |
-| **markers**                                     | object  |           | Main object for marker configuration.                                            |
-| &nbsp;&nbsp;&nbsp;deleteMarker                  | boolean | `true`    | When enabled, show delete marker icon.                                           |
-| &nbsp;&nbsp;&nbsp;infoMarker                    | boolean | `true`    | When enabled, show info marker icon with area/perimeter.                         |
-| &nbsp;&nbsp;&nbsp;menuMarker                    | boolean | `true`    | When enabled, show menu marker icon with polygon operations.                     |
-| &nbsp;&nbsp;&nbsp;coordsTitle                   | boolean | `true`    | When enabled, show tooltip with coordinate information on vertex markers.        |
-| &nbsp;&nbsp;&nbsp;zIndexOffset                  | number  | `0`       | Global z-index offset for all markers.                                           |
-| **polygonOptions**                              | object  |           | Leaflet polygon styling options.                                                 |
-| &nbsp;&nbsp;&nbsp;color                         | string  | `#50622b` | Polygon border color                                                             |
-| &nbsp;&nbsp;&nbsp;fillColor                     | string  | `#b4cd8a` | Polygon fill color.                                                              |
-| &nbsp;&nbsp;&nbsp;smoothFactor                  | number  | `0.3`     | How much to simplify the polygon on zoom.                                        |
-| **simplification**                              | object  |           | Polygon simplification settings.                                                 |
-| &nbsp;&nbsp;&nbsp;**simplifyTolerance**         | object  |           | Tolerance configuration for Douglas-Peucker algorithm                            |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tolerance   | number  | `0.0001`  | Simplification tolerance (lower = higher quality, more points).                  |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;highQuality | boolean | `false`   | Use high-quality simplification (slower but better results).                     |
+### Point-to-Point Drawing
 
-### Understanding Merge Behaviors
+[![Point-to-Point Drawing](./docs/images/point-to-point-drawing.gif)](./docs/images/point-to-point-drawing.gif)
 
-The plugin has **two independent merge systems** that work at different stages:
+Create precise polygons by clicking to place each vertex. Perfect for:
+
+- Accurate boundary mapping
+- Property delineation
+- Custom shape creation
+
+### Smart Polygon Merging
+
+[![Smart Merging](./docs/images/smart-merging.gif)](./docs/images/smart-merging.gif)
+
+The plugin features **two independent merge systems**:
 
 #### 1. Drawing Merge (`mergePolygons`)
 
-- **When**: During polygon creation/drawing
-- **Purpose**: Automatically merge new polygons with existing ones they intersect
+- **When**: During polygon creation
+- **Purpose**: Automatically merge new polygons with existing intersecting ones
 - **Use case**: Streamlined drawing workflow
 
 #### 2. Drag Merge (`autoMergeOnIntersect`)
@@ -286,64 +388,106 @@ The plugin has **two independent merge systems** that work at different stages:
 - **Purpose**: Merge polygons when dragged together
 - **Use case**: Interactive editing and combining
 
-**Example configurations:**
+### Drag & Drop Functionality
 
-```javascript
-// Merge during drawing, but not during dragging
-{
-  mergePolygons: true,
-  dragPolygons: {
-    autoMergeOnIntersect: false
-  }
-}
+[![Drag and Drop](./docs/images/drag-drop.gif)](./docs/images/drag-drop.gif)
 
-// No merge during drawing, but merge when dragging
-{
-  mergePolygons: false,
-  dragPolygons: {
-    autoMergeOnIntersect: true
-  }
-}
+**Drag-to-Merge**: Drag polygons together to automatically merge them
 
-// Merge in both scenarios (default)
-{
-  mergePolygons: true,
-  dragPolygons: {
-    autoMergeOnIntersect: true
-  }
-}
-```
+**Drag-to-Hole**: Drag a polygon completely inside another to create a hole
 
-## Draw modes
+**Repositioning**: Drag to empty areas to simply reposition polygons
 
-The plugin supports several drawing modes accessible through the `DrawMode` enum:
+### Advanced Editing Tools
+
+[![Editing Tools](./docs/images/editing-tools.png)](./docs/images/editing-tools.png)
+
+Access powerful operations through the menu marker:
+
+- **Simplify**: Reduce polygon complexity using Douglas-Peucker algorithm
+- **Bounding Box**: Convert to rectangular bounds
+- **Double Elbows**: Add intermediate vertices for higher resolution
+- **Bezier Curves**: Apply smooth curve interpolation (alpha)
+
+### Smart Marker System
+
+[![Smart Markers](./docs/images/smart-markers.png)](./docs/images/smart-markers.png)
+
+Intelligent marker positioning prevents overlapping on small polygons:
+
+- **Automatic separation**: Detects potential overlaps and redistributes markers
+- **Priority-based**: Resolves conflicts using info → delete → menu priority
+- **Smooth animations**: Markers fade during drag operations
+
+## API Reference
+
+### Methods
+
+#### `setDrawMode(mode: DrawMode)`
+
+Set the current drawing mode.
 
 ```javascript
 import { DrawMode } from 'leaflet-polydraw';
-
-// Available modes:
-DrawMode.Off; // Drawing disabled, polygon dragging enabled
-DrawMode.Add; // Add new polygons, polygon dragging disabled
-DrawMode.Subtract; // Create holes in existing polygons, polygon dragging disabled
-DrawMode.Edit; // Edit existing polygons
+polyDrawControl.setDrawMode(DrawMode.Add);
 ```
 
-## Enums
+#### `enablePolygonDraggingMode(enable: boolean)`
 
-### DrawMode
+Enable or disable polygon dragging.
+
+```javascript
+polyDrawControl.enablePolygonDraggingMode(true);
+```
+
+#### `addAutoPolygon(geographicBorders: L.LatLng[][][])`
+
+Programmatically add polygons to the map.
+
+```javascript
+const polygon = [
+  [
+    [
+      { lat: 59.903, lng: 10.724 },
+      { lat: 59.908, lng: 10.728 },
+      { lat: 59.91, lng: 10.72 },
+      { lat: 59.903, lng: 10.724 },
+    ],
+  ],
+];
+polyDrawControl.addAutoPolygon(polygon);
+```
+
+#### `configurate(config: any)`
+
+Update configuration after initialization.
+
+```javascript
+polyDrawControl.configurate({
+  dragPolygons: {
+    autoMergeOnIntersect: false,
+    hoverCursor: 'pointer',
+  },
+  polygonOptions: {
+    color: '#ff0000',
+  },
+});
+```
+
+### Enums
+
+#### DrawMode
 
 ```javascript
 enum DrawMode {
-    Off = 0,
-    Add = 1,
-    Edit = 2,
-    Subtract = 4,
-    AppendMarker = 8,
-    LoadPredefined = 16
+    Off = 0,        // Drawing disabled, dragging enabled
+    Add = 1,        // Add new polygons
+    Edit = 2,       // Edit existing polygons
+    Subtract = 4    // Create holes in polygons
 }
 ```
 
-### MarkerPosition
+#### MarkerPosition
 
 ```javascript
 enum MarkerPosition {
@@ -358,331 +502,35 @@ enum MarkerPosition {
 }
 ```
 
-## Features
-
-This section covers the key features that make Leaflet.Polydraw a powerful polygon editing tool.
-
-### Polygon Dragging
-
-🆕 **Drag entire polygons** to reposition them with intelligent spatial interactions.
-
-#### Basic Dragging
-
-Once polygon dragging is enabled (default), you can:
-
-1. **Switch to normal mode** (DrawMode.Off) - dragging only works when not in draw/subtract mode
-2. **Hover over a polygon** - cursor changes to `grab` to indicate it's draggable
-3. **Click and drag** - cursor changes to `move`, polygon becomes semi-transparent
-4. **Release** - polygon is repositioned, cursor resets, markers fade back in
-
-```javascript
-// Enable/disable polygon dragging
-polyDrawControl.enablePolygonDraggingMode(true);
-
-// Check if dragging is enabled
-const isDragEnabled = polyDrawControl.config.modes.dragPolygons;
-```
-
-#### Smart Drag Interactions
-
-The plugin provides intelligent behavior when dragging polygons:
-
-**🔗 Drag-to-Merge**: When you drag a polygon so it **intersects** with another polygon, both polygons are automatically **merged** into a single shape.
-
-**🕳️ Drag-to-Hole**: When you drag a polygon **completely inside** another polygon, the dragged polygon creates a **hole** in the containing polygon.
-
-**📍 Normal Repositioning**: When you drag a polygon to an **empty area**, it's simply repositioned without geometric operations.
-
-#### Drag Events
-
-```javascript
-// Listen for drag events
-map.on('polygon:dragstart', (e) => {
-  console.log('Drag started:', e.polygon);
-});
-
-map.on('polygon:dragend', (e) => {
-  console.log('Drag ended:', e.polygon);
-  console.log('Old position:', e.oldPosition);
-  console.log('New position:', e.newPosition);
-});
-```
-
-### Smart Merge Systems
-
-The plugin features **two independent merge systems** for different workflows:
-
-#### Drawing Merge (`mergePolygons`)
-
-- **When**: During polygon creation/drawing
-- **Purpose**: Automatically merge new polygons with existing ones they intersect
-- **Use case**: Streamlined drawing workflow
-
-#### Drag Merge (`autoMergeOnIntersect`)
-
-- **When**: During polygon dragging
-- **Purpose**: Merge polygons when dragged together
-- **Use case**: Interactive editing and combining
-
-```javascript
-// Configure merge behaviors independently
-const polyDrawControl = L.control.polydraw({
-  config: {
-    mergePolygons: true, // Merge during drawing
-    dragPolygons: {
-      autoMergeOnIntersect: true, // Merge during dragging
-      autoHoleOnContained: true, // Create holes when appropriate
-    },
-  },
-});
-```
-
-### Polygon Operations
-
-Access powerful polygon transformation tools through the **menu marker**:
-
-#### Simplification
-
-- **Purpose**: Reduce polygon complexity while maintaining shape
-- **Algorithm**: Douglas-Peucker simplification
-- **Configurable**: Tolerance and quality settings
-
-#### Bounding Box Conversion
-
-- **Purpose**: Convert polygons to their rectangular bounds
-- **Use case**: Quick area approximation or collision detection
-
-#### Double Elbows
-
-- **Purpose**: Insert midpoints between vertices to increase resolution
-- **Use case**: Preparing polygons for further editing or smoothing
-
-#### Bezier Curves (Alpha)
-
-- **Purpose**: Apply bezier curve smoothing to polygon edges
-- **Use case**: Creating organic, flowing shapes
-
-```javascript
-// Access operations through menu marker or programmatically
-const polyDrawControl = L.control.polydraw({
-  config: {
-    markers: {
-      menuMarker: true, // Enable menu marker
-      markerMenuIcon: {
-        position: MarkerPosition.West,
-      },
-    },
-    simplification: {
-      simplifyTolerance: {
-        tolerance: 0.0001, // Lower = higher quality
-        highQuality: true, // Better results, slower
-      },
-    },
-  },
-});
-```
-
-### Visual Feedback
-
-The plugin provides rich visual feedback for all interactions:
-
-#### Cursor Management
-
-- **Crosshair**: During draw and subtract modes
-- **Grab**: When hovering over draggable polygons
-- **Move**: During active polygon dragging
-- **Default**: In normal mode
-
-#### Marker Animations
-
-- **Fade Out**: Markers smoothly disappear during polygon drag
-- **Fade In**: Markers smoothly reappear when drag ends
-- **Configurable**: Animation duration and behavior
-
-#### Polygon States
-
-- **Semi-transparent**: During drag operations
-- **Highlighted**: On hover (configurable)
-- **Normal**: Default appearance
-
-```javascript
-// Customize visual feedback
-const polyDrawControl = L.control.polydraw({
-  config: {
-    dragPolygons: {
-      opacity: 0.7, // Drag transparency
-      hoverCursor: 'grab', // Hover cursor
-      dragCursor: 'move', // Drag cursor
-      markerBehavior: 'hide', // Marker behavior
-      markerAnimationDuration: 200, // Animation speed
-    },
-    polygonOptions: {
-      color: '#50622b', // Border color
-      fillColor: '#b4cd8a', // Fill color
-      fillOpacity: 0.5, // Fill transparency
-    },
-  },
-});
-```
-
-## API Reference
-
-### Methods
-
-#### `setDrawMode(mode: DrawMode)`
-
-Set the current drawing mode.
-
-```javascript
-polyDrawControl.setDrawMode(DrawMode.Add);
-```
-
-#### `getDrawMode(): DrawMode`
-
-Get the current drawing mode.
-
-```javascript
-const currentMode = polyDrawControl.getDrawMode();
-```
-
-#### `enablePolygonDraggingMode(enable: boolean)`
-
-🆕 Enable or disable polygon dragging functionality.
-
-```javascript
-// Enable dragging
-polyDrawControl.enablePolygonDraggingMode(true);
-
-// Disable dragging
-polyDrawControl.enablePolygonDraggingMode(false);
-```
-
-#### `addAutoPolygon(geographicBorders: L.LatLng[][][])`
-
-Programmatically add a polygon to the map.
-
-```javascript
-const polygon = [
-  [
-    [
-      { lat: 59.903, lng: 10.724 },
-      { lat: 59.908, lng: 10.728 },
-      { lat: 59.91, lng: 10.72 },
-    ],
-  ],
-];
-polyDrawControl.addAutoPolygon(polygon);
-```
-
-#### `configurate(config: any)`
-
-Update the configuration after initialization.
-
-```javascript
-polyDrawControl.configurate({
-  dragPolygons: {
-    autoMergeOnIntersect: false,
-    hoverCursor: 'pointer',
-  },
-  polygonOptions: {
-    color: '#ff0000',
-    fillColor: '#ff0000',
-  },
-});
-```
-
-#### `removeAllFeatureGroups()`
-
-Remove all polygons from the map.
-
-```javascript
-polyDrawControl.removeAllFeatureGroups();
-```
-
-### Events
-
-#### `onDrawModeChanged(callback: (mode: DrawMode) => void)`
-
-Listen for draw mode changes.
-
-```javascript
-polyDrawControl.onDrawModeChanged((mode) => {
-  console.log('Draw mode changed to:', mode);
-
-  // Dragging is only available in Off mode
-  if (mode === DrawMode.Off) {
-    console.log('Polygon dragging is now available');
-  }
-});
-```
-
-#### 🆕 Polygon Drag Events
-
-**`polygon:dragstart`** - Fired when polygon drag begins
-
-```javascript
-map.on('polygon:dragstart', (e) => {
-  // e.polygon - The polygon being dragged
-  // e.featureGroup - The feature group containing the polygon
-  // e.originalLatLngs - Original coordinates before drag
-});
-```
-
-**`polygon:drag`** - Fired during polygon drag (if realTimeUpdate is enabled)
-
-```javascript
-map.on('polygon:drag', (e) => {
-  // e.polygon - The polygon being dragged
-  // e.featureGroup - The feature group containing the polygon
-});
-```
-
-**`polygon:dragend`** - Fired when polygon drag ends
-
-```javascript
-map.on('polygon:dragend', (e) => {
-  // e.polygon - The polygon that was dragged
-  // e.featureGroup - The feature group containing the polygon
-  // e.oldPosition - Coordinates before drag
-  // e.newPosition - Coordinates after drag
-});
-```
-
 ## Markers
 
-The plugin provides three types of special markers on each polygon:
+[![Marker Types](./docs/images/marker-types.png)](./docs/images/marker-types.png)
 
 ### Delete Marker (Default: North West)
 
 - **Purpose**: Delete the entire polygon
-- **Styling**: Configurable via `markerDeleteIcon` settings
-- **Position**: Configurable via `MarkerPosition` enum
-- **🆕 Drag behavior**: Fades out during polygon drag, fades back in when released
+- **Icon**: Trash/delete icon
+- **Behavior**: Fades during drag operations
 
 ### Info Marker (Default: North East)
 
-- **Purpose**: Display polygon information (area, perimeter)
-- **Features**:
-  - Metric/Imperial units
-  - Customizable labels
-  - Area and perimeter calculations
-- **Styling**: Configurable via `markerInfoIcon` settings
-- **🆕 Drag behavior**: Fades out during polygon drag, fades back in when released
+- **Purpose**: Display polygon metrics
+- **Features**: Area, perimeter, metric/imperial units
+- **Popup**: Shows detailed measurements
+
+[![Info Marker Popup](./docs/images/info-marker-popup.png)](./docs/images/info-marker-popup.png)
 
 ### Menu Marker (Default: West)
 
 - **Purpose**: Access polygon operations
-- **Operations**:
-  - **Simplify**: Reduce number of vertices
-  - **Bounding Box**: Convert to rectangular bounds
-  - **Double Elbows**: Add intermediate vertices
-  - **Bezier**: Apply bezier curve smoothing
-- **Styling**: Configurable via `markerMenuIcon` settings
-- **🆕 Drag behavior**: Fades out during polygon drag, fades back in when released
+- **Operations**: Simplify, bounding box, double elbows, bezier
+- **Popup**: Interactive operation menu
 
-## Marker Position
+[![Menu Marker Popup](./docs/images/menu-marker-popup.png)](./docs/images/menu-marker-popup.png)
 
-You can customize marker positions using the `MarkerPosition` enum:
+### Marker Positioning
+
+Customize marker positions using the `MarkerPosition` enum:
 
 ```javascript
 const polyDrawControl = L.control.polydraw({
@@ -690,105 +538,267 @@ const polyDrawControl = L.control.polydraw({
     markers: {
       markerDeleteIcon: {
         position: MarkerPosition.North,
+        styleClasses: ['custom-delete-marker'],
       },
       markerInfoIcon: {
         position: MarkerPosition.East,
+        useMetrics: true,
+        areaLabel: 'Area',
+        perimeterLabel: 'Perimeter',
       },
       markerMenuIcon: {
         position: MarkerPosition.West,
+        styleClasses: ['custom-menu-marker'],
       },
     },
   },
 });
 ```
 
-Available positions:
+[![Marker Positions](./docs/images/marker-positions.png)](./docs/images/marker-positions.png)
 
-- `MarkerPosition.SouthWest` (0)
-- `MarkerPosition.South` (1)
-- `MarkerPosition.SouthEast` (2)
-- `MarkerPosition.East` (3)
-- `MarkerPosition.NorthEast` (4)
-- `MarkerPosition.North` (5)
-- `MarkerPosition.NorthWest` (6)
-- `MarkerPosition.West` (7)
+## Events
 
-## Dependencies
+### Draw Mode Events
 
-- **Leaflet** (^1.9.4): Core mapping library
-- **@turf/turf** (^6.5.0): Geospatial analysis functions
-- **concaveman** (^1.1.0): Concave hull generation
+```javascript
+polyDrawControl.onDrawModeChanged((mode) => {
+  console.log('Draw mode changed to:', mode);
+
+  if (mode === DrawMode.Off) {
+    console.log('Polygon dragging is now available');
+  }
+});
+```
+
+### Polygon Drag Events
+
+```javascript
+// Drag start
+map.on('polygon:dragstart', (e) => {
+  console.log('Drag started:', e.polygon);
+  console.log('Feature group:', e.featureGroup);
+  console.log('Original coordinates:', e.originalLatLngs);
+});
+
+// Drag end
+map.on('polygon:dragend', (e) => {
+  console.log('Drag ended:', e.polygon);
+  console.log('Old position:', e.oldPosition);
+  console.log('New position:', e.newPosition);
+});
+
+// Real-time drag (if enabled)
+map.on('polygon:drag', (e) => {
+  console.log('Dragging:', e.polygon);
+});
+```
+
+## Examples
+
+### Basic Drawing Application
+
+```javascript
+import * as L from 'leaflet';
+import Polydraw, { DrawMode } from 'leaflet-polydraw';
+
+class DrawingApp {
+  constructor() {
+    this.initMap();
+    this.initControls();
+  }
+
+  initMap() {
+    this.map = L.map('map').setView([59.911491, 10.757933], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+
+    this.polyDrawControl = L.control
+      .polydraw({
+        position: 'topright',
+        config: {
+          mergePolygons: true,
+          dragPolygons: {
+            autoMergeOnIntersect: true,
+            autoHoleOnContained: true,
+          },
+        },
+      })
+      .addTo(this.map);
+  }
+
+  initControls() {
+    // Add drawing mode buttons
+    document.getElementById('draw-btn').onclick = () => {
+      this.polyDrawControl.setDrawMode(DrawMode.Add);
+    };
+
+    document.getElementById('subtract-btn').onclick = () => {
+      this.polyDrawControl.setDrawMode(DrawMode.Subtract);
+    };
+
+    document.getElementById('drag-btn').onclick = () => {
+      this.polyDrawControl.setDrawMode(DrawMode.Off);
+      this.polyDrawControl.enablePolygonDraggingMode(true);
+    };
+  }
+}
+
+new DrawingApp();
+```
+
+### GIS Data Collection
+
+```javascript
+import Polydraw, { MarkerPosition } from 'leaflet-polydraw';
+
+const gisCollector = L.control
+  .polydraw({
+    config: {
+      markers: {
+        infoMarker: true,
+        markerInfoIcon: {
+          position: MarkerPosition.NorthEast,
+          useMetrics: true,
+          showArea: true,
+          showPerimeter: true,
+          areaLabel: 'Area (m²)',
+          perimeterLabel: 'Perimeter (m)',
+        },
+      },
+      polygonOptions: {
+        color: '#2196F3',
+        fillColor: '#2196F3',
+        fillOpacity: 0.3,
+        weight: 2,
+      },
+    },
+  })
+  .addTo(map);
+
+// Export collected data
+function exportPolygons() {
+  const polygons = gisCollector.getAllPolygons();
+  const geojson = {
+    type: 'FeatureCollection',
+    features: polygons.map((polygon) => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: polygon.getLatLngs(),
+      },
+      properties: {
+        area: L.GeometryUtil.geodesicArea(polygon.getLatLngs()[0]),
+        timestamp: new Date().toISOString(),
+      },
+    })),
+  };
+
+  console.log('Exported GeoJSON:', geojson);
+}
+```
+
+### Property Mapping Tool
+
+```javascript
+const propertyMapper = L.control
+  .polydraw({
+    config: {
+      mergePolygons: false, // Keep properties separate
+      dragPolygons: {
+        autoMergeOnIntersect: false,
+        autoHoleOnContained: false, // Prevent accidental holes
+      },
+      markers: {
+        menuMarker: true,
+        markerMenuIcon: {
+          position: MarkerPosition.North,
+        },
+      },
+      polygonOptions: {
+        color: '#4CAF50',
+        fillColor: '#4CAF50',
+        fillOpacity: 0.2,
+        weight: 3,
+      },
+    },
+  })
+  .addTo(map);
+
+// Add property metadata
+map.on('polygon:created', (e) => {
+  const propertyId = prompt('Enter Property ID:');
+  const owner = prompt('Enter Owner Name:');
+
+  e.polygon.propertyData = {
+    id: propertyId,
+    owner: owner,
+    area: L.GeometryUtil.geodesicArea(e.polygon.getLatLngs()[0]),
+    created: new Date(),
+  };
+});
+```
 
 ## Browser Support
 
-This plugin supports all modern browsers that support:
-
-- ES6+ JavaScript features
-- Leaflet 1.9+
-- Touch events (for mobile support)
-- CSS transitions (for smooth animations)
-
-## License
-
-This project is licensed under the [MIT License](./LICENSE). You are free to use, modify, and distribute it as you wish, as long as the original license is included.
-
----
+- **Modern Browsers**: Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
+- **Mobile**: iOS Safari 12+, Chrome Mobile 60+
+- **Requirements**: ES6+ support, Leaflet 1.9+, Touch events, CSS transitions
 
 ## Contributing
 
-Contributions are welcome! If you find a bug, have a feature request, or want to improve the documentation, feel free to open an issue or submit a pull request.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Before submitting a pull request, make sure to:
+### Development Setup
 
-- Follow the existing coding style.
-- Update or add documentation when relevant.
-- Include tests if applicable.
+```bash
+# Clone the repository
+git clone https://github.com/AndreasOlausson/leaflet-polydraw.git
+cd leaflet-polydraw
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build the project
+npm run build
+```
+
+### Guidelines
+
+- Follow the existing coding style
+- Add tests for new features
+- Update documentation when relevant
+- Ensure all tests pass before submitting
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
+
+## Acknowledgments
+
+PolyDraw was initially inspired by:
+
+- [Leaflet.FreeDraw](https://github.com/Wildhoney/Leaflet.FreeDraw) by Adam Timberlake "Wildhoney"
+- [leaflet-freehandshapes](https://github.com/bozdoz/leaflet-freehandshapes) by Benjamin DeLong "bozdoz"
+
+Big thank you and kudos to these amazing developers!
 
 ## Changelog
 
-### v0.0.2 (Latest)
+### v1.0.0 (Latest)
 
-- 🆕 **Polygon Dragging**: Complete drag-and-drop functionality for repositioning polygons
-- 🆕 **Drag-to-Merge**: Automatically merge polygons when dragged together
-- 🆕 **Drag-to-Hole**: Create holes by dragging polygons inside others
-- 🆕 **Smart Cursors**: Context-aware cursor changes (grab, move, crosshair)
-- 🆕 **Marker Animations**: Smooth fade effects during polygon operations
-- 🆕 **Comprehensive Events**: Rich event system for drag operations
-- 🆕 **Configurable Behavior**: Extensive configuration options for drag interactions
-- ✅ **Mode Isolation**: Drag functionality properly isolated from draw/subtract modes
-- ✅ **Performance Optimized**: Efficient geometric operations using Turf.js
-- ✅ **Fully Tested**: Comprehensive test coverage for all drag functionality
+- **Polygon Dragging**: Complete drag-and-drop functionality
+- **Smart Merging**: Dual merge systems for drawing and dragging
+- **Marker Separation**: Intelligent positioning prevents overlaps
+- **Enhanced Events**: Comprehensive event system
+- **Production Ready**: 194+ passing tests, full TypeScript support
+- **Performance Optimized**: Efficient geometric operations
 
-### v0.0.1
+---
 
-- Initial release
-- Ported from Angular service to native Leaflet plugin
-- Full feature parity with original implementation
+**Created and maintained by [Andreas Olausson](https://github.com/AndreasOlausson)**
 
-## Planned Work
-
-### Enhanced Drag Features
-
-- **Multi-polygon selection** - Drag multiple polygons simultaneously
-- **Snap-to-grid** - Optional grid snapping during drag operations
-- **Drag constraints** - Limit drag to specific areas or directions
-- **Undo/Redo** - History management for drag operations
-
-### Type System Improvements
-
-- **Replace custom ILatLng** - Use Leaflet's native `LatLngLiteral` type
-- **Smart coordinate detection** - Auto-detect and convert `[lng,lat]` ↔ `[lat,lng]` formats
-- **Flexible input handling** - Accept GeoJSON, Leaflet, or custom coordinate formats
-
-### Performance Optimizations
-
-- **Reduce type conversions** - Minimize coordinate format switching overhead
-- **Memory usage** - Optimize polygon storage and processing
-- **Large dataset handling** - Improved performance with many polygons
-
-### Developer Experience
-
-- **Better TypeScript support** - Enhanced type safety and IntelliSense
-- **Coordinate format flexibility** - Automatic format detection and conversion
-- **More examples** - Additional use cases and integration patterns
-- **Interactive demos** - Live examples showcasing all features
+[![GitHub stars](https://img.shields.io/github/stars/AndreasOlausson/leaflet-polydraw.svg?style=social&label=Star)](https://github.com/AndreasOlausson/leaflet-polydraw)
+[![GitHub forks](https://img.shields.io/github/forks/AndreasOlausson/leaflet-polydraw.svg?style=social&label=Fork)](https://github.com/AndreasOlausson/leaflet-polydraw/fork)

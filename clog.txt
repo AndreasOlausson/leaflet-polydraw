@@ -1,190 +1,218 @@
 client:789 [vite] connecting...
 client:912 [vite] connected.
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:983 [LatLng]
-polydraw.ts:391 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:39 Creating polygon using method: concaveman
-polydraw.ts:432 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  [NewClass]
-polydraw.ts:1401 deletePolygon:  [Array(95)]
-polydraw.ts:1412 [Array(95)]
-polydraw.ts:1425 Test:  [Array(95)]
-polydraw.ts:1426 [Array(95)]
-polydraw.ts:1429 equals:  true  length:  1
-polydraw.ts:1433 []
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  [NewClass]
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:983 [LatLng]
-polydraw.ts:391 mouseUpLeave {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:39 Creating polygon using method: concaveman
-polydraw.ts:432 {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:667 🔍 checkPolygonIntersection called
-polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-polydraw.ts:674 polygonIntersect result: false
-polydraw.ts:686 getIntersection result: null
-polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
-polydraw.ts:721 Bounding box overlap check: false
-polydraw.ts:751 ❌ No intersection detected
-polydraw.ts:654 Intersecting polygons found: 0
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  (2) [NewClass, NewClass]
-polydraw.ts:1401 deletePolygon:  [Array(86)]
-polydraw.ts:1412 [Array(4)]
-polydraw.ts:1425 Test:  [Array(4)]
-polydraw.ts:1426 [Array(86)]
-polydraw.ts:1429 equals:  false  length:  1
-polydraw.ts:1412 [Array(86)]
-polydraw.ts:1425 Test:  [Array(86)]
-polydraw.ts:1426 [Array(86)]
-polydraw.ts:1429 equals:  true  length:  1
-polydraw.ts:1433 []
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  (2) [NewClass, NewClass]
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:667 🔍 checkPolygonIntersection called
-polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-polydraw.ts:674 polygonIntersect result: false
-polydraw.ts:686 getIntersection result: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:695 ✅ Intersection detected via getIntersection
-polydraw.ts:654 Intersecting polygons found: 1
-polydraw.ts:1401 deletePolygon:  (5) [LatLng, LatLng, LatLng, LatLng, LatLng]
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  [NewClass]
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-polydraw.ts:959 mouseDown {originalEvent: MouseEvent, containerPoint: Point, layerPoint: Point, latlng: LatLng, type: 'mousedown', …}
-turf-helper.ts:39 Creating polygon using method: concaveman
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} true false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:667 🔍 checkPolygonIntersection called
-polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-polydraw.ts:674 polygonIntersect result: false
-polydraw.ts:686 getIntersection result: null
-polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
-polydraw.ts:721 Bounding box overlap check: false
-polydraw.ts:751 ❌ No intersection detected
-polydraw.ts:654 Intersecting polygons found: 0
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  (2) [NewClass, NewClass]
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:667 🔍 checkPolygonIntersection called
-polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-polydraw.ts:674 polygonIntersect result: false
-polydraw.ts:686 getIntersection result: null
-polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
-polydraw.ts:721 Bounding box overlap check: false
-polydraw.ts:751 ❌ No intersection detected
-polydraw.ts:654 Intersecting polygons found: 0
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(1), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  (2) [NewClass, NewClass]
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:607 merge {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:667 🔍 checkPolygonIntersection called
-polydraw.ts:668 Polygon1: {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:669 Polygon2: {type: 'Feature', properties: {…}, geometry: {…}}
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-turf-helper.ts:218 🚀 getKinks called with feature: {type: 'Polygon', coordinates: 1, hasCoordinates: true}
-turf-helper.ts:241 🔍 Polygon has holes: false
-turf-helper.ts:248 🎯 Taking SIMPLE polygon path
-turf-helper.ts:255 🎯 Simple path result: 1 polygons
-polydraw.ts:674 polygonIntersect result: false
-polydraw.ts:686 getIntersection result: null
-polydraw.ts:711 Bounding boxes: {bbox1: {…}, bbox2: {…}}
-polydraw.ts:721 Bounding box overlap check: true
-polydraw.ts:723 ✅ Intersection detected via bounding box overlap
-polydraw.ts:654 Intersecting polygons found: 1
-polydraw.ts:1401 deletePolygon:  (7) [LatLng, LatLng, LatLng, LatLng, LatLng, LatLng, LatLng]
-turf-helper.ts:152 Simplifying polygon using mode: simple
-turf-helper.ts:162 Using simple simplification with tolerance: 0.0001
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(2), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  [NewClass]
-polydraw.ts:457 addPolygon {type: 'Feature', properties: {…}, geometry: {…}} false false false {touchSupport: true, mergePolygons: true, kinks: false, modes: {…}, dragPolygons: {…}, …}
-polydraw.ts:481 AddPolygonLayer:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:594 getPolygons:  {type: 'Feature', properties: {…}, geometry: {…}}
-polydraw.ts:497 NewClass {options: {…}, _bounds: LatLngBounds, _latlngs: Array(2), _initHooksCalled: true, _polydrawOriginalLatLngs: {…}, …}
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:542 This is a good place to add area info icon
-polydraw.ts:556 Array:  [NewClass]
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401053947622394, lng: 15.60637414455414, precision: {…}}
+polydraw.ts:1269 Current points count: 0
+polydraw.ts:1270 Current points: []
+polydraw.ts:1283 P2P markers count: 0
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40101740726332, lng: 15.606191754341127, precision: {…}}
+polydraw.ts:1269 Current points count: 1
+polydraw.ts:1270 Current points: [{…}]
+polydraw.ts:1283 P2P markers count: 1
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40127318898131, lng: 15.605993270874025, precision: {…}}
+polydraw.ts:1269 Current points count: 2
+polydraw.ts:1270 Current points: (2) [{…}, {…}]
+polydraw.ts:1283 P2P markers count: 2
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401481185932994, lng: 15.60613811016083, precision: {…}}
+polydraw.ts:1269 Current points count: 3
+polydraw.ts:1270 Current points: (3) [{…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 3
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0004272383105998756, lngDiff: 0.00023603439331054688, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40155988716221, lng: 15.606540441513063, precision: {…}}
+polydraw.ts:1269 Current points count: 4
+polydraw.ts:1270 Current points: (4) [{…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 4
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0005059395398134825, lngDiff: 0.00016629695892333984, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401478375171564, lng: 15.606926679611208, precision: {…}}
+polydraw.ts:1269 Current points count: 5
+polydraw.ts:1270 Current points: (5) [{…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 5
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00042442754917004777, lngDiff: 0.0005525350570678711, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40120573024689, lng: 15.60712516307831, precision: {…}}
+polydraw.ts:1269 Current points count: 6
+polydraw.ts:1270 Current points: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 6
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0001517826244992193, lngDiff: 0.0007510185241699219, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.4011804331882, lng: 15.606953501701357, precision: {…}}
+polydraw.ts:1269 Current points count: 7
+polydraw.ts:1270 Current points: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 7
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00012648556580785453, lngDiff: 0.0005793571472167969, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40114389296024, lng: 15.606980323791506, precision: {…}}
+polydraw.ts:1269 Current points count: 8
+polydraw.ts:1270 Current points: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 8
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00008994533784800751, lngDiff: 0.0006061792373657227, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40111297427624, lng: 15.60687303543091, precision: {…}}
+polydraw.ts:1269 Current points count: 9
+polydraw.ts:1270 Current points: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 9
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00005902665384382999, lngDiff: 0.0004988908767700195, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401216973378254, lng: 15.606797933578493, precision: {…}}
+polydraw.ts:1269 Current points count: 10
+polydraw.ts:1270 Current points: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 10
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0001630257558602466, lngDiff: 0.00042378902435302734, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40123383806857, lng: 15.60689449310303, precision: {…}}
+polydraw.ts:1269 Current points count: 11
+polydraw.ts:1270 Current points: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 11
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00017989044617650052, lngDiff: 0.0005203485488891602, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40140248452804, lng: 15.606792569160463, precision: {…}}
+polydraw.ts:1269 Current points count: 12
+polydraw.ts:1270 Current points: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 12
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0003485369056477339, lngDiff: 0.0004184246063232422, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40145588907201, lng: 15.606540441513063, precision: {…}}
+polydraw.ts:1269 Current points count: 13
+polydraw.ts:1270 Current points: (13) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 13
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00040194144961702705, lngDiff: 0.00016629695892333984, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40141372759666, lng: 15.606282949447634, precision: {…}}
+polydraw.ts:1269 Current points count: 14
+polydraw.ts:1270 Current points: (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 14
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0003597799742678376, lngDiff: 0.00009119510650634766, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401284432091146, lng: 15.606175661087038, precision: {…}}
+polydraw.ts:1269 Current points count: 15
+polydraw.ts:1270 Current points: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 15
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00023048446875151285, lngDiff: 0.00019848346710205078, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.401115785066835, lng: 15.606309771537783, precision: {…}}
+polydraw.ts:1269 Current points count: 16
+polydraw.ts:1270 Current points: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 16
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00006183744444143713, lngDiff: 0.00006437301635742188, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40113827138335, lng: 15.606438517570497, precision: {…}}
+polydraw.ts:1269 Current points count: 17
+polydraw.ts:1270 Current points: (17) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 17
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00008432376095868221, lngDiff: 0.00006437301635742188, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40104832603116, lng: 15.606513619422914, precision: {…}}
+polydraw.ts:1269 Current points count: 18
+polydraw.ts:1270 Current points: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 18
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.000005621591235183132, lngDiff: 0.00013947486877441406, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1253 === P2P CLICK DEBUG ===
+polydraw.ts:1254 Click coordinates: {lat: 58.40102302885947, lng: 15.606406331062319, precision: {…}}
+polydraw.ts:1269 Current points count: 19
+polydraw.ts:1270 Current points: (19) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1283 P2P markers count: 19
+polydraw.ts:1284 Map zoom level: 18
+polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
+polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
+polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00003091876292415918, lngDiff: 0.00003218650817871094, isClicking: false}
+polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
+polydraw.ts:1315 Adding new point to tracer
+polydraw.ts:1449 === P2P COMPLETION DEBUG ===
+polydraw.ts:1450 Original points from tracer: (20) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1468 Closed points: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1483 Tracer GeoJSON coordinates: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+polydraw.ts:1493 After createPolygonFromTrace: [{…}]

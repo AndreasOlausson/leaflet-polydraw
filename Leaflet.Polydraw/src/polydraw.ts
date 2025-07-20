@@ -1250,23 +1250,69 @@ class Polydraw extends L.Control {
 
   // Point-to-Point state management
   private handlePointToPointClick(clickLatLng: L.LatLng) {
+    console.log('=== P2P CLICK DEBUG ===');
+    console.log('Click coordinates:', {
+      lat: clickLatLng.lat,
+      lng: clickLatLng.lng,
+      precision: {
+        lat: clickLatLng.lat.toFixed(10),
+        lng: clickLatLng.lng.toFixed(10),
+      },
+    });
+
     if (!clickLatLng) {
+      console.log('No clickLatLng provided, returning');
       return;
     }
 
     const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
+    console.log('Current points count:', currentPoints.length);
+    console.log(
+      'Current points:',
+      currentPoints.map((p, i) => ({
+        index: i,
+        lat: p.lat,
+        lng: p.lng,
+        precision: {
+          lat: p.lat.toFixed(10),
+          lng: p.lng.toFixed(10),
+        },
+      })),
+    );
+
+    console.log('P2P markers count:', this.p2pMarkers.length);
+    console.log('Map zoom level:', this.map.getZoom());
+    console.log('Map center:', this.map.getCenter());
 
     // Check if clicking on the first point to close the polygon
-    if (
-      currentPoints.length >= 3 &&
-      this.p2pMarkers.length > 0 &&
-      this.isClickingFirstPoint(clickLatLng, this.p2pMarkers[0].getLatLng())
-    ) {
-      this.completePointToPointPolygon();
-      return;
+    if (currentPoints.length >= 3 && this.p2pMarkers.length > 0) {
+      const firstPoint = this.p2pMarkers[0].getLatLng();
+      const isClickingFirst = this.isClickingFirstPoint(clickLatLng, firstPoint);
+      console.log('Checking first point click:', {
+        firstPoint: {
+          lat: firstPoint.lat,
+          lng: firstPoint.lng,
+          precision: {
+            lat: firstPoint.lat.toFixed(10),
+            lng: firstPoint.lng.toFixed(10),
+          },
+        },
+        distance: {
+          lat: Math.abs(clickLatLng.lat - firstPoint.lat),
+          lng: Math.abs(clickLatLng.lng - firstPoint.lng),
+        },
+        isClickingFirst: isClickingFirst,
+      });
+
+      if (isClickingFirst) {
+        console.log('Completing polygon by clicking first point');
+        this.completePointToPointPolygon();
+        return;
+      }
     }
 
     // Add point to tracer - use addLatLng to ensure points accumulate
+    console.log('Adding new point to tracer');
     this.tracer.addLatLng(clickLatLng);
 
     // Add a visual marker for the new point
@@ -1342,11 +1388,42 @@ class Polydraw extends L.Control {
   private isClickingFirstPoint(clickLatLng: L.LatLng, firstPoint: L.LatLng): boolean {
     if (!firstPoint) return false;
 
-    // Use coordinate-based comparison with appropriate tolerance
-    const tolerance = 0.0005; // degrees - matches test expectations
+    // Use zoom-dependent tolerance - higher zoom = smaller tolerance
+    const zoom = this.map.getZoom();
+    // Base tolerance at zoom 10, scale down exponentially for higher zooms
+    const baseTolerance = 0.0005;
+    const tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
+
+    console.log('First point click tolerance check:', {
+      zoom: zoom,
+      baseTolerance: baseTolerance,
+      calculatedTolerance: tolerance,
+      clickLatLng: {
+        lat: clickLatLng.lat.toFixed(10),
+        lng: clickLatLng.lng.toFixed(10),
+      },
+      firstPoint: {
+        lat: firstPoint.lat.toFixed(10),
+        lng: firstPoint.lng.toFixed(10),
+      },
+      distances: {
+        lat: Math.abs(clickLatLng.lat - firstPoint.lat),
+        lng: Math.abs(clickLatLng.lng - firstPoint.lng),
+      },
+    });
+
     const latDiff = Math.abs(clickLatLng.lat - firstPoint.lat);
     const lngDiff = Math.abs(clickLatLng.lng - firstPoint.lng);
-    return latDiff < tolerance && lngDiff < tolerance;
+    const isClicking = latDiff < tolerance && lngDiff < tolerance;
+
+    console.log('First point click result:', {
+      tolerance: tolerance,
+      latDiff: latDiff,
+      lngDiff: lngDiff,
+      isClicking: isClicking,
+    });
+
+    return isClicking;
   }
 
   private handleDoubleClick(e: L.LeafletMouseEvent) {
@@ -1369,6 +1446,16 @@ class Polydraw extends L.Control {
       return; // Need at least 3 points
     }
 
+    console.log('=== P2P COMPLETION DEBUG ===');
+    console.log(
+      'Original points from tracer:',
+      points.map((p, i) => ({
+        index: i,
+        lat: p.lat.toFixed(10),
+        lng: p.lng.toFixed(10),
+      })),
+    );
+
     // Close the polygon by adding first point at the end if not already closed
     const closedPoints = [...points];
     const firstPoint = points[0];
@@ -1378,18 +1465,47 @@ class Polydraw extends L.Control {
       closedPoints.push(firstPoint);
     }
 
+    console.log(
+      'Closed points:',
+      closedPoints.map((p, i) => ({
+        index: i,
+        lat: p.lat.toFixed(10),
+        lng: p.lng.toFixed(10),
+      })),
+    );
+
     // Update tracer with closed polygon
     this.tracer.setLatLngs(closedPoints);
 
-    // Convert to GeoJSON and create polygon using existing pipeline
+    // Convert to GeoJSON and create polygon directly (bypass createPolygonFromTrace for P2P)
     try {
       const tracerGeoJSON = this.tracer.toGeoJSON();
-      const geoPos = this.turfHelper.createPolygonFromTrace(tracerGeoJSON);
+      console.log(
+        'Tracer GeoJSON coordinates:',
+        tracerGeoJSON.geometry.coordinates.map((coord, i) => ({
+          index: i,
+          lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
+          lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
+        })),
+      );
 
-      // Stop drawing and add polygon
+      // For P2P mode, create polygon directly from coordinates to preserve exact points
+      const coordinates = tracerGeoJSON.geometry.coordinates as [number, number][];
+      const geoPos = this.turfHelper.getMultiPolygon([[coordinates]]);
+
+      console.log(
+        'Direct polygon creation (bypassing createPolygonFromTrace):',
+        geoPos.geometry.coordinates[0].map((coord, i) => ({
+          index: i,
+          lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
+          lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
+        })),
+      );
+
+      // Stop drawing and add polygon (disable simplification for P2P - every click is intentional)
       this.clearP2pMarkers();
       this.stopDraw();
-      this.addPolygon(geoPos, true);
+      this.addPolygon(geoPos, false); // false = no simplification for point-to-point polygons
       this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
     } catch (error) {
       console.warn('Error completing point-to-point polygon:', error);
