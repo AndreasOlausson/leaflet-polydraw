@@ -216,24 +216,23 @@ describe('Polygon Merging Issue - C to O Shape', () => {
     // Add the closing polygon - this should merge with the C to create a donut
     polydraw.addAutoPolygon(closingPolygon);
 
-    // After merging, we should have one polygon with a hole (donut shape)
-    // Instead of two overlapping polygons
+    // After merging, we should have one merged polygon (not a donut with holes)
+    // The user specifically wants small + large overlapping polygons to merge, not create holes
     const featureGroups = (polydraw as any).arrayOfFeatureGroups;
 
-    // The issue: currently this creates 2 separate polygons instead of 1 donut
     console.log('Number of feature groups after merge:', featureGroups.length);
 
-    // This should be 1 (one donut polygon) but currently might be 2 (overlapping polygons)
+    // This should be 1 merged polygon
     expect(featureGroups.length).toBe(1);
 
-    // If merged correctly, the resulting polygon should have a hole
+    // The resulting polygon should be a simple merged polygon (no holes)
     if (featureGroups.length === 1) {
       const geoJSON = featureGroups[0].toGeoJSON();
       const feature = geoJSON.features[0];
 
-      // A donut polygon should have coordinates with outer ring + hole
-      // coordinates[0] = outer ring, coordinates[1] = hole
-      expect(feature.geometry.coordinates.length).toBeGreaterThan(1);
+      // A merged polygon should have only one ring (outer ring, no holes)
+      // coordinates[0] = outer ring only
+      expect(feature.geometry.coordinates.length).toBe(1);
     }
   });
 

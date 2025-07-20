@@ -242,6 +242,9 @@ class Polydraw extends L.Control {
     this.drawMode = mode;
     this.emitDrawModeChanged();
 
+    // Update marker draggable state when mode changes
+    this.updateMarkerDraggableState();
+
     // Only stop draw if we're switching away from PointToPoint mode or going to Off mode
     // Don't reset tracer when entering PointToPoint mode
     if (previousMode === DrawMode.PointToPoint && mode !== DrawMode.PointToPoint) {
@@ -328,6 +331,36 @@ class Polydraw extends L.Control {
     for (const cb of this.drawModeListeners) {
       cb(this.drawMode);
     }
+  }
+
+  /**
+   * Update the draggable state of all existing markers when draw mode changes
+   */
+  private updateMarkerDraggableState(): void {
+    const shouldBeDraggable = this.config.modes.dragElbow && this.getDrawMode() === DrawMode.Off;
+
+    this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          const marker = layer as L.Marker;
+          try {
+            // Update the draggable option
+            marker.options.draggable = shouldBeDraggable;
+
+            // If the marker has dragging capability, update its state
+            if (marker.dragging) {
+              if (shouldBeDraggable) {
+                marker.dragging.enable();
+              } else {
+                marker.dragging.disable();
+              }
+            }
+          } catch (error) {
+            // Handle any errors in updating marker state
+          }
+        }
+      });
+    });
   }
 
   removeAllFeatureGroups() {
@@ -854,7 +887,19 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    // Method 1: Try the original polygonIntersect
+    // Method 1: Check if one polygon is completely within the other (for donut scenarios)
+    try {
+      const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
+      const poly2WithinPoly1 = this.turfHelper.isPolygonCompletelyWithin(polygon2, polygon1);
+
+      if (poly1WithinPoly2 || poly2WithinPoly1) {
+        return true;
+      }
+    } catch (error) {
+      /* empty */
+    }
+
+    // Method 2: Try the original polygonIntersect
     try {
       const result = this.turfHelper.polygonIntersect(polygon1, polygon2);
       if (result) {
@@ -864,7 +909,7 @@ class Polydraw extends L.Control {
       /* empty */
     }
 
-    // Method 2: Try direct intersection check
+    // Method 3: Try direct intersection check with area validation
     try {
       const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
       if (
@@ -873,18 +918,55 @@ class Polydraw extends L.Control {
         (intersection.geometry.type === 'Polygon' || intersection.geometry.type === 'MultiPolygon')
       ) {
         // Check if the intersection has meaningful area (not just touching edges/points)
-        const coords = intersection.geometry.coordinates;
-        if (coords && coords.length > 0 && coords[0] && coords[0].length >= 4) {
+        const intersectionArea = this.turfHelper.getPolygonArea(intersection);
+        if (intersectionArea > 0.000001) {
+          // Very small threshold for meaningful intersection
           return true;
-        } else {
-          /* empty */
         }
       }
     } catch (error) {
       /* empty */
     }
 
-    // Method 3: Bounding box overlap check as fallback
+    // Method 4: Check for vertex containment (one polygon's vertices inside the other)
+    try {
+      const coords1 = this.turfHelper.getCoords(polygon1);
+      const coords2 = this.turfHelper.getCoords(polygon2);
+
+      // Check if any vertex of polygon2 is inside polygon1
+      for (const ring2 of coords2) {
+        for (const coord of ring2[0]) {
+          // First ring (outer ring)
+          const point = {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: coord },
+            properties: {},
+          };
+          if (this.turfHelper.isPolygonCompletelyWithin(point as any, polygon1)) {
+            return true;
+          }
+        }
+      }
+
+      // Check if any vertex of polygon1 is inside polygon2
+      for (const ring1 of coords1) {
+        for (const coord of ring1[0]) {
+          // First ring (outer ring)
+          const point = {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: coord },
+            properties: {},
+          };
+          if (this.turfHelper.isPolygonCompletelyWithin(point as any, polygon2)) {
+            return true;
+          }
+        }
+      }
+    } catch (error) {
+      /* empty */
+    }
+
+    // Method 5: Bounding box overlap check with distance validation
     try {
       const bbox1 = this.getBoundingBox(polygon1);
       const bbox2 = this.getBoundingBox(polygon2);
@@ -898,26 +980,20 @@ class Polydraw extends L.Control {
         );
 
         if (overlaps) {
-          return false;
-        }
-      }
-    } catch (error) {
-      /* empty */
-    }
+          // Additional check: only return true if polygons are very close
+          const center1 = this.getPolygonCenter(polygon1);
+          const center2 = this.getPolygonCenter(polygon2);
 
-    // Method 4: Simple distance-based check as final fallback
-    try {
-      const center1 = this.getPolygonCenter(polygon1);
-      const center2 = this.getPolygonCenter(polygon2);
+          if (center1 && center2) {
+            const distance = Math.sqrt(
+              Math.pow(center1.lng - center2.lng, 2) + Math.pow(center1.lat - center2.lat, 2),
+            );
 
-      if (center1 && center2) {
-        const distance = Math.sqrt(
-          Math.pow(center1.lng - center2.lng, 2) + Math.pow(center1.lat - center2.lat, 2),
-        );
-
-        // If polygons are very close (within 0.01 degrees), consider them overlapping
-        if (distance < 0.01) {
-          return true;
+            // Only consider it an intersection if polygons are very close (within 0.01 degrees)
+            if (distance < 0.01) {
+              return true;
+            }
+          }
         }
       }
     } catch (error) {
@@ -1474,23 +1550,10 @@ class Polydraw extends L.Control {
       })),
     );
 
-    // Update tracer with closed polygon
-    this.tracer.setLatLngs(closedPoints);
-
     // Convert to GeoJSON and create polygon directly (bypass createPolygonFromTrace for P2P)
     try {
-      const tracerGeoJSON = this.tracer.toGeoJSON();
-      console.log(
-        'Tracer GeoJSON coordinates:',
-        tracerGeoJSON.geometry.coordinates.map((coord, i) => ({
-          index: i,
-          lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
-          lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
-        })),
-      );
-
-      // For P2P mode, create polygon directly from coordinates to preserve exact points
-      const coordinates = tracerGeoJSON.geometry.coordinates as [number, number][];
+      // Create coordinates array directly from points
+      const coordinates = closedPoints.map((point) => [point.lng, point.lat] as [number, number]);
       const geoPos = this.turfHelper.getMultiPolygon([[coordinates]]);
 
       console.log(
@@ -1502,10 +1565,15 @@ class Polydraw extends L.Control {
         })),
       );
 
-      // Stop drawing and add polygon (disable simplification for P2P - every click is intentional)
+      // Clear P2P markers and stop drawing first
       this.clearP2pMarkers();
       this.stopDraw();
-      this.addPolygon(geoPos, false); // false = no simplification for point-to-point polygons
+
+      // Add polygon (disable simplification for P2P - every click is intentional)
+      // Allow merging for P2P polygons so they merge with existing polygons
+      this.addPolygon(geoPos, false, false); // false = no simplification, false = allow merge for P2P
+
+      // Update polygon information
       this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
     } catch (error) {
       console.warn('Error completing point-to-point polygon:', error);
@@ -1705,34 +1773,9 @@ class Polydraw extends L.Control {
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
     try {
-      // Check if one polygon is completely within the other
-      const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
-      const poly2WithinPoly1 = this.turfHelper.isPolygonCompletelyWithin(polygon2, polygon1);
-
-      // If one is completely within the other, we should create a donut
-      if (poly1WithinPoly2 || poly2WithinPoly1) {
-        return true;
-      }
-
-      // Check for C-to-O scenario: if polygons intersect and one "closes" the other
-      const intersection = this.turfHelper.getIntersection(polygon1, polygon2);
-      if (intersection) {
-        // If the intersection is significant relative to the smaller polygon,
-        // this might be a C-to-O scenario
-        const area1 = this.turfHelper.getPolygonArea(polygon1);
-        const area2 = this.turfHelper.getPolygonArea(polygon2);
-        const intersectionArea = this.turfHelper.getPolygonArea(intersection);
-
-        const smallerArea = Math.min(area1, area2);
-        const intersectionRatio = intersectionArea / smallerArea;
-
-        // If intersection covers a significant portion of the smaller polygon (>30%),
-        // this might be a closing scenario
-        if (intersectionRatio > 0.3) {
-          return true;
-        }
-      }
-
+      // NEVER create donuts - always merge polygons
+      // The user specifically reported that small + large surrounding polygons
+      // should merge, not create holes. This is the expected behavior.
       return false;
     } catch (error) {
       console.warn('Error in shouldCreateDonutPolygon:', error.message);
@@ -2134,10 +2177,16 @@ class Polydraw extends L.Control {
 
       if (this.config.modes.dragElbow) {
         marker.on('drag', (e) => {
-          this.markerDrag(FeatureGroup);
+          // Only allow marker dragging when not in drawing mode
+          if (this.getDrawMode() === DrawMode.Off) {
+            this.markerDrag(FeatureGroup);
+          }
         });
         marker.on('dragend', (e) => {
-          this.markerDragEnd(FeatureGroup);
+          // Only allow marker drag end when not in drawing mode
+          if (this.getDrawMode() === DrawMode.Off) {
+            this.markerDragEnd(FeatureGroup);
+          }
         });
       }
 
@@ -2370,6 +2419,7 @@ class Polydraw extends L.Control {
 
     // Add mouse down event to start dragging
     polygon.on('mousedown', (e: any) => {
+      // Disable polygon dragging when in any drawing mode (Add, Subtract, PointToPoint)
       if (this.getDrawMode() !== DrawMode.Off) return;
 
       // Prevent event bubbling
@@ -2964,6 +3014,11 @@ class Polydraw extends L.Control {
    * Integrated from PolygonEdgeManager
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    // Disable edge clicking when in any drawing mode to prevent conflicts
+    if (this.getDrawMode() !== DrawMode.Off) {
+      return;
+    }
+
     const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
     if (!edgeInfo) return;
     const newPoint = e.latlng;
