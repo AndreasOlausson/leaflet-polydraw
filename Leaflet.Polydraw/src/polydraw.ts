@@ -1007,7 +1007,7 @@ class Polydraw extends L.Control {
     return false;
   }
 
-  // Helper method to get polygon center
+  // Helper method to get polygon center - using PolygonUtil for consistency
   private getPolygonCenter(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { lat: number; lng: number } | null {
@@ -1029,31 +1029,15 @@ class Polydraw extends L.Control {
         return null;
       }
 
-      let sumLat = 0;
-      let sumLng = 0;
-      let count = 0;
+      // Convert GeoJSON coordinates to LatLng format for PolygonUtil
+      const latLngs: L.LatLngLiteral[] = coordinates.map((coord) => ({
+        lat: coord[1],
+        lng: coord[0],
+      }));
 
-      for (const coord of coordinates) {
-        if (Array.isArray(coord) && coord.length >= 2) {
-          const lng = coord[0];
-          const lat = coord[1];
-
-          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
-            sumLng += lng;
-            sumLat += lat;
-            count++;
-          }
-        }
-      }
-
-      if (count === 0) {
-        return null;
-      }
-
-      return {
-        lat: sumLat / count,
-        lng: sumLng / count,
-      };
+      // Use PolygonUtil for the actual center calculation
+      const center = PolygonUtil.getCenter(latLngs);
+      return center;
     } catch (error) {
       return null;
     }

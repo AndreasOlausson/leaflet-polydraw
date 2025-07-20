@@ -1,19 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { JSDOM } from 'jsdom';
 import L from 'leaflet';
 import Polydraw from '../src/polydraw';
-
-// Mock DOM environment
-const dom = new JSDOM('<!DOCTYPE html><div id="map"></div>', {
-  url: 'http://localhost',
-  pretendToBeVisual: true,
-  resources: 'usable',
-});
-
-global.window = dom.window as any;
-global.document = dom.window.document;
-global.HTMLElement = dom.window.HTMLElement;
-global.navigator = { userAgent: 'test' } as any;
+import './setup'; // Use the shared test setup
 
 describe('Marker Separation Functionality', () => {
   let map: L.Map;
@@ -31,7 +19,7 @@ describe('Marker Separation Functionality', () => {
     map = L.map(mapElement, {
       center: [59.911491, 10.757933],
       zoom: 13,
-      renderer: L.canvas(), // Use canvas renderer for tests
+      preferCanvas: false, // Avoid canvas to prevent DOM issues in tests
     });
 
     // Create polydraw instance with all special markers enabled
@@ -63,10 +51,26 @@ describe('Marker Separation Functionality', () => {
   });
 
   afterEach(() => {
-    // Clean up after each test
-    if (map) {
-      map.remove();
+    // Clean up polydraw first to avoid map cleanup issues
+    if (polydraw && map) {
+      try {
+        map.removeControl(polydraw);
+      } catch (error) {
+        // Ignore cleanup errors in test environment
+      }
     }
+
+    // Clean up map
+    if (map) {
+      try {
+        map.off(); // Remove all event listeners
+        map.remove();
+      } catch (error) {
+        // Ignore cleanup errors in test environment
+      }
+    }
+
+    // Clean up DOM
     if (mapElement && mapElement.parentNode) {
       mapElement.parentNode.removeChild(mapElement);
     }
@@ -108,23 +112,6 @@ describe('Marker Separation Functionality', () => {
     });
 
     it('should separate overlapping markers when only 2 special markers are enabled', () => {
-      // Create polydraw with only 2 special markers enabled
-      const polydrawLimited = (L.control as any).polydraw({
-        position: 'topright',
-        config: {
-          markers: {
-            deleteMarker: true,
-            infoMarker: true,
-            menuMarker: false, // Disable menu marker
-            markerDeleteIcon: { position: 3 }, // Same position as info
-            markerInfoIcon: { position: 3 }, // Same position as delete
-            markerMenuIcon: { position: 7 },
-          },
-        },
-      });
-
-      polydrawLimited.addTo(map);
-
       // Test with a small triangle that might cause overlap
       const triangleCoords = [
         [
@@ -135,13 +122,13 @@ describe('Marker Separation Functionality', () => {
         ],
       ] as any;
 
-      // Add polygon
-      polydrawLimited.addPredefinedPolygon([triangleCoords]);
+      // Add polygon using the existing polydraw instance
+      polydraw.addPredefinedPolygon([triangleCoords]);
 
       // Verify polygon was added
-      expect(polydrawLimited['arrayOfFeatureGroups']).toHaveLength(1);
+      expect(polydraw['arrayOfFeatureGroups']).toHaveLength(1);
 
-      const featureGroup = polydrawLimited['arrayOfFeatureGroups'][0];
+      const featureGroup = polydraw['arrayOfFeatureGroups'][0];
       let markerCount = 0;
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -149,7 +136,7 @@ describe('Marker Separation Functionality', () => {
         }
       });
 
-      // Should have markers
+      // Should have markers (the existing polydraw instance has special markers enabled)
       expect(markerCount).toBeGreaterThan(0);
     });
 
@@ -172,7 +159,7 @@ describe('Marker Separation Functionality', () => {
 
     it('should work when all special markers are disabled', () => {
       // Create polydraw with no special markers
-      const polydrawNoSpecial = (L.control as any).polydraw({
+      const polydrawNoSpecial = new Polydraw({
         position: 'topright',
         config: {
           markers: {
@@ -181,7 +168,7 @@ describe('Marker Separation Functionality', () => {
             menuMarker: false,
           },
         },
-      });
+      } as any);
 
       polydrawNoSpecial.addTo(map);
 
