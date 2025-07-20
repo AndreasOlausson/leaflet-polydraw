@@ -8,6 +8,7 @@ import { MapStateService } from './map-state';
 import { Compass, PolyDrawUtil, Perimeter, Area } from './utils';
 import { IconFactory } from './icon-factory';
 import { PolygonUtil } from './polygon.util';
+import { InteractionStateManager } from './managers/interaction-state-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
 
@@ -29,6 +30,7 @@ class Polydraw extends L.Control {
   private config: PolydrawConfig;
   private mapStateService: MapStateService;
   private polygonInformation: PolygonInformationService;
+  private interactionStateManager: InteractionStateManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
   private p2pMarkers: L.Marker[] = [];
 
@@ -46,6 +48,7 @@ class Polydraw extends L.Control {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
+    this.interactionStateManager = new InteractionStateManager(this.config);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       // Handle polygon info update
     });
@@ -240,6 +243,10 @@ class Polydraw extends L.Control {
   setDrawMode(mode: DrawMode) {
     const previousMode = this.drawMode;
     this.drawMode = mode;
+
+    // Update interaction state manager
+    this.interactionStateManager.updateStateForMode(mode);
+
     this.emitDrawModeChanged();
 
     // Update marker draggable state when mode changes
@@ -258,57 +265,54 @@ class Polydraw extends L.Control {
     }
 
     if (this.map) {
-      switch (mode) {
-        case DrawMode.Off:
-          L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-          this.events(false);
-          try {
+      // Use interaction state manager for UI updates
+      const shouldShowCrosshair = this.interactionStateManager.shouldShowCrosshairCursor();
+      const mapDragEnabled = this.interactionStateManager.canPerformAction('mapDrag');
+      const mapZoomEnabled = this.interactionStateManager.canPerformAction('mapZoom');
+      const mapDoubleClickEnabled =
+        this.interactionStateManager.canPerformAction('mapDoubleClickZoom');
+
+      // Update cursor
+      if (shouldShowCrosshair) {
+        L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      } else {
+        L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      }
+
+      // Update events
+      this.events(mode !== DrawMode.Off);
+
+      // Update tracer style based on mode
+      try {
+        switch (mode) {
+          case DrawMode.Off:
             this.tracer.setStyle({ color: '' });
-          } catch (error) {
-            // Handle case where tracer renderer is not initialized
-          }
-          this.setLeafletMapEvents(true, true, true);
-          break;
-        case DrawMode.Add:
-          L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-          this.events(true);
-          try {
+            break;
+          case DrawMode.Add:
             this.tracer.setStyle({
               color: defaultConfig.polyLineOptions.color,
               dashArray: null, // Reset to solid line
             });
-          } catch (error) {
-            // Handle case where tracer renderer is not initialized
-          }
-          this.setLeafletMapEvents(false, false, false);
-          break;
-        case DrawMode.Subtract:
-          L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-          this.events(true);
-          try {
+            break;
+          case DrawMode.Subtract:
             this.tracer.setStyle({
               color: '#D9460F',
               dashArray: null, // Reset to solid line
             });
-          } catch (error) {
-            // Handle case where tracer renderer is not initialized
-          }
-          this.setLeafletMapEvents(false, false, false);
-          break;
-        case DrawMode.PointToPoint:
-          L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-          this.events(true);
-          try {
+            break;
+          case DrawMode.PointToPoint:
             this.tracer.setStyle({
               color: defaultConfig.polyLineOptions.color,
               dashArray: '5, 5',
             });
-          } catch (error) {
-            // Handle case where tracer renderer is not initialized
-          }
-          this.setLeafletMapEvents(false, false, false);
-          break;
+            break;
+        }
+      } catch (error) {
+        // Handle case where tracer renderer is not initialized
       }
+
+      // Update map interactions based on state manager
+      this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
     }
   }
 
@@ -337,7 +341,7 @@ class Polydraw extends L.Control {
    * Update the draggable state of all existing markers when draw mode changes
    */
   private updateMarkerDraggableState(): void {
-    const shouldBeDraggable = this.config.modes.dragElbow && this.getDrawMode() === DrawMode.Off;
+    const shouldBeDraggable = this.interactionStateManager.canPerformAction('markerDrag');
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
@@ -2419,8 +2423,8 @@ class Polydraw extends L.Control {
 
     // Add mouse down event to start dragging
     polygon.on('mousedown', (e: any) => {
-      // Disable polygon dragging when in any drawing mode (Add, Subtract, PointToPoint)
-      if (this.getDrawMode() !== DrawMode.Off) return;
+      // Use interaction state manager to check if polygon dragging is allowed
+      if (!this.interactionStateManager.canPerformAction('polygonDrag')) return;
 
       // Prevent event bubbling
       L.DomEvent.stopPropagation(e);
