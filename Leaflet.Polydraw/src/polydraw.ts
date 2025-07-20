@@ -104,7 +104,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in Add mode, turn it off instead of ignoring
-      if (this.getDrawMode() === DrawMode.Add) {
+      if (this.interactionStateManager.getCurrentMode() === DrawMode.Add) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -121,7 +121,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in Subtract mode, turn it off instead of ignoring
-      if (this.getDrawMode() === DrawMode.Subtract) {
+      if (this.interactionStateManager.getCurrentMode() === DrawMode.Subtract) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -152,7 +152,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in PointToPoint mode, turn it off instead of ignoring
-      if (this.getDrawMode() === DrawMode.PointToPoint) {
+      if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -317,7 +317,7 @@ class Polydraw extends L.Control {
   }
 
   getDrawMode(): DrawMode {
-    return this.drawMode;
+    return this.interactionStateManager.getCurrentMode();
   }
 
   public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
@@ -333,7 +333,7 @@ class Polydraw extends L.Control {
 
   private emitDrawModeChanged(): void {
     for (const cb of this.drawModeListeners) {
-      cb(this.drawMode);
+      cb(this.interactionStateManager.getCurrentMode());
     }
   }
 
@@ -473,7 +473,7 @@ class Polydraw extends L.Control {
 
     this.stopDraw();
 
-    switch (this.getDrawMode()) {
+    switch (this.interactionStateManager.getCurrentMode()) {
       case DrawMode.Add:
         this.addPolygon(geoPos, true);
         break;
@@ -1195,7 +1195,7 @@ class Polydraw extends L.Control {
 
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
     // Check if we're still in a drawing mode before processing
-    if (this.getDrawMode() === DrawMode.Off) {
+    if (this.interactionStateManager.isInOffMode()) {
       return;
     }
 
@@ -1214,7 +1214,7 @@ class Polydraw extends L.Control {
     }
 
     // Handle Point-to-Point mode differently
-    if (this.getDrawMode() === DrawMode.PointToPoint) {
+    if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
       this.handlePointToPointClick(clickLatLng);
       return;
     }
@@ -1241,7 +1241,7 @@ class Polydraw extends L.Control {
 
   private handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (this.getDrawMode() === DrawMode.PointToPoint) {
+      if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.cancelPointToPointDrawing();
       }
     }
@@ -1508,7 +1508,7 @@ class Polydraw extends L.Control {
 
   private handleDoubleClick(e: L.LeafletMouseEvent) {
     // Only handle double-click in Point-to-Point mode
-    if (this.getDrawMode() !== DrawMode.PointToPoint) {
+    if (this.interactionStateManager.getCurrentMode() !== DrawMode.PointToPoint) {
       return;
     }
 
@@ -2182,13 +2182,13 @@ class Polydraw extends L.Control {
       if (this.config.modes.dragElbow) {
         marker.on('drag', (e) => {
           // Only allow marker dragging when not in drawing mode
-          if (this.getDrawMode() === DrawMode.Off) {
+          if (this.interactionStateManager.isInOffMode()) {
             this.markerDrag(FeatureGroup);
           }
         });
         marker.on('dragend', (e) => {
           // Only allow marker drag end when not in drawing mode
-          if (this.getDrawMode() === DrawMode.Off) {
+          if (this.interactionStateManager.isInOffMode()) {
             this.markerDragEnd(FeatureGroup);
           }
         });
@@ -2466,7 +2466,7 @@ class Polydraw extends L.Control {
 
     // Set hover cursor
     polygon.on('mouseover', () => {
-      if (!polygon._polydrawDragData.isDragging && this.getDrawMode() === DrawMode.Off) {
+      if (!polygon._polydrawDragData.isDragging && this.interactionStateManager.isInOffMode()) {
         try {
           const container = this.map.getContainer();
           container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
@@ -2477,7 +2477,7 @@ class Polydraw extends L.Control {
     });
 
     polygon.on('mouseout', () => {
-      if (!polygon._polydrawDragData.isDragging && this.getDrawMode() === DrawMode.Off) {
+      if (!polygon._polydrawDragData.isDragging && this.interactionStateManager.isInOffMode()) {
         try {
           const container = this.map.getContainer();
           container.style.cursor = '';
@@ -3019,7 +3019,7 @@ class Polydraw extends L.Control {
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
     // Disable edge clicking when in any drawing mode to prevent conflicts
-    if (this.getDrawMode() !== DrawMode.Off) {
+    if (!this.interactionStateManager.isInOffMode()) {
       return;
     }
 
