@@ -3,6 +3,7 @@
  * This is a small, focused module with no external dependencies
  */
 import type { LatLngLiteral } from 'leaflet';
+import { PolygonUtil } from './polygon.util';
 
 export class GeometryUtils {
   /**
@@ -61,18 +62,12 @@ export class GeometryUtils {
 
   /**
    * Calculate centroid of polygon
+   * @deprecated Use PolygonUtil.getCenter() instead for consistency
    */
   static calculateCentroid(latlngs: L.LatLngLiteral[]): L.LatLngLiteral {
-    let sumLat = 0,
-      sumLng = 0;
-    for (const point of latlngs) {
-      sumLat += point.lat;
-      sumLng += point.lng;
-    }
-    return {
-      lat: sumLat / latlngs.length,
-      lng: sumLng / latlngs.length,
-    };
+    // This method is deprecated - use PolygonUtil.getCenter() for consistency
+    // Keeping this as a thin wrapper to avoid breaking changes
+    return PolygonUtil.getCenter(latlngs);
   }
 
   /**
