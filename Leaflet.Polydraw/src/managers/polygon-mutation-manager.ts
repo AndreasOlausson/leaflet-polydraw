@@ -25,11 +25,14 @@ export interface AddPolygonOptions {
   visualOptimizationLevel?: number;
 }
 
+import { InteractionStateManager } from './interaction-state-manager';
+
 export interface MutationManagerDependencies {
   turfHelper: TurfHelper;
   polygonInformation: PolygonInformationService;
   map: L.Map;
   config: PolydrawConfig;
+  interactionStateManager: InteractionStateManager;
 }
 
 /**
@@ -41,6 +44,7 @@ export class PolygonMutationManager {
   private polygonInformation: PolygonInformationService;
   private map: L.Map;
   private config: PolydrawConfig;
+  private interactionStateManager: InteractionStateManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
   private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
@@ -55,6 +59,7 @@ export class PolygonMutationManager {
     this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
     this.config = dependencies.config;
+    this.interactionStateManager = dependencies.interactionStateManager;
   }
 
   /**
@@ -892,22 +897,32 @@ export class PolygonMutationManager {
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.bindPopup(infoPopup, { className: 'info-marker' });
       }
-      if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
-        marker.options.zIndexOffset =
-          this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
-        marker.on('click', (e) => {
-          this.removeFeatureGroup(featureGroup);
-          this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-        });
-      }
 
-      // Add click listener for vertex deletion
+      // Forward mousedown events to the map when in drawing mode
+      marker.on('mousedown', (e) => {
+        if (!this.interactionStateManager.isInOffMode()) {
+          L.DomEvent.stopPropagation(e);
+          this.map.fire('mousedown', e);
+        }
+      });
+
+      // Generic click handler for all markers
       marker.on('click', (e) => {
-        const poly = (
-          featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
-        )?.toGeoJSON();
-        if (poly) {
-          this.elbowClicked(e, poly);
+        if (this.interactionStateManager.isInOffMode()) {
+          if (this.isModifierKeyPressed(e.originalEvent)) {
+            const poly = (
+              featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
+            )?.toGeoJSON();
+            if (poly) {
+              this.elbowClicked(e, poly);
+            }
+          } else {
+            // Handle non-modifier clicks for special markers
+            if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+              this.removeFeatureGroup(featureGroup);
+              this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+            }
+          }
         }
       });
 
@@ -1018,6 +1033,9 @@ export class PolygonMutationManager {
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
     console.log('PolygonMutationManager onEdgeClick');
+    if (!this.interactionStateManager.isInOffMode()) {
+      return;
+    }
     const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
     if (!edgeInfo) return;
     const newPoint = e.latlng;
@@ -1744,6 +1762,17 @@ export class PolygonMutationManager {
     };
 
     polygon.on('mousedown', (e: any) => {
+      // If not in off mode, it's a drawing click. Forward to map and stop.
+      if (!this.interactionStateManager.isInOffMode()) {
+        // Stop this event from becoming a drag, but fire it on the map for drawing.
+        L.DomEvent.stopPropagation(e);
+        this.map.fire('mousedown', e);
+        return;
+      }
+
+      if (!this.interactionStateManager.canPerformAction('polygonDrag')) {
+        return;
+      }
       L.DomEvent.stopPropagation(e);
       L.DomEvent.preventDefault(e);
 

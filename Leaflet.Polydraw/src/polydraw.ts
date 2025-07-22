@@ -201,6 +201,7 @@ class Polydraw extends L.Control {
       polygonInformation: this.polygonInformation,
       map: this.map,
       config: this.config,
+      interactionStateManager: this.interactionStateManager,
     });
 
     // Set the feature groups reference so the manager can work with the same array
