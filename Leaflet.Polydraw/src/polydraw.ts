@@ -41,6 +41,7 @@ class Polydraw extends L.Control {
   private isModifierKeyHeld: boolean = false;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
+    console.log('constructor');
     super(options);
     this.config = { ...defaultConfig, ...(options?.config || {}) } as PolydrawConfig;
     this.mergePolygons = this.config.mergePolygons ?? true;
@@ -56,6 +57,7 @@ class Polydraw extends L.Control {
   }
 
   onAdd(_map: L.Map): HTMLElement {
+    console.log('onAdd');
     this.map = _map;
     const style = document.createElement('style');
     style.innerHTML = `
@@ -192,11 +194,13 @@ class Polydraw extends L.Control {
   }
 
   public addTo(map: L.Map): this {
+    console.log('addTo');
     super.addTo(map);
     return this;
   }
 
   onRemove(_map: L.Map) {
+    console.log('onRemove');
     this.removeKeyboardHandlers();
   }
 
@@ -204,6 +208,7 @@ class Polydraw extends L.Control {
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
   ): void {
+    console.log('addPredefinedPolygon');
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');
@@ -241,6 +246,7 @@ class Polydraw extends L.Control {
   }
 
   setDrawMode(mode: DrawMode) {
+    console.log('setDrawMode');
     const previousMode = this.drawMode;
     this.drawMode = mode;
 
@@ -317,14 +323,17 @@ class Polydraw extends L.Control {
   }
 
   getDrawMode(): DrawMode {
+    console.log('getDrawMode');
     return this.interactionStateManager.getCurrentMode();
   }
 
   public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
+    console.log('onDrawModeChangeListener');
     this.drawModeListeners.push(callback);
   }
 
   public offDrawModeChangeListener(callback: DrawModeChangeHandler): void {
+    console.log('offDrawModeChangeListener');
     const index = this.drawModeListeners.indexOf(callback);
     if (index > -1) {
       this.drawModeListeners.splice(index, 1);
@@ -332,6 +341,7 @@ class Polydraw extends L.Control {
   }
 
   private emitDrawModeChanged(): void {
+    console.log('emitDrawModeChanged');
     for (const cb of this.drawModeListeners) {
       cb(this.interactionStateManager.getCurrentMode());
     }
@@ -341,6 +351,7 @@ class Polydraw extends L.Control {
    * Update the draggable state of all existing markers when draw mode changes
    */
   private updateMarkerDraggableState(): void {
+    console.log('updateMarkerDraggableState');
     const shouldBeDraggable = this.interactionStateManager.canPerformAction('markerDrag');
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
@@ -368,6 +379,7 @@ class Polydraw extends L.Control {
   }
 
   removeAllFeatureGroups() {
+    console.log('removeAllFeatureGroups');
     this.arrayOfFeatureGroups.forEach((featureGroups) => {
       try {
         this.map.removeLayer(featureGroups);
@@ -381,6 +393,7 @@ class Polydraw extends L.Control {
   }
 
   private stopDraw() {
+    console.log('stopDraw');
     this.resetTracker();
     this.drawStartedEvents(false);
   }
@@ -390,16 +403,19 @@ class Polydraw extends L.Control {
     enableDoubleClickZoom: boolean,
     enableScrollWheelZoom: boolean,
   ) {
+    console.log('setLeafletMapEvents');
     enableDragging ? this.map.dragging.enable() : this.map.dragging.disable();
     enableDoubleClickZoom ? this.map.doubleClickZoom.enable() : this.map.doubleClickZoom.disable();
     enableScrollWheelZoom ? this.map.scrollWheelZoom.enable() : this.map.scrollWheelZoom.disable();
   }
 
   private resetTracker() {
+    console.log('resetTracker');
     this.tracer.setLatLngs([]);
   }
 
   private drawStartedEvents(onoff: boolean) {
+    console.log('drawStartedEvents');
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousemove', this.mouseMove, this);
     this.map[onoroff]('mouseup', this.mouseUpLeave, this);
@@ -422,6 +438,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent) {
+    console.log('mouseMove');
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
@@ -434,6 +451,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseUpLeave(event: any) {
+    console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
@@ -487,6 +505,7 @@ class Polydraw extends L.Control {
   }
 
   private subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('subtractPolygon');
     this.subtract(latlngs);
   }
 
@@ -495,6 +514,7 @@ class Polydraw extends L.Control {
     simplify: boolean,
     noMerge: boolean = false,
   ) {
+    console.log('addPolygon');
     if (this.mergePolygons && !noMerge && this.arrayOfFeatureGroups.length > 0 && !this.kinks) {
       this.merge(latlngs);
     } else {
@@ -508,6 +528,7 @@ class Polydraw extends L.Control {
     dynamicTolerance: boolean = false,
     visualOptimizationLevel: number = 0,
   ) {
+    console.log('addPolygonLayer');
     // Validate input
     if (!latlngs || !latlngs.geometry || !latlngs.geometry.coordinates) {
       return;
@@ -601,6 +622,7 @@ class Polydraw extends L.Control {
   }
 
   private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
+    console.log('elbowClicked');
     console.log('polygonClicked', e, poly);
 
     // Guard: Check if modifier key is active
@@ -678,6 +700,7 @@ class Polydraw extends L.Control {
    * Find the feature group that contains the given polygon
    */
   private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
+    console.log('findFeatureGroupForPoly');
     for (const featureGroup of this.arrayOfFeatureGroups) {
       const featureCollection = featureGroup.toGeoJSON() as any;
       if (featureCollection && featureCollection.features && featureCollection.features[0]) {
@@ -697,6 +720,7 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed (Ctrl on Windows/Linux, Cmd on Mac)
    */
   private isModifierKeyPressed(event: MouseEvent): boolean {
+    console.log('isModifierKeyPressed');
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 
@@ -711,6 +735,7 @@ class Polydraw extends L.Control {
    * Delete edge at marker position - for test compatibility
    */
   private deleteEdgeAtMarker(marker: L.Marker, featureGroup: L.FeatureGroup): void {
+    console.log('deleteEdgeAtMarker');
     // Create a mock event to reuse the elbowClicked logic
     const mockEvent = {
       latlng: marker.getLatLng(),
@@ -735,6 +760,7 @@ class Polydraw extends L.Control {
    * Find marker index in coordinates - for test compatibility
    */
   private findMarkerIndexInCoords(coords: any, markerLatLng: any): number {
+    console.log('findMarkerIndexInCoords');
     if (!coords || !Array.isArray(coords)) return -1;
 
     return coords.findIndex(
@@ -748,6 +774,7 @@ class Polydraw extends L.Control {
    * Check if polygon would be valid after deleting a vertex - for test compatibility
    */
   private isValidPolygonAfterDeletion(latLngs: any, deleteIndex: number): boolean {
+    console.log('isValidPolygonAfterDeletion');
     try {
       if (!latLngs || !Array.isArray(latLngs)) return false;
 
@@ -767,6 +794,7 @@ class Polydraw extends L.Control {
    * Create new coordinates array without deleted vertex - for test compatibility
    */
   private createCoordsWithoutVertex(coords: any[], deleteIndex: number): any[] {
+    console.log('createCoordsWithoutVertex');
     if (!coords || !Array.isArray(coords) || deleteIndex < 0 || deleteIndex >= coords.length) {
       return coords;
     }
@@ -780,6 +808,7 @@ class Polydraw extends L.Control {
    * Handle marker click for edge deletion - for test compatibility
    */
   private onMarkerClickForEdgeDeletion(marker: L.Marker, clickEvent: any): void {
+    console.log('onMarkerClickForEdgeDeletion');
     // Check if modifier key is pressed
     if (!this.isModifierKeyPressed(clickEvent.originalEvent)) {
       return;
@@ -806,6 +835,7 @@ class Polydraw extends L.Control {
    * Handle marker hover for edge deletion - production method
    */
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
+    console.log('onMarkerHoverForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -821,6 +851,7 @@ class Polydraw extends L.Control {
   }
 
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
     polygon.setStyle(this.config.polygonOptions);
 
@@ -833,6 +864,7 @@ class Polydraw extends L.Control {
   }
 
   private merge(latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('merge');
     const polygonFeature = [];
     const newArray: L.FeatureGroup[] = [];
     let polyIntersection: boolean = false;
@@ -891,6 +923,7 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
+    console.log('checkPolygonIntersection');
     // Method 1: Check if one polygon is completely within the other (for donut scenarios)
     try {
       const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
@@ -1011,6 +1044,7 @@ class Polydraw extends L.Control {
   private getPolygonCenter(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { lat: number; lng: number } | null {
+    console.log('getPolygonCenter');
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
         return null;
@@ -1047,6 +1081,7 @@ class Polydraw extends L.Control {
   private getBoundingBox(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
+    console.log('getBoundingBox');
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
         return null;
@@ -1100,6 +1135,7 @@ class Polydraw extends L.Control {
   }
 
   private subtract(latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('subtract');
     // Find only the polygons that actually intersect with the subtract area
     const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
@@ -1156,6 +1192,7 @@ class Polydraw extends L.Control {
   }
 
   private events(onoff: boolean) {
+    console.log('events');
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
 
@@ -1178,6 +1215,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
+    console.log('mouseDown');
     // Check if we're still in a drawing mode before processing
     if (this.interactionStateManager.isInOffMode()) {
       return;
@@ -1209,21 +1247,25 @@ class Polydraw extends L.Control {
   }
 
   private startDraw() {
+    console.log('startDraw');
     this.drawStartedEvents(true);
   }
 
   private setupKeyboardHandlers() {
+    console.log('setupKeyboardHandlers');
     this._boundKeyUpHandler = this.handleKeyUp.bind(this);
     document.addEventListener('keydown', this._boundKeyDownHandler);
     document.addEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private removeKeyboardHandlers() {
+    console.log('removeKeyboardHandlers');
     document.removeEventListener('keydown', this._boundKeyDownHandler);
     document.removeEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private handleKeyDown(e: KeyboardEvent) {
+    console.log('handleKeyDown');
     if (e.key === 'Escape') {
       if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.cancelPointToPointDrawing();
@@ -1239,6 +1281,7 @@ class Polydraw extends L.Control {
   }
 
   private handleKeyUp(e: KeyboardEvent) {
+    console.log('handleKeyUp');
     // Track modifier key state for edge deletion visual feedback
     const isModifierPressed = this.isModifierKeyPressed(e as any);
     if (!isModifierPressed && this.isModifierKeyHeld) {
@@ -1251,6 +1294,7 @@ class Polydraw extends L.Control {
    * Update all markers to show/hide edge deletion visual feedback
    */
   private updateAllMarkersForEdgeDeletion(showFeedback: boolean) {
+    console.log('updateAllMarkersForEdgeDeletion');
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -1264,6 +1308,7 @@ class Polydraw extends L.Control {
    * Update individual marker for edge deletion visual feedback
    */
   private updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean) {
+    console.log('updateMarkerForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -1284,6 +1329,7 @@ class Polydraw extends L.Control {
    * Handle marker hover when modifier key is held - event handler version
    */
   private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
+    console.log('onMarkerHoverForEdgeDeletionEvent');
     if (!this.isModifierKeyHeld) return;
 
     const element = e.target as HTMLElement;
@@ -1298,6 +1344,7 @@ class Polydraw extends L.Control {
    * Handle marker leave when modifier key is held - event handler version
    */
   private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
+    console.log('onMarkerLeaveForEdgeDeletionEvent');
     const element = e.target as HTMLElement;
     if (element) {
       element.style.backgroundColor = '';
@@ -1307,6 +1354,7 @@ class Polydraw extends L.Control {
   };
 
   private cancelPointToPointDrawing() {
+    console.log('cancelPointToPointDrawing');
     this.clearP2pMarkers();
     this.stopDraw();
     this.setDrawMode(DrawMode.Off);
@@ -1314,6 +1362,7 @@ class Polydraw extends L.Control {
 
   // Point-to-Point state management
   private handlePointToPointClick(clickLatLng: L.LatLng) {
+    console.log('handlePointToPointClick');
     console.log('=== P2P CLICK DEBUG ===');
     console.log('Click coordinates:', {
       lat: clickLatLng.lat,
@@ -1450,6 +1499,7 @@ class Polydraw extends L.Control {
   }
 
   private isClickingFirstPoint(clickLatLng: L.LatLng, firstPoint: L.LatLng): boolean {
+    console.log('isClickingFirstPoint');
     if (!firstPoint) return false;
 
     // Use zoom-dependent tolerance - higher zoom = smaller tolerance
@@ -1491,6 +1541,7 @@ class Polydraw extends L.Control {
   }
 
   private handleDoubleClick(e: L.LeafletMouseEvent) {
+    console.log('handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
     if (this.interactionStateManager.getCurrentMode() !== DrawMode.PointToPoint) {
       return;
@@ -1505,6 +1556,7 @@ class Polydraw extends L.Control {
   }
 
   private completePointToPointPolygon() {
+    console.log('completePointToPointPolygon');
     const points = this.tracer.getLatLngs() as L.LatLng[];
     if (points.length < 3) {
       return; // Need at least 3 points
@@ -1571,11 +1623,13 @@ class Polydraw extends L.Control {
   }
 
   private clearP2pMarkers() {
+    console.log('clearP2pMarkers');
     this.p2pMarkers.forEach((marker) => this.map.removeLayer(marker));
     this.p2pMarkers = [];
   }
 
   private markerDrag(FeatureGroup: L.FeatureGroup) {
+    console.log('markerDrag');
     const newPos = [];
     let testarray = [];
     let hole = [];
@@ -1655,6 +1709,7 @@ class Polydraw extends L.Control {
   }
 
   private markerDragEnd(FeatureGroup: L.FeatureGroup) {
+    console.log('markerDragEnd');
     this.polygonInformation.deletePolygonInformationStorage();
     const featureCollection = FeatureGroup.toGeoJSON() as any;
 
@@ -1700,6 +1755,7 @@ class Polydraw extends L.Control {
   }
 
   private getLatLngsFromJson(feature: Feature<Polygon | MultiPolygon>): L.LatLngLiteral[][] {
+    console.log('getLatLngsFromJson');
     let coord;
     if (feature) {
       if (feature.geometry.coordinates.length > 1 && feature.geometry.type === 'MultiPolygon') {
@@ -1717,6 +1773,7 @@ class Polydraw extends L.Control {
   }
 
   private unionPolygons(layers, latlngs: Feature<Polygon | MultiPolygon>, polygonFeature) {
+    console.log('unionPolygons');
     let addNew = latlngs;
     layers.forEach((featureGroup, i) => {
       const featureCollection = featureGroup.toGeoJSON();
@@ -1760,6 +1817,7 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
+    console.log('shouldCreateDonutPolygon');
     try {
       // NEVER create donuts - always merge polygons
       // The user specifically reported that small + large surrounding polygons
@@ -1778,6 +1836,7 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
+    console.log('createDonutPolygon');
     try {
       // Determine which polygon should be the outer ring and which should be the hole
       const area1 = this.turfHelper.getPolygonArea(polygon1);
@@ -1820,6 +1879,7 @@ class Polydraw extends L.Control {
     outerPolygon: Feature<Polygon | MultiPolygon>,
     innerPolygon: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
+    console.log('createDonutFromContainment');
     try {
       // Get coordinates from both polygons
       const outerCoords = this.turfHelper.getCoords(outerPolygon);
@@ -1852,6 +1912,7 @@ class Polydraw extends L.Control {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
+    console.log('createDonutFromIntersection');
     try {
       // First, create union of the two polygons
       const union = this.turfHelper.union(polygon1, polygon2);
@@ -1875,6 +1936,7 @@ class Polydraw extends L.Control {
   }
 
   private removeFeatureGroup(featureGroup: L.FeatureGroup) {
+    console.log('removeFeatureGroup');
     featureGroup.clearLayers();
     this.arrayOfFeatureGroups = this.arrayOfFeatureGroups.filter(
       (featureGroups) => featureGroups !== featureGroup,
@@ -1883,6 +1945,7 @@ class Polydraw extends L.Control {
   }
 
   private removeFeatureGroupOnMerge(featureGroup: L.FeatureGroup) {
+    console.log('removeFeatureGroupOnMerge');
     const newArray = [];
     if (featureGroup.getLayers()[0]) {
       const polygon = (featureGroup.getLayers()[0] as any).getLatLngs()[0];
@@ -1911,6 +1974,7 @@ class Polydraw extends L.Control {
   }
 
   private deletePolygonOnMerge(polygon) {
+    console.log('deletePolygonOnMerge');
     let polygon2 = [];
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
@@ -1932,10 +1996,12 @@ class Polydraw extends L.Control {
   }
 
   private polygonArrayEqualsMerge(poly1: any[], poly2: any[]): boolean {
+    console.log('polygonArrayEqualsMerge');
     return poly1.toString() === poly2.toString();
   }
 
   deletePolygon(polygon: L.LatLngLiteral[][]) {
+    console.log('deletePolygon');
     if (this.arrayOfFeatureGroups.length > 0) {
       this.arrayOfFeatureGroups.forEach((featureGroup) => {
         const layer = featureGroup.getLayers()[0] as any;
@@ -1975,6 +2041,7 @@ class Polydraw extends L.Control {
   }
 
   private polygonArrayEquals(poly1: any[], poly2: any[]): boolean {
+    console.log('polygonArrayEquals');
     if (poly1[0][0]) {
       if (!poly1[0][0].equals(poly2[0][0])) return false;
     } else {
@@ -1987,6 +2054,7 @@ class Polydraw extends L.Control {
   }
 
   private getMarkerIndex(latlngs: L.LatLngLiteral[], position: MarkerPosition): number {
+    console.log('getMarkerIndex');
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
       bounds.getSouth(),
@@ -2017,6 +2085,7 @@ class Polydraw extends L.Control {
       info: { index: number; enabled: boolean };
     },
   ): { menu: number; delete: number; info: number } {
+    console.log('ensureMarkerSeparation');
     // Get list of enabled markers with their indices
     const enabledMarkers: Array<{ type: string; index: number }> = [];
 
@@ -2080,6 +2149,7 @@ class Polydraw extends L.Control {
     originalIndex: number,
     usedIndices: Set<number>,
   ): number {
+    console.log('findAlternativeMarkerPosition');
     // Strategy: Try positions at regular intervals around the polygon
     // Start with positions that are far from the original
     const maxAttempts = polygonLength;
@@ -2112,6 +2182,7 @@ class Polydraw extends L.Control {
   }
 
   private addMarker(latlngs: L.LatLngLiteral[], FeatureGroup: L.FeatureGroup) {
+    console.log('addMarker');
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
     let deleteMarkerIdx = this.getMarkerIndex(
@@ -2205,6 +2276,7 @@ class Polydraw extends L.Control {
   }
 
   private addHoleMarker(latlngs: L.LatLngLiteral[], FeatureGroup: L.FeatureGroup) {
+    console.log('addHoleMarker');
     latlngs.forEach((latlng, i) => {
       // Use holeIcon styles instead of regular markerIcon styles
       const iconClasses = this.config.markers.holeIcon.styleClasses;
@@ -2227,10 +2299,12 @@ class Polydraw extends L.Control {
   }
 
   private getLatLngInfoString(latlng: L.LatLngLiteral): string {
+    console.log('getLatLngInfoString');
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
 
   private generateMenuMarkerPopup(latLngs: L.LatLngLiteral[]): HTMLDivElement {
+    console.log('generateMenuMarkerPopup');
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
     const wrapper: HTMLDivElement = document.createElement('div');
@@ -2290,6 +2364,7 @@ class Polydraw extends L.Control {
   }
 
   private generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
+    console.log('generateInfoMarkerPopup');
     const _perimeter = new Perimeter(perimeter, this.config as any);
     const _area = new Area(area, this.config as any);
 
@@ -2330,6 +2405,7 @@ class Polydraw extends L.Control {
 
   // Menu marker popup button methods
   private convertToSimplifiedPolygon(latlngs: L.LatLngLiteral[]) {
+    console.log('convertToSimplifiedPolygon');
     this.deletePolygon([latlngs]);
 
     // A valid polygon needs at least 4 points (3 unique vertices + closing point)
@@ -2371,6 +2447,7 @@ class Polydraw extends L.Control {
   }
 
   private convertToBoundsPolygon(latlngs: L.LatLngLiteral[]) {
+    console.log('convertToBoundsPolygon');
     this.deletePolygon([latlngs]);
     const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
     const polygon = this.turfHelper.getMultiPolygon(coords);
@@ -2379,6 +2456,7 @@ class Polydraw extends L.Control {
   }
 
   private doubleElbows(latlngs: L.LatLngLiteral[]) {
+    console.log('doubleElbows');
     this.deletePolygon([latlngs]);
     const doubleLatLngs: L.LatLngLiteral[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
     const coords = [[doubleLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
@@ -2387,6 +2465,7 @@ class Polydraw extends L.Control {
   }
 
   private bezierify(latlngs: L.LatLngLiteral[]) {
+    console.log('bezierify');
     this.deletePolygon([latlngs]);
     const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
     const newPolygon = this.turfHelper.getBezierMultiPolygon(coords);
@@ -2395,6 +2474,7 @@ class Polydraw extends L.Control {
 
   // SIMPLE POLYGON DRAGGING - NO MANAGERS!
   private enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>) {
+    console.log('enablePolygonDragging');
     if (!this.config.modes.dragPolygons) return;
 
     // Store original data for dragging
@@ -2477,6 +2557,7 @@ class Polydraw extends L.Control {
   private currentModifierDragMode: boolean = false;
 
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
+    console.log('onPolygonMouseMove');
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
 
     const polygon = this.currentDragPolygon;
@@ -2504,6 +2585,7 @@ class Polydraw extends L.Control {
   };
 
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
+    console.log('onPolygonMouseUp');
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
 
     const polygon = this.currentDragPolygon;
@@ -2550,6 +2632,7 @@ class Polydraw extends L.Control {
   };
 
   private offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
+    console.log('offsetPolygonCoordinates');
     if (!latLngs) return latLngs;
 
     if (Array.isArray(latLngs[0])) {
@@ -2570,6 +2653,7 @@ class Polydraw extends L.Control {
   }
 
   private updateMarkersAndHoleLinesDuringDrag(polygon: any, offsetLat: number, offsetLng: number) {
+    console.log('updateMarkersAndHoleLinesDuringDrag');
     try {
       // Find the feature group containing this polygon
       let featureGroup: L.FeatureGroup | null = null;
@@ -2632,6 +2716,7 @@ class Polydraw extends L.Control {
   }
 
   private updatePolygonAfterDrag(polygon: any) {
+    console.log('updatePolygonAfterDrag');
     try {
       // Get the feature group that contains this polygon
       let featureGroup: L.FeatureGroup | null = null;
@@ -2688,6 +2773,7 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed during drag operation
    */
   private detectModifierKey(event: MouseEvent): boolean {
+    console.log('detectModifierKey');
     if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
       return false;
     }
@@ -2709,6 +2795,7 @@ class Polydraw extends L.Control {
    * Handle modifier key toggle during active drag operation
    */
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
+    console.log('handleModifierToggleDuringDrag');
     const isModifierPressed = this.detectModifierKey(event);
 
     // Update the modifier drag mode state
@@ -2725,6 +2812,7 @@ class Polydraw extends L.Control {
    * Set visual feedback for subtract mode during drag
    */
   private setSubtractVisualMode(polygon: any, enabled: boolean): void {
+    console.log('setSubtractVisualMode');
     if (!polygon || !polygon.setStyle) {
       return;
     }
@@ -2754,6 +2842,7 @@ class Polydraw extends L.Control {
    * Update marker colors when entering/exiting subtract mode
    */
   private updateMarkerColorsForSubtractMode(polygon: any, subtractMode: boolean): void {
+    console.log('updateMarkerColorsForSubtractMode');
     try {
       // Find the feature group containing this polygon
       let featureGroup: L.FeatureGroup | null = null;
@@ -2818,6 +2907,7 @@ class Polydraw extends L.Control {
    * Check if modifier drag mode is currently active
    */
   private isModifierDragActive(): boolean {
+    console.log('isModifierDragActive');
     return this.currentModifierDragMode;
   }
 
@@ -2825,6 +2915,7 @@ class Polydraw extends L.Control {
    * Perform subtract operation when modifier key is held during drag
    */
   private performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
+    console.log('performModifierSubtract');
     try {
       const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
 
@@ -2905,6 +2996,7 @@ class Polydraw extends L.Control {
    * Integrated from PolygonEdgeManager
    */
   private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
+    console.log('addEdgeClickListeners');
     const rawLatLngs = polygon.getLatLngs();
 
     // Handle different polygon structures - Leaflet can return different nesting levels
@@ -3002,6 +3094,7 @@ class Polydraw extends L.Control {
    * Integrated from PolygonEdgeManager
    */
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    console.log('onEdgeClick');
     // Disable edge clicking when in any drawing mode to prevent conflicts
     if (!this.interactionStateManager.isInOffMode()) {
       return;
@@ -3046,6 +3139,7 @@ class Polydraw extends L.Control {
    * Integrated from PolygonEdgeManager
    */
   private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
+    console.log('highlightEdgeOnHover');
     if (isHovering) {
       edgePolyline.setStyle({
         color: '#7a9441',
@@ -3072,6 +3166,7 @@ class Polydraw extends L.Control {
   private getPolygonGeoJSONFromFeatureGroup(
     featureGroup: L.FeatureGroup,
   ): Feature<Polygon | MultiPolygon> {
+    console.log('getPolygonGeoJSONFromFeatureGroup');
     try {
       // Find the polygon layer in the feature group
       let polygon: L.Polygon | null = null;
@@ -3115,6 +3210,7 @@ class Polydraw extends L.Control {
    * Total perimeter = outer ring perimeter + all hole perimeters
    */
   private getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
+    console.log('getTotalPolygonPerimeter');
     try {
       if (!polygonGeoJSON || !polygonGeoJSON.geometry) {
         return 0;
