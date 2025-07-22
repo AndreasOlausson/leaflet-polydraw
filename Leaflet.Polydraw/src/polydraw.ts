@@ -480,7 +480,7 @@ class Polydraw extends L.Control {
     }
   }
 
-  private mouseUpLeave(event: any) {
+  private async mouseUpLeave(event: any) {
     console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
 
@@ -521,16 +521,32 @@ class Polydraw extends L.Control {
 
     this.stopDraw();
 
-    switch (this.interactionStateManager.getCurrentMode()) {
-      case DrawMode.Add:
-        this.addPolygon(geoPos, true);
-        break;
-      case DrawMode.Subtract:
-        this.subtractPolygon(geoPos);
-        break;
-      default:
-        break;
+    try {
+      switch (this.interactionStateManager.getCurrentMode()) {
+        case DrawMode.Add:
+          // Use the PolygonMutationManager instead of direct addPolygon
+          const result = await this.polygonMutationManager.addPolygon(geoPos, {
+            simplify: true,
+            noMerge: false,
+          });
+          if (!result.success) {
+            console.error('Error adding polygon via manager:', result.error);
+          }
+          break;
+        case DrawMode.Subtract:
+          // Use the PolygonMutationManager for subtraction
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          if (!subtractResult.success) {
+            console.error('Error subtracting polygon via manager:', subtractResult.error);
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in mouseUpLeave polygon operation:', error);
     }
+
     this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 

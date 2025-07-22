@@ -1,167 +1,845 @@
-This is what happens when I start a new session and execute addPredefinedPolygon
-
-constructor
-polydraw.ts:197 addTo
-polydraw.ts:60 onAdd
-polydraw.ts:1255 setupKeyboardHandlers
-polydraw.ts:211 addPredefinedPolygon
-polydraw.ts:517 addPolygon
-polydraw.ts:531 addPolygonLayer
-polydraw.ts:854 getPolygon
-polydraw.ts:2477 enablePolygonDragging
-polydraw.ts:2185 addMarker
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2088 ensureMarkerSeparation
-polydraw.ts:2152 findAlternativeMarkerPosition
-2polydraw.ts:2302 getLatLngInfoString
-polydraw.ts:3169 getPolygonGeoJSONFromFeatureGroup
-polydraw.ts:3213 getTotalPolygonPerimeter
-polydraw.ts:2367 generateInfoMarkerPopup
-2polydraw.ts:2302 getLatLngInfoString
-polydraw.ts:2307 generateMenuMarkerPopup
-polydraw.ts:2999 addEdgeClickListeners
-polydraw.ts:249 setDrawMode
-polydraw.ts:344 emitDrawModeChanged
-polydraw.ts:354 updateMarkerDraggableState
-polydraw.ts:396 stopDraw
-polydraw.ts:413 resetTracker
-polydraw.ts:418 drawStartedEvents
-polydraw.ts:1195 events
-polydraw.ts:406 setLeafletMapEvents
-polydraw.ts:517 addPolygon
-polydraw.ts:867 merge
-polydraw.ts:926 checkPolygonIntersection
-polydraw.ts:1776 unionPolygons
-polydraw.ts:1758 getLatLngsFromJson
-polydraw.ts:1820 shouldCreateDonutPolygon
-polydraw.ts:1977 deletePolygonOnMerge
-polydraw.ts:1999 polygonArrayEqualsMerge
-polydraw.ts:1948 removeFeatureGroupOnMerge
-polydraw.ts:2004 deletePolygon
-polydraw.ts:1939 removeFeatureGroup
-polydraw.ts:531 addPolygonLayer
-polydraw.ts:854 getPolygon
-polydraw.ts:2477 enablePolygonDragging
-polydraw.ts:2185 addMarker
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2057 getMarkerIndex
-polydraw.ts:2088 ensureMarkerSeparation
-polydraw.ts:2302 getLatLngInfoString
-polydraw.ts:2307 generateMenuMarkerPopup
-4polydraw.ts:2302 getLatLngInfoString
-polydraw.ts:3169 getPolygonGeoJSONFromFeatureGroup
-polydraw.ts:3213 getTotalPolygonPerimeter
-polydraw.ts:2367 generateInfoMarkerPopup
-3polydraw.ts:2302 getLatLngInfoString
-polydraw.ts:2999 addEdgeClickListeners
-polydraw.ts:249 setDrawMode
-polydraw.ts:344 emitDrawModeChanged
-polydraw.ts:354 updateMarkerDraggableState
-polydraw.ts:396 stopDraw
-polydraw.ts:413 resetTracker
-polydraw.ts:418 drawStartedEvents
-polydraw.ts:1195 events
-polydraw.ts:406 setLeafletMapEvents
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+client:789 [vite] connecting...
+client:912 [vite] connected.
 polydraw.ts:46 constructor
 polydraw.ts:213 addTo
 polydraw.ts:65 onAdd
 polydraw.ts:1285 setupKeyboardHandlers
 polygon-mutation-manager.ts:53 PolygonMutationManager constructor
 polygon-mutation-manager.ts:64 PolygonMutationManager setFeatureGroups
-polydraw.ts:227 addPredefinedPolygon
-polygon-mutation-manager.ts:97 PolygonMutationManager addPolygon
-polygon-mutation-manager.ts:134 PolygonMutationManager addPolygonLayer
-polygon-mutation-manager.ts:707 PolygonMutationManager getPolygon
-polygon-mutation-manager.ts:733 PolygonMutationManager addMarker
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:893 PolygonMutationManager ensureMarkerSeparation
-polygon-mutation-manager.ts:954 PolygonMutationManager findAlternativeMarkerPosition
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:1070 PolygonMutationManager getPolygonGeoJSONFromFeatureGroup
-polygon-mutation-manager.ts:1110 PolygonMutationManager getTotalPolygonPerimeter
-polygon-mutation-manager.ts:1167 PolygonMutationManager generateInfoMarkerPopup
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:1008 PolygonMutationManager generateMenuMarkerPopup
-polygon-mutation-manager.ts:858 PolygonMutationManager addEdgeClickListeners
-polygon-mutation-manager.ts:83 PolygonMutationManager emit
-main.ts:141 Polydraw: wh {options: {…}, _initHooksCalled: true, map: NewClass, tracer: NewClass, kinks: false, …}
-polygon-mutation-manager.ts:97 PolygonMutationManager addPolygon
-polygon-mutation-manager.ts:238 PolygonMutationManager mergePolygon
-polygon-mutation-manager.ts:363 PolygonMutationManager checkPolygonIntersection
-polygon-mutation-manager.ts:307 PolygonMutationManager unionPolygons
-polygon-mutation-manager.ts:585 PolygonMutationManager shouldCreateDonutPolygon
-polygon-mutation-manager.ts:723 PolygonMutationManager removeFeatureGroup
-polygon-mutation-manager.ts:134 PolygonMutationManager addPolygonLayer
-polygon-mutation-manager.ts:707 PolygonMutationManager getPolygon
-polygon-mutation-manager.ts:733 PolygonMutationManager addMarker
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
-polygon-mutation-manager.ts:893 PolygonMutationManager ensureMarkerSeparation
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:1008 PolygonMutationManager generateMenuMarkerPopup
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:1070 PolygonMutationManager getPolygonGeoJSONFromFeatureGroup
-polygon-mutation-manager.ts:1110 PolygonMutationManager getTotalPolygonPerimeter
-polygon-mutation-manager.ts:1167 PolygonMutationManager generateInfoMarkerPopup
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
-polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
-polygon-mutation-manager.ts:858 PolygonMutationManager addEdgeClickListeners
-polygon-mutation-manager.ts:83 PolygonMutationManager emit
+polydraw.ts:279 setDrawMode
+polydraw.ts:374 emitDrawModeChanged
+polydraw.ts:384 updateMarkerDraggableState
+polydraw.ts:426 stopDraw
+polydraw.ts:443 resetTracker
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:1225 events
+polydraw.ts:436 setLeafletMapEvents
+polydraw.ts:1248 mouseDown
+polydraw.ts:1280 startDraw
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:484 mouseUpLeave
+polydraw.ts:426 stopDraw
+polydraw.ts:443 resetTracker
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:547 addPolygon
+polydraw.ts:561 addPolygonLayer
+polydraw.ts:884 getPolygon
+polydraw.ts:2507 enablePolygonDragging
+polydraw.ts:2215 addMarker
+polydraw.ts:2087 getMarkerIndex
+polydraw.ts:2087 getMarkerIndex
+polydraw.ts:2087 getMarkerIndex
+polydraw.ts:2118 ensureMarkerSeparation
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2337 generateMenuMarkerPopup
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:3199 getPolygonGeoJSONFromFeatureGroup
+polydraw.ts:3243 getTotalPolygonPerimeter
+polydraw.ts:2397 generateInfoMarkerPopup
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:2332 getLatLngInfoString
+polydraw.ts:3029 addEdgeClickListeners
+polydraw.ts:279 setDrawMode
+polydraw.ts:374 emitDrawModeChanged
+polydraw.ts:384 updateMarkerDraggableState
+polydraw.ts:426 stopDraw
+polydraw.ts:443 resetTracker
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:1225 events
+polydraw.ts:436 setLeafletMapEvents
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+client:789 [vite] connecting...
+client:912 [vite] connected.
+polydraw.ts:46 constructor
+polydraw.ts:213 addTo
+polydraw.ts:65 onAdd
+polydraw.ts:1301 setupKeyboardHandlers
+polygon-mutation-manager.ts:53 PolygonMutationManager constructor
+polygon-mutation-manager.ts:64 PolygonMutationManager setFeatureGroups
+polydraw.ts:279 setDrawMode
+polydraw.ts:374 emitDrawModeChanged
+polydraw.ts:384 updateMarkerDraggableState
+polydraw.ts:426 stopDraw
+polydraw.ts:443 resetTracker
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:1241 events
+polydraw.ts:436 setLeafletMapEvents
+polydraw.ts:1264 mouseDown
+polydraw.ts:1296 startDraw
+polydraw.ts:448 drawStartedEvents
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:471 mouseMove
+polydraw.ts:484 mouseUpLeave
+ stopDraw
+ resetTracker
+ drawStartedEvents
+ PolygonMutationManager addPolygon
+ PolygonMutationManager addPolygonLayer
+ PolygonMutationManager getPolygon
+ PolygonMutationManager addMarker
+ PolygonMutationManager getMarkerIndex
+ PolygonMutationManager getMarkerIndex
+ PolygonMutationManager getMarkerIndex
+ PolygonMutationManager ensureMarkerSeparation
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager generateMenuMarkerPopup
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager createDivIcon
+ PolygonMutationManager getLatLngInfoString
+ PolygonMutationManager getPolygonGeoJSONFromFeatureGroup
+ PolygonMutationManager getTotalPolygonPerimeter
+ PolygonMutationManager generateInfoMarkerPopup
+ PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1062 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:1067 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:933 PolygonMutationManager addEdgeClickListeners
 polygon-mutation-manager.ts:83 PolygonMutationManager emit

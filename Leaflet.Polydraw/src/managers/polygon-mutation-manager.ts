@@ -120,8 +120,83 @@ export class PolygonMutationManager {
    * Subtract a polygon from existing polygons
    */
   async subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>): Promise<MutationResult> {
-    // TODO: Implement method
-    return { success: false, error: 'Not implemented' };
+    console.log('PolygonMutationManager subtractPolygon');
+    try {
+      // Find only the polygons that actually intersect with the subtract area
+      const intersectingFeatureGroups: L.FeatureGroup[] = [];
+
+      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as any;
+          if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+            return;
+          }
+
+          const firstFeature = featureCollection.features[0];
+          if (!firstFeature.geometry || !firstFeature.geometry.coordinates) {
+            return;
+          }
+
+          const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+
+          // Check if the subtract area intersects with this polygon
+          const hasIntersection = this.checkPolygonIntersection(existingPolygon, latlngs);
+
+          if (hasIntersection) {
+            intersectingFeatureGroups.push(featureGroup);
+          }
+        } catch (error) {
+          // Continue with other feature groups
+        }
+      });
+
+      // Only apply subtract to intersecting polygons
+      const resultFeatureGroups: L.FeatureGroup[] = [];
+
+      for (const featureGroup of intersectingFeatureGroups) {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as any;
+          const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+
+          // Perform the difference operation (subtract)
+          const newPolygon = this.turfHelper.polygonDifference(feature, latlngs);
+
+          // Remove the original polygon
+          this.removeFeatureGroup(featureGroup);
+
+          // Add the result (polygon with hole or remaining parts)
+          if (newPolygon) {
+            const coords = this.turfHelper.getCoords(newPolygon);
+            for (const value of coords) {
+              const result = await this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), {
+                simplify: true,
+              });
+              if (result.success && result.featureGroups) {
+                resultFeatureGroups.push(...result.featureGroups);
+              }
+            }
+          }
+        } catch (error) {
+          // Continue with other feature groups
+        }
+      }
+
+      this.emit('polygonSubtracted', {
+        subtractedPolygon: latlngs,
+        affectedFeatureGroups: intersectingFeatureGroups,
+        resultFeatureGroups,
+      });
+
+      return {
+        success: true,
+        featureGroups: resultFeatureGroups,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error in subtractPolygon',
+      };
+    }
   }
 
   /**
@@ -994,11 +1069,125 @@ export class PolygonMutationManager {
   }
 
   private markerDrag(featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+    console.log('PolygonMutationManager markerDrag');
+    const newPos = [];
+    let testarray = [];
+    let hole = [];
+    const layerLength = featureGroup.getLayers() as any;
+    const posarrays = layerLength[0].getLatLngs();
+    let length = 0;
+
+    // Filter out only markers from the layers (exclude polylines for holes)
+    const markers = layerLength.filter((layer: any) => layer instanceof L.Marker);
+
+    if (posarrays.length > 1) {
+      for (let index = 0; index < posarrays.length; index++) {
+        testarray = [];
+        hole = [];
+        if (index === 0) {
+          if (posarrays[0].length > 1) {
+            for (let i = 0; i < posarrays[0].length; i++) {
+              for (let j = 0; j < posarrays[0][i].length; j++) {
+                if (markers[j]) {
+                  testarray.push(markers[j].getLatLng());
+                }
+              }
+              hole.push(testarray);
+            }
+          } else {
+            for (let j = 0; j < posarrays[0][0].length; j++) {
+              if (markers[j]) {
+                testarray.push(markers[j].getLatLng());
+              }
+            }
+            hole.push(testarray);
+          }
+          newPos.push(hole);
+        } else {
+          length += posarrays[index - 1][0].length;
+          for (let j = length; j < posarrays[index][0].length + length; j++) {
+            if (markers[j]) {
+              testarray.push(markers[j].getLatLng());
+            }
+          }
+          hole.push(testarray);
+          newPos.push(hole);
+        }
+      }
+    } else {
+      hole = [];
+      let length2 = 0;
+      for (let index = 0; index < posarrays[0].length; index++) {
+        testarray = [];
+        if (index === 0) {
+          if (posarrays[0][index].length > 1) {
+            for (let j = 0; j < posarrays[0][index].length; j++) {
+              if (markers[j]) {
+                testarray.push(markers[j].getLatLng());
+              }
+            }
+          } else {
+            for (let j = 0; j < posarrays[0][0].length; j++) {
+              if (markers[j]) {
+                testarray.push(markers[j].getLatLng());
+              }
+            }
+          }
+        } else {
+          length2 += posarrays[0][index - 1].length;
+          for (let j = length2; j < posarrays[0][index].length + length2; j++) {
+            if (markers[j]) {
+              testarray.push(markers[j].getLatLng());
+            }
+          }
+        }
+        hole.push(testarray);
+      }
+      newPos.push(hole);
+    }
+    layerLength[0].setLatLngs(newPos);
   }
 
-  private markerDragEnd(featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+  private async markerDragEnd(featureGroup: L.FeatureGroup) {
+    console.log('PolygonMutationManager markerDragEnd');
+    this.polygonInformation.deletePolygonInformationStorage();
+    const featureCollection = featureGroup.toGeoJSON() as any;
+
+    // Remove the current feature group first to avoid duplication
+    this.removeFeatureGroup(featureGroup);
+
+    if (featureCollection.features[0].geometry.coordinates.length > 1) {
+      for (const element of featureCollection.features[0].geometry.coordinates) {
+        const feature = this.turfHelper.getMultiPolygon([element]);
+
+        if (this.turfHelper.hasKinks(feature)) {
+          const unkink = this.turfHelper.getKinks(feature);
+          for (const polygon of unkink) {
+            // Allow merging after marker drag - this enables polygon merging when dragged into each other
+            await this.addPolygon(this.turfHelper.getTurfPolygon(polygon), { noMerge: false });
+          }
+        } else {
+          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          await this.addPolygon(feature, { noMerge: false });
+        }
+      }
+    } else {
+      const feature = this.turfHelper.getMultiPolygon(
+        featureCollection.features[0].geometry.coordinates,
+      );
+
+      if (this.turfHelper.hasKinks(feature)) {
+        const unkink = this.turfHelper.getKinks(feature);
+        for (const polygon of unkink) {
+          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          await this.addPolygon(this.turfHelper.getTurfPolygon(polygon), { noMerge: false });
+        }
+      } else {
+        // Allow merging after marker drag - this enables polygon merging when dragged into each other
+        await this.addPolygon(feature, { noMerge: false });
+      }
+    }
+    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
   }
 
   private generateMenuMarkerPopup(
@@ -1208,20 +1397,106 @@ export class PolygonMutationManager {
   }
 
   // Menu marker popup button methods
-  private convertToSimplifiedPolygon(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+  private async convertToSimplifiedPolygon(
+    latlngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ) {
+    console.log('PolygonMutationManager convertToSimplifiedPolygon');
+    try {
+      // Remove the original polygon
+      this.removeFeatureGroup(featureGroup);
+
+      // A valid polygon needs at least 4 points (3 unique vertices + closing point)
+      if (latlngs.length <= 4) {
+        // Cannot simplify, so just add the original polygon back
+        const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+        const newPolygon = this.turfHelper.getMultiPolygon(coords);
+        await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), { simplify: false });
+        return;
+      }
+
+      // Remove every other point to simplify
+      const simplifiedLatLngs: L.LatLngLiteral[] = [];
+      for (let i = 0; i < latlngs.length; i += 2) {
+        simplifiedLatLngs.push(latlngs[i]);
+      }
+
+      // Ensure the simplified polygon is closed
+      const firstPoint = simplifiedLatLngs[0];
+      const lastPoint = simplifiedLatLngs[simplifiedLatLngs.length - 1];
+      if (firstPoint.lat !== lastPoint.lat || firstPoint.lng !== lastPoint.lng) {
+        simplifiedLatLngs.push(firstPoint);
+      }
+
+      // Check if the simplified polygon is still valid
+      if (simplifiedLatLngs.length < 4) {
+        // Simplification resulted in an invalid polygon, add the original back
+        const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+        const newPolygon = this.turfHelper.getMultiPolygon(coords);
+        await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), { simplify: false });
+        return;
+      }
+
+      const coords = [
+        [simplifiedLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])],
+      ];
+      const newPolygon = this.turfHelper.getMultiPolygon(coords);
+      await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), { simplify: false });
+    } catch (error) {
+      console.warn('Error in convertToSimplifiedPolygon:', error.message);
+    }
   }
 
-  private convertToBoundsPolygon(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+  private async convertToBoundsPolygon(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
+    console.log('PolygonMutationManager convertToBoundsPolygon');
+    try {
+      // Remove the original polygon
+      this.removeFeatureGroup(featureGroup);
+
+      const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+      const polygon = this.turfHelper.getMultiPolygon(coords);
+      const newPolygon = this.turfHelper.convertToBoundingBoxPolygon(polygon);
+      await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), { simplify: false });
+    } catch (error) {
+      console.warn('Error in convertToBoundsPolygon:', error.message);
+    }
   }
 
-  private doubleElbows(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+  private async doubleElbows(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
+    console.log('PolygonMutationManager doubleElbows');
+    try {
+      // Remove the original polygon
+      this.removeFeatureGroup(featureGroup);
+
+      const doubleLatLngs: L.LatLngLiteral[] = this.turfHelper.getDoubleElbowLatLngs(latlngs);
+      const coords = [
+        [doubleLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])],
+      ];
+      const newPolygon = this.turfHelper.getMultiPolygon(coords);
+      await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), {
+        simplify: false,
+        dynamicTolerance: false,
+      });
+    } catch (error) {
+      console.warn('Error in doubleElbows:', error.message);
+    }
   }
 
-  private bezierify(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
-    // TODO: Implement method
+  private async bezierify(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup) {
+    console.log('PolygonMutationManager bezierify');
+    try {
+      // Remove the original polygon
+      this.removeFeatureGroup(featureGroup);
+
+      const coords = [[latlngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])]];
+      const newPolygon = this.turfHelper.getBezierMultiPolygon(coords);
+      await this.addPolygonLayer(this.turfHelper.getTurfPolygon(newPolygon), {
+        simplify: false,
+        dynamicTolerance: false,
+      });
+    } catch (error) {
+      console.warn('Error in bezierify:', error.message);
+    }
   }
 
   // Polygon dragging methods
