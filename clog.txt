@@ -1,218 +1,167 @@
-client:789 [vite] connecting...
-client:912 [vite] connected.
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401053947622394, lng: 15.60637414455414, precision: {…}}
-polydraw.ts:1269 Current points count: 0
-polydraw.ts:1270 Current points: []
-polydraw.ts:1283 P2P markers count: 0
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40101740726332, lng: 15.606191754341127, precision: {…}}
-polydraw.ts:1269 Current points count: 1
-polydraw.ts:1270 Current points: [{…}]
-polydraw.ts:1283 P2P markers count: 1
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40127318898131, lng: 15.605993270874025, precision: {…}}
-polydraw.ts:1269 Current points count: 2
-polydraw.ts:1270 Current points: (2) [{…}, {…}]
-polydraw.ts:1283 P2P markers count: 2
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401481185932994, lng: 15.60613811016083, precision: {…}}
-polydraw.ts:1269 Current points count: 3
-polydraw.ts:1270 Current points: (3) [{…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 3
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0004272383105998756, lngDiff: 0.00023603439331054688, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40155988716221, lng: 15.606540441513063, precision: {…}}
-polydraw.ts:1269 Current points count: 4
-polydraw.ts:1270 Current points: (4) [{…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 4
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0005059395398134825, lngDiff: 0.00016629695892333984, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401478375171564, lng: 15.606926679611208, precision: {…}}
-polydraw.ts:1269 Current points count: 5
-polydraw.ts:1270 Current points: (5) [{…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 5
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00042442754917004777, lngDiff: 0.0005525350570678711, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40120573024689, lng: 15.60712516307831, precision: {…}}
-polydraw.ts:1269 Current points count: 6
-polydraw.ts:1270 Current points: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 6
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0001517826244992193, lngDiff: 0.0007510185241699219, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.4011804331882, lng: 15.606953501701357, precision: {…}}
-polydraw.ts:1269 Current points count: 7
-polydraw.ts:1270 Current points: (7) [{…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 7
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00012648556580785453, lngDiff: 0.0005793571472167969, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40114389296024, lng: 15.606980323791506, precision: {…}}
-polydraw.ts:1269 Current points count: 8
-polydraw.ts:1270 Current points: (8) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 8
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00008994533784800751, lngDiff: 0.0006061792373657227, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40111297427624, lng: 15.60687303543091, precision: {…}}
-polydraw.ts:1269 Current points count: 9
-polydraw.ts:1270 Current points: (9) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 9
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00005902665384382999, lngDiff: 0.0004988908767700195, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401216973378254, lng: 15.606797933578493, precision: {…}}
-polydraw.ts:1269 Current points count: 10
-polydraw.ts:1270 Current points: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 10
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0001630257558602466, lngDiff: 0.00042378902435302734, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40123383806857, lng: 15.60689449310303, precision: {…}}
-polydraw.ts:1269 Current points count: 11
-polydraw.ts:1270 Current points: (11) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 11
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00017989044617650052, lngDiff: 0.0005203485488891602, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40140248452804, lng: 15.606792569160463, precision: {…}}
-polydraw.ts:1269 Current points count: 12
-polydraw.ts:1270 Current points: (12) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 12
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0003485369056477339, lngDiff: 0.0004184246063232422, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40145588907201, lng: 15.606540441513063, precision: {…}}
-polydraw.ts:1269 Current points count: 13
-polydraw.ts:1270 Current points: (13) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 13
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00040194144961702705, lngDiff: 0.00016629695892333984, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40141372759666, lng: 15.606282949447634, precision: {…}}
-polydraw.ts:1269 Current points count: 14
-polydraw.ts:1270 Current points: (14) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 14
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.0003597799742678376, lngDiff: 0.00009119510650634766, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401284432091146, lng: 15.606175661087038, precision: {…}}
-polydraw.ts:1269 Current points count: 15
-polydraw.ts:1270 Current points: (15) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 15
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00023048446875151285, lngDiff: 0.00019848346710205078, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.401115785066835, lng: 15.606309771537783, precision: {…}}
-polydraw.ts:1269 Current points count: 16
-polydraw.ts:1270 Current points: (16) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 16
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00006183744444143713, lngDiff: 0.00006437301635742188, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40113827138335, lng: 15.606438517570497, precision: {…}}
-polydraw.ts:1269 Current points count: 17
-polydraw.ts:1270 Current points: (17) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 17
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00008432376095868221, lngDiff: 0.00006437301635742188, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40104832603116, lng: 15.606513619422914, precision: {…}}
-polydraw.ts:1269 Current points count: 18
-polydraw.ts:1270 Current points: (18) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 18
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.000005621591235183132, lngDiff: 0.00013947486877441406, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1253 === P2P CLICK DEBUG ===
-polydraw.ts:1254 Click coordinates: {lat: 58.40102302885947, lng: 15.606406331062319, precision: {…}}
-polydraw.ts:1269 Current points count: 19
-polydraw.ts:1270 Current points: (19) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1283 P2P markers count: 19
-polydraw.ts:1284 Map zoom level: 18
-polydraw.ts:1285 Map center: LatLng {lat: 58.40128162131401, lng: 15.606864988803865}
-polydraw.ts:1397 First point click tolerance check: {zoom: 18, baseTolerance: 0.0005, calculatedTolerance: 0.000001953125, clickLatLng: {…}, firstPoint: {…}, …}
-polydraw.ts:1419 First point click result: {tolerance: 0.000001953125, latDiff: 0.00003091876292415918, lngDiff: 0.00003218650817871094, isClicking: false}
-polydraw.ts:1291 Checking first point click: {firstPoint: {…}, distance: {…}, isClickingFirst: false}
-polydraw.ts:1315 Adding new point to tracer
-polydraw.ts:1449 === P2P COMPLETION DEBUG ===
-polydraw.ts:1450 Original points from tracer: (20) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1468 Closed points: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1483 Tracer GeoJSON coordinates: (21) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
-polydraw.ts:1493 After createPolygonFromTrace: [{…}]
+This is what happens when I start a new session and execute addPredefinedPolygon
+
+constructor
+polydraw.ts:197 addTo
+polydraw.ts:60 onAdd
+polydraw.ts:1255 setupKeyboardHandlers
+polydraw.ts:211 addPredefinedPolygon
+polydraw.ts:517 addPolygon
+polydraw.ts:531 addPolygonLayer
+polydraw.ts:854 getPolygon
+polydraw.ts:2477 enablePolygonDragging
+polydraw.ts:2185 addMarker
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2088 ensureMarkerSeparation
+polydraw.ts:2152 findAlternativeMarkerPosition
+2polydraw.ts:2302 getLatLngInfoString
+polydraw.ts:3169 getPolygonGeoJSONFromFeatureGroup
+polydraw.ts:3213 getTotalPolygonPerimeter
+polydraw.ts:2367 generateInfoMarkerPopup
+2polydraw.ts:2302 getLatLngInfoString
+polydraw.ts:2307 generateMenuMarkerPopup
+polydraw.ts:2999 addEdgeClickListeners
+polydraw.ts:249 setDrawMode
+polydraw.ts:344 emitDrawModeChanged
+polydraw.ts:354 updateMarkerDraggableState
+polydraw.ts:396 stopDraw
+polydraw.ts:413 resetTracker
+polydraw.ts:418 drawStartedEvents
+polydraw.ts:1195 events
+polydraw.ts:406 setLeafletMapEvents
+polydraw.ts:517 addPolygon
+polydraw.ts:867 merge
+polydraw.ts:926 checkPolygonIntersection
+polydraw.ts:1776 unionPolygons
+polydraw.ts:1758 getLatLngsFromJson
+polydraw.ts:1820 shouldCreateDonutPolygon
+polydraw.ts:1977 deletePolygonOnMerge
+polydraw.ts:1999 polygonArrayEqualsMerge
+polydraw.ts:1948 removeFeatureGroupOnMerge
+polydraw.ts:2004 deletePolygon
+polydraw.ts:1939 removeFeatureGroup
+polydraw.ts:531 addPolygonLayer
+polydraw.ts:854 getPolygon
+polydraw.ts:2477 enablePolygonDragging
+polydraw.ts:2185 addMarker
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2057 getMarkerIndex
+polydraw.ts:2088 ensureMarkerSeparation
+polydraw.ts:2302 getLatLngInfoString
+polydraw.ts:2307 generateMenuMarkerPopup
+4polydraw.ts:2302 getLatLngInfoString
+polydraw.ts:3169 getPolygonGeoJSONFromFeatureGroup
+polydraw.ts:3213 getTotalPolygonPerimeter
+polydraw.ts:2367 generateInfoMarkerPopup
+3polydraw.ts:2302 getLatLngInfoString
+polydraw.ts:2999 addEdgeClickListeners
+polydraw.ts:249 setDrawMode
+polydraw.ts:344 emitDrawModeChanged
+polydraw.ts:354 updateMarkerDraggableState
+polydraw.ts:396 stopDraw
+polydraw.ts:413 resetTracker
+polydraw.ts:418 drawStartedEvents
+polydraw.ts:1195 events
+polydraw.ts:406 setLeafletMapEvents
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+polydraw.ts:46 constructor
+polydraw.ts:213 addTo
+polydraw.ts:65 onAdd
+polydraw.ts:1285 setupKeyboardHandlers
+polygon-mutation-manager.ts:53 PolygonMutationManager constructor
+polygon-mutation-manager.ts:64 PolygonMutationManager setFeatureGroups
+polydraw.ts:227 addPredefinedPolygon
+polygon-mutation-manager.ts:97 PolygonMutationManager addPolygon
+polygon-mutation-manager.ts:134 PolygonMutationManager addPolygonLayer
+polygon-mutation-manager.ts:707 PolygonMutationManager getPolygon
+polygon-mutation-manager.ts:733 PolygonMutationManager addMarker
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:893 PolygonMutationManager ensureMarkerSeparation
+polygon-mutation-manager.ts:954 PolygonMutationManager findAlternativeMarkerPosition
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1070 PolygonMutationManager getPolygonGeoJSONFromFeatureGroup
+polygon-mutation-manager.ts:1110 PolygonMutationManager getTotalPolygonPerimeter
+polygon-mutation-manager.ts:1167 PolygonMutationManager generateInfoMarkerPopup
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1008 PolygonMutationManager generateMenuMarkerPopup
+polygon-mutation-manager.ts:858 PolygonMutationManager addEdgeClickListeners
+polygon-mutation-manager.ts:83 PolygonMutationManager emit
+main.ts:141 Polydraw: wh {options: {…}, _initHooksCalled: true, map: NewClass, tracer: NewClass, kinks: false, …}
+polygon-mutation-manager.ts:97 PolygonMutationManager addPolygon
+polygon-mutation-manager.ts:238 PolygonMutationManager mergePolygon
+polygon-mutation-manager.ts:363 PolygonMutationManager checkPolygonIntersection
+polygon-mutation-manager.ts:307 PolygonMutationManager unionPolygons
+polygon-mutation-manager.ts:585 PolygonMutationManager shouldCreateDonutPolygon
+polygon-mutation-manager.ts:723 PolygonMutationManager removeFeatureGroup
+polygon-mutation-manager.ts:134 PolygonMutationManager addPolygonLayer
+polygon-mutation-manager.ts:707 PolygonMutationManager getPolygon
+polygon-mutation-manager.ts:733 PolygonMutationManager addMarker
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:866 PolygonMutationManager getMarkerIndex
+polygon-mutation-manager.ts:893 PolygonMutationManager ensureMarkerSeparation
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1008 PolygonMutationManager generateMenuMarkerPopup
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:1070 PolygonMutationManager getPolygonGeoJSONFromFeatureGroup
+polygon-mutation-manager.ts:1110 PolygonMutationManager getTotalPolygonPerimeter
+polygon-mutation-manager.ts:1167 PolygonMutationManager generateInfoMarkerPopup
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:987 PolygonMutationManager createDivIcon
+polygon-mutation-manager.ts:992 PolygonMutationManager getLatLngInfoString
+polygon-mutation-manager.ts:858 PolygonMutationManager addEdgeClickListeners
+polygon-mutation-manager.ts:83 PolygonMutationManager emit
+polygon-mutation-manager.ts:83 PolygonMutationManager emit

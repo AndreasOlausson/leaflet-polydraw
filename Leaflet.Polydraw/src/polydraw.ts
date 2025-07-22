@@ -9,6 +9,7 @@ import { Compass, PolyDrawUtil, Perimeter, Area } from './utils';
 import { IconFactory } from './icon-factory';
 import { PolygonUtil } from './polygon.util';
 import { InteractionStateManager } from './managers/interaction-state-manager';
+import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
 
@@ -31,6 +32,7 @@ class Polydraw extends L.Control {
   private mapStateService: MapStateService;
   private polygonInformation: PolygonInformationService;
   private interactionStateManager: InteractionStateManager;
+  private polygonMutationManager: PolygonMutationManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
   private p2pMarkers: L.Marker[] = [];
 
@@ -54,6 +56,9 @@ class Polydraw extends L.Control {
       // Handle polygon info update
     });
     this._boundKeyDownHandler = this.handleKeyDown.bind(this);
+
+    // Initialize PolygonMutationManager - will be properly set up in onAdd when map is available
+    this.polygonMutationManager = null as any;
   }
 
   onAdd(_map: L.Map): HTMLElement {
@@ -190,6 +195,17 @@ class Polydraw extends L.Control {
       // Silently handle tracer initialization in test environment
     }
 
+    // Initialize PolygonMutationManager now that map is available
+    this.polygonMutationManager = new PolygonMutationManager({
+      turfHelper: this.turfHelper,
+      polygonInformation: this.polygonInformation,
+      map: this.map,
+      config: this.config,
+    });
+
+    // Set the feature groups reference so the manager can work with the same array
+    this.polygonMutationManager.setFeatureGroups(this.arrayOfFeatureGroups);
+
     return container;
   }
 
@@ -204,10 +220,10 @@ class Polydraw extends L.Control {
     this.removeKeyboardHandlers();
   }
 
-  public addPredefinedPolygon(
+  public async addPredefinedPolygon(
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
-  ): void {
+  ): Promise<void> {
     console.log('addPredefinedPolygon');
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
@@ -219,10 +235,15 @@ class Polydraw extends L.Control {
       throw new Error('Map not initialized');
     }
 
+    // Ensure PolygonMutationManager is initialized
+    if (!this.polygonMutationManager) {
+      throw new Error('PolygonMutationManager not initialized');
+    }
+
     // Extract options with defaults
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
 
-    geographicBorders.forEach((group, groupIndex) => {
+    for (const [groupIndex, group] of geographicBorders.entries()) {
       if (!group || !group[0] || group[0].length < 4) {
         throw new Error(
           `Invalid polygon data at index ${groupIndex}: A polygon must have at least 3 unique vertices.`,
@@ -234,15 +255,24 @@ class Polydraw extends L.Control {
 
         const polygon2 = this.turfHelper.getMultiPolygon([coords]);
 
-        // Use the proper addPolygon method which includes merging logic
-        this.addPolygon(polygon2, false, false);
+        // Use the PolygonMutationManager instead of direct addPolygon
+        const result = await this.polygonMutationManager.addPolygon(polygon2, {
+          simplify: false,
+          noMerge: false,
+          visualOptimizationLevel: visualOptimizationLevel,
+        });
+
+        if (!result.success) {
+          console.error('Error adding polygon via manager:', result.error);
+          throw new Error(result.error || 'Failed to add polygon');
+        }
 
         this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
       } catch (error) {
         console.error('Error adding auto polygon:', error);
         throw error;
       }
-    });
+    }
   }
 
   setDrawMode(mode: DrawMode) {
