@@ -187,6 +187,13 @@ export class PolygonMutationManager {
         resultFeatureGroups,
       });
 
+      // Emit completion event to signal that polygon operation is complete
+      this.emit('polygonOperationComplete', {
+        operation: 'subtract',
+        polygon: latlngs,
+        resultFeatureGroups,
+      });
+
       return {
         success: true,
         featureGroups: resultFeatureGroups,
@@ -293,6 +300,9 @@ export class PolygonMutationManager {
       }
 
       this.emit('polygonAdded', { polygon: latLngs, featureGroup });
+
+      // Emit completion event to signal that polygon operation is complete
+      this.emit('polygonOperationComplete', { operation: 'add', polygon: latLngs, featureGroup });
 
       return {
         success: true,
@@ -1501,71 +1511,417 @@ export class PolygonMutationManager {
 
   // Polygon dragging methods
   private enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>) {
-    // TODO: Implement method
+    console.log('PolygonMutationManager enablePolygonDragging');
+    if (!this.config.modes.dragPolygons) return;
+
+    polygon._polydrawOriginalLatLngs = latlngs;
+    polygon._polydrawDragData = {
+      isDragging: false,
+      startPosition: null,
+      startLatLngs: null,
+    };
+
+    polygon.on('mousedown', (e: any) => {
+      L.DomEvent.stopPropagation(e);
+      L.DomEvent.preventDefault(e);
+
+      const isModifierPressed = this.detectModifierKey(e.originalEvent || e);
+      this.currentModifierDragMode = isModifierPressed;
+      this.isModifierKeyHeld = isModifierPressed;
+
+      polygon._polydrawDragData.isDragging = true;
+      polygon._polydrawDragData.startPosition = e.latlng;
+      polygon._polydrawDragData.startLatLngs = polygon.getLatLngs();
+
+      if (this.map.dragging) {
+        this.map.dragging.disable();
+      }
+
+      this.setSubtractVisualMode(polygon, isModifierPressed);
+
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+      } catch (error) {
+        // Handle DOM errors
+      }
+
+      this.map.on('mousemove', this.onPolygonMouseMove, this);
+      this.map.on('mouseup', this.onPolygonMouseUp, this);
+
+      this.currentDragPolygon = polygon;
+    });
+
+    polygon.on('mouseover', () => {
+      if (!polygon._polydrawDragData.isDragging) {
+        try {
+          const container = this.map.getContainer();
+          container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
+        } catch (error) {
+          // Handle DOM errors
+        }
+      }
+    });
+
+    polygon.on('mouseout', () => {
+      if (!polygon._polydrawDragData.isDragging) {
+        try {
+          const container = this.map.getContainer();
+          container.style.cursor = '';
+        } catch (error) {
+          // Handle DOM errors
+        }
+      }
+    });
   }
 
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
-    // TODO: Implement method
+    console.log('PolygonMutationManager onPolygonMouseMove');
+    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+
+    const polygon = this.currentDragPolygon;
+    const dragData = polygon._polydrawDragData;
+
+    const eventToCheck = e.originalEvent && 'metaKey' in e.originalEvent ? e.originalEvent : e;
+    const currentModifierState = this.detectModifierKey(eventToCheck as MouseEvent);
+    if (currentModifierState !== this.currentModifierDragMode) {
+      this.handleModifierToggleDuringDrag(eventToCheck as MouseEvent);
+    }
+
+    const startPos = dragData.startPosition;
+    const currentPos = e.latlng;
+    const offsetLat = currentPos.lat - startPos.lat;
+    const offsetLng = currentPos.lng - startPos.lng;
+
+    const newLatLngs = this.offsetPolygonCoordinates(dragData.startLatLngs, offsetLat, offsetLng);
+    polygon.setLatLngs(newLatLngs);
+
+    this.updateMarkersAndHoleLinesDuringDrag(polygon, offsetLat, offsetLng);
   };
 
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
-    // TODO: Implement method
+    console.log('PolygonMutationManager onPolygonMouseUp');
+    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+
+    const polygon = this.currentDragPolygon;
+    const dragData = polygon._polydrawDragData;
+
+    dragData.isDragging = false;
+
+    this.map.off('mousemove', this.onPolygonMouseMove, this);
+    this.map.off('mouseup', this.onPolygonMouseUp, this);
+
+    if (this.map.dragging) {
+      this.map.dragging.enable();
+    }
+
+    try {
+      const container = this.map.getContainer();
+      container.style.cursor = '';
+    } catch (error) {
+      // Handle DOM errors
+    }
+
+    this.updatePolygonAfterDrag(polygon);
+
+    if (polygon._polydrawOriginalMarkerPositions) {
+      polygon._polydrawOriginalMarkerPositions.clear();
+      delete polygon._polydrawOriginalMarkerPositions;
+    }
+    if (polygon._polydrawOriginalHoleLinePositions) {
+      polygon._polydrawOriginalHoleLinePositions.clear();
+      delete polygon._polydrawOriginalHoleLinePositions;
+    }
+    if (polygon._polydrawCurrentDragSession) {
+      delete polygon._polydrawCurrentDragSession;
+    }
+
+    this.currentDragPolygon = null;
   };
 
   private offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
-    // TODO: Implement method
-    return latLngs;
+    console.log('PolygonMutationManager offsetPolygonCoordinates');
+    if (!latLngs) return latLngs;
+
+    if (Array.isArray(latLngs[0])) {
+      return latLngs.map((ring: any) => this.offsetPolygonCoordinates(ring, offsetLat, offsetLng));
+    } else if (latLngs.lat !== undefined && latLngs.lng !== undefined) {
+      return {
+        lat: latLngs.lat + offsetLat,
+        lng: latLngs.lng + offsetLng,
+      };
+    } else {
+      return latLngs.map((coord: any) =>
+        this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
+      );
+    }
   }
 
   private updateMarkersAndHoleLinesDuringDrag(polygon: any, offsetLat: number, offsetLng: number) {
-    // TODO: Implement method
+    console.log('PolygonMutationManager updateMarkersAndHoleLinesDuringDrag');
+    try {
+      let featureGroup: L.FeatureGroup | null = null;
+
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      const dragSessionKey = '_polydrawDragSession_' + Date.now();
+      if (!polygon._polydrawCurrentDragSession) {
+        polygon._polydrawCurrentDragSession = dragSessionKey;
+        polygon._polydrawOriginalMarkerPositions = new Map();
+        polygon._polydrawOriginalHoleLinePositions = new Map();
+
+        featureGroup.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            polygon._polydrawOriginalMarkerPositions.set(layer, layer.getLatLng());
+          } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+            polygon._polydrawOriginalHoleLinePositions.set(layer, layer.getLatLngs());
+          }
+        });
+      }
+
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          const originalPos = polygon._polydrawOriginalMarkerPositions.get(layer);
+          if (originalPos) {
+            const newLatLng = {
+              lat: originalPos.lat + offsetLat,
+              lng: originalPos.lng + offsetLng,
+            };
+            layer.setLatLng(newLatLng);
+          }
+        } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+          const originalPositions = polygon._polydrawOriginalHoleLinePositions.get(layer);
+          if (originalPositions) {
+            const newLatLngs = originalPositions.map((latlng: L.LatLng) => ({
+              lat: latlng.lat + offsetLat,
+              lng: latlng.lng + offsetLng,
+            }));
+            layer.setLatLngs(newLatLngs);
+          }
+        }
+      });
+    } catch (error) {
+      // Silently handle errors
+    }
   }
 
-  private updatePolygonAfterDrag(polygon: any) {
-    // TODO: Implement method
+  private async updatePolygonAfterDrag(polygon: any) {
+    console.log('PolygonMutationManager updatePolygonAfterDrag');
+    try {
+      let featureGroup: L.FeatureGroup | null = null;
+
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      const newGeoJSON = polygon.toGeoJSON();
+
+      if (this.isModifierDragActive()) {
+        this.performModifierSubtract(newGeoJSON, featureGroup);
+        this.currentModifierDragMode = false;
+        this.isModifierKeyHeld = false;
+        return;
+      }
+
+      this.removeFeatureGroup(featureGroup);
+
+      const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
+      await this.addPolygon(feature, { noMerge: false });
+
+      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    } catch (error) {
+      // Handle errors
+    }
   }
 
-  /**
-   * Detect if modifier key is pressed during drag operation
-   */
   private detectModifierKey(event: MouseEvent): boolean {
-    // TODO: Implement method
-    return false;
+    console.log('PolygonMutationManager detectModifierKey');
+    if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
+      return false;
+    }
+
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+
+    if (isMac) {
+      return event.metaKey;
+    } else {
+      return event.ctrlKey;
+    }
   }
 
-  /**
-   * Set visual feedback for subtract mode during drag
-   */
   private setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    // TODO: Implement method
+    console.log('PolygonMutationManager setSubtractVisualMode');
+    if (!polygon || !polygon.setStyle) {
+      return;
+    }
+
+    try {
+      if (enabled) {
+        polygon.setStyle({
+          color: this.config.dragPolygons.modifierSubtract.subtractColor,
+        });
+      } else {
+        polygon.setStyle({
+          color: this.config.polygonOptions.color,
+        });
+      }
+      this.updateMarkerColorsForSubtractMode(polygon, enabled);
+    } catch (error) {
+      // Handle DOM errors
+    }
   }
 
-  /**
-   * Update marker colors when entering/exiting subtract mode
-   */
   private updateMarkerColorsForSubtractMode(polygon: any, subtractMode: boolean): void {
-    // TODO: Implement method
+    console.log('PolygonMutationManager updateMarkerColorsForSubtractMode');
+    try {
+      let featureGroup: L.FeatureGroup | null = null;
+
+      for (const fg of this.arrayOfFeatureGroups) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      const hideMarkersOnDrag =
+        this.config.dragPolygons?.modifierSubtract?.hideMarkersOnDrag ?? false;
+
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Marker) {
+          const marker = layer as L.Marker;
+          const element = marker.getElement();
+
+          if (element) {
+            if (subtractMode) {
+              if (hideMarkersOnDrag) {
+                element.style.display = 'none';
+                element.classList.add('subtract-mode-hidden');
+              } else {
+                element.style.backgroundColor =
+                  this.config.dragPolygons.modifierSubtract.subtractColor;
+                element.style.borderColor = this.config.dragPolygons.modifierSubtract.subtractColor;
+                element.classList.add('subtract-mode');
+              }
+            } else {
+              if (hideMarkersOnDrag) {
+                element.style.display = '';
+                element.classList.remove('subtract-mode-hidden');
+              } else {
+                element.style.backgroundColor = '';
+                element.style.borderColor = '';
+                element.classList.remove('subtract-mode');
+              }
+            }
+          }
+        }
+      });
+    } catch (error) {
+      // Handle errors
+    }
   }
 
-  /**
-   * Handle modifier key toggle during active drag operation
-   */
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
-    // TODO: Implement method
+    console.log('PolygonMutationManager handleModifierToggleDuringDrag');
+    const isModifierPressed = this.detectModifierKey(event);
+
+    this.currentModifierDragMode = isModifierPressed;
+    this.isModifierKeyHeld = isModifierPressed;
+
+    if (this.currentDragPolygon) {
+      this.setSubtractVisualMode(this.currentDragPolygon, isModifierPressed);
+    }
   }
 
-  /**
-   * Check if modifier drag mode is currently active
-   */
   private isModifierDragActive(): boolean {
-    // TODO: Implement method
-    return false;
+    console.log('PolygonMutationManager isModifierDragActive');
+    return this.currentModifierDragMode;
   }
 
-  /**
-   * Perform subtract operation when modifier key is held during drag
-   */
   private performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
-    // TODO: Implement method
+    console.log('PolygonMutationManager performModifierSubtract');
+    try {
+      const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
+      const intersectingFeatureGroups: L.FeatureGroup[] = [];
+
+      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+        if (featureGroup === originalFeatureGroup) {
+          return;
+        }
+
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as any;
+          if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+            return;
+          }
+
+          const firstFeature = featureCollection.features[0];
+          if (!firstFeature.geometry || !firstFeature.geometry.coordinates) {
+            return;
+          }
+
+          const existingPolygon = this.turfHelper.getTurfPolygon(firstFeature);
+          const hasIntersection = this.checkPolygonIntersection(existingPolygon, draggedPolygon);
+
+          if (hasIntersection) {
+            intersectingFeatureGroups.push(featureGroup);
+          }
+        } catch (error) {
+          // Handle errors
+        }
+      });
+
+      this.removeFeatureGroup(originalFeatureGroup);
+
+      intersectingFeatureGroups.forEach((featureGroup) => {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as any;
+          const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+          const differenceResult = this.turfHelper.polygonDifference(
+            existingPolygon,
+            draggedPolygon,
+          );
+
+          this.removeFeatureGroup(featureGroup);
+
+          if (differenceResult) {
+            const coords = this.turfHelper.getCoords(differenceResult);
+            coords.forEach((value) => {
+              this.addPolygonLayer(this.turfHelper.getMultiPolygon([value]), { simplify: true });
+            });
+          }
+        } catch (error) {
+          // Handle errors
+        }
+      });
+    } catch (error) {
+      // Handle errors
+    }
   }
 }

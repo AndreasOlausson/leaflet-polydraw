@@ -206,6 +206,42 @@ class Polydraw extends L.Control {
     // Set the feature groups reference so the manager can work with the same array
     this.polygonMutationManager.setFeatureGroups(this.arrayOfFeatureGroups);
 
+    // Listen for polygon operation completion events to reset draw mode
+    this.polygonMutationManager.on('polygonOperationComplete', (data) => {
+      // Use the interaction state manager to reset to Off mode
+      this.interactionStateManager.updateStateForMode(DrawMode.Off);
+      this.drawMode = DrawMode.Off;
+      this.emitDrawModeChanged();
+
+      // Update UI state
+      this.updateMarkerDraggableState();
+
+      // Update map interactions and cursor
+      const shouldShowCrosshair = this.interactionStateManager.shouldShowCrosshairCursor();
+      const mapDragEnabled = this.interactionStateManager.canPerformAction('mapDrag');
+      const mapZoomEnabled = this.interactionStateManager.canPerformAction('mapZoom');
+      const mapDoubleClickEnabled =
+        this.interactionStateManager.canPerformAction('mapDoubleClickZoom');
+
+      // Update cursor
+      if (shouldShowCrosshair) {
+        L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      } else {
+        L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      }
+
+      // Update events and map interactions
+      this.events(false); // Turn off drawing events
+      this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
+
+      // Reset tracer style
+      try {
+        this.tracer.setStyle({ color: '' });
+      } catch (error) {
+        // Handle case where tracer renderer is not initialized
+      }
+    });
+
     return container;
   }
 
@@ -523,7 +559,7 @@ class Polydraw extends L.Control {
 
     try {
       switch (this.interactionStateManager.getCurrentMode()) {
-        case DrawMode.Add:
+        case DrawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
@@ -533,13 +569,15 @@ class Polydraw extends L.Control {
             console.error('Error adding polygon via manager:', result.error);
           }
           break;
-        case DrawMode.Subtract:
+        }
+        case DrawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
           const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
           if (!subtractResult.success) {
             console.error('Error subtracting polygon via manager:', subtractResult.error);
           }
           break;
+        }
         default:
           break;
       }
