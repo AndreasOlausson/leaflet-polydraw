@@ -896,23 +896,24 @@ export class PolygonMutationManager {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', (e) => {
-          // Find the feature group containing this marker and delete it
-          let targetFeatureGroup: L.FeatureGroup | null = null;
-          for (const fg of this.arrayOfFeatureGroups) {
-            fg.eachLayer((layer) => {
-              if (layer === marker) {
-                targetFeatureGroup = fg;
-              }
-            });
-            if (targetFeatureGroup) break;
-          }
-
-          if (targetFeatureGroup) {
-            this.removeFeatureGroup(targetFeatureGroup);
-            this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-          }
+          this.removeFeatureGroup(featureGroup);
+          this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
         });
       }
+
+      // Add click listener for vertex deletion
+      marker.on('click', (e) => {
+        const poly = (
+          featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
+        )?.toGeoJSON();
+        if (poly) {
+          this.elbowClicked(e, poly);
+        }
+      });
+
+      // Add hover listeners for edge deletion feedback
+      marker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(marker, true));
+      marker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(marker, false));
     });
   }
 
@@ -939,11 +940,216 @@ export class PolygonMutationManager {
     });
   }
 
-  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup) {
+  private addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
     console.log('PolygonMutationManager addEdgeClickListeners');
-    // This is a complex method that would need significant refactoring
-    // For now, keep it as a placeholder to avoid breaking functionality
-    // TODO: Implement edge click listeners in MutationManager
+    const rawLatLngs = polygon.getLatLngs();
+
+    // Handle different polygon structures
+    let processedRings: L.LatLngLiteral[][];
+
+    if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
+      if (Array.isArray(rawLatLngs[0])) {
+        if (Array.isArray(rawLatLngs[0][0]) && rawLatLngs[0][0].length > 0) {
+          const firstCoord = rawLatLngs[0][0][0];
+          if (firstCoord && typeof firstCoord === 'object' && 'lat' in firstCoord) {
+            processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
+          } else {
+            processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
+          }
+        } else if (
+          rawLatLngs[0][0] &&
+          typeof rawLatLngs[0][0] === 'object' &&
+          'lat' in rawLatLngs[0][0]
+        ) {
+          processedRings = rawLatLngs as L.LatLngLiteral[][];
+        } else {
+          processedRings = rawLatLngs[0] as L.LatLngLiteral[][];
+        }
+      } else if (rawLatLngs[0] && typeof rawLatLngs[0] === 'object' && 'lat' in rawLatLngs[0]) {
+        processedRings = [rawLatLngs as L.LatLngLiteral[]];
+      } else {
+        processedRings = [rawLatLngs as L.LatLngLiteral[]];
+      }
+    } else {
+      return;
+    }
+
+    processedRings.forEach((ring, ringIndex) => {
+      for (let i = 0; i < ring.length; i++) {
+        const edgeStart = ring[i];
+        const edgeEnd = ring[(i + 1) % ring.length];
+
+        if (edgeStart.lat === edgeEnd.lat && edgeStart.lng === edgeEnd.lng) {
+          continue;
+        }
+
+        const edgePolyline = L.polyline([edgeStart, edgeEnd], {
+          color: 'transparent',
+          weight: 10,
+          opacity: 0,
+          interactive: true,
+        });
+
+        (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo = {
+          ringIndex,
+          edgeIndex: i,
+          startPoint: edgeStart,
+          endPoint: edgeEnd,
+          parentPolygon: polygon,
+          parentFeatureGroup: featureGroup,
+        };
+
+        edgePolyline.on('click', (e: L.LeafletMouseEvent) => {
+          this.onEdgeClick(e, edgePolyline);
+        });
+
+        edgePolyline.on('mouseover', () => {
+          this.highlightEdgeOnHover(edgePolyline, true);
+        });
+
+        edgePolyline.on('mouseout', () => {
+          this.highlightEdgeOnHover(edgePolyline, false);
+        });
+
+        featureGroup.addLayer(edgePolyline);
+      }
+    });
+  }
+
+  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    console.log('PolygonMutationManager onEdgeClick');
+    const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
+    if (!edgeInfo) return;
+    const newPoint = e.latlng;
+    const parentPolygon = edgeInfo.parentPolygon;
+    const parentFeatureGroup = edgeInfo.parentFeatureGroup;
+    if (parentPolygon && parentFeatureGroup) {
+      try {
+        if (typeof parentPolygon.toGeoJSON !== 'function') {
+          return;
+        }
+        const poly = parentPolygon.toGeoJSON();
+        if (poly.geometry.type === 'MultiPolygon' || poly.geometry.type === 'Polygon') {
+          const newPolygon = this.turfHelper.injectPointToPolygon(poly, [
+            newPoint.lng,
+            newPoint.lat,
+          ]);
+          if (newPolygon) {
+            const polydrawPolygon = parentPolygon as PolydrawPolygon;
+            const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
+            this.removeFeatureGroup(parentFeatureGroup);
+            this.addPolygonLayer(newPolygon, {
+              simplify: false,
+              dynamicTolerance: false,
+              visualOptimizationLevel: optimizationLevel,
+            });
+          }
+        }
+      } catch (error) {
+        // Handle errors
+      }
+    }
+    L.DomEvent.stopPropagation(e);
+  }
+
+  private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
+    console.log('PolygonMutationManager highlightEdgeOnHover');
+    if (isHovering) {
+      edgePolyline.setStyle({
+        color: '#7a9441',
+        weight: 4,
+        opacity: 1,
+      });
+    } else {
+      edgePolyline.setStyle({
+        color: 'transparent',
+        weight: 10,
+        opacity: 0,
+      });
+    }
+  }
+
+  private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>) {
+    console.log('PolygonMutationManager elbowClicked');
+    if (!this.isModifierKeyPressed(e.originalEvent)) {
+      return;
+    }
+
+    const clickedLatLng = e.latlng;
+    const allRings = poly.geometry.coordinates[0];
+
+    let targetRingIndex = -1;
+    let targetVertexIndex = -1;
+
+    for (let ringIndex = 0; ringIndex < allRings.length; ringIndex++) {
+      const ring = allRings[ringIndex];
+      const vertexIndex = ring.findIndex(
+        (coord) =>
+          Math.abs(coord[1] - clickedLatLng.lat) < 0.0001 &&
+          Math.abs(coord[0] - clickedLatLng.lng) < 0.0001,
+      );
+
+      if (vertexIndex !== -1) {
+        targetRingIndex = ringIndex;
+        targetVertexIndex = vertexIndex;
+        break;
+      }
+    }
+
+    if (targetRingIndex === -1 || targetVertexIndex === -1) {
+      return;
+    }
+
+    const targetRing = allRings[targetRingIndex];
+    if (targetRing.length <= 4) {
+      return;
+    }
+
+    const newAllRings = allRings.map((ring, ringIndex) => {
+      if (ringIndex === targetRingIndex) {
+        const newRing = [...ring];
+        newRing.splice(targetVertexIndex, 1);
+        return newRing;
+      } else {
+        return [...ring];
+      }
+    });
+
+    const currentFeatureGroup = this.findFeatureGroupForPoly(poly);
+    if (currentFeatureGroup) {
+      this.removeFeatureGroup(currentFeatureGroup);
+    }
+
+    const newPolygon = this.turfHelper.getMultiPolygon([newAllRings]);
+    this.addPolygonLayer(newPolygon, { simplify: false });
+  }
+
+  private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
+    console.log('PolygonMutationManager findFeatureGroupForPoly');
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      const featureCollection = featureGroup.toGeoJSON() as any;
+      if (featureCollection && featureCollection.features && featureCollection.features[0]) {
+        const feature = featureCollection.features[0];
+        if (
+          JSON.stringify(feature.geometry.coordinates) === JSON.stringify(poly.geometry.coordinates)
+        ) {
+          return featureGroup;
+        }
+      }
+    }
+    return null;
+  }
+
+  private isModifierKeyPressed(event: MouseEvent): boolean {
+    console.log('PolygonMutationManager isModifierKeyPressed');
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+
+    if (isMac) {
+      return event.metaKey;
+    } else {
+      return event.ctrlKey;
+    }
   }
 
   // Helper methods
@@ -1400,6 +1606,22 @@ export class PolygonMutationManager {
     wrapper.appendChild(markerContent);
 
     return outerWrapper;
+  }
+
+  private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
+    console.log('PolygonMutationManager onMarkerHoverForEdgeDeletion');
+    const element = marker.getElement();
+    if (!element) return;
+
+    if (isHovering && this.isModifierKeyHeld) {
+      element.style.backgroundColor = '#D9460F';
+      element.style.borderColor = '#D9460F';
+      element.classList.add('edge-deletion-hover');
+    } else if (!isHovering) {
+      element.style.backgroundColor = '';
+      element.style.borderColor = '';
+      element.classList.remove('edge-deletion-hover');
+    }
   }
 
   private deletePolygon(polygon: L.LatLngLiteral[][]) {

@@ -1695,7 +1695,7 @@ class Polydraw extends L.Control {
 
       // Add polygon (disable simplification for P2P - every click is intentional)
       // Allow merging for P2P polygons so they merge with existing polygons
-      this.addPolygon(geoPos, false, false); // false = no simplification, false = allow merge for P2P
+      this.polygonMutationManager.addPolygon(geoPos, { simplify: false, noMerge: false });
 
       // Update polygon information
       this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
