@@ -924,7 +924,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private detectModifierKey(event: MouseEvent): boolean {
+  private detectModifierKey(event: MouseEvent | KeyboardEvent): boolean {
     console.log('PolygonInteractionManager detectModifierKey');
     if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
       return false;
@@ -1164,14 +1164,70 @@ export class PolygonInteractionManager {
     const element = marker.getElement();
     if (!element) return;
 
-    if (isHovering && this.isModifierKeyHeld) {
-      element.style.backgroundColor = '#D9460F';
-      element.style.borderColor = '#D9460F';
-      element.classList.add('edge-deletion-hover');
-    } else if (!isHovering) {
+    if (isHovering) {
+      // Add event listeners to detect modifier key state in real-time
+      const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
+        const isModifierPressed = this.detectModifierKey(e);
+        if (isModifierPressed) {
+          element.style.backgroundColor =
+            this.config.dragPolygons?.modifierSubtract?.subtractColor || '#D9460F';
+          element.style.borderColor =
+            this.config.dragPolygons?.modifierSubtract?.subtractColor || '#D9460F';
+          element.classList.add('edge-deletion-hover');
+          // Set cursor to pointer when modifier key is held over marker
+          try {
+            const container = this.map.getContainer();
+            container.style.cursor = 'pointer';
+          } catch (error) {
+            // Handle DOM errors
+          }
+        } else {
+          element.style.backgroundColor = '';
+          element.style.borderColor = '';
+          element.classList.remove('edge-deletion-hover');
+          // Reset cursor when no modifier key
+          try {
+            const container = this.map.getContainer();
+            container.style.cursor = '';
+          } catch (error) {
+            // Handle DOM errors
+          }
+        }
+      };
+
+      // Check initial state
+      const initialEvent = new MouseEvent('mouseover');
+      checkModifierAndUpdate(initialEvent);
+
+      // Store the handler for cleanup
+      (marker as any)._polydrawModifierHandler = checkModifierAndUpdate;
+
+      // Listen for keyboard events to update in real-time
+      document.addEventListener('keydown', checkModifierAndUpdate);
+      document.addEventListener('keyup', checkModifierAndUpdate);
+      element.addEventListener('mousemove', checkModifierAndUpdate);
+    } else {
+      // Clean up when not hovering
       element.style.backgroundColor = '';
       element.style.borderColor = '';
       element.classList.remove('edge-deletion-hover');
+
+      // Reset cursor
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = '';
+      } catch (error) {
+        // Handle DOM errors
+      }
+
+      // Remove event listeners
+      const handler = (marker as any)._polydrawModifierHandler;
+      if (handler) {
+        document.removeEventListener('keydown', handler);
+        document.removeEventListener('keyup', handler);
+        element.removeEventListener('mousemove', handler);
+        delete (marker as any)._polydrawModifierHandler;
+      }
     }
   }
 
