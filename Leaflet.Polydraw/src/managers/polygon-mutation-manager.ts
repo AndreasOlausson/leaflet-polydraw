@@ -155,9 +155,14 @@ export class PolygonMutationManager {
    * Handle polygon modification from interaction manager
    */
   private async handlePolygonModified(data: any): Promise<void> {
-    console.log('PolygonMutationManager handlePolygonModified');
+    // Don't simplify drag operations to preserve vertex count
+    const shouldSimplify =
+      data.operation !== 'addVertex' &&
+      data.operation !== 'markerDrag' &&
+      data.operation !== 'polygonDrag';
+
     const options: AddPolygonOptions = {
-      simplify: data.operation !== 'addVertex',
+      simplify: shouldSimplify,
       noMerge: !data.allowMerge,
       visualOptimizationLevel: data.optimizationLevel || 0,
     };
@@ -264,7 +269,7 @@ export class PolygonMutationManager {
         this.getFeatureGroups().length > 0 &&
         !this.config.kinks
       ) {
-        return await this.mergePolygon(latlngs);
+        return await this.mergePolygon(latlngs, options);
       } else {
         return await this.addPolygonLayer(latlngs, options);
       }
@@ -479,8 +484,10 @@ export class PolygonMutationManager {
   /**
    * Merge a polygon with existing intersecting polygons
    */
-  private async mergePolygon(latlngs: Feature<Polygon | MultiPolygon>): Promise<MutationResult> {
-    console.log('PolygonMutationManager mergePolygon');
+  private async mergePolygon(
+    latlngs: Feature<Polygon | MultiPolygon>,
+    options: AddPolygonOptions = {},
+  ): Promise<MutationResult> {
     try {
       const polygonFeature = [];
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -531,7 +538,7 @@ export class PolygonMutationManager {
       if (intersectingFeatureGroups.length > 0) {
         return await this.unionPolygons(intersectingFeatureGroups, latlngs, polygonFeature);
       } else {
-        return await this.addPolygonLayer(latlngs, { simplify: true });
+        return await this.addPolygonLayer(latlngs, options);
       }
     } catch (error) {
       return {
