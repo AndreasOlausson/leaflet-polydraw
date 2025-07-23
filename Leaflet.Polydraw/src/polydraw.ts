@@ -5,7 +5,7 @@ import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
 import { PolygonInformationService } from './polygon-information.service';
 import { MapStateService } from './map-state';
-import { InteractionStateManager } from './managers/interaction-state-manager';
+import { ModeManager } from './managers/mode-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
@@ -20,7 +20,7 @@ class Polydraw extends L.Control {
   private config: PolydrawConfig;
   private mapStateService: MapStateService;
   private polygonInformation: PolygonInformationService;
-  private interactionStateManager: InteractionStateManager;
+  private modeManager: ModeManager;
   private polygonMutationManager: PolygonMutationManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
   private p2pMarkers: L.Marker[] = [];
@@ -38,7 +38,7 @@ class Polydraw extends L.Control {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
-    this.interactionStateManager = new InteractionStateManager(this.config);
+    this.modeManager = new ModeManager(this.config);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       // Handle polygon info update
     });
@@ -98,7 +98,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in Add mode, turn it off instead of ignoring
-      if (this.interactionStateManager.getCurrentMode() === DrawMode.Add) {
+      if (this.modeManager.getCurrentMode() === DrawMode.Add) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -115,7 +115,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in Subtract mode, turn it off instead of ignoring
-      if (this.interactionStateManager.getCurrentMode() === DrawMode.Subtract) {
+      if (this.modeManager.getCurrentMode() === DrawMode.Subtract) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -146,7 +146,7 @@ class Polydraw extends L.Control {
       }
 
       // If already in PointToPoint mode, turn it off instead of ignoring
-      if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
+      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.setDrawMode(DrawMode.Off);
         return;
       }
@@ -188,7 +188,7 @@ class Polydraw extends L.Control {
       polygonInformation: this.polygonInformation,
       map: this.map,
       config: this.config,
-      interactionStateManager: this.interactionStateManager,
+      modeManager: this.modeManager,
     });
 
     // Set the feature groups reference so the manager can work with the same array
@@ -197,7 +197,7 @@ class Polydraw extends L.Control {
     // Listen for polygon operation completion events to reset draw mode
     this.polygonMutationManager.on('polygonOperationComplete', (data) => {
       // Use the interaction state manager to reset to Off mode
-      this.interactionStateManager.updateStateForMode(DrawMode.Off);
+      this.modeManager.updateStateForMode(DrawMode.Off);
       this.drawMode = DrawMode.Off;
       this.emitDrawModeChanged();
 
@@ -205,11 +205,10 @@ class Polydraw extends L.Control {
       this.updateMarkerDraggableState();
 
       // Update map interactions and cursor
-      const shouldShowCrosshair = this.interactionStateManager.shouldShowCrosshairCursor();
-      const mapDragEnabled = this.interactionStateManager.canPerformAction('mapDrag');
-      const mapZoomEnabled = this.interactionStateManager.canPerformAction('mapZoom');
-      const mapDoubleClickEnabled =
-        this.interactionStateManager.canPerformAction('mapDoubleClickZoom');
+      const shouldShowCrosshair = this.modeManager.shouldShowCrosshairCursor();
+      const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
+      const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
+      const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
 
       // Update cursor
       if (shouldShowCrosshair) {
@@ -242,6 +241,10 @@ class Polydraw extends L.Control {
   onRemove(_map: L.Map) {
     console.log('onRemove');
     this.removeKeyboardHandlers();
+    if (this.tracer) {
+      this.map.removeLayer(this.tracer);
+    }
+    this.removeAllFeatureGroups();
   }
 
   public async addPredefinedPolygon(
@@ -305,7 +308,7 @@ class Polydraw extends L.Control {
     this.drawMode = mode;
 
     // Update interaction state manager
-    this.interactionStateManager.updateStateForMode(mode);
+    this.modeManager.updateStateForMode(mode);
 
     this.emitDrawModeChanged();
 
@@ -326,11 +329,10 @@ class Polydraw extends L.Control {
 
     if (this.map) {
       // Use interaction state manager for UI updates
-      const shouldShowCrosshair = this.interactionStateManager.shouldShowCrosshairCursor();
-      const mapDragEnabled = this.interactionStateManager.canPerformAction('mapDrag');
-      const mapZoomEnabled = this.interactionStateManager.canPerformAction('mapZoom');
-      const mapDoubleClickEnabled =
-        this.interactionStateManager.canPerformAction('mapDoubleClickZoom');
+      const shouldShowCrosshair = this.modeManager.shouldShowCrosshairCursor();
+      const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
+      const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
+      const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
 
       // Update cursor
       if (shouldShowCrosshair) {
@@ -378,7 +380,7 @@ class Polydraw extends L.Control {
 
   getDrawMode(): DrawMode {
     console.log('getDrawMode');
-    return this.interactionStateManager.getCurrentMode();
+    return this.modeManager.getCurrentMode();
   }
 
   public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
@@ -397,7 +399,7 @@ class Polydraw extends L.Control {
   private emitDrawModeChanged(): void {
     console.log('emitDrawModeChanged');
     for (const cb of this.drawModeListeners) {
-      cb(this.interactionStateManager.getCurrentMode());
+      cb(this.modeManager.getCurrentMode());
     }
   }
 
@@ -406,7 +408,7 @@ class Polydraw extends L.Control {
    */
   private updateMarkerDraggableState(): void {
     console.log('updateMarkerDraggableState');
-    const shouldBeDraggable = this.interactionStateManager.canPerformAction('markerDrag');
+    const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
@@ -546,7 +548,7 @@ class Polydraw extends L.Control {
     this.stopDraw();
 
     try {
-      switch (this.interactionStateManager.getCurrentMode()) {
+      switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
@@ -602,7 +604,7 @@ class Polydraw extends L.Control {
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
     console.log('mouseDown');
     // Check if we're still in a drawing mode before processing
-    if (this.interactionStateManager.isInOffMode()) {
+    if (this.modeManager.isInOffMode()) {
       return;
     }
 
@@ -621,7 +623,7 @@ class Polydraw extends L.Control {
     }
 
     // Handle Point-to-Point mode differently
-    if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
       this.handlePointToPointClick(clickLatLng);
       return;
     }
@@ -652,7 +654,7 @@ class Polydraw extends L.Control {
   private handleKeyDown(e: KeyboardEvent) {
     console.log('handleKeyDown');
     if (e.key === 'Escape') {
-      if (this.interactionStateManager.getCurrentMode() === DrawMode.PointToPoint) {
+      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.cancelPointToPointDrawing();
       }
     }
@@ -928,7 +930,7 @@ class Polydraw extends L.Control {
   private handleDoubleClick(e: L.LeafletMouseEvent) {
     console.log('handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
-    if (this.interactionStateManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
       return;
     }
 

@@ -106,6 +106,15 @@ vi.mock('leaflet', async () => {
     }
   };
 
+  const DomEvent = {
+    ...(actualLeaflet as any).DomEvent,
+    on: vi.fn(),
+    off: vi.fn(),
+    stopPropagation: vi.fn(),
+    preventDefault: vi.fn(),
+  };
+  DomEvent.on.mockReturnValue(DomEvent);
+
   const leafletMock = {
     ...actualLeaflet,
     Control: MockControl,
@@ -135,13 +144,7 @@ vi.mock('leaflet', async () => {
         return el;
       },
     },
-    DomEvent: {
-      ...(actualLeaflet as any).DomEvent,
-      on: vi.fn(),
-      off: vi.fn(),
-      stopPropagation: vi.fn(),
-      preventDefault: vi.fn(),
-    },
+    DomEvent,
   };
 
   return leafletMock;
@@ -158,7 +161,8 @@ describe('Auto-add polygons functionality', () => {
     document.body.appendChild(mapContainer);
     map = new L.Map(mapContainer);
     polydraw = new Polydraw();
-    polydraw.addTo(map);
+    // Manually call onAdd to initialize the mutation manager
+    (polydraw as any).onAdd(map);
     (polydraw as any).map = map; // Force assign map
     (polydraw as any).tracer = L.polyline([]); // Initialize tracer
   });
@@ -175,7 +179,7 @@ describe('Auto-add polygons functionality', () => {
     }
   });
 
-  it('should add a simple polygon without errors', () => {
+  it('should add a simple polygon without errors', async () => {
     const octagon: L.LatLng[][][] = [
       [
         [
@@ -192,12 +196,10 @@ describe('Auto-add polygons functionality', () => {
       ],
     ];
 
-    expect(() => {
-      polydraw.addPredefinedPolygon(octagon);
-    }).not.toThrow();
+    await expect(polydraw.addPredefinedPolygon(octagon)).resolves.not.toThrow();
   });
 
-  it('should add a polygon with a hole without errors', () => {
+  it('should add a polygon with a hole without errors', async () => {
     const squareWithHole: L.LatLng[][][] = [
       [
         [
@@ -217,26 +219,22 @@ describe('Auto-add polygons functionality', () => {
       ],
     ];
 
-    expect(() => {
-      polydraw.addPredefinedPolygon(squareWithHole);
-    }).not.toThrow();
+    await expect(polydraw.addPredefinedPolygon(squareWithHole)).resolves.not.toThrow();
   });
 
-  it('should throw an error for invalid polygon data', () => {
+  it('should throw an error for invalid polygon data', async () => {
     const invalidData: any = [[[L.latLng(58.4, 15.6)]]]; // Not enough points
-    expect(() => {
-      polydraw.addPredefinedPolygon(invalidData);
-    }).toThrow();
+    await expect(polydraw.addPredefinedPolygon(invalidData)).rejects.toThrow();
   });
 
-  it('should call addPolygon for each polygon group', () => {
-    const addPolygonSpy = vi.spyOn(polydraw as any, 'addPolygon');
+  it('should call addPolygon for each polygon group', async () => {
+    const addPolygonSpy = vi.spyOn((polydraw as any).polygonMutationManager, 'addPolygon');
     const polygons: L.LatLng[][][] = [
       [[L.latLng(58.4, 15.6), L.latLng(58.41, 15.6), L.latLng(58.41, 15.61), L.latLng(58.4, 15.6)]],
       [[L.latLng(58.5, 15.7), L.latLng(58.51, 15.7), L.latLng(58.51, 15.71), L.latLng(58.5, 15.7)]],
     ];
 
-    polydraw.addPredefinedPolygon(polygons);
+    await polydraw.addPredefinedPolygon(polygons);
     expect(addPolygonSpy).toHaveBeenCalledTimes(2);
   });
 });

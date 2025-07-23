@@ -3,57 +3,6 @@ import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 
 describe('Polygon Dragging Tests', () => {
-  describe('Merge Behavior', () => {
-    it('should not merge polygons that only have bounding boxes overlapping', () => {
-      // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
-      const polygon1 = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [15.008698, 58.163446], // lng, lat format for GeoJSON
-                [15.284729, 58.163446],
-                [15.284729, 58.586161],
-                [15.952149, 58.586161],
-                [15.952149, 58.687669],
-                [15.008698, 58.687664],
-                [15.008698, 58.163446], // Close the polygon
-              ],
-            ],
-          },
-        }),
-      };
-
-      // Second polygon with coordinates that create bounding box overlap but no geometric intersection
-      const polygon2 = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [15.630799, 58.356368],
-                [15.967255, 58.292247],
-                [15.971375, 58.421092],
-                [15.836793, 58.483546],
-                [15.630799, 58.356368], // Close the polygon
-              ],
-            ],
-          },
-        }),
-      };
-
-      // Test the checkPolygonIntersection method directly
-      const result = (polydraw as any).checkPolygonIntersection(
-        polygon1.toGeoJSON(),
-        polygon2.toGeoJSON(),
-      );
-
-      expect(result).toBe(false); // We expect NO intersection for bounding box only overlap
-    });
-  });
   let polydraw: Polydraw;
   let mockMap: any;
   let container: HTMLElement;
@@ -105,6 +54,7 @@ describe('Polygon Dragging Tests', () => {
     } as any);
 
     // Initialize the control
+    (polydraw as any).onAdd(mockMap);
     (polydraw as any).map = mockMap;
     (polydraw as any).tracer = {
       setLatLngs: vi.fn(),
@@ -116,6 +66,58 @@ describe('Polygon Dragging Tests', () => {
     if (container && container.parentNode) {
       container.parentNode.removeChild(container);
     }
+  });
+
+  describe('Merge Behavior', () => {
+    it('should not merge polygons that only have bounding boxes overlapping', () => {
+      // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
+      const polygon1 = {
+        toGeoJSON: () => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [15.008698, 58.163446], // lng, lat format for GeoJSON
+                [15.284729, 58.163446],
+                [15.284729, 58.586161],
+                [15.952149, 58.586161],
+                [15.952149, 58.687669],
+                [15.008698, 58.687664],
+                [15.008698, 58.163446], // Close the polygon
+              ],
+            ],
+          },
+        }),
+      };
+
+      // Second polygon with coordinates that create bounding box overlap but no geometric intersection
+      const polygon2 = {
+        toGeoJSON: () => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [15.630799, 58.356368],
+                [15.967255, 58.292247],
+                [15.971375, 58.421092],
+                [15.836793, 58.483546],
+                [15.630799, 58.356368], // Close the polygon
+              ],
+            ],
+          },
+        }),
+      };
+
+      // Test the checkPolygonIntersection method directly
+      const result = (polydraw as any).polygonMutationManager.checkPolygonIntersection(
+        polygon1.toGeoJSON(),
+        polygon2.toGeoJSON(),
+      );
+
+      expect(result).toBe(false); // We expect NO intersection for bounding box only overlap
+    });
   });
 
   describe('Modifier Drag Integration', () => {
@@ -144,10 +146,10 @@ describe('Polygon Dragging Tests', () => {
       };
 
       const performModifierSubtractSpy = vi
-        .spyOn(polydraw as any, 'performModifierSubtract')
+        .spyOn((polydraw as any).polygonMutationManager, 'performModifierSubtract')
         .mockImplementation(() => {});
 
-      (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
 
       // Get the mousedown handler
       const mousedownCall = mockPolygon.on.mock.calls.find((call) => call[0] === 'mousedown');
@@ -166,8 +168,8 @@ describe('Polygon Dragging Tests', () => {
       const mouseupHandler = mouseupCall ? mouseupCall[1] : undefined;
 
       // Set the current drag polygon
-      (polydraw as any).currentDragPolygon = mockPolygon;
-      (polydraw as any).currentModifierDragMode = true;
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = true;
       mockPolygon._polydrawDragData.isDragging = true;
       (polydraw as any).arrayOfFeatureGroups = [
         {
@@ -191,10 +193,10 @@ describe('Polygon Dragging Tests', () => {
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
       };
 
-      (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
 
       // Test Ctrl key on Windows/Linux
-      const detectModifierKeySpy = vi.spyOn(polydraw as any, 'detectModifierKey');
+      const isModifierKeyPressedSpy = vi.spyOn(polydraw as any, 'isModifierKeyPressed');
 
       // Mock Windows/Linux user agent
       Object.defineProperty(navigator, 'userAgent', {
@@ -203,7 +205,7 @@ describe('Polygon Dragging Tests', () => {
       });
 
       const ctrlEvent = { ctrlKey: true, metaKey: false };
-      expect((polydraw as any).detectModifierKey(ctrlEvent)).toBe(true);
+      expect((polydraw as any).isModifierKeyPressed(ctrlEvent)).toBe(true);
 
       // Mock Mac user agent
       Object.defineProperty(navigator, 'userAgent', {
@@ -212,7 +214,7 @@ describe('Polygon Dragging Tests', () => {
       });
 
       const cmdEvent = { ctrlKey: false, metaKey: true };
-      expect((polydraw as any).detectModifierKey(cmdEvent)).toBe(true);
+      expect((polydraw as any).isModifierKeyPressed(cmdEvent)).toBe(true);
     });
   });
 
@@ -247,7 +249,7 @@ describe('Polygon Dragging Tests', () => {
         }),
       };
 
-      (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
 
       // Verify mousedown event listener was added
       expect(mockPolygon.on).toHaveBeenCalledWith('mousedown', expect.any(Function));
@@ -297,12 +299,12 @@ describe('Polygon Dragging Tests', () => {
         }),
       };
 
-      (polydraw as any).currentDragPolygon = mockPolygon;
-      (polydraw as any).currentModifierDragMode = false;
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
 
       // Simulate mouse move during drag
       const mouseMoveEvent = { latlng: { lat: 0.5, lng: 0.5 } };
-      (polydraw as any).onPolygonMouseMove(mouseMoveEvent);
+      (polydraw as any).polygonMutationManager.onPolygonMouseMove(mouseMoveEvent);
 
       // Verify polygon coordinates were updated
       expect(mockPolygon.setLatLngs).toHaveBeenCalled();
@@ -337,15 +339,18 @@ describe('Polygon Dragging Tests', () => {
         }),
       };
 
-      (polydraw as any).currentDragPolygon = mockPolygon;
-      (polydraw as any).currentModifierDragMode = false;
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
       (polydraw as any).arrayOfFeatureGroups = [mockFeatureGroup];
 
-      const updatePolygonAfterDragSpy = vi.spyOn(polydraw as any, 'updatePolygonAfterDrag');
+      const updatePolygonAfterDragSpy = vi.spyOn(
+        (polydraw as any).polygonMutationManager,
+        'updatePolygonAfterDrag',
+      );
 
       // Simulate mouse up
       const mouseUpEvent = { latlng: { lat: 1, lng: 1 } };
-      (polydraw as any).onPolygonMouseUp(mouseUpEvent);
+      (polydraw as any).polygonMutationManager.onPolygonMouseUp(mouseUpEvent);
 
       expect(updatePolygonAfterDragSpy).toHaveBeenCalledWith(mockPolygon);
       expect(mockPolygon._polydrawDragData.isDragging).toBe(false);
@@ -362,7 +367,7 @@ describe('Polygon Dragging Tests', () => {
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
       };
 
-      (polydraw as any).setSubtractVisualMode(mockPolygon, true);
+      (polydraw as any).polygonMutationManager.setSubtractVisualMode(mockPolygon, true);
 
       expect(mockPolygon.setStyle).toHaveBeenCalledWith({
         color: '#D9460F', // subtract color
@@ -379,9 +384,9 @@ describe('Polygon Dragging Tests', () => {
       };
 
       // First set subtract mode
-      (polydraw as any).setSubtractVisualMode(mockPolygon, true);
+      (polydraw as any).polygonMutationManager.setSubtractVisualMode(mockPolygon, true);
       // Then disable it
-      (polydraw as any).setSubtractVisualMode(mockPolygon, false);
+      (polydraw as any).polygonMutationManager.setSubtractVisualMode(mockPolygon, false);
 
       expect(mockPolygon.setStyle).toHaveBeenLastCalledWith({
         color: expect.any(String), // normal polygon color
@@ -426,14 +431,16 @@ describe('Polygon Dragging Tests', () => {
       });
 
       // Mock the updateMarkerColorsForSubtractMode method to simulate the expected behavior
-      (polydraw as any).updateMarkerColorsForSubtractMode = vi.fn((polygon, enabled) => {
-        if (enabled) {
-          mockElement.style.backgroundColor = '#D9460F';
-          mockElement.classList.add('subtract-mode');
-        }
-      });
+      (polydraw as any).polygonMutationManager.updateMarkerColorsForSubtractMode = vi.fn(
+        (polygon, enabled) => {
+          if (enabled) {
+            mockElement.style.backgroundColor = '#D9460F';
+            mockElement.classList.add('subtract-mode');
+          }
+        },
+      );
 
-      (polydraw as any).updateMarkerColorsForSubtractMode(mockPolygon, true);
+      (polydraw as any).polygonMutationManager.updateMarkerColorsForSubtractMode(mockPolygon, true);
 
       expect(mockElement.style.backgroundColor).toBe('#D9460F');
       expect(mockElement.classList.add).toHaveBeenCalledWith('subtract-mode');
@@ -460,7 +467,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).currentDragPolygon = mockPolygon;
 
       // Get the mousedown handler and simulate drag start
-      (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
       const mousedownCall = mockPolygon.on.mock.calls.find((call) => call[0] === 'mousedown');
       const mousedownHandler = mousedownCall ? mousedownCall[1] : undefined;
 
@@ -487,7 +494,7 @@ describe('Polygon Dragging Tests', () => {
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
       };
 
-      (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
 
       // Get the mouseover handler
       const mouseoverCall = mockPolygon.on.mock.calls.find((call) => call[0] === 'mouseover');
@@ -518,7 +525,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).currentDragPolygon = mockPolygon;
 
       // Simulate mouse up to end drag
-      (polydraw as any).onPolygonMouseUp({ latlng: { lat: 1, lng: 1 } });
+      (polydraw as any).polygonMutationManager.onPolygonMouseUp({ latlng: { lat: 1, lng: 1 } });
 
       expect(mockContainer.style.cursor).toBe('');
     });
@@ -557,7 +564,7 @@ describe('Polygon Dragging Tests', () => {
 
       // Test drag within reasonable bounds
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
-      (polydraw as any).onPolygonMouseMove(mouseMoveEvent);
+      (polydraw as any).polygonMutationManager.onPolygonMouseMove(mouseMoveEvent);
 
       expect(mockPolygon.setLatLngs).toHaveBeenCalled();
     });
@@ -596,7 +603,7 @@ describe('Polygon Dragging Tests', () => {
       const extremeEvent = { latlng: { lat: 1000, lng: 1000 } };
 
       expect(() => {
-        (polydraw as any).onPolygonMouseMove(extremeEvent);
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove(extremeEvent);
       }).not.toThrow();
     });
 
@@ -613,17 +620,17 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).currentDragPolygon = mockPolygon;
 
       // Mock the onPolygonMouseMove method to handle null start position gracefully
-      const originalMethod = (polydraw as any).onPolygonMouseMove;
-      (polydraw as any).onPolygonMouseMove = vi.fn((event) => {
+      const originalMethod = (polydraw as any).polygonMutationManager.onPolygonMouseMove;
+      (polydraw as any).polygonMutationManager.onPolygonMouseMove = vi.fn((event) => {
         if (!mockPolygon._polydrawDragData.startPosition) return; // Handle null start position gracefully
-        return originalMethod.call(polydraw, event);
+        return originalMethod.call((polydraw as any).polygonMutationManager, event);
       });
 
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
 
       // Should handle null start position gracefully
       expect(() => {
-        (polydraw as any).onPolygonMouseMove(mouseMoveEvent);
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove(mouseMoveEvent);
       }).not.toThrow();
 
       // Should not update coordinates with invalid start position
@@ -687,12 +694,18 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).arrayOfFeatureGroups = [featureGroup1, featureGroup2];
       (polydraw as any).currentDragPolygon = polygon1;
 
-      const checkPolygonIntersectionSpy = vi.spyOn(polydraw as any, 'checkPolygonIntersection');
+      const checkPolygonIntersectionSpy = vi.spyOn(
+        (polydraw as any).polygonMutationManager,
+        'checkPolygonIntersection',
+      );
       checkPolygonIntersectionSpy.mockReturnValue(true);
 
       // Simulate drag that would cause intersection
       const draggedGeoJSON = polygon1.toGeoJSON();
-      (polydraw as any).performModifierSubtract(draggedGeoJSON, featureGroup1);
+      (polydraw as any).polygonMutationManager.performModifierSubtract(
+        draggedGeoJSON,
+        featureGroup1,
+      );
 
       expect(checkPolygonIntersectionSpy).toHaveBeenCalled();
     });
@@ -726,16 +739,22 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).arrayOfFeatureGroups = [mockFeatureGroup];
       (polydraw as any).mergePolygons = true;
 
-      const addPolygonSpy = vi.spyOn(polydraw as any, 'addPolygon');
-      const removeFeatureGroupSpy = vi.spyOn(polydraw as any, 'removeFeatureGroup');
+      const addPolygonSpy = vi.spyOn((polydraw as any).polygonMutationManager, 'addPolygon');
+      const removeFeatureGroupSpy = vi.spyOn(
+        (polydraw as any).polygonMutationManager,
+        'removeFeatureGroup',
+      );
 
       // Mock the updatePolygonAfterDrag method to simulate the expected behavior
-      (polydraw as any).updatePolygonAfterDrag = vi.fn((polygon) => {
-        (polydraw as any).removeFeatureGroup(mockFeatureGroup);
-        (polydraw as any).addPolygon(polygon.toGeoJSON(), false, false);
+      (polydraw as any).polygonMutationManager.updatePolygonAfterDrag = vi.fn((polygon) => {
+        (polydraw as any).polygonMutationManager.removeFeatureGroup(mockFeatureGroup);
+        (polydraw as any).polygonMutationManager.addPolygon(polygon.toGeoJSON(), {
+          simplify: false,
+          noMerge: false,
+        });
       });
 
-      (polydraw as any).updatePolygonAfterDrag(mockPolygon);
+      (polydraw as any).polygonMutationManager.updatePolygonAfterDrag(mockPolygon);
 
       expect(removeFeatureGroupSpy).toHaveBeenCalled();
       expect(addPolygonSpy).toHaveBeenCalled();
@@ -791,7 +810,7 @@ describe('Polygon Dragging Tests', () => {
 
       // Simulate drag movement
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
-      (polydraw as any).onPolygonMouseMove(mouseMoveEvent);
+      (polydraw as any).polygonMutationManager.onPolygonMouseMove(mouseMoveEvent);
 
       const endTime = performance.now();
       const duration = endTime - startTime;
@@ -834,7 +853,7 @@ describe('Polygon Dragging Tests', () => {
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
 
       expect(() => {
-        (polydraw as any).onPolygonMouseMove(mouseMoveEvent);
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove(mouseMoveEvent);
       }).not.toThrow();
 
       expect(polygonWithHole.setLatLngs).toHaveBeenCalled();
@@ -872,7 +891,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).arrayOfFeatureGroups = [mockFeatureGroup];
 
       // Mock the updateMarkersAndHoleLinesDuringDrag method to simulate the expected behavior
-      (polydraw as any).updateMarkersAndHoleLinesDuringDrag = vi.fn(
+      (polydraw as any).polygonMutationManager.updateMarkersAndHoleLinesDuringDrag = vi.fn(
         (polygon, offsetLat, offsetLng) => {
           mockMarkers.forEach((marker) => {
             marker.setLatLng({ lat: 0.1, lng: 0.1 });
@@ -882,7 +901,11 @@ describe('Polygon Dragging Tests', () => {
 
       const startTime = performance.now();
 
-      (polydraw as any).updateMarkersAndHoleLinesDuringDrag(mockPolygon, 0.1, 0.1);
+      (polydraw as any).polygonMutationManager.updateMarkersAndHoleLinesDuringDrag(
+        mockPolygon,
+        0.1,
+        0.1,
+      );
 
       const endTime = performance.now();
       const duration = endTime - startTime;
@@ -898,18 +921,18 @@ describe('Polygon Dragging Tests', () => {
   describe('Error Handling and Edge Cases', () => {
     it('should handle null/undefined polygon gracefully', () => {
       // Mock the enablePolygonDragging method to handle null/undefined gracefully
-      const originalMethod = (polydraw as any).enablePolygonDragging;
-      (polydraw as any).enablePolygonDragging = vi.fn((polygon, latlngs) => {
+      const originalMethod = (polydraw as any).polygonMutationManager.enablePolygonDragging;
+      (polydraw as any).polygonMutationManager.enablePolygonDragging = vi.fn((polygon, latlngs) => {
         if (!polygon) return; // Handle null/undefined gracefully
-        return originalMethod.call(polydraw, polygon, latlngs);
+        return originalMethod.call((polydraw as any).polygonMutationManager, polygon, latlngs);
       });
 
       expect(() => {
-        (polydraw as any).enablePolygonDragging(null, {} as any);
+        (polydraw as any).polygonMutationManager.enablePolygonDragging(null, {} as any);
       }).not.toThrow();
 
       expect(() => {
-        (polydraw as any).enablePolygonDragging(undefined, {} as any);
+        (polydraw as any).polygonMutationManager.enablePolygonDragging(undefined, {} as any);
       }).not.toThrow();
     });
 
@@ -922,23 +945,23 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).currentDragPolygon = mockPolygon;
 
       // Mock the onPolygonMouseMove method to handle invalid events gracefully
-      const originalMethod = (polydraw as any).onPolygonMouseMove;
-      (polydraw as any).onPolygonMouseMove = vi.fn((event) => {
+      const originalMethod = (polydraw as any).polygonMutationManager.onPolygonMouseMove;
+      (polydraw as any).polygonMutationManager.onPolygonMouseMove = vi.fn((event) => {
         if (!event || !event.latlng) return; // Handle invalid events gracefully
-        return originalMethod.call(polydraw, event);
+        return originalMethod.call((polydraw as any).polygonMutationManager, event);
       });
 
       // Test with invalid mouse event
       expect(() => {
-        (polydraw as any).onPolygonMouseMove(null);
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove(null);
       }).not.toThrow();
 
       expect(() => {
-        (polydraw as any).onPolygonMouseMove({ latlng: null });
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove({ latlng: null });
       }).not.toThrow();
 
       expect(() => {
-        (polydraw as any).onPolygonMouseMove({});
+        (polydraw as any).polygonMutationManager.onPolygonMouseMove({});
       }).not.toThrow();
     });
 
@@ -953,7 +976,7 @@ describe('Polygon Dragging Tests', () => {
       };
 
       expect(() => {
-        (polydraw as any).enablePolygonDragging(mockPolygon, {} as any);
+        (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
       }).not.toThrow();
     });
   });

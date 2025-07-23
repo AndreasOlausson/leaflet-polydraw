@@ -102,7 +102,7 @@ export class TestHelpers {
   /**
    * Create a test polygon using auto-add
    */
-  static createAutoPolygon(polydraw: Polydraw, coordinates: L.LatLng[][]): void {
+  static async createAutoPolygon(polydraw: Polydraw, coordinates: L.LatLng[][]): Promise<void> {
     try {
       // Ensure the polygon is properly closed
       const closedCoordinates = coordinates.map((ring) => {
@@ -114,7 +114,7 @@ export class TestHelpers {
         return coords;
       });
 
-      polydraw.addPredefinedPolygon([closedCoordinates]);
+      await polydraw.addPredefinedPolygon([closedCoordinates]);
     } catch (error) {
       console.error('Error adding auto polygon:', error);
       // Don't throw - let the test continue
@@ -177,7 +177,9 @@ export class TestHelpers {
     if (featureGroups.length <= index) return null;
 
     try {
-      return (polydraw as any).getPolygonGeoJSONFromFeatureGroup(featureGroups[index]);
+      return (polydraw as any).polygonMutationManager.getPolygonGeoJSONFromFeatureGroup(
+        featureGroups[index],
+      );
     } catch (error) {
       return null;
     }

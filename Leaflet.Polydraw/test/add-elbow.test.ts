@@ -94,6 +94,12 @@ vi.mock('leaflet', () => {
     }
   };
 
+  const DomEvent = {
+    stopPropagation: vi.fn(),
+    on: vi.fn(),
+  };
+  DomEvent.on.mockReturnValue(DomEvent);
+
   return {
     Control: MockControl,
     Map: MockMap,
@@ -120,9 +126,7 @@ vi.mock('leaflet', () => {
       removeClass: vi.fn(),
       hasClass: vi.fn(() => false),
     },
-    DomEvent: {
-      stopPropagation: vi.fn(),
-    },
+    DomEvent,
     control: {
       polydraw: vi.fn(),
     },
@@ -136,31 +140,34 @@ describe('Add Elbow Functionality', () => {
   beforeEach(() => {
     map = new L.Map(document.createElement('div'));
     polydraw = new Polydraw();
-    polydraw.addTo(map);
+    // Manually call onAdd to initialize the mutation manager, mimicking Leaflet's behavior
+    (polydraw as any).onAdd(map);
     (polydraw as any).map = map;
   });
 
   describe('Basic Edge Click Methods', () => {
     it('should have addEdgeClickListeners method', () => {
-      expect(typeof (polydraw as any).addEdgeClickListeners).toBe('function');
+      expect(typeof (polydraw as any).polygonMutationManager.addEdgeClickListeners).toBe(
+        'function',
+      );
     });
 
     it('should have onEdgeClick method', () => {
-      expect(typeof (polydraw as any).onEdgeClick).toBe('function');
+      expect(typeof (polydraw as any).polygonMutationManager.onEdgeClick).toBe('function');
     });
 
     it('should have highlightEdgeOnHover method', () => {
-      expect(typeof (polydraw as any).highlightEdgeOnHover).toBe('function');
+      expect(typeof (polydraw as any).polygonMutationManager.highlightEdgeOnHover).toBe('function');
     });
   });
 
   describe('Edge Hover Highlighting', () => {
     it('should handle edge hover highlighting', () => {
       const mockEdgePolyline = { setStyle: vi.fn() };
-      const highlightEdgeOnHover = (polydraw as any).highlightEdgeOnHover;
+      const highlightEdgeOnHover = (polydraw as any).polygonMutationManager.highlightEdgeOnHover;
 
       // Test hover on
-      highlightEdgeOnHover.call(polydraw, mockEdgePolyline, true);
+      highlightEdgeOnHover.call((polydraw as any).polygonMutationManager, mockEdgePolyline, true);
       expect(mockEdgePolyline.setStyle).toHaveBeenCalledWith({
         color: '#7a9441',
         weight: 4,
@@ -168,7 +175,7 @@ describe('Add Elbow Functionality', () => {
       });
 
       // Test hover off
-      highlightEdgeOnHover.call(polydraw, mockEdgePolyline, false);
+      highlightEdgeOnHover.call((polydraw as any).polygonMutationManager, mockEdgePolyline, false);
       expect(mockEdgePolyline.setStyle).toHaveBeenCalledWith({
         color: 'transparent',
         weight: 10,
@@ -225,7 +232,7 @@ describe('Add Elbow Functionality', () => {
       const mockClickEvent = { latlng: { lat: 58.41, lng: 15.605 } };
 
       expect(() => {
-        (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+        (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
       }).not.toThrow();
     });
 
@@ -262,7 +269,7 @@ describe('Add Elbow Functionality', () => {
 
       const mockClickEvent = { latlng: { lat: 58.41, lng: 15.605 } };
 
-      (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+      (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
 
       // This should FAIL when onEdgeClick is commented out
       expect(mockPolygon.toGeoJSON).toHaveBeenCalled();
@@ -318,7 +325,7 @@ describe('Add Elbow Functionality', () => {
         },
       });
 
-      (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+      (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
 
       // This should FAIL when onEdgeClick is commented out
       expect(injectSpy).toHaveBeenCalledWith(
@@ -382,9 +389,12 @@ describe('Add Elbow Functionality', () => {
       });
 
       // Spy on removeFeatureGroup
-      const removeFeatureGroupSpy = vi.spyOn(polydraw as any, 'removeFeatureGroup');
+      const removeFeatureGroupSpy = vi.spyOn(
+        (polydraw as any).polygonMutationManager,
+        'removeFeatureGroup',
+      );
 
-      (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+      (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
 
       // This should FAIL when onEdgeClick is commented out
       expect(removeFeatureGroupSpy).toHaveBeenCalledWith(mockFeatureGroup);
@@ -447,17 +457,24 @@ describe('Add Elbow Functionality', () => {
       const injectSpy = vi.spyOn(turfHelper, 'injectPointToPolygon').mockReturnValue(newPolygon);
 
       // Spy on addPolygonLayer
-      const addPolygonLayerSpy = vi.spyOn(polydraw as any, 'addPolygonLayer');
+      const addPolygonLayerSpy = vi.spyOn(
+        (polydraw as any).polygonMutationManager,
+        'addPolygonLayer',
+      );
 
       // Mock removeFeatureGroup to prevent errors
       const removeFeatureGroupSpy = vi
-        .spyOn(polydraw as any, 'removeFeatureGroup')
+        .spyOn((polydraw as any).polygonMutationManager, 'removeFeatureGroup')
         .mockImplementation(() => {});
 
-      (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+      (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
 
       // This should FAIL when onEdgeClick is commented out
-      expect(addPolygonLayerSpy).toHaveBeenCalledWith(newPolygon, false, false, 0);
+      expect(addPolygonLayerSpy).toHaveBeenCalledWith(newPolygon, {
+        simplify: false,
+        dynamicTolerance: false,
+        visualOptimizationLevel: 0,
+      });
 
       addPolygonLayerSpy.mockRestore();
       removeFeatureGroupSpy.mockRestore();
@@ -502,7 +519,7 @@ describe('Add Elbow Functionality', () => {
       // Mock L.DomEvent.stopPropagation
       const stopPropagationSpy = vi.spyOn(L.DomEvent, 'stopPropagation');
 
-      (polydraw as any).onEdgeClick(mockClickEvent, mockEdgePolyline);
+      (polydraw as any).polygonMutationManager.onEdgeClick(mockClickEvent, mockEdgePolyline);
 
       // This should FAIL when onEdgeClick is commented out
       expect(stopPropagationSpy).toHaveBeenCalledWith(mockClickEvent);

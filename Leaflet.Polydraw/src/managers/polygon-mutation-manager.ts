@@ -25,14 +25,14 @@ export interface AddPolygonOptions {
   visualOptimizationLevel?: number;
 }
 
-import { InteractionStateManager } from './interaction-state-manager';
+import { ModeManager } from './mode-manager';
 
 export interface MutationManagerDependencies {
   turfHelper: TurfHelper;
   polygonInformation: PolygonInformationService;
   map: L.Map;
   config: PolydrawConfig;
-  interactionStateManager: InteractionStateManager;
+  modeManager: ModeManager;
 }
 
 /**
@@ -44,7 +44,7 @@ export class PolygonMutationManager {
   private polygonInformation: PolygonInformationService;
   private map: L.Map;
   private config: PolydrawConfig;
-  private interactionStateManager: InteractionStateManager;
+  private modeManager: ModeManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
   private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
@@ -59,7 +59,7 @@ export class PolygonMutationManager {
     this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
     this.config = dependencies.config;
-    this.interactionStateManager = dependencies.interactionStateManager;
+    this.modeManager = dependencies.modeManager;
   }
 
   /**
@@ -900,7 +900,7 @@ export class PolygonMutationManager {
 
       // Forward mousedown events to the map when in drawing mode
       marker.on('mousedown', (e) => {
-        if (!this.interactionStateManager.isInOffMode()) {
+        if (!this.modeManager.isInOffMode()) {
           L.DomEvent.stopPropagation(e);
           this.map.fire('mousedown', e);
         }
@@ -908,7 +908,7 @@ export class PolygonMutationManager {
 
       // Generic click handler for all markers
       marker.on('click', (e) => {
-        if (this.interactionStateManager.isInOffMode()) {
+        if (this.modeManager.isInOffMode()) {
           if (this.isModifierKeyPressed(e.originalEvent)) {
             const poly = (
               featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
@@ -1033,7 +1033,7 @@ export class PolygonMutationManager {
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
     console.log('PolygonMutationManager onEdgeClick');
-    if (!this.interactionStateManager.isInOffMode()) {
+    if (!this.modeManager.isInOffMode()) {
       return;
     }
     const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
@@ -1763,14 +1763,14 @@ export class PolygonMutationManager {
 
     polygon.on('mousedown', (e: any) => {
       // If not in off mode, it's a drawing click. Forward to map and stop.
-      if (!this.interactionStateManager.isInOffMode()) {
+      if (!this.modeManager.isInOffMode()) {
         // Stop this event from becoming a drag, but fire it on the map for drawing.
         L.DomEvent.stopPropagation(e);
         this.map.fire('mousedown', e);
         return;
       }
 
-      if (!this.interactionStateManager.canPerformAction('polygonDrag')) {
+      if (!this.modeManager.canPerformAction('polygonDrag')) {
         return;
       }
       L.DomEvent.stopPropagation(e);

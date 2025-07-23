@@ -40,21 +40,21 @@ export interface MarkerConfig {
  */
 export interface MarkerOptions {
   markerIcon: {
-    styleClasses: string;
+    styleClasses: string | string[];
     zIndexOffset?: number;
   };
   markerMenuIcon: {
-    styleClasses: string;
+    styleClasses: string | string[];
     position: MarkerPosition;
     zIndexOffset?: number;
   };
   markerDeleteIcon: {
-    styleClasses: string;
+    styleClasses: string | string[];
     position: MarkerPosition;
     zIndexOffset?: number;
   };
   markerInfoIcon: {
-    styleClasses: string;
+    styleClasses: string | string[];
     position: MarkerPosition;
     zIndexOffset?: number;
     useMetrics: boolean;
@@ -62,7 +62,7 @@ export interface MarkerOptions {
     perimeterLabel: string;
   };
   holeIcon: {
-    styleClasses: string;
+    styleClasses: string | string[];
     zIndexOffset?: number;
   };
   zIndexOffset: number;

@@ -34,7 +34,7 @@ export interface InteractionState {
  * Centralized manager for all interaction states in Polydraw.
  * Acts as a single source of truth for what interactions are enabled/disabled.
  */
-export class InteractionStateManager {
+export class ModeManager {
   private state: InteractionState;
   private config: PolydrawConfig;
 
