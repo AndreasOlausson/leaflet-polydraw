@@ -536,7 +536,12 @@ export class PolygonMutationManager {
       });
 
       if (intersectingFeatureGroups.length > 0) {
-        return await this.unionPolygons(intersectingFeatureGroups, latlngs, polygonFeature);
+        return await this.unionPolygons(
+          intersectingFeatureGroups,
+          latlngs,
+          polygonFeature,
+          options,
+        );
       } else {
         return await this.addPolygonLayer(latlngs, options);
       }
@@ -555,8 +560,8 @@ export class PolygonMutationManager {
     layers: L.FeatureGroup[],
     latlngs: Feature<Polygon | MultiPolygon>,
     polygonFeature: Feature<Polygon | MultiPolygon>[],
+    options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
-    console.log('PolygonMutationManager unionPolygons');
     try {
       // Remove the intersecting feature groups
       layers.forEach((featureGroup) => {
@@ -567,7 +572,7 @@ export class PolygonMutationManager {
       const result = this.geometryManager.unionPolygons(polygonFeature, latlngs);
 
       if (result.success && result.result) {
-        const addResult = await this.addPolygonLayer(result.result, { simplify: true });
+        const addResult = await this.addPolygonLayer(result.result, options);
 
         this.emit('polygonsUnioned', {
           originalPolygons: polygonFeature,
