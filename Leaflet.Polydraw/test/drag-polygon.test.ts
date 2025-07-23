@@ -122,7 +122,8 @@ describe('Polygon Dragging Tests', () => {
 
   describe('Modifier Drag Integration', () => {
     it('should perform subtract operation on modifier drag', () => {
-      const mockPolygon = {
+      // Create two intersecting polygons - one will be dragged to subtract from the other
+      const draggedPolygon = {
         on: vi.fn(),
         _polydrawDragData: {
           isDragging: true,
@@ -148,31 +149,65 @@ describe('Polygon Dragging Tests', () => {
         }),
       };
 
-      const mockFeatureGroup = {
-        eachLayer: (fn: any) => fn(mockPolygon),
+      const targetPolygon = {
+        toGeoJSON: () => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0.5, 0.5], // This polygon intersects with the dragged polygon
+                [1.5, 0.5],
+                [1.5, 1.5],
+                [0.5, 1.5],
+                [0.5, 0.5],
+              ],
+            ],
+          },
+        }),
+      };
+
+      const draggedFeatureGroup = {
+        eachLayer: (fn: any) => fn(draggedPolygon),
         clearLayers: vi.fn(),
       };
 
-      const performModifierSubtractSpy = vi
-        .spyOn((polydraw as any).polygonMutationManager, 'performModifierSubtract')
+      const targetFeatureGroup = {
+        eachLayer: (fn: any) => fn(targetPolygon),
+        toGeoJSON: () => ({
+          features: [targetPolygon.toGeoJSON()],
+        }),
+        clearLayers: vi.fn(),
+      };
+
+      // Set up feature groups - the dragged polygon will be subtracted from intersecting ones
+      (polydraw as any).polygonMutationManager.arrayOfFeatureGroups = [
+        draggedFeatureGroup,
+        targetFeatureGroup,
+      ];
+
+      // Mock only the methods that have side effects we want to control
+      const removeFeatureGroupSpy = vi
+        .spyOn((polydraw as any).polygonMutationManager, 'removeFeatureGroup')
         .mockImplementation(() => {});
 
-      (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
-      (polydraw as any).arrayOfFeatureGroups = [mockFeatureGroup];
+      const addPolygonLayerSpy = vi
+        .spyOn((polydraw as any).polygonMutationManager, 'addPolygonLayer')
+        .mockResolvedValue({ success: true, featureGroups: [] });
 
-      // Set up the drag state properly to simulate an active modifier drag
-      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
-      (polydraw as any).polygonMutationManager.currentModifierDragMode = true;
-      (polydraw as any).polygonMutationManager.isModifierKeyHeld = true;
-
-      // Directly call performModifierSubtract since that's what we want to test
-      const draggedGeoJSON = mockPolygon.toGeoJSON();
+      // Test the actual subtract operation - this should:
+      // 1. Check intersection between polygons (they do intersect)
+      // 2. Remove the target feature group
+      // 3. Add the result of the difference operation
+      const draggedGeoJSON = draggedPolygon.toGeoJSON();
       (polydraw as any).polygonMutationManager.performModifierSubtract(
         draggedGeoJSON,
-        mockFeatureGroup,
+        draggedFeatureGroup,
       );
 
-      expect(performModifierSubtractSpy).toHaveBeenCalled();
+      // Verify the actual behavior: intersecting polygon should be processed
+      expect(removeFeatureGroupSpy).toHaveBeenCalledWith(targetFeatureGroup);
+      expect(addPolygonLayerSpy).toHaveBeenCalled();
     });
 
     it('should detect modifier key correctly on different platforms', () => {
@@ -633,85 +668,107 @@ describe('Polygon Dragging Tests', () => {
   });
 
   describe('Multiple Polygon Drag Interactions', () => {
-    it('should handle dragging polygon over another polygon', () => {
-      const polygon1 = {
-        on: vi.fn(),
-        _polydrawDragData: { isDragging: true },
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
+    it('should detect intersection when dragging polygon over another polygon', () => {
+      // Test the actual intersection detection logic with real geometric data
+      const overlappingPolygon1 = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
             ],
-          },
-        }),
+          ],
+        },
       };
 
-      const polygon2 = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0.5, 0.5],
-                [1.5, 0.5],
-                [1.5, 1.5],
-                [0.5, 1.5],
-                [0.5, 0.5],
-              ],
+      const overlappingPolygon2 = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [1, 1], // This clearly overlaps with polygon1
+              [3, 1],
+              [3, 3],
+              [1, 3],
+              [1, 1],
             ],
-          },
-        }),
+          ],
+        },
       };
 
-      const featureGroup1 = {
-        eachLayer: vi.fn((fn) => fn(polygon1)),
-        toGeoJSON: () => ({
-          features: [polygon1.toGeoJSON()],
-        }),
-        clearLayers: vi.fn(),
-      };
-      const featureGroup2 = {
-        eachLayer: vi.fn((fn) => fn(polygon2)),
-        toGeoJSON: () => ({
-          features: [polygon2.toGeoJSON()],
-        }),
-        clearLayers: vi.fn(),
+      const nonOverlappingPolygon = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [5, 5], // This is far away and should not intersect
+              [6, 5],
+              [6, 6],
+              [5, 6],
+              [5, 5],
+            ],
+          ],
+        },
       };
 
-      const checkPolygonIntersectionSpy = vi.spyOn(
-        (polydraw as any).polygonMutationManager,
-        'checkPolygonIntersection',
+      // Test actual intersection detection - these should intersect
+      const intersectionResult1 = (polydraw as any).polygonMutationManager.checkPolygonIntersection(
+        overlappingPolygon1,
+        overlappingPolygon2,
       );
+      expect(intersectionResult1).toBe(true);
 
-      // Mock the removeFeatureGroup method to prevent errors
+      // Test non-intersection - these should not intersect
+      const intersectionResult2 = (polydraw as any).polygonMutationManager.checkPolygonIntersection(
+        overlappingPolygon1,
+        nonOverlappingPolygon,
+      );
+      expect(intersectionResult2).toBe(false);
+
+      // Test the actual workflow: when polygons intersect, they should be processed
+      const draggedFeatureGroup = {
+        eachLayer: vi.fn(),
+        clearLayers: vi.fn(),
+      };
+
+      const targetFeatureGroup = {
+        eachLayer: vi.fn(),
+        toGeoJSON: () => ({
+          features: [overlappingPolygon2],
+        }),
+        clearLayers: vi.fn(),
+      };
+
+      (polydraw as any).polygonMutationManager.arrayOfFeatureGroups = [
+        draggedFeatureGroup,
+        targetFeatureGroup,
+      ];
+
+      // Mock only the side effects, not the core logic
       const removeFeatureGroupSpy = vi
         .spyOn((polydraw as any).polygonMutationManager, 'removeFeatureGroup')
         .mockImplementation(() => {});
 
-      // Set up the polygon mutation manager's arrayOfFeatureGroups directly
-      (polydraw as any).polygonMutationManager.arrayOfFeatureGroups = [
-        featureGroup1,
-        featureGroup2,
-      ];
+      const addPolygonLayerSpy = vi
+        .spyOn((polydraw as any).polygonMutationManager, 'addPolygonLayer')
+        .mockResolvedValue({ success: true, featureGroups: [] });
 
-      // Simulate drag that would cause intersection by calling performModifierSubtract
-      // This will internally call checkPolygonIntersection for featureGroup2 (since featureGroup1 is excluded)
-      const draggedGeoJSON = polygon1.toGeoJSON();
+      // When we drag an overlapping polygon, it should process the intersection
       (polydraw as any).polygonMutationManager.performModifierSubtract(
-        draggedGeoJSON,
-        featureGroup1,
+        overlappingPolygon1,
+        draggedFeatureGroup,
       );
 
-      expect(checkPolygonIntersectionSpy).toHaveBeenCalled();
+      // Verify that intersecting polygons are processed
+      expect(removeFeatureGroupSpy).toHaveBeenCalledWith(targetFeatureGroup);
+      expect(addPolygonLayerSpy).toHaveBeenCalled();
     });
 
     it('should merge polygons when dragged together (if merge enabled)', () => {
