@@ -125,17 +125,22 @@ class Polydraw extends L.Control {
     };
 
     const onEraseClick = (e?: Event) => {
+      console.log('onEraseClick called');
       // Prevent multiple rapid clicks
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
 
+      console.log('Current feature groups count:', this.arrayOfFeatureGroups.length);
+
       // Only erase if there are polygons to erase
       if (this.arrayOfFeatureGroups.length === 0) {
+        console.log('No polygons to erase');
         return;
       }
 
+      console.log('Calling removeAllFeatureGroups');
       this.removeAllFeatureGroups();
     };
 
