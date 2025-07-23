@@ -214,6 +214,13 @@ export class PolygonMutationManager {
   }
 
   /**
+   * Get the polygon interaction manager (for testing)
+   */
+  get polygonInteractionManager(): PolygonInteractionManager {
+    return this.interactionManager;
+  }
+
+  /**
    * Set the reference to the feature groups array
    */
   setFeatureGroups(featureGroups: L.FeatureGroup[]): void {
