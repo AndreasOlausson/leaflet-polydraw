@@ -21,7 +21,7 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 - **Smart Markers**: Intelligent marker separation prevents overlapping on small polygons
 - **Hole Support**: Create complex polygons with holes and nested shapes
 - **Performance Optimized**: Efficient rendering and interaction handling
-- **Well Tested**: Comprehensive test suite with 194+ passing tests
+- **Well Tested**: Comprehensive test suite with 167+ passing tests
 - **TypeScript Ready**: Full TypeScript support with type definitions
 
 ## Table of Contents
@@ -164,38 +164,181 @@ const polyDrawControl = L.control
   "mergePolygons": true,
   "kinks": false,
   "modes": {
-    "attachElbow": false,
+    "draw": true,
+    "subtract": true,
+    "deleteAll": true,
+    "p2p": true,
+    "attachElbow": true,
     "dragElbow": true,
-    "dragPolygons": true
+    "dragPolygons": true,
+    "edgeDeletion": true
   },
   "dragPolygons": {
-    "autoMergeOnIntersect": true,
-    "autoHoleOnContained": true,
-    "markerBehavior": "hide",
-    "hoverCursor": "grab",
-    "dragCursor": "move",
+    "realTimeUpdate": false,
+    "showDragHandle": false,
     "opacity": 0.7,
-    "markerAnimationDuration": 200
+    "dragCursor": "move",
+    "hoverCursor": "grab",
+    "markerBehavior": "hide",
+    "markerAnimationDuration": 200,
+    "autoMergeOnIntersect": true,
+    "autoHoleOnContained": false,
+    "dragInteractionBehavior": "auto",
+    "modifierSubtract": {
+      "enabled": true,
+      "keys": {
+        "windows": "ctrlKey",
+        "mac": "metaKey",
+        "linux": "ctrlKey"
+      },
+      "subtractColor": "#D9460F",
+      "hideMarkersOnDrag": true
+    }
+  },
+  "edgeDeletion": {
+    "enabled": true,
+    "modifierKey": "auto",
+    "hoverColor": "#D9460F",
+    "confirmDeletion": false,
+    "minVertices": 3
   },
   "markers": {
     "deleteMarker": true,
     "infoMarker": true,
     "menuMarker": true,
     "coordsTitle": true,
-    "zIndexOffset": 0
+    "zIndexOffset": 0,
+    "markerIcon": {
+      "styleClasses": ["polygon-marker"],
+      "zIndexOffset": null
+    },
+    "holeIcon": {
+      "styleClasses": ["polygon-marker", "hole"],
+      "zIndexOffset": null
+    },
+    "markerInfoIcon": {
+      "position": 3,
+      "showArea": true,
+      "showPerimeter": true,
+      "useMetrics": true,
+      "usePerimeterMinValue": false,
+      "areaLabel": "Area",
+      "perimeterLabel": "Perimeter",
+      "values": {
+        "min": {
+          "metric": "50",
+          "imperial": "100"
+        },
+        "unknown": {
+          "metric": "-",
+          "imperial": "-"
+        }
+      },
+      "units": {
+        "unknownUnit": "",
+        "metric": {
+          "onlyMetrics": true,
+          "perimeter": {
+            "m": "m",
+            "km": "km"
+          },
+          "area": {
+            "m2": "m²",
+            "km2": "km²",
+            "daa": "daa",
+            "ha": "ha"
+          }
+        },
+        "imperial": {
+          "perimeter": {
+            "feet": "ft",
+            "yards": "yd",
+            "miles": "mi"
+          },
+          "area": {
+            "feet2": "ft²",
+            "yards2": "yd²",
+            "acres": "ac",
+            "miles2": "mi²"
+          }
+        }
+      },
+      "styleClasses": ["polygon-marker", "info"],
+      "zIndexOffset": 10000
+    },
+    "markerMenuIcon": {
+      "position": 7,
+      "styleClasses": ["polygon-marker", "menu"],
+      "zIndexOffset": 10000
+    },
+    "markerDeleteIcon": {
+      "position": 5,
+      "styleClasses": ["polygon-marker", "delete"],
+      "zIndexOffset": 10000
+    },
+    "visualOptimization": {
+      "sharpAngleThreshold": 30,
+      "thresholdBoundingBox": 0.05,
+      "thresholdDistance": 0.05,
+      "useDistance": true,
+      "useBoundingBox": false,
+      "useAngles": false
+    }
+  },
+  "polyLineOptions": {
+    "color": "#50622b",
+    "opacity": 1,
+    "smoothFactor": 0,
+    "noClip": true,
+    "clickable": false,
+    "weight": 2
+  },
+  "subtractLineOptions": {
+    "color": "#50622b",
+    "opacity": 1,
+    "smoothFactor": 0,
+    "noClip": true,
+    "clickable": false,
+    "weight": 2
   },
   "polygonOptions": {
+    "smoothFactor": 0.3,
     "color": "#50622b",
     "fillColor": "#b4cd8a",
-    "smoothFactor": 0.3,
     "noClip": true
+  },
+  "holeOptions": {
+    "color": "#aa0000",
+    "fillColor": "#ffcccc",
+    "weight": 2,
+    "opacity": 1,
+    "fillOpacity": 0.5
+  },
+  "polygonCreation": {
+    "method": "concaveman",
+    "simplification": {
+      "mode": "simple",
+      "tolerance": 0.0001,
+      "highQuality": false
+    }
   },
   "simplification": {
     "simplifyTolerance": {
       "tolerance": 0.0001,
       "highQuality": false,
       "mutate": false
+    },
+    "dynamicMode": {
+      "fractionGuard": 0.9,
+      "multipiler": 2
     }
+  },
+  "boundingBox": {
+    "addMidPointMarkers": true
+  },
+  "bezier": {
+    "resolution": 10000,
+    "sharpness": 0.75
   }
 }
 ```
@@ -208,6 +351,10 @@ const polyDrawControl = L.control
 | **mergePolygons**                                                  | boolean | `true`                         | Auto-merge polygons during drawing when they intersect    |
 | **kinks**                                                          | boolean | `false`                        | Allow self-intersecting polygons                          |
 | **modes**                                                          | object  |                                | Feature toggles                                           |
+| &nbsp;&nbsp;draw                                                   | boolean | `true`                         | Enable draw mode button                                   |
+| &nbsp;&nbsp;subtract                                               | boolean | `true`                         | Enable subtract mode button                               |
+| &nbsp;&nbsp;deleteAll                                              | boolean | `true`                         | Enable delete all button                                  |
+| &nbsp;&nbsp;p2p                                                    | boolean | `true`                         | Enable point-to-point drawing mode                        |
 | &nbsp;&nbsp;attachElbow                                            | boolean | `true`                         | Enable clicking on edges to add vertices                  |
 | &nbsp;&nbsp;dragElbow                                              | boolean | `true`                         | Enable dragging vertices                                  |
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                         | Enable dragging entire polygons                           |
@@ -793,7 +940,7 @@ Big thank you and kudos to these amazing developers!
 - **Smart Merging**: Dual merge systems for drawing and dragging
 - **Marker Separation**: Intelligent positioning prevents overlaps
 - **Enhanced Events**: Comprehensive event system
-- **Production Ready**: 194+ passing tests, full TypeScript support
+- **Production Ready**: 167+ passing tests, full TypeScript support
 - **Performance Optimized**: Efficient geometric operations
 
 ---
