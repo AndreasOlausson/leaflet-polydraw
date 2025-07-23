@@ -150,37 +150,19 @@ describe('Polygon Dragging Tests', () => {
         .mockImplementation(() => {});
 
       (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
-
-      // Get the mousedown handler
-      const mousedownCall = mockPolygon.on.mock.calls.find((call) => call[0] === 'mousedown');
-      const mousedownHandler = mousedownCall ? mousedownCall[1] : undefined;
-
-      // Simulate mousedown with modifier key
-      if (mousedownHandler) {
-        mousedownHandler({
-          originalEvent: { ctrlKey: true },
-          latlng: { lat: 0, lng: 0 },
-        });
-      }
-
-      // Get the mouseup handler
-      const mouseupCall = mockMap.on.mock.calls.find((call) => call[0] === 'mouseup');
-      const mouseupHandler = mouseupCall ? mouseupCall[1] : undefined;
-
-      // Set the current drag polygon
-      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
-      (polydraw as any).polygonMutationManager.currentModifierDragMode = true;
-      mockPolygon._polydrawDragData.isDragging = true;
       (polydraw as any).arrayOfFeatureGroups = [
         {
           eachLayer: (fn: any) => fn(mockPolygon),
         },
       ];
 
-      // Simulate mouseup
-      if (mouseupHandler) {
-        mouseupHandler({ latlng: { lat: 1, lng: 1 } });
-      }
+      // Set up the drag state properly
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = true;
+      mockPolygon._polydrawDragData.isDragging = true;
+
+      // Directly call the mouse up handler with modifier drag mode active
+      (polydraw as any).polygonMutationManager.onPolygonMouseUp({ latlng: { lat: 1, lng: 1 } });
 
       expect(performModifierSubtractSpy).toHaveBeenCalled();
     });
@@ -522,7 +504,9 @@ describe('Polygon Dragging Tests', () => {
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
       };
 
-      (polydraw as any).currentDragPolygon = mockPolygon;
+      // Set up the drag state properly
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
 
       // Simulate mouse up to end drag
       (polydraw as any).polygonMutationManager.onPolygonMouseUp({ latlng: { lat: 1, lng: 1 } });
@@ -560,7 +544,9 @@ describe('Polygon Dragging Tests', () => {
         ],
       };
 
-      (polydraw as any).currentDragPolygon = mockPolygon;
+      // Set up the drag state properly
+      (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
 
       // Test drag within reasonable bounds
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
@@ -804,7 +790,9 @@ describe('Polygon Dragging Tests', () => {
         getLatLngs: () => [[manyVertices.map(([lng, lat]) => ({ lat, lng }))]],
       };
 
-      (polydraw as any).currentDragPolygon = complexPolygon;
+      // Set up the drag state properly
+      (polydraw as any).polygonMutationManager.currentDragPolygon = complexPolygon;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
 
       const startTime = performance.now();
 
@@ -848,7 +836,9 @@ describe('Polygon Dragging Tests', () => {
         getLatLngs: () => [[outerRing, hole]],
       };
 
-      (polydraw as any).currentDragPolygon = polygonWithHole;
+      // Set up the drag state properly
+      (polydraw as any).polygonMutationManager.currentDragPolygon = polygonWithHole;
+      (polydraw as any).polygonMutationManager.currentModifierDragMode = false;
 
       const mouseMoveEvent = { latlng: { lat: 0.1, lng: 0.1 } };
 
