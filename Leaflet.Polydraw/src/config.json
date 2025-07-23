@@ -1,12 +1,16 @@
 {
   "touchSupport": true,
-  "mergePolygons": true,
+  "mergePolygons": false,
   "kinks": false,
   "modes": {
-    "attachElbow": true,
-    "dragElbow": true,
-    "dragPolygons": true,
-    "edgeDeletion": true
+    "draw": true,
+    "subtract": true,
+    "deleteAll": true,
+    "p2p": true,
+    "attachElbow": false,
+    "dragElbow": false,
+    "dragPolygons": false,
+    "edgeDeletion": false
   },
   "dragPolygons": {
     "realTimeUpdate": false,

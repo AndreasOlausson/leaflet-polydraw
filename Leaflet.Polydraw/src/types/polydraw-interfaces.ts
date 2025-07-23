@@ -108,6 +108,10 @@ export interface PolylineStyleOptions {
  * Mode configuration interface
  */
 export interface ModeConfig {
+  draw: boolean;
+  subtract: boolean;
+  deleteAll: boolean;
+  p2p: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;

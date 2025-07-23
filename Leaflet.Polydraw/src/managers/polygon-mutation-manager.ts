@@ -29,6 +29,7 @@ export interface MutationManagerDependencies {
   map: L.Map;
   config: PolydrawConfig;
   modeManager: ModeManager;
+  getFeatureGroups: () => L.FeatureGroup[];
 }
 
 /**
@@ -42,7 +43,7 @@ export class PolygonMutationManager {
   private map: L.Map;
   private config: PolydrawConfig;
   private modeManager: ModeManager;
-  private arrayOfFeatureGroups: L.FeatureGroup[] = [];
+  private getFeatureGroups: () => L.FeatureGroup[];
   private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
   // Specialized managers
@@ -57,6 +58,7 @@ export class PolygonMutationManager {
     this.map = dependencies.map;
     this.config = dependencies.config;
     this.modeManager = dependencies.modeManager;
+    this.getFeatureGroups = dependencies.getFeatureGroups;
 
     // Initialize specialized managers
     this.initializeSpecializedManagers(dependencies);
@@ -95,7 +97,7 @@ export class PolygonMutationManager {
         modeManager: dependencies.modeManager,
       },
       {
-        getFeatureGroups: () => this.arrayOfFeatureGroups,
+        getFeatureGroups: this.getFeatureGroups,
         addFeatureGroup: (fg: L.FeatureGroup) => this.addFeatureGroupInternal(fg),
         removeFeatureGroup: (fg: L.FeatureGroup) => this.removeFeatureGroupInternal(fg),
       },
@@ -135,6 +137,9 @@ export class PolygonMutationManager {
     });
     this.interactionManager.on('performSubtractOperation', (data) => {
       this.subtractPolygon(data.subtractPolygon);
+    });
+    this.interactionManager.on('polygonDeleted', () => {
+      this.emit('polygonDeleted');
     });
   }
 
@@ -221,14 +226,6 @@ export class PolygonMutationManager {
   }
 
   /**
-   * Set the reference to the feature groups array
-   */
-  setFeatureGroups(featureGroups: L.FeatureGroup[]): void {
-    console.log('PolygonMutationManager setFeatureGroups');
-    this.arrayOfFeatureGroups = featureGroups;
-  }
-
-  /**
    * Add event listener
    */
   on(event: string, callback: (...args: any[]) => void): void {
@@ -264,7 +261,7 @@ export class PolygonMutationManager {
       if (
         this.config.mergePolygons &&
         !noMerge &&
-        this.arrayOfFeatureGroups.length > 0 &&
+        this.getFeatureGroups().length > 0 &&
         !this.config.kinks
       ) {
         return await this.mergePolygon(latlngs);
@@ -288,7 +285,7 @@ export class PolygonMutationManager {
       // Find only the polygons that actually intersect with the subtract area
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      this.getFeatureGroups().forEach((featureGroup) => {
         try {
           const featureCollection = featureGroup.toGeoJSON() as any;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
@@ -453,7 +450,7 @@ export class PolygonMutationManager {
         // Continue without edge listeners if they fail
       }
 
-      this.arrayOfFeatureGroups.push(featureGroup);
+      this.getFeatureGroups().push(featureGroup);
 
       // Add to map - this should be done after all setup is complete
       try {
@@ -489,7 +486,7 @@ export class PolygonMutationManager {
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
       let polyIntersection: boolean = false;
 
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      this.getFeatureGroups().forEach((featureGroup) => {
         try {
           const featureCollection = featureGroup.toGeoJSON() as any;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
@@ -607,7 +604,7 @@ export class PolygonMutationManager {
    */
   private addFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
     console.log('PolygonMutationManager addFeatureGroupInternal');
-    this.arrayOfFeatureGroups.push(featureGroup);
+    this.getFeatureGroups().push(featureGroup);
   }
 
   /**
@@ -616,9 +613,11 @@ export class PolygonMutationManager {
   private removeFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
     console.log('PolygonMutationManager removeFeatureGroupInternal');
     featureGroup.clearLayers();
-    this.arrayOfFeatureGroups = this.arrayOfFeatureGroups.filter(
-      (featureGroups) => featureGroups !== featureGroup,
-    );
+    const featureGroups = this.getFeatureGroups();
+    const index = featureGroups.indexOf(featureGroup);
+    if (index > -1) {
+      featureGroups.splice(index, 1);
+    }
     this.map.removeLayer(featureGroup);
   }
 
@@ -943,7 +942,7 @@ export class PolygonMutationManager {
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
       // Find all feature groups that intersect with the dragged polygon
-      this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      this.getFeatureGroups().forEach((featureGroup) => {
         if (featureGroup === originalFeatureGroup) {
           return;
         }

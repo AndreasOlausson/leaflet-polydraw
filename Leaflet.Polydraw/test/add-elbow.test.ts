@@ -139,7 +139,17 @@ describe('Add Elbow Functionality', () => {
 
   beforeEach(() => {
     map = new L.Map(document.createElement('div'));
-    polydraw = new Polydraw();
+    // Create a custom config for these tests that enables attachElbow
+    const testConfig = {
+      modes: {
+        p2p: true,
+        attachElbow: true,
+        dragElbow: false,
+        dragPolygons: false,
+        edgeDeletion: false,
+      },
+    };
+    polydraw = new Polydraw({ config: testConfig as any });
     // Manually call onAdd to initialize the mutation manager, mimicking Leaflet's behavior
     (polydraw as any).onAdd(map);
     (polydraw as any).map = map;

@@ -181,10 +181,7 @@ describe('Polygon Dragging Tests', () => {
       };
 
       // Set up feature groups - the dragged polygon will be subtracted from intersecting ones
-      (polydraw as any).polygonMutationManager.arrayOfFeatureGroups = [
-        draggedFeatureGroup,
-        targetFeatureGroup,
-      ];
+      (polydraw as any).arrayOfFeatureGroups = [draggedFeatureGroup, targetFeatureGroup];
 
       // Mock the emit method to capture polygon modification events
       const emitSpy = vi.spyOn(
@@ -789,10 +786,7 @@ describe('Polygon Dragging Tests', () => {
         clearLayers: vi.fn(),
       };
 
-      (polydraw as any).polygonMutationManager.arrayOfFeatureGroups = [
-        draggedFeatureGroup,
-        targetFeatureGroup,
-      ];
+      (polydraw as any).arrayOfFeatureGroups = [draggedFeatureGroup, targetFeatureGroup];
 
       // Mock the emit method to capture polygon modification events
       const emitSpy = vi.spyOn(

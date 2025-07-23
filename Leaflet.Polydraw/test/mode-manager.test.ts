@@ -92,17 +92,25 @@ describe('ModeManager', () => {
   });
 
   it('should return to Off mode from a drawing mode', () => {
+    // Create a specific config for this test where dragElbow is enabled
+    const testConfig = {
+      ...config,
+      modes: { ...config.modes, dragElbow: true },
+    };
+    const managerWithDrag = new ModeManager(testConfig);
+
     // Go into a drawing mode first
-    modeManager.updateStateForMode(DrawMode.Add);
-    expect(modeManager.getCurrentMode()).toBe(DrawMode.Add);
+    managerWithDrag.updateStateForMode(DrawMode.Add);
+    expect(managerWithDrag.getCurrentMode()).toBe(DrawMode.Add);
 
     // Transition back to Off mode
-    modeManager.updateStateForMode(DrawMode.Off);
-    expect(modeManager.getCurrentMode()).toBe(DrawMode.Off);
-    expect(modeManager.isInOffMode()).toBe(true);
-    expect(modeManager.isInDrawingMode()).toBe(false);
-    expect(modeManager.canPerformAction('markerDrag')).toBe(true);
-    expect(modeManager.shouldShowCrosshairCursor()).toBe(false);
+    managerWithDrag.updateStateForMode(DrawMode.Off);
+    expect(managerWithDrag.getCurrentMode()).toBe(DrawMode.Off);
+    expect(managerWithDrag.isInOffMode()).toBe(true);
+    expect(managerWithDrag.isInDrawingMode()).toBe(false);
+    // This should now pass because we enabled it in the config for this test
+    expect(managerWithDrag.canPerformAction('markerDrag')).toBe(true);
+    expect(managerWithDrag.shouldShowCrosshairCursor()).toBe(false);
   });
 
   it('should respect config options for initial state', () => {

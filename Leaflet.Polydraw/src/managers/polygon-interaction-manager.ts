@@ -150,10 +150,14 @@ export class PolygonInteractionManager {
 
       if (this.config.modes.dragElbow) {
         marker.on('drag', (e) => {
-          this.markerDrag(featureGroup);
+          if (this.modeManager.canPerformAction('markerDrag')) {
+            this.markerDrag(featureGroup);
+          }
         });
         marker.on('dragend', (e) => {
-          this.markerDragEnd(featureGroup);
+          if (this.modeManager.canPerformAction('markerDrag')) {
+            this.markerDragEnd(featureGroup);
+          }
         });
       }
 
@@ -197,6 +201,7 @@ export class PolygonInteractionManager {
             if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
+              this.emit('polygonDeleted');
             }
           }
         }
@@ -470,6 +475,10 @@ export class PolygonInteractionManager {
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
     console.log('PolygonInteractionManager onEdgeClick');
+    // Enforce the configuration setting for attaching elbows.
+    if (!this.config.modes.attachElbow) {
+      return;
+    }
     if (!this.modeManager.isInOffMode()) {
       return;
     }
@@ -526,6 +535,10 @@ export class PolygonInteractionManager {
 
   private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>): void {
     console.log('PolygonInteractionManager elbowClicked');
+    // Enforce the configuration setting for edge deletion.
+    if (!this.config.modes.edgeDeletion) {
+      return;
+    }
     if (!this.isModifierKeyPressed(e.originalEvent)) {
       return;
     }

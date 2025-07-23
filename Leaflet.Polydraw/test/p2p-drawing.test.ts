@@ -215,7 +215,7 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
       p2pButton.click();
     });
 
-    it('should complete polygon when double-clicking after minimum 3 points', () => {
+    it('should complete polygon when double-clicking after minimum 3 points', async () => {
       const points = [L.latLng(59.3293, 18.0686), L.latLng(59.33, 18.07), L.latLng(59.329, 18.071)];
 
       // Add minimum 3 points
@@ -226,21 +226,19 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
       // Get initial polygon count
       const initialPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
 
-      // Simulate double-click by firing mousedown twice quickly
+      // Simulate double-click
       const lastPoint = L.latLng(59.3285, 18.069);
-      map.fire('mousedown', { latlng: lastPoint });
+      map.fire('dblclick', { latlng: lastPoint });
 
-      // Simulate second click within double-click threshold
-      setTimeout(() => {
-        map.fire('mousedown', { latlng: lastPoint });
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Should have created a polygon
-        const finalPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
-        expect(finalPolygonCount).toBe(initialPolygonCount + 1);
+      // Should have created a polygon
+      const finalPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
+      expect(finalPolygonCount).toBe(initialPolygonCount + 1);
 
-        // Should return to Off mode
-        expect(polydraw.getDrawMode()).toBe(DrawMode.Off);
-      }, 100);
+      // Should return to Off mode
+      expect(polydraw.getDrawMode()).toBe(DrawMode.Off);
     });
 
     it('should complete polygon when clicking on first point', () => {
@@ -266,7 +264,7 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
       expect(polydraw.getDrawMode()).toBe(DrawMode.Off);
     });
 
-    it('should not complete polygon with less than 3 points', () => {
+    it('should not complete polygon with less than 3 points', async () => {
       const points = [L.latLng(59.3293, 18.0686), L.latLng(59.33, 18.07)];
 
       // Add only 2 points
@@ -278,21 +276,20 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
 
       // Try to double-click to complete
       const lastPoint = L.latLng(59.3285, 18.069);
-      map.fire('mousedown', { latlng: lastPoint });
+      map.fire('dblclick', { latlng: lastPoint });
 
-      setTimeout(() => {
-        map.fire('mousedown', { latlng: lastPoint });
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Should NOT have created a polygon
-        const finalPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
-        expect(finalPolygonCount).toBe(initialPolygonCount);
+      // Should NOT have created a polygon
+      const finalPolygonCount = (polydraw as any).arrayOfFeatureGroups.length;
+      expect(finalPolygonCount).toBe(initialPolygonCount);
 
-        // Should still be in PointToPoint mode
-        expect(polydraw.getDrawMode()).toBe(DrawMode.PointToPoint);
-      }, 100);
+      // Should still be in PointToPoint mode
+      expect(polydraw.getDrawMode()).toBe(DrawMode.PointToPoint);
     });
 
-    it('should create solid polygon that integrates with existing polygon system', () => {
+    it('should create solid polygon that integrates with existing polygon system', async () => {
       const points = [L.latLng(59.3293, 18.0686), L.latLng(59.33, 18.07), L.latLng(59.329, 18.071)];
 
       // Add points and complete
@@ -302,27 +299,26 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
 
       // Complete by double-clicking
       const lastPoint = L.latLng(59.3285, 18.069);
-      map.fire('mousedown', { latlng: lastPoint });
+      map.fire('dblclick', { latlng: lastPoint });
 
-      setTimeout(() => {
-        map.fire('mousedown', { latlng: lastPoint });
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Verify polygon was created and added to the system
-        const featureGroups = (polydraw as any).arrayOfFeatureGroups;
-        expect(featureGroups.length).toBe(1);
+      // Verify polygon was created and added to the system
+      const featureGroups = (polydraw as any).arrayOfFeatureGroups;
+      expect(featureGroups.length).toBe(1);
 
-        // Verify the polygon has the expected structure
-        const featureGroup = featureGroups[0];
-        const layers = featureGroup.getLayers();
+      // Verify the polygon has the expected structure
+      const featureGroup = featureGroups[0];
+      const layers = featureGroup.getLayers();
 
-        // Should have polygon layer and markers
-        const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
-        expect(polygonLayer).toBeTruthy();
+      // Should have polygon layer and markers
+      const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
+      expect(polygonLayer).toBeTruthy();
 
-        // Should have markers for polygon vertices
-        const markers = layers.filter((layer) => layer instanceof L.Marker);
-        expect(markers.length).toBeGreaterThan(0);
-      }, 100);
+      // Should have markers for polygon vertices
+      const markers = layers.filter((layer) => layer instanceof L.Marker);
+      expect(markers.length).toBeGreaterThan(0);
     });
   });
 

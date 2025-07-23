@@ -40,7 +40,8 @@ class Polydraw extends L.Control {
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
     this.modeManager = new ModeManager(this.config);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
-      // Handle polygon info update
+      // This is the perfect central place to keep the indicator in sync.
+      this.updateActivateButtonIndicator();
     });
     this._boundKeyDownHandler = this.handleKeyDown.bind(this);
 
@@ -56,6 +57,7 @@ class Polydraw extends L.Control {
       .leaflet-control a { background-color: #fff; color: #000; display: flex; align-items: center; justify-content: center; }
       .leaflet-control a:hover { background-color: #f4f4f4; }
       .leaflet-control a.active { background-color:rgb(128, 218, 255); color: #fff; }
+      .polydraw-indicator-active { background-color: #ffcc00 !important; }
       .crosshair-cursor-enabled { cursor: crosshair !important; }
       .crosshair-cursor-enabled * { cursor: crosshair !important; }
       .leaflet-polydraw-p2p-marker { background-color: #fff; border: 2px solid #50622b; border-radius: 50%; box-sizing: border-box; }
@@ -89,6 +91,8 @@ class Polydraw extends L.Control {
           this.subContainer.style.maxHeight = '250px';
         }
       }
+      // Update the indicator state whenever the panel is toggled
+      this.updateActivateButtonIndicator();
     };
 
     const onDrawClick = (e?: Event) => {
@@ -163,6 +167,7 @@ class Polydraw extends L.Control {
     createButtons(
       container,
       this.subContainer,
+      this.config,
       onActivateToggle,
       onDrawClick,
       onSubtractClick,
@@ -194,13 +199,13 @@ class Polydraw extends L.Control {
       map: this.map,
       config: this.config,
       modeManager: this.modeManager,
+      getFeatureGroups: () => this.arrayOfFeatureGroups,
     });
-
-    // Set the feature groups reference so the manager can work with the same array
-    this.polygonMutationManager.setFeatureGroups(this.arrayOfFeatureGroups);
 
     // Listen for polygon operation completion events to reset draw mode
     this.polygonMutationManager.on('polygonOperationComplete', (data) => {
+      // Update the indicator state after any polygon operation
+      this.updateActivateButtonIndicator();
       // Use the interaction state manager to reset to Off mode
       this.modeManager.updateStateForMode(DrawMode.Off);
       this.drawMode = DrawMode.Off;
@@ -234,6 +239,11 @@ class Polydraw extends L.Control {
       }
     });
 
+    // Listen for polygon deletion events to update the activate button indicator
+    this.polygonMutationManager.on('polygonDeleted', () => {
+      this.updateActivateButtonIndicator();
+    });
+
     return container;
   }
 
@@ -241,6 +251,10 @@ class Polydraw extends L.Control {
     console.log('addTo');
     super.addTo(map);
     return this;
+  }
+
+  public getFeatureGroups(): L.FeatureGroup[] {
+    return this.arrayOfFeatureGroups;
   }
 
   onRemove(_map: L.Map) {
@@ -448,9 +462,11 @@ class Polydraw extends L.Control {
         // Silently handle layer removal errors
       }
     });
-    this.arrayOfFeatureGroups = [];
+    this.arrayOfFeatureGroups.length = 0; // Clear the array in-place to preserve the reference
     this.polygonInformation.deletePolygonInformationStorage();
     this.polygonInformation.updatePolygons();
+    // Update the indicator state after removing all polygons
+    this.updateActivateButtonIndicator();
   }
 
   private stopDraw() {
@@ -1032,6 +1048,26 @@ class Polydraw extends L.Control {
       return event.metaKey; // Cmd key on Mac
     } else {
       return event.ctrlKey; // Ctrl key on Windows/Linux
+    }
+  }
+
+  private updateActivateButtonIndicator() {
+    if (typeof this.getContainer !== 'function') {
+      return; // In some test environments, the container may not be available.
+    }
+    const container = this.getContainer();
+    if (!container) return;
+
+    const activateButton = container.querySelector('.icon-activate') as HTMLElement;
+    if (!activateButton) return;
+
+    const hasPolygons = this.arrayOfFeatureGroups.length > 0;
+    const isPanelClosed = !L.DomUtil.hasClass(activateButton, 'active');
+
+    if (hasPolygons && isPanelClosed) {
+      L.DomUtil.addClass(activateButton, 'polydraw-indicator-active');
+    } else {
+      L.DomUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
   }
 }
