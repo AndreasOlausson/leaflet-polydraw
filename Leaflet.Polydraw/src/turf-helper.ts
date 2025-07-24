@@ -389,31 +389,14 @@ export class TurfHelper {
       }
 
       // Method 4: Bounding box overlap check as final fallback
-      // Only use this for very close polygons, not just any bounding box overlap
+      // This method is too aggressive and causes false positives, so we'll disable it
+      // Only use the more precise geometric methods above
       try {
-        const bbox1 = turf.bbox(polygon);
-        const bbox2 = turf.bbox(latlngs);
-
-        // Check if bounding boxes overlap
-        const overlaps = !(
-          bbox1[2] < bbox2[0] || // bbox1.maxX < bbox2.minX
-          bbox2[2] < bbox1[0] || // bbox2.maxX < bbox1.minX
-          bbox1[3] < bbox2[1] || // bbox1.maxY < bbox2.minY
-          bbox2[3] < bbox1[1] // bbox2.maxY < bbox1.minY
-        );
-
-        if (overlaps) {
-          // Additional check: only return true if polygons are very close
-          // Calculate the distance between polygon centers
-          const center1 = turf.centroid(polygon);
-          const center2 = turf.centroid(latlngs);
-          const distance = turf.distance(center1, center2, { units: 'kilometers' });
-
-          // Only consider it an intersection if polygons are very close (within 100 meters)
-          if (distance < 0.1) {
-            return true;
-          }
-        }
+        // Disabled: Bounding box overlap was causing false intersection detection
+        // for separate polygons that don't actually intersect geometrically
+        // If we reach this point, none of the precise geometric methods detected
+        // an intersection, so we should return false rather than using a fallback
+        // that might give false positives
       } catch (error) {
         console.warn('Error in bounding box check:', error.message);
       }

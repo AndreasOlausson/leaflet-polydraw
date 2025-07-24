@@ -841,25 +841,32 @@ export class PolygonInteractionManager {
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
+      // Find the specific feature group that contains this exact polygon
       for (const fg of this.getFeatureGroups()) {
+        let foundPolygon = false;
         fg.eachLayer((layer) => {
           if (layer === polygon) {
-            featureGroup = fg;
+            foundPolygon = true;
           }
         });
-        if (featureGroup) break;
+        if (foundPolygon) {
+          featureGroup = fg;
+          break;
+        }
       }
 
       if (!featureGroup) {
         return;
       }
 
-      const dragSessionKey = '_polydrawDragSession_' + Date.now();
+      // Ensure this drag session is unique to this specific polygon
+      const dragSessionKey = '_polydrawDragSession_' + Date.now() + '_' + L.Util.stamp(polygon);
       if (!polygon._polydrawCurrentDragSession) {
         polygon._polydrawCurrentDragSession = dragSessionKey;
         polygon._polydrawOriginalMarkerPositions = new Map();
         polygon._polydrawOriginalHoleLinePositions = new Map();
 
+        // Only store markers and lines that belong to THIS specific feature group
         featureGroup.eachLayer((layer) => {
           if (layer instanceof L.Marker) {
             polygon._polydrawOriginalMarkerPositions.set(layer, layer.getLatLng());
@@ -869,6 +876,8 @@ export class PolygonInteractionManager {
         });
       }
 
+      // Only update markers and lines that belong to THIS specific feature group
+      // and that were stored in the original positions map
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           const originalPos = polygon._polydrawOriginalMarkerPositions.get(layer);
@@ -892,6 +901,7 @@ export class PolygonInteractionManager {
       });
     } catch (error) {
       // Silently handle errors
+      console.warn('Error updating markers during drag:', error);
     }
   }
 
@@ -1119,12 +1129,21 @@ export class PolygonInteractionManager {
             const difference = this.turfHelper.polygonDifference(existingPolygon, draggedPolygon);
 
             if (difference && difference.geometry) {
-              // Add the result polygon(s) back to the map
-              this.emit('polygonModified', {
-                operation: 'modifierSubtract',
-                polygon: difference,
-                allowMerge: false, // Don't merge the result of subtract operations
-              });
+              // Use the same approach as regular subtract: create separate polygons for each result
+              // Get the coordinates and create individual polygons
+              const coords = this.turfHelper.getCoords(difference);
+
+              // Create separate polygons for each coordinate set (like regular subtract does)
+              for (const coordSet of coords) {
+                const individualPolygon = this.turfHelper.getMultiPolygon([coordSet]);
+
+                // Emit each result polygon separately to ensure they get separate feature groups
+                this.emit('polygonModified', {
+                  operation: 'modifierSubtract',
+                  polygon: this.turfHelper.getTurfPolygon(individualPolygon),
+                  allowMerge: false, // Don't merge the result of subtract operations
+                });
+              }
             }
           } catch (differenceError) {
             console.warn('Failed to perform difference operation:', differenceError);

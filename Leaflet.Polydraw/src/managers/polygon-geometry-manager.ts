@@ -116,35 +116,14 @@ export class PolygonGeometryManager {
     }
 
     // Method 5: Bounding box overlap check with distance validation
+    // This method is too aggressive and causes false positives, so we'll disable it
+    // Only use the more precise geometric methods above
     try {
-      const bbox1 = this.getBoundingBox(polygon1);
-      const bbox2 = this.getBoundingBox(polygon2);
-
-      if (bbox1 && bbox2) {
-        const overlaps = !(
-          bbox1.maxLng < bbox2.minLng ||
-          bbox2.maxLng < bbox1.minLng ||
-          bbox1.maxLat < bbox2.minLat ||
-          bbox2.maxLat < bbox1.minLat
-        );
-
-        if (overlaps) {
-          // Additional check: only return true if polygons are very close
-          const center1 = this.getPolygonCenter(polygon1);
-          const center2 = this.getPolygonCenter(polygon2);
-
-          if (center1 && center2) {
-            const distance = Math.sqrt(
-              Math.pow(center1.lng - center2.lng, 2) + Math.pow(center1.lat - center2.lat, 2),
-            );
-
-            // Only consider it an intersection if polygons are very close (within 0.01 degrees)
-            if (distance < 0.01) {
-              return true;
-            }
-          }
-        }
-      }
+      // Disabled: Bounding box overlap was causing false intersection detection
+      // for separate polygons that don't actually intersect geometrically
+      // If we reach this point, none of the precise geometric methods detected
+      // an intersection, so we should return false rather than using a fallback
+      // that might give false positives
     } catch (error) {
       // Continue to fallback
     }

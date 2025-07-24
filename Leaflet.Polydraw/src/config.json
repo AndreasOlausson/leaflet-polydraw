@@ -157,7 +157,7 @@
     "method": "concaveman",
     "simplification": {
       "mode": "simple",
-      "tolerance": 0.0001,
+      "tolerance": 0.00001,
       "highQuality": false
     }
   },

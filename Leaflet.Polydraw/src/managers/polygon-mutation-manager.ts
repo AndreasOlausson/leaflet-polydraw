@@ -603,6 +603,16 @@ export class PolygonMutationManager {
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
     polygon.setStyle(this.config.polygonOptions);
 
+    // Ensure each polygon has a unique identifier to prevent cross-contamination
+    polygon._polydrawUniqueId = L.Util.stamp(polygon) + '_' + Date.now();
+
+    // Clear any existing drag data to ensure clean state
+    delete polygon._polydrawDragData;
+    delete polygon._polydrawOriginalLatLngs;
+    delete polygon._polydrawCurrentDragSession;
+    delete polygon._polydrawOriginalMarkerPositions;
+    delete polygon._polydrawOriginalHoleLinePositions;
+
     // Enable polygon dragging using interaction manager
     if (this.config.modes.dragPolygons) {
       this.interactionManager.enablePolygonDragging(polygon, latlngs);
