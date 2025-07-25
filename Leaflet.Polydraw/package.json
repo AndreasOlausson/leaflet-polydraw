@@ -1,6 +1,6 @@
 {
   "name": "leaflet-polydraw",
-  "version": "1.0.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "Advanced polygon drawing and editing plugin for Leaflet with drag-and-drop, smart merging, and comprehensive editing tools",
   "main": "dist/polydraw.es.js",

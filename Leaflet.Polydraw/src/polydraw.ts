@@ -31,10 +31,54 @@ class Polydraw extends L.Control {
   private _boundKeyUpHandler: (e: KeyboardEvent) => void;
   private isModifierKeyHeld: boolean = false;
 
-  constructor(options?: L.ControlOptions & { config?: PolydrawConfig }) {
+  constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
     console.log('constructor');
     super(options);
-    this.config = { ...defaultConfig, ...(options?.config || {}) } as PolydrawConfig;
+
+    // Initialize with default config first
+    this.config = defaultConfig as PolydrawConfig;
+
+    // If configPath is provided, load external config
+    if (options?.configPath) {
+      this.loadExternalConfig(options.configPath, options?.config);
+    } else {
+      // Apply inline config if no external config path
+      this.config = { ...defaultConfig, ...(options?.config || {}) } as PolydrawConfig;
+      this.initializeComponents();
+    }
+  }
+
+  private async loadExternalConfig(configPath: string, inlineConfig?: PolydrawConfig) {
+    try {
+      const response = await fetch(configPath);
+      if (!response.ok) {
+        throw new Error(
+          `Failed to load config from ${configPath}: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const externalConfig = await response.json();
+
+      // Merge configs: default < external < inline (inline has highest priority)
+      this.config = {
+        ...defaultConfig,
+        ...externalConfig,
+        ...(inlineConfig || {}),
+      } as PolydrawConfig;
+
+      this.initializeComponents();
+    } catch (error) {
+      console.warn(
+        'Failed to load external config, falling back to default + inline config:',
+        error,
+      );
+      // Fallback to default + inline config if external loading fails
+      this.config = { ...defaultConfig, ...(inlineConfig || {}) } as PolydrawConfig;
+      this.initializeComponents();
+    }
+  }
+
+  private initializeComponents() {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
@@ -1074,7 +1118,7 @@ class Polydraw extends L.Control {
 
 // Add the polydraw method to L.control with proper typing
 (L.control as any).polydraw = function (
-  options?: L.ControlOptions & { config?: PolydrawConfig },
+  options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
 ): Polydraw {
   return new Polydraw(options);
 };

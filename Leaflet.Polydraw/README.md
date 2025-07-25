@@ -43,49 +43,6 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 npm install leaflet-polydraw
 ```
 
-### TypeScript Support
-
-This package includes TypeScript declarations. If you encounter declaration issues, create a custom declaration file:
-
-```typescript
-// src/leaflet-polydraw.d.ts
-declare module 'leaflet-polydraw' {
-  import * as L from 'leaflet';
-
-  export default class Polydraw extends L.Control {
-    constructor(options?: L.ControlOptions & { config?: any });
-    addTo(map: L.Map): this;
-    configurate(config: any): void;
-    addPredefinedPolygon(geographicBorders: L.LatLng[][][]): void;
-    setDrawMode(mode: any): void;
-    enablePolygonDraggingMode(enable?: boolean): void;
-    // ... other methods
-  }
-
-  export enum DrawMode {
-    Off = 0,
-    Add = 1,
-    Edit = 2,
-    Subtract = 4,
-    AppendMarker = 8,
-    LoadPredefined = 16,
-    PointToPoint = 32,
-  }
-
-  export enum MarkerPosition {
-    SouthWest = 0,
-    South = 1,
-    SouthEast = 2,
-    East = 3,
-    NorthEast = 4,
-    North = 5,
-    NorthWest = 6,
-    West = 7,
-    Hole = 8,
-  }
-}
-```
-
 ## Quick Start
 
 ### Basic Usage
@@ -95,26 +52,40 @@ import * as L from 'leaflet';
 import Polydraw from 'leaflet-polydraw';
 
 // Create your map
-const map = L.map('map').setView([59.911491, 10.757933], 16);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+const map = L.map('map').setView([58.402514, 15.606188], 10);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+}).addTo(map);
 
-// Add the PolyDraw control
-const polyDrawControl = L.control
-  .polydraw({
-    position: 'topright',
-  })
-  .addTo(map);
+// Add the PolyDraw control (includes all drawing buttons)
+const polydraw = new Polydraw();
+polydraw.addTo(map);
 
-// Listen for draw mode changes
-polyDrawControl.onDrawModeChanged((mode) => {
-  console.log('Draw mode changed to:', mode);
-});
+// Optionally add some predefined polygons
+const octagon = [
+  [
+    [
+      L.latLng(58.404493, 15.6),
+      L.latLng(58.402928, 15.602928),
+      L.latLng(58.4, 15.604493),
+      L.latLng(58.397072, 15.602928),
+      L.latLng(58.395507, 15.6),
+      L.latLng(58.397072, 15.597072),
+      L.latLng(58.4, 15.595507),
+      L.latLng(58.402928, 15.597072),
+      L.latLng(58.404493, 15.6),
+    ],
+  ],
+];
+
+polydraw.addPredefinedPolygon(octagon);
 ```
 
 ### Advanced Configuration
 
 ```javascript
-import Polydraw, { DrawMode, MarkerPosition } from 'leaflet-polydraw';
+import Polydraw from 'leaflet-polydraw';
 
 const polyDrawControl = L.control
   .polydraw({
@@ -137,10 +108,10 @@ const polyDrawControl = L.control
         infoMarker: true,
         menuMarker: true,
         markerDeleteIcon: {
-          position: MarkerPosition.NorthWest,
+          position: 5, // North
         },
         markerInfoIcon: {
-          position: MarkerPosition.NorthEast,
+          position: 4, // NorthEast
           useMetrics: true,
         },
       },
@@ -505,11 +476,61 @@ const polyDrawControl = L.control.polydraw({
 });
 ```
 
+You can also combine external configuration with inline configuration. Inline configuration takes precedence:
+
+```javascript
+const polyDrawControl = L.control.polydraw({
+  configPath: 'config/polydraw.json',
+  config: {
+    // These settings will override the external config
+    polygonOptions: {
+      color: '#ff0000',
+    },
+  },
+});
+```
+
+**Configuration Priority (highest to lowest):**
+
+1. Inline `config` parameter
+2. External configuration file
+3. Default configuration
+
+If the external configuration file fails to load, the plugin will fall back to using the default configuration plus any inline configuration provided.
+
 ## Features
+
+### Draw Mode
+
+[![Draw Mode](./docs/images/draw-mode.gif)](./docs/images/draw-mode.gif)
+
+Create polygons by drawing freehand shapes on the map. Perfect for:
+
+- Quick area sketching
+- Rough boundary mapping
+- Freehand polygon creation
+- Natural drawing workflow
+
+Simply click the draw button and drag your mouse/finger to create polygon shapes. The plugin automatically converts your drawn path into a clean polygon using advanced algorithms.
+
+**Note**: The number of vertices in the final polygon is controlled by the `polygonCreation.simplification` settings in the configuration.
+
+### Subtract Mode
+
+[![Subtract Mode](./docs/images/subtract-mode.gif)](./docs/images/subtract-mode.gif)
+
+Create holes and complex shapes by subtracting areas from existing polygons. Ideal for:
+
+- Creating holes in polygons
+- Removing unwanted areas
+- Complex shape editing
+- Precision area exclusion
+
+Click the subtract button and draw over existing polygons to remove those areas, creating holes or splitting polygons into multiple parts.
 
 ### Point-to-Point Drawing
 
-[![Point-to-Point Drawing](./docs/images/point-to-point-drawing.gif)](./docs/images/point-to-point-drawing.gif)
+[![Point-to-Point Drawing](./docs/images/p2p.gif)](./docs/images/p2p.gif)
 
 Create precise polygons by clicking to place each vertex. Perfect for:
 
@@ -517,9 +538,18 @@ Create precise polygons by clicking to place each vertex. Perfect for:
 - Property delineation
 - Custom shape creation
 
+**How it works:**
+
+1. Click to place the first vertex.
+2. Continue clicking to add more vertices.
+3. To complete the polygon (requires minimum 3 points):
+   - Click on the first vertex again.
+   - **or** Double-click anywhere on the map.
+4. Press `ESC` to cancel the current drawing.
+
 ### Smart Polygon Merging
 
-[![Smart Merging](./docs/images/smart-merging.gif)](./docs/images/smart-merging.gif)
+[![Smart Merging](./docs/images/merge.gif)](./docs/images/merge.gif)
 
 The plugin features **two independent merge systems**:
 
@@ -541,19 +571,32 @@ The plugin features **two independent merge systems**:
 
 **Drag-to-Merge**: Drag polygons together to automatically merge them
 
-**Drag-to-Hole**: Drag a polygon completely inside another to create a hole
+**Drag-to-Hole**: Drag a polygon completely inside another to create a hole (requires a modifier key defined in `config.dragPolygons.modifierSubtract.keys`)
 
 **Repositioning**: Drag to empty areas to simply reposition polygons
 
+### Drag Elbows (Vertex Editing)
+
+[![Drag Elbows](./docs/images/drag-elbows.gif)](./docs/images/drag-elbows.gif)
+
+Fine-tune polygon shapes by dragging individual vertices. Perfect for:
+
+- Precision boundary adjustments
+- Shape refinement after initial drawing
+- Correcting polygon edges
+- Detailed polygon editing
+
+Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex, click directly on the line between two existing points. To remove a vertex, hold the configured modifier key (defined in `config.dragPolygons.modifierSubtract.keys`) and click the vertex you want to delete. This provides full control over polygon geometry and shape refinement.
+
 ### Advanced Editing Tools
 
-[![Editing Tools](./docs/images/editing-tools.png)](./docs/images/editing-tools.png)
+[![Editing Tools](./docs/images/editing-tools.gif)](./docs/images/editing-tools.gif)
 
-Access powerful operations through the menu marker:
+Access operations through the menu marker:
 
 - **Simplify**: Reduce polygon complexity using Douglas-Peucker algorithm
-- **Bounding Box**: Convert to rectangular bounds
 - **Double Elbows**: Add intermediate vertices for higher resolution
+- **Bounding Box**: Convert to rectangular bounds
 - **Bezier Curves**: Apply smooth curve interpolation (alpha)
 
 ### Smart Marker System
@@ -568,28 +611,13 @@ Intelligent marker positioning prevents overlapping on small polygons:
 
 ## API Reference
 
-### Methods
+For most use cases, simply add the plugin and use the built-in buttons. However, these methods are available for programmatic control:
 
-#### `setDrawMode(mode: DrawMode)`
-
-Set the current drawing mode.
-
-```javascript
-import { DrawMode } from 'leaflet-polydraw';
-polyDrawControl.setDrawMode(DrawMode.Add);
-```
-
-#### `enablePolygonDraggingMode(enable: boolean)`
-
-Enable or disable polygon dragging.
-
-```javascript
-polyDrawControl.enablePolygonDraggingMode(true);
-```
+### Essential Methods
 
 #### `addPredefinedPolygon(geographicBorders: L.LatLng[][][])`
 
-Programmatically add polygons to the map.
+Add polygons programmatically (useful for loading saved data).
 
 ```javascript
 const polygon = [
@@ -602,7 +630,27 @@ const polygon = [
     ],
   ],
 ];
-polyDrawControl.addPredefinedPolygon(polygon);
+polydraw.addPredefinedPolygon(polygon);
+```
+
+#### `getAllPolygons()`
+
+Get all polygons for data export.
+
+```javascript
+const polygons = polydraw.getAllPolygons();
+// Use for saving, exporting, or processing polygon data
+```
+
+### Advanced Methods (Optional)
+
+#### `setDrawMode(mode: DrawMode)` & `getDrawMode()`
+
+Programmatically control drawing modes (the buttons do this automatically).
+
+```javascript
+import { DrawMode } from 'leaflet-polydraw';
+polydraw.setDrawMode(DrawMode.Add); // Same as clicking the draw button
 ```
 
 #### `configurate(config: any)`
@@ -610,56 +658,22 @@ polyDrawControl.addPredefinedPolygon(polygon);
 Update configuration after initialization.
 
 ```javascript
-polyDrawControl.configurate({
-  dragPolygons: {
-    autoMergeOnIntersect: false,
-    hoverCursor: 'pointer',
-  },
-  polygonOptions: {
-    color: '#ff0000',
-  },
+polydraw.configurate({
+  polygonOptions: { color: '#ff0000' },
 });
-```
-
-### Enums
-
-#### DrawMode
-
-```javascript
-enum DrawMode {
-    Off = 0,        // Drawing disabled, dragging enabled
-    Add = 1,        // Add new polygons
-    Edit = 2,       // Edit existing polygons
-    Subtract = 4    // Create holes in polygons
-}
-```
-
-#### MarkerPosition
-
-```javascript
-enum MarkerPosition {
-    SouthWest = 0,
-    South = 1,
-    SouthEast = 2,
-    East = 3,
-    NorthEast = 4,
-    North = 5,
-    NorthWest = 6,
-    West = 7
-}
 ```
 
 ## Markers
 
-[![Marker Types](./docs/images/marker-types.png)](./docs/images/marker-types.png)
+[![Marker Positions](./docs/images/marker-positions.png)](./docs/images/marker-positions.png)
 
-### Delete Marker (Default: North West)
+### Delete Marker (Default: North)
 
 - **Purpose**: Delete the entire polygon
 - **Icon**: Trash/delete icon
 - **Behavior**: Fades during drag operations
 
-### Info Marker (Default: North East)
+### Info Marker (Default: East)
 
 - **Purpose**: Display polygon metrics
 - **Features**: Area, perimeter, metric/imperial units
@@ -669,9 +683,12 @@ enum MarkerPosition {
 
 ### Menu Marker (Default: West)
 
-- **Purpose**: Access polygon operations
-- **Operations**: Simplify, bounding box, double elbows, bezier
-- **Popup**: Interactive operation menu
+- **Purpose**: Access advanced polygon editing operations
+- **Popup**: Interactive operation menu with the following tools:
+  - **Simplify**: Reduce polygon complexity by removing unnecessary vertices using Douglas-Peucker algorithm
+  - **Double Elbows**: Add intermediate vertices between existing points for higher resolution editing
+  - **Bounding Box**: Convert polygon to its rectangular bounding box
+  - **Bezier**: Apply smooth curve interpolation to polygon edges _(alpha feature)_
 
 [![Menu Marker Popup](./docs/images/menu-marker-popup.png)](./docs/images/menu-marker-popup.png)
 
@@ -702,186 +719,158 @@ const polyDrawControl = L.control.polydraw({
 });
 ```
 
-[![Marker Positions](./docs/images/marker-positions.png)](./docs/images/marker-positions.png)
+This configuration gives this result.
+
+![Marker Positions](./docs/images/star.png)
+
+```javascript
+MarkerPosition {
+    SouthWest = 0,
+    South = 1,
+    SouthEast = 2,
+    East = 3,
+    NorthEast = 4,
+    North = 5,
+    NorthWest = 6,
+    West = 7
+}
+```
 
 ## Events
 
+Polydraw emits various events that allow you to respond to user interactions and polygon changes. These events are useful for implementing features like auto-save, validation, analytics, or custom UI updates.
+
 ### Draw Mode Events
 
+Listen for drawing mode changes to update your UI or trigger specific behaviors:
+
 ```javascript
-polyDrawControl.onDrawModeChanged((mode) => {
+polydraw.onDrawModeChanged((mode) => {
   console.log('Draw mode changed to:', mode);
 
-  if (mode === DrawMode.Off) {
-    console.log('Polygon dragging is now available');
+  // Update UI based on current mode
+  switch (mode) {
+    case DrawMode.Add:
+      updateStatusBar('Drawing mode: Add polygons');
+      break;
+    case DrawMode.Subtract:
+      updateStatusBar('Drawing mode: Create holes');
+      break;
+    case DrawMode.Off:
+      updateStatusBar('Drag mode: Move polygons');
+      break;
   }
 });
 ```
 
-### Polygon Drag Events
+### Polygon Lifecycle Events
+
+Track polygon creation, modification, and deletion:
 
 ```javascript
-// Drag start
+// Polygon created
+map.on('polygon:created', (e) => {
+  console.log('New polygon created:', e.polygon);
+  // Auto-save, validate, or log the new polygon
+  savePolygonToDatabase(e.polygon);
+});
+
+// Polygon modified (vertices moved, simplified, etc.)
+map.on('polygon:modified', (e) => {
+  console.log('Polygon modified:', e.polygon);
+  // Mark as unsaved, trigger validation
+  markAsUnsaved(e.polygon);
+});
+
+// Polygon deleted
+map.on('polygon:deleted', (e) => {
+  console.log('Polygon deleted:', e.polygon);
+  // Remove from database, update counters
+  removeFromDatabase(e.polygonId);
+});
+```
+
+### Drag & Drop Events
+
+Monitor polygon dragging for real-time updates or validation:
+
+```javascript
+// Drag start - useful for showing drag indicators
 map.on('polygon:dragstart', (e) => {
   console.log('Drag started:', e.polygon);
-  console.log('Feature group:', e.featureGroup);
-  console.log('Original coordinates:', e.originalLatLngs);
+  showDragIndicator(true);
+  logUserAction('drag_start', e.polygon.id);
 });
 
-// Drag end
+// Drag end - perfect for auto-save or validation
 map.on('polygon:dragend', (e) => {
   console.log('Drag ended:', e.polygon);
-  console.log('Old position:', e.oldPosition);
-  console.log('New position:', e.newPosition);
+  console.log('Moved from:', e.oldPosition, 'to:', e.newPosition);
+
+  showDragIndicator(false);
+  autoSavePolygon(e.polygon);
+  validatePolygonPosition(e.polygon);
 });
 
-// Real-time drag (if enabled)
+// Real-time drag updates (if realTimeUpdate is enabled)
 map.on('polygon:drag', (e) => {
   console.log('Dragging:', e.polygon);
+  updateCoordinateDisplay(e.polygon.getLatLngs());
 });
 ```
 
-## Examples
+### Merge & Hole Events
 
-### Basic Drawing Application
+Track automatic merging and hole creation:
 
 ```javascript
-import * as L from 'leaflet';
-import Polydraw, { DrawMode } from 'leaflet-polydraw';
+// Polygons merged automatically
+map.on('polygons:merged', (e) => {
+  console.log('Polygons merged:', e.originalPolygons, '→', e.resultPolygon);
+  updatePolygonCount(-e.originalPolygons.length + 1);
+});
 
-class DrawingApp {
-  constructor() {
-    this.initMap();
-    this.initControls();
-  }
-
-  initMap() {
-    this.map = L.map('map').setView([59.911491, 10.757933], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
-
-    this.polyDrawControl = L.control
-      .polydraw({
-        position: 'topright',
-        config: {
-          mergePolygons: true,
-          dragPolygons: {
-            autoMergeOnIntersect: true,
-            autoHoleOnContained: true,
-          },
-        },
-      })
-      .addTo(this.map);
-  }
-
-  initControls() {
-    // Add drawing mode buttons
-    document.getElementById('draw-btn').onclick = () => {
-      this.polyDrawControl.setDrawMode(DrawMode.Add);
-    };
-
-    document.getElementById('subtract-btn').onclick = () => {
-      this.polyDrawControl.setDrawMode(DrawMode.Subtract);
-    };
-
-    document.getElementById('drag-btn').onclick = () => {
-      this.polyDrawControl.setDrawMode(DrawMode.Off);
-      this.polyDrawControl.enablePolygonDraggingMode(true);
-    };
-  }
-}
-
-new DrawingApp();
+// Hole created by dragging polygon inside another
+map.on('polygon:hole-created', (e) => {
+  console.log('Hole created in:', e.parentPolygon, 'by:', e.holePolygon);
+  notifyUser('Hole created in polygon');
+});
 ```
 
-### GIS Data Collection
+### Practical Use Cases
+
+**Auto-save functionality:**
 
 ```javascript
-import Polydraw, { MarkerPosition } from 'leaflet-polydraw';
-
-const gisCollector = L.control
-  .polydraw({
-    config: {
-      markers: {
-        infoMarker: true,
-        markerInfoIcon: {
-          position: MarkerPosition.NorthEast,
-          useMetrics: true,
-          showArea: true,
-          showPerimeter: true,
-          areaLabel: 'Area (m²)',
-          perimeterLabel: 'Perimeter (m)',
-        },
-      },
-      polygonOptions: {
-        color: '#2196F3',
-        fillColor: '#2196F3',
-        fillOpacity: 0.3,
-        weight: 2,
-      },
-    },
-  })
-  .addTo(map);
-
-// Export collected data
-function exportPolygons() {
-  const polygons = gisCollector.getAllPolygons();
-  const geojson = {
-    type: 'FeatureCollection',
-    features: polygons.map((polygon) => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: polygon.getLatLngs(),
-      },
-      properties: {
-        area: L.GeometryUtil.geodesicArea(polygon.getLatLngs()[0]),
-        timestamp: new Date().toISOString(),
-      },
-    })),
-  };
-
-  console.log('Exported GeoJSON:', geojson);
-}
+map.on('polygon:created polygon:modified polygon:dragend', (e) => {
+  debounce(() => saveToLocalStorage(polydraw.getAllPolygons()), 1000);
+});
 ```
 
-### Property Mapping Tool
+**Validation and feedback:**
 
 ```javascript
-const propertyMapper = L.control
-  .polydraw({
-    config: {
-      mergePolygons: false, // Keep properties separate
-      dragPolygons: {
-        autoMergeOnIntersect: false,
-        autoHoleOnContained: false, // Prevent accidental holes
-      },
-      markers: {
-        menuMarker: true,
-        markerMenuIcon: {
-          position: MarkerPosition.North,
-        },
-      },
-      polygonOptions: {
-        color: '#4CAF50',
-        fillColor: '#4CAF50',
-        fillOpacity: 0.2,
-        weight: 3,
-      },
-    },
-  })
-  .addTo(map);
-
-// Add property metadata
 map.on('polygon:created', (e) => {
-  const propertyId = prompt('Enter Property ID:');
-  const owner = prompt('Enter Owner Name:');
+  const area = calculateArea(e.polygon);
+  if (area < MIN_AREA) {
+    showWarning('Polygon too small');
+    e.polygon.setStyle({ color: 'red' });
+  }
+});
+```
 
-  e.polygon.propertyData = {
-    id: propertyId,
-    owner: owner,
-    area: L.GeometryUtil.geodesicArea(e.polygon.getLatLngs()[0]),
-    created: new Date(),
-  };
+**Analytics tracking:**
+
+```javascript
+polydraw.onDrawModeChanged((mode) => {
+  analytics.track('draw_mode_changed', { mode: mode });
+});
+
+map.on('polygon:created', (e) => {
+  analytics.track('polygon_created', {
+    vertices: e.polygon.getLatLngs()[0].length,
+    area: calculateArea(e.polygon),
+  });
 });
 ```
 
@@ -890,6 +879,31 @@ map.on('polygon:created', (e) => {
 - **Modern Browsers**: Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
 - **Mobile**: iOS Safari 12+, Chrome Mobile 60+
 - **Requirements**: ES6+ support, Leaflet 1.9+, Touch events, CSS transitions
+
+## Demo
+
+A local demo is included in the `demo/` directory for testing and development purposes.
+
+### Running the Demo
+
+To run the local demo:
+
+1. **Build the main library and types**:
+
+   ```bash
+   cd Leaflet.Polydraw
+   npm run build
+   npm run build:types
+   ```
+
+2. **Run the demo**:
+   ```bash
+   cd demo
+   npm install
+   npm run dev
+   ```
+
+The demo will be available at `http://localhost:5173/` and includes examples of all major features.
 
 ## Contributing
 
@@ -910,7 +924,15 @@ npm test
 
 # Build the project
 npm run build
+npm run build:types
+
+# For development with the demo project
+cd demo
+npm install
+npm run dev  # Automatically builds plugin, generates typings, and installs them
 ```
+
+**Note**: The demo's `npm run dev` command automatically rebuilds the main plugin and type definitions, then installs them locally for immediate testing of your changes.
 
 ### Guidelines
 
@@ -934,7 +956,7 @@ Big thank you and kudos to these amazing developers!
 
 ## Changelog
 
-### v1.0.0 (Latest)
+### v0.8.0 (Initial release)
 
 - **Polygon Dragging**: Complete drag-and-drop functionality
 - **Smart Merging**: Dual merge systems for drawing and dragging
