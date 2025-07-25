@@ -1,4 +1,4 @@
-[![Leaflet Polydraw](./docs/images/logo.jpg)](https://github.com/AndreasOlausson/leaflet-polydraw)
+[![Leaflet Polydraw](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/logo.jpg)](https://github.com/AndreasOlausson/leaflet-polydraw)
 
 # Leaflet Polydraw
 
@@ -12,7 +12,7 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 
 ## Key Features
 
-[![Feature Overview](./docs/images/feature-overview.png)](./docs/images/feature-overview.png)
+[![Feature Overview](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/feature-overview.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/feature-overview.png)
 
 - **Point-to-Point Drawing**: Precise polygon creation with click-by-click vertex placement
 - **Smart Polygon Merging**: Automatic detection and merging of overlapping polygons (including C-to-O shape completion)
@@ -534,7 +534,7 @@ If the external configuration file fails to load, the plugin will fall back to u
 
 ### Draw Mode
 
-[![Draw Mode](./docs/images/draw-mode.gif)](./docs/images/draw-mode.gif)
+[![Draw Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/draw-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/draw-mode.gif)
 
 Create polygons by drawing freehand shapes on the map. Perfect for:
 
@@ -549,7 +549,7 @@ Simply click the draw button and drag your mouse/finger to create polygon shapes
 
 ### Subtract Mode
 
-[![Subtract Mode](./docs/images/subtract-mode.gif)](./docs/images/subtract-mode.gif)
+[![Subtract Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/subtract-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/subtract-mode.gif)
 
 Create holes and complex shapes by subtracting areas from existing polygons. Ideal for:
 
@@ -562,7 +562,7 @@ Click the subtract button and draw over existing polygons to remove those areas,
 
 ### Point-to-Point Drawing
 
-[![Point-to-Point Drawing](./docs/images/p2p.gif)](./docs/images/p2p.gif)
+[![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/p2p.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/p2p.gif)
 
 Create precise polygons by clicking to place each vertex. Perfect for:
 
@@ -581,7 +581,7 @@ Create precise polygons by clicking to place each vertex. Perfect for:
 
 ### Smart Polygon Merging
 
-[![Smart Merging](./docs/images/merge.gif)](./docs/images/merge.gif)
+[![Smart Merging](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/merge.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/merge.gif)
 
 The plugin features **two independent merge systems**:
 
@@ -599,7 +599,7 @@ The plugin features **two independent merge systems**:
 
 ### Drag & Drop Functionality
 
-[![Drag and Drop](./docs/images/drag-drop.gif)](./docs/images/drag-drop.gif)
+[![Drag and Drop](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/drag-drop.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/drag-drop.gif)
 
 **Drag-to-Merge**: Drag polygons together to automatically merge them
 
@@ -609,7 +609,7 @@ The plugin features **two independent merge systems**:
 
 ### Drag Elbows (Vertex Editing)
 
-[![Drag Elbows](./docs/images/drag-elbows.gif)](./docs/images/drag-elbows.gif)
+[![Drag Elbows](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/drag-elbows.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/drag-elbows.gif)
 
 Fine-tune polygon shapes by dragging individual vertices. Perfect for:
 
@@ -622,7 +622,7 @@ Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex,
 
 ### Advanced Editing Tools
 
-[![Editing Tools](./docs/images/editing-tools.gif)](./docs/images/editing-tools.gif)
+[![Editing Tools](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/editing-tools.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/editing-tools.gif)
 
 Access operations through the menu marker:
 
@@ -633,7 +633,7 @@ Access operations through the menu marker:
 
 ### Smart Marker System
 
-[![Smart Markers](./docs/images/smart-markers.png)](./docs/images/smart-markers.png)
+[![Smart Markers](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/smart-markers.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/smart-markers.png)
 
 Intelligent marker positioning prevents overlapping on small polygons:
 
@@ -697,7 +697,7 @@ polydraw.configurate({
 
 ## Markers
 
-[![Marker Positions](./docs/images/marker-positions.png)](./docs/images/marker-positions.png)
+[![Marker Positions](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/marker-positions.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/marker-positions.png)
 
 ### Delete Marker (Default: North)
 
@@ -711,7 +711,7 @@ polydraw.configurate({
 - **Features**: Area, perimeter, metric/imperial units
 - **Popup**: Shows detailed measurements
 
-[![Info Marker Popup](./docs/images/info-marker-popup.png)](./docs/images/info-marker-popup.png)
+[![Info Marker Popup](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/info-marker-popup.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/info-marker-popup.png)
 
 ### Menu Marker (Default: West)
 
@@ -722,7 +722,7 @@ polydraw.configurate({
   - **Bounding Box**: Convert polygon to its rectangular bounding box
   - **Bezier**: Apply smooth curve interpolation to polygon edges _(alpha feature)_
 
-[![Menu Marker Popup](./docs/images/menu-marker-popup.png)](./docs/images/menu-marker-popup.png)
+[![Menu Marker Popup](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/menu-marker-popup.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/menu-marker-popup.png)
 
 ### Marker Positioning
 
@@ -753,7 +753,7 @@ const polyDrawControl = L.control.polydraw({
 
 This configuration gives this result.
 
-![Marker Positions](./docs/images/star.png)
+![Marker Positions](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/docs/images/star.png)
 
 ```javascript
 MarkerPosition {
