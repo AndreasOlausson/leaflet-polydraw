@@ -8,10 +8,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   build: {
     sourcemap: true,
+    minify: 'terser',
+    assetsDir: '',
     lib: {
       entry: './src/polydraw.ts',
       name: 'LeafletPolydraw',
-      fileName: (format) => `polydraw.${format}.js`,
+      fileName: (format) =>
+        format === 'umd' ? `polydraw.${format}.min.js` : `polydraw.${format}.js`,
+      formats: ['es', 'umd'],
     },
     rollupOptions: {
       external: ['leaflet'],
