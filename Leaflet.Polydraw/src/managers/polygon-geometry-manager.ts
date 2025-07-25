@@ -23,7 +23,7 @@ export class PolygonGeometryManager {
   private config: PolydrawConfig;
 
   constructor(dependencies: PolygonGeometryManagerDependencies) {
-    console.log('PolygonGeometryManager constructor');
+    // console.log('PolygonGeometryManager constructor');
     this.turfHelper = dependencies.turfHelper;
     this.config = dependencies.config;
   }
@@ -35,7 +35,7 @@ export class PolygonGeometryManager {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    console.log('PolygonGeometryManager checkPolygonIntersection');
+    // console.log('PolygonGeometryManager checkPolygonIntersection');
     // Method 1: Check if one polygon is completely within the other (for donut scenarios)
     try {
       const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
@@ -138,7 +138,7 @@ export class PolygonGeometryManager {
     polygons: Feature<Polygon | MultiPolygon>[],
     newPolygon: Feature<Polygon | MultiPolygon>,
   ): GeometryOperationResult {
-    console.log('PolygonGeometryManager unionPolygons');
+    // console.log('PolygonGeometryManager unionPolygons');
     try {
       let result = newPolygon;
 
@@ -182,7 +182,7 @@ export class PolygonGeometryManager {
     existingPolygon: Feature<Polygon | MultiPolygon>,
     subtractPolygon: Feature<Polygon | MultiPolygon>,
   ): GeometryOperationResult {
-    console.log('PolygonGeometryManager subtractPolygon');
+    // console.log('PolygonGeometryManager subtractPolygon');
     try {
       // Perform the difference operation (subtract)
       const result = this.turfHelper.polygonDifference(existingPolygon, subtractPolygon);
@@ -217,7 +217,7 @@ export class PolygonGeometryManager {
    * Simplify a polygon by removing every other point
    */
   simplifyPolygon(polygon: Feature<Polygon | MultiPolygon>): GeometryOperationResult {
-    console.log('PolygonGeometryManager simplifyPolygon');
+    // console.log('PolygonGeometryManager simplifyPolygon');
     try {
       const coords = this.turfHelper.getCoords(polygon);
       if (!coords || coords.length === 0) {
@@ -269,7 +269,7 @@ export class PolygonGeometryManager {
    * Convert polygon to bounding box
    */
   convertToBoundingBox(polygon: Feature<Polygon | MultiPolygon>): GeometryOperationResult {
-    console.log('PolygonGeometryManager convertToBoundingBox');
+    // console.log('PolygonGeometryManager convertToBoundingBox');
     try {
       const result = this.turfHelper.convertToBoundingBoxPolygon(polygon);
       return {
@@ -288,7 +288,7 @@ export class PolygonGeometryManager {
    * Apply bezier curve to polygon
    */
   bezierifyPolygon(polygon: Feature<Polygon | MultiPolygon>): GeometryOperationResult {
-    console.log('PolygonGeometryManager bezierifyPolygon');
+    // console.log('PolygonGeometryManager bezierifyPolygon');
     try {
       const coords = this.turfHelper.getCoords(polygon);
       const result = this.turfHelper.getBezierMultiPolygon(coords);
@@ -308,7 +308,7 @@ export class PolygonGeometryManager {
    * Double the elbows of a polygon
    */
   doubleElbowsPolygon(latlngs: L.LatLngLiteral[]): GeometryOperationResult {
-    console.log('PolygonGeometryManager doubleElbowsPolygon');
+    // console.log('PolygonGeometryManager doubleElbowsPolygon');
     try {
       const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
       const coords = [
@@ -333,7 +333,7 @@ export class PolygonGeometryManager {
   private getPolygonCenter(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { lat: number; lng: number } | null {
-    console.log('PolygonGeometryManager getPolygonCenter');
+    // console.log('PolygonGeometryManager getPolygonCenter');
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
         return null;
@@ -389,7 +389,7 @@ export class PolygonGeometryManager {
   private getBoundingBox(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
-    console.log('PolygonGeometryManager getBoundingBox');
+    // console.log('PolygonGeometryManager getBoundingBox');
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
         return null;
@@ -449,7 +449,7 @@ export class PolygonGeometryManager {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    console.log('PolygonGeometryManager shouldCreateDonutPolygon');
+    // console.log('PolygonGeometryManager shouldCreateDonutPolygon');
     try {
       // NEVER create donuts - always merge polygons
       // The user specifically reported that small + large surrounding polygons
@@ -468,7 +468,7 @@ export class PolygonGeometryManager {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
-    console.log('PolygonGeometryManager createDonutPolygon');
+    // console.log('PolygonGeometryManager createDonutPolygon');
     try {
       // Determine which polygon should be the outer ring and which should be the hole
       const area1 = this.turfHelper.getPolygonArea(polygon1);
@@ -511,7 +511,7 @@ export class PolygonGeometryManager {
     outerPolygon: Feature<Polygon | MultiPolygon>,
     innerPolygon: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
-    console.log('PolygonGeometryManager createDonutFromContainment');
+    // console.log('PolygonGeometryManager createDonutFromContainment');
     try {
       // Get coordinates from both polygons
       const outerCoords = this.turfHelper.getCoords(outerPolygon);
@@ -544,7 +544,7 @@ export class PolygonGeometryManager {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
-    console.log('PolygonGeometryManager createDonutFromIntersection');
+    // console.log('PolygonGeometryManager createDonutFromIntersection');
     try {
       // First, create union of the two polygons
       const union = this.turfHelper.union(polygon1, polygon2);

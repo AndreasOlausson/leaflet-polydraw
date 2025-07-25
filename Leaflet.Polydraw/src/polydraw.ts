@@ -32,18 +32,18 @@ class Polydraw extends L.Control {
   private isModifierKeyHeld: boolean = false;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
-    console.log('constructor');
+    // console.log('constructor');
     super(options);
 
     // Initialize with default config first
-    this.config = defaultConfig as PolydrawConfig;
+    this.config = defaultConfig as unknown as PolydrawConfig;
 
     // If configPath is provided, load external config
     if (options?.configPath) {
       this.loadExternalConfig(options.configPath, options?.config);
     } else {
       // Apply inline config if no external config path
-      this.config = { ...defaultConfig, ...(options?.config || {}) } as PolydrawConfig;
+      this.config = { ...defaultConfig, ...(options?.config || {}) } as unknown as PolydrawConfig;
       this.initializeComponents();
     }
   }
@@ -64,7 +64,7 @@ class Polydraw extends L.Control {
         ...defaultConfig,
         ...externalConfig,
         ...(inlineConfig || {}),
-      } as PolydrawConfig;
+      } as unknown as PolydrawConfig;
 
       this.initializeComponents();
     } catch (error) {
@@ -73,7 +73,7 @@ class Polydraw extends L.Control {
         error,
       );
       // Fallback to default + inline config if external loading fails
-      this.config = { ...defaultConfig, ...(inlineConfig || {}) } as PolydrawConfig;
+      this.config = { ...defaultConfig, ...(inlineConfig || {}) } as unknown as PolydrawConfig;
       this.initializeComponents();
     }
   }
@@ -94,7 +94,7 @@ class Polydraw extends L.Control {
   }
 
   onAdd(_map: L.Map): HTMLElement {
-    console.log('onAdd');
+    // console.log('onAdd');
     this.map = _map;
     const style = document.createElement('style');
     style.innerHTML = `
@@ -173,22 +173,22 @@ class Polydraw extends L.Control {
     };
 
     const onEraseClick = (e?: Event) => {
-      console.log('onEraseClick called');
+      // console.log('onEraseClick called');
       // Prevent multiple rapid clicks
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
 
-      console.log('Current feature groups count:', this.arrayOfFeatureGroups.length);
+      // console.log('Current feature groups count:', this.arrayOfFeatureGroups.length);
 
       // Only erase if there are polygons to erase
       if (this.arrayOfFeatureGroups.length === 0) {
-        console.log('No polygons to erase');
+        // console.log('No polygons to erase');
         return;
       }
 
-      console.log('Calling removeAllFeatureGroups');
+      // console.log('Calling removeAllFeatureGroups');
       this.removeAllFeatureGroups();
     };
 
@@ -292,7 +292,7 @@ class Polydraw extends L.Control {
   }
 
   public addTo(map: L.Map): this {
-    console.log('addTo');
+    // console.log('addTo');
     super.addTo(map);
     return this;
   }
@@ -302,7 +302,7 @@ class Polydraw extends L.Control {
   }
 
   onRemove(_map: L.Map) {
-    console.log('onRemove');
+    // console.log('onRemove');
     this.removeKeyboardHandlers();
     if (this.tracer) {
       this.map.removeLayer(this.tracer);
@@ -314,7 +314,7 @@ class Polydraw extends L.Control {
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
   ): Promise<void> {
-    console.log('addPredefinedPolygon');
+    // console.log('addPredefinedPolygon');
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');
@@ -366,7 +366,7 @@ class Polydraw extends L.Control {
   }
 
   setDrawMode(mode: DrawMode) {
-    console.log('setDrawMode');
+    // console.log('setDrawMode');
     const previousMode = this.drawMode;
     this.drawMode = mode;
 
@@ -442,17 +442,17 @@ class Polydraw extends L.Control {
   }
 
   getDrawMode(): DrawMode {
-    console.log('getDrawMode');
+    // console.log('getDrawMode');
     return this.modeManager.getCurrentMode();
   }
 
   public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
-    console.log('onDrawModeChangeListener');
+    // console.log('onDrawModeChangeListener');
     this.drawModeListeners.push(callback);
   }
 
   public offDrawModeChangeListener(callback: DrawModeChangeHandler): void {
-    console.log('offDrawModeChangeListener');
+    // console.log('offDrawModeChangeListener');
     const index = this.drawModeListeners.indexOf(callback);
     if (index > -1) {
       this.drawModeListeners.splice(index, 1);
@@ -460,7 +460,7 @@ class Polydraw extends L.Control {
   }
 
   private emitDrawModeChanged(): void {
-    console.log('emitDrawModeChanged');
+    // console.log('emitDrawModeChanged');
     for (const cb of this.drawModeListeners) {
       cb(this.modeManager.getCurrentMode());
     }
@@ -470,7 +470,7 @@ class Polydraw extends L.Control {
    * Update the draggable state of all existing markers when draw mode changes
    */
   private updateMarkerDraggableState(): void {
-    console.log('updateMarkerDraggableState');
+    // console.log('updateMarkerDraggableState');
     const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
@@ -498,7 +498,7 @@ class Polydraw extends L.Control {
   }
 
   removeAllFeatureGroups() {
-    console.log('removeAllFeatureGroups');
+    // console.log('removeAllFeatureGroups');
     this.arrayOfFeatureGroups.forEach((featureGroups) => {
       try {
         this.map.removeLayer(featureGroups);
@@ -514,7 +514,7 @@ class Polydraw extends L.Control {
   }
 
   private stopDraw() {
-    console.log('stopDraw');
+    // console.log('stopDraw');
     this.resetTracker();
     this.drawStartedEvents(false);
   }
@@ -524,19 +524,19 @@ class Polydraw extends L.Control {
     enableDoubleClickZoom: boolean,
     enableScrollWheelZoom: boolean,
   ) {
-    console.log('setLeafletMapEvents');
+    // console.log('setLeafletMapEvents');
     enableDragging ? this.map.dragging.enable() : this.map.dragging.disable();
     enableDoubleClickZoom ? this.map.doubleClickZoom.enable() : this.map.doubleClickZoom.disable();
     enableScrollWheelZoom ? this.map.scrollWheelZoom.enable() : this.map.scrollWheelZoom.disable();
   }
 
   private resetTracker() {
-    console.log('resetTracker');
+    // console.log('resetTracker');
     this.tracer.setLatLngs([]);
   }
 
   private drawStartedEvents(onoff: boolean) {
-    console.log('drawStartedEvents');
+    // console.log('drawStartedEvents');
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousemove', this.mouseMove, this);
     this.map[onoroff]('mouseup', this.mouseUpLeave, this);
@@ -559,7 +559,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent) {
-    console.log('mouseMove');
+    // console.log('mouseMove');
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
@@ -572,7 +572,7 @@ class Polydraw extends L.Control {
   }
 
   private async mouseUpLeave(event: any) {
-    console.log('mouseUpLeave');
+    // console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
@@ -644,7 +644,7 @@ class Polydraw extends L.Control {
   }
 
   private events(onoff: boolean) {
-    console.log('events');
+    // console.log('events');
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
 
@@ -667,7 +667,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
-    console.log('mouseDown');
+    // console.log('mouseDown');
     // Check if we're still in a drawing mode before processing
     if (this.modeManager.isInOffMode()) {
       return;
@@ -699,25 +699,25 @@ class Polydraw extends L.Control {
   }
 
   private startDraw() {
-    console.log('startDraw');
+    // console.log('startDraw');
     this.drawStartedEvents(true);
   }
 
   private setupKeyboardHandlers() {
-    console.log('setupKeyboardHandlers');
+    // console.log('setupKeyboardHandlers');
     this._boundKeyUpHandler = this.handleKeyUp.bind(this);
     document.addEventListener('keydown', this._boundKeyDownHandler);
     document.addEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private removeKeyboardHandlers() {
-    console.log('removeKeyboardHandlers');
+    // console.log('removeKeyboardHandlers');
     document.removeEventListener('keydown', this._boundKeyDownHandler);
     document.removeEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private handleKeyDown(e: KeyboardEvent) {
-    console.log('handleKeyDown');
+    // console.log('handleKeyDown');
     if (e.key === 'Escape') {
       if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.cancelPointToPointDrawing();
@@ -733,7 +733,7 @@ class Polydraw extends L.Control {
   }
 
   private handleKeyUp(e: KeyboardEvent) {
-    console.log('handleKeyUp');
+    // console.log('handleKeyUp');
     // Track modifier key state for edge deletion visual feedback
     const isModifierPressed = this.isModifierKeyPressed(e as any);
     if (!isModifierPressed && this.isModifierKeyHeld) {
@@ -746,7 +746,7 @@ class Polydraw extends L.Control {
    * Update all markers to show/hide edge deletion visual feedback
    */
   private updateAllMarkersForEdgeDeletion(showFeedback: boolean) {
-    console.log('updateAllMarkersForEdgeDeletion');
+    // console.log('updateAllMarkersForEdgeDeletion');
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -760,7 +760,7 @@ class Polydraw extends L.Control {
    * Update individual marker for edge deletion visual feedback
    */
   private updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean) {
-    console.log('updateMarkerForEdgeDeletion');
+    // console.log('updateMarkerForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -781,7 +781,7 @@ class Polydraw extends L.Control {
    * Handle marker hover when modifier key is held - event handler version
    */
   private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
-    console.log('onMarkerHoverForEdgeDeletionEvent');
+    // console.log('onMarkerHoverForEdgeDeletionEvent');
     if (!this.isModifierKeyHeld) return;
 
     const element = e.target as HTMLElement;
@@ -796,7 +796,7 @@ class Polydraw extends L.Control {
    * Handle marker leave when modifier key is held - event handler version
    */
   private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
-    console.log('onMarkerLeaveForEdgeDeletionEvent');
+    // console.log('onMarkerLeaveForEdgeDeletionEvent');
     const element = e.target as HTMLElement;
     if (element) {
       element.style.backgroundColor = '';
@@ -806,7 +806,7 @@ class Polydraw extends L.Control {
   };
 
   private cancelPointToPointDrawing() {
-    console.log('cancelPointToPointDrawing');
+    // console.log('cancelPointToPointDrawing');
     this.clearP2pMarkers();
     this.stopDraw();
     this.setDrawMode(DrawMode.Off);
@@ -814,70 +814,70 @@ class Polydraw extends L.Control {
 
   // Point-to-Point state management
   private handlePointToPointClick(clickLatLng: L.LatLng) {
-    console.log('handlePointToPointClick');
-    console.log('=== P2P CLICK DEBUG ===');
-    console.log('Click coordinates:', {
-      lat: clickLatLng.lat,
-      lng: clickLatLng.lng,
-      precision: {
-        lat: clickLatLng.lat.toFixed(10),
-        lng: clickLatLng.lng.toFixed(10),
-      },
-    });
+    // console.log('handlePointToPointClick');
+    // console.log('=== P2P CLICK DEBUG ===');
+    // console.log('Click coordinates:', {
+    //   lat: clickLatLng.lat,
+    //   lng: clickLatLng.lng,
+    //   precision: {
+    //     lat: clickLatLng.lat.toFixed(10),
+    //     lng: clickLatLng.lng.toFixed(10),
+    //   },
+    // });
 
     if (!clickLatLng) {
-      console.log('No clickLatLng provided, returning');
+      // console.log('No clickLatLng provided, returning');
       return;
     }
 
     const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
-    console.log('Current points count:', currentPoints.length);
-    console.log(
-      'Current points:',
-      currentPoints.map((p, i) => ({
-        index: i,
-        lat: p.lat,
-        lng: p.lng,
-        precision: {
-          lat: p.lat.toFixed(10),
-          lng: p.lng.toFixed(10),
-        },
-      })),
-    );
+    // console.log('Current points count:', currentPoints.length);
+    // console.log(
+    //   'Current points:',
+    //   currentPoints.map((p, i) => ({
+    //     index: i,
+    //     lat: p.lat,
+    //     lng: p.lng,
+    //     precision: {
+    //       lat: p.lat.toFixed(10),
+    //       lng: p.lng.toFixed(10),
+    //     },
+    //   })),
+    // );
 
-    console.log('P2P markers count:', this.p2pMarkers.length);
-    console.log('Map zoom level:', this.map.getZoom());
-    console.log('Map center:', this.map.getCenter());
+    // console.log('P2P markers count:', this.p2pMarkers.length);
+    // console.log('Map zoom level:', this.map.getZoom());
+    // console.log('Map center:', this.map.getCenter());
 
     // Check if clicking on the first point to close the polygon
     if (currentPoints.length >= 3 && this.p2pMarkers.length > 0) {
       const firstPoint = this.p2pMarkers[0].getLatLng();
       const isClickingFirst = this.isClickingFirstPoint(clickLatLng, firstPoint);
-      console.log('Checking first point click:', {
-        firstPoint: {
-          lat: firstPoint.lat,
-          lng: firstPoint.lng,
-          precision: {
-            lat: firstPoint.lat.toFixed(10),
-            lng: firstPoint.lng.toFixed(10),
-          },
-        },
-        distance: {
-          lat: Math.abs(clickLatLng.lat - firstPoint.lat),
-          lng: Math.abs(clickLatLng.lng - firstPoint.lng),
-        },
-        isClickingFirst: isClickingFirst,
-      });
+      // console.log('Checking first point click:', {
+      //   firstPoint: {
+      //     lat: firstPoint.lat,
+      //     lng: firstPoint.lng,
+      //     precision: {
+      //       lat: firstPoint.lat.toFixed(10),
+      //       lng: firstPoint.lng.toFixed(10),
+      //     },
+      //   },
+      //   distance: {
+      //     lat: Math.abs(clickLatLng.lat - firstPoint.lat),
+      //     lng: Math.abs(clickLatLng.lng - firstPoint.lng),
+      //   },
+      //   isClickingFirst: isClickingFirst,
+      // });
 
       if (isClickingFirst) {
-        console.log('Completing polygon by clicking first point');
+        // console.log('Completing polygon by clicking first point');
         this.completePointToPointPolygon();
         return;
       }
     }
 
     // Add point to tracer - use addLatLng to ensure points accumulate
-    console.log('Adding new point to tracer');
+    // console.log('Adding new point to tracer');
     this.tracer.addLatLng(clickLatLng);
 
     // Add a visual marker for the new point
@@ -951,7 +951,7 @@ class Polydraw extends L.Control {
   }
 
   private isClickingFirstPoint(clickLatLng: L.LatLng, firstPoint: L.LatLng): boolean {
-    console.log('isClickingFirstPoint');
+    // console.log('isClickingFirstPoint');
     if (!firstPoint) return false;
 
     // Use zoom-dependent tolerance - higher zoom = smaller tolerance
@@ -960,40 +960,40 @@ class Polydraw extends L.Control {
     const baseTolerance = 0.0005;
     const tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
 
-    console.log('First point click tolerance check:', {
-      zoom: zoom,
-      baseTolerance: baseTolerance,
-      calculatedTolerance: tolerance,
-      clickLatLng: {
-        lat: clickLatLng.lat.toFixed(10),
-        lng: clickLatLng.lng.toFixed(10),
-      },
-      firstPoint: {
-        lat: firstPoint.lat.toFixed(10),
-        lng: firstPoint.lng.toFixed(10),
-      },
-      distances: {
-        lat: Math.abs(clickLatLng.lat - firstPoint.lat),
-        lng: Math.abs(clickLatLng.lng - firstPoint.lng),
-      },
-    });
+    // console.log('First point click tolerance check:', {
+    //   zoom: zoom,
+    //   baseTolerance: baseTolerance,
+    //   calculatedTolerance: tolerance,
+    //   clickLatLng: {
+    //     lat: clickLatLng.lat.toFixed(10),
+    //     lng: clickLatLng.lng.toFixed(10),
+    //   },
+    //   firstPoint: {
+    //     lat: firstPoint.lat.toFixed(10),
+    //     lng: firstPoint.lng.toFixed(10),
+    //   },
+    //   distances: {
+    //     lat: Math.abs(clickLatLng.lat - firstPoint.lat),
+    //     lng: Math.abs(clickLatLng.lng - firstPoint.lng),
+    //   },
+    // });
 
     const latDiff = Math.abs(clickLatLng.lat - firstPoint.lat);
     const lngDiff = Math.abs(clickLatLng.lng - firstPoint.lng);
     const isClicking = latDiff < tolerance && lngDiff < tolerance;
 
-    console.log('First point click result:', {
-      tolerance: tolerance,
-      latDiff: latDiff,
-      lngDiff: lngDiff,
-      isClicking: isClicking,
-    });
+    // console.log('First point click result:', {
+    //   tolerance: tolerance,
+    //   latDiff: latDiff,
+    //   lngDiff: lngDiff,
+    //   isClicking: isClicking,
+    // });
 
     return isClicking;
   }
 
   private handleDoubleClick(e: L.LeafletMouseEvent) {
-    console.log('handleDoubleClick');
+    // console.log('handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
     if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
       return;
@@ -1008,21 +1008,21 @@ class Polydraw extends L.Control {
   }
 
   private completePointToPointPolygon() {
-    console.log('completePointToPointPolygon');
+    // console.log('completePointToPointPolygon');
     const points = this.tracer.getLatLngs() as L.LatLng[];
     if (points.length < 3) {
       return; // Need at least 3 points
     }
 
-    console.log('=== P2P COMPLETION DEBUG ===');
-    console.log(
-      'Original points from tracer:',
-      points.map((p, i) => ({
-        index: i,
-        lat: p.lat.toFixed(10),
-        lng: p.lng.toFixed(10),
-      })),
-    );
+    // console.log('=== P2P COMPLETION DEBUG ===');
+    // console.log(
+    //   'Original points from tracer:',
+    //   points.map((p, i) => ({
+    //     index: i,
+    //     lat: p.lat.toFixed(10),
+    //     lng: p.lng.toFixed(10),
+    //   })),
+    // );
 
     // Close the polygon by adding first point at the end if not already closed
     const closedPoints = [...points];
@@ -1033,14 +1033,14 @@ class Polydraw extends L.Control {
       closedPoints.push(firstPoint);
     }
 
-    console.log(
-      'Closed points:',
-      closedPoints.map((p, i) => ({
-        index: i,
-        lat: p.lat.toFixed(10),
-        lng: p.lng.toFixed(10),
-      })),
-    );
+    // console.log(
+    //   'Closed points:',
+    //   closedPoints.map((p, i) => ({
+    //     index: i,
+    //     lat: p.lat.toFixed(10),
+    //     lng: p.lng.toFixed(10),
+    //   })),
+    // );
 
     // Convert to GeoJSON and create polygon directly (bypass createPolygonFromTrace for P2P)
     try {
@@ -1048,14 +1048,14 @@ class Polydraw extends L.Control {
       const coordinates = closedPoints.map((point) => [point.lng, point.lat] as [number, number]);
       const geoPos = this.turfHelper.getMultiPolygon([[coordinates]]);
 
-      console.log(
-        'Direct polygon creation (bypassing createPolygonFromTrace):',
-        geoPos.geometry.coordinates[0].map((coord, i) => ({
-          index: i,
-          lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
-          lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
-        })),
-      );
+      // console.log(
+      //   'Direct polygon creation (bypassing createPolygonFromTrace):',
+      //   geoPos.geometry.coordinates[0].map((coord, i) => ({
+      //     index: i,
+      //     lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
+      //     lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
+      //   })),
+      // );
 
       // Clear P2P markers and stop drawing first
       this.clearP2pMarkers();
@@ -1075,7 +1075,7 @@ class Polydraw extends L.Control {
   }
 
   private clearP2pMarkers() {
-    console.log('clearP2pMarkers');
+    // console.log('clearP2pMarkers');
     this.p2pMarkers.forEach((marker) => this.map.removeLayer(marker));
     this.p2pMarkers = [];
   }
@@ -1084,7 +1084,7 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed (Ctrl on Windows/Linux, Cmd on Mac)
    */
   private isModifierKeyPressed(event: MouseEvent): boolean {
-    console.log('isModifierKeyPressed');
+    // console.log('isModifierKeyPressed');
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 

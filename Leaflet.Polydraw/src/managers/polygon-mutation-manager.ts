@@ -52,7 +52,7 @@ export class PolygonMutationManager {
   private interactionManager: PolygonInteractionManager;
 
   constructor(dependencies: MutationManagerDependencies) {
-    console.log('PolygonMutationManager constructor');
+    // console.log('PolygonMutationManager constructor');
     this.turfHelper = dependencies.turfHelper;
     this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
@@ -68,7 +68,7 @@ export class PolygonMutationManager {
    * Initialize the three specialized managers
    */
   private initializeSpecializedManagers(dependencies: MutationManagerDependencies): void {
-    console.log('PolygonMutationManager initializeSpecializedManagers');
+    // console.log('PolygonMutationManager initializeSpecializedManagers');
 
     // Create geometry manager
     this.geometryManager = new PolygonGeometryManager({
@@ -111,7 +111,7 @@ export class PolygonMutationManager {
    * Set up event forwarding from specialized managers to facade
    */
   private setupEventForwarding(): void {
-    console.log('PolygonMutationManager setupEventForwarding');
+    // console.log('PolygonMutationManager setupEventForwarding');
 
     // Forward draw manager events
     this.drawManager.on('drawCompleted', (data) => {
@@ -147,7 +147,7 @@ export class PolygonMutationManager {
    * Handle draw completion from draw manager
    */
   private async handleDrawCompleted(data: any): Promise<void> {
-    console.log('PolygonMutationManager handleDrawCompleted');
+    // console.log('PolygonMutationManager handleDrawCompleted');
     await this.addPolygon(data.polygon, { simplify: true });
   }
 
@@ -173,7 +173,7 @@ export class PolygonMutationManager {
    * Handle menu actions from interaction manager
    */
   private async handleMenuAction(data: any): Promise<void> {
-    console.log('PolygonMutationManager handleMenuAction');
+    // console.log('PolygonMutationManager handleMenuAction');
     const { action, latLngs, featureGroup } = data;
 
     // Remove the original polygon
@@ -234,7 +234,7 @@ export class PolygonMutationManager {
    * Add event listener
    */
   on(event: string, callback: (...args: any[]) => void): void {
-    console.log('PolygonMutationManager on');
+    // console.log('PolygonMutationManager on');
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
@@ -245,7 +245,7 @@ export class PolygonMutationManager {
    * Emit event to all listeners
    */
   private emit(event: string, data?: any): void {
-    console.log('PolygonMutationManager emit');
+    // console.log('PolygonMutationManager emit');
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach((callback) => callback(data));
@@ -259,7 +259,7 @@ export class PolygonMutationManager {
     latlngs: Feature<Polygon | MultiPolygon>,
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
-    console.log('PolygonMutationManager addPolygon');
+    // console.log('PolygonMutationManager addPolygon');
     const { simplify = true, noMerge = false } = options;
 
     try {
@@ -285,7 +285,7 @@ export class PolygonMutationManager {
    * Subtract a polygon from existing polygons
    */
   async subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>): Promise<MutationResult> {
-    console.log('PolygonMutationManager subtractPolygon');
+    // console.log('PolygonMutationManager subtractPolygon');
     try {
       // Find only the polygons that actually intersect with the subtract area
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -378,7 +378,7 @@ export class PolygonMutationManager {
     latlngs: Feature<Polygon | MultiPolygon>,
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
-    console.log('PolygonMutationManager addPolygonLayer');
+    // console.log('PolygonMutationManager addPolygonLayer');
     const { simplify = true, dynamicTolerance = false, visualOptimizationLevel = 0 } = options;
 
     try {
@@ -599,7 +599,7 @@ export class PolygonMutationManager {
    * Create a polygon from GeoJSON feature
    */
   private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
-    console.log('PolygonMutationManager getPolygon');
+    // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
     polygon.setStyle(this.config.polygonOptions);
 
@@ -625,7 +625,7 @@ export class PolygonMutationManager {
    * Internal method to add feature group to array
    */
   private addFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager addFeatureGroupInternal');
+    // console.log('PolygonMutationManager addFeatureGroupInternal');
     this.getFeatureGroups().push(featureGroup);
   }
 
@@ -633,7 +633,7 @@ export class PolygonMutationManager {
    * Internal method to remove feature group from array and map
    */
   private removeFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager removeFeatureGroupInternal');
+    // console.log('PolygonMutationManager removeFeatureGroupInternal');
     featureGroup.clearLayers();
     const featureGroups = this.getFeatureGroups();
     const index = featureGroups.indexOf(featureGroup);
@@ -649,7 +649,7 @@ export class PolygonMutationManager {
    * Update marker draggable state
    */
   updateMarkerDraggableState(): void {
-    console.log('PolygonMutationManager updateMarkerDraggableState');
+    // console.log('PolygonMutationManager updateMarkerDraggableState');
     this.interactionManager.updateMarkerDraggableState();
   }
 
@@ -657,7 +657,7 @@ export class PolygonMutationManager {
    * Update all markers for edge deletion visual feedback
    */
   updateAllMarkersForEdgeDeletion(showFeedback: boolean): void {
-    console.log('PolygonMutationManager updateAllMarkersForEdgeDeletion');
+    // console.log('PolygonMutationManager updateAllMarkersForEdgeDeletion');
     this.interactionManager.updateAllMarkersForEdgeDeletion(showFeedback);
   }
 
@@ -665,7 +665,7 @@ export class PolygonMutationManager {
    * Set modifier key held state
    */
   setModifierKeyHeld(isHeld: boolean): void {
-    console.log('PolygonMutationManager setModifierKeyHeld');
+    // console.log('PolygonMutationManager setModifierKeyHeld');
     this.interactionManager.setModifierKeyHeld(isHeld);
   }
 
@@ -678,7 +678,7 @@ export class PolygonMutationManager {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    console.log('PolygonMutationManager checkPolygonIntersection');
+    // console.log('PolygonMutationManager checkPolygonIntersection');
     return this.geometryManager.checkPolygonIntersection(polygon1, polygon2);
   }
 
@@ -686,7 +686,7 @@ export class PolygonMutationManager {
    * Get polygon center (delegates to geometry manager)
    */
   getPolygonCenter(polygon: Feature<Polygon | MultiPolygon>): { lat: number; lng: number } | null {
-    console.log('PolygonMutationManager getPolygonCenter');
+    // console.log('PolygonMutationManager getPolygonCenter');
     // For backward compatibility, we'll implement this using the same logic as before
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
@@ -743,7 +743,7 @@ export class PolygonMutationManager {
   getBoundingBox(
     polygon: Feature<Polygon | MultiPolygon>,
   ): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
-    console.log('PolygonMutationManager getBoundingBox');
+    // console.log('PolygonMutationManager getBoundingBox');
     // For backward compatibility, we'll implement this using the same logic as before
     try {
       if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
@@ -800,35 +800,35 @@ export class PolygonMutationManager {
   // Legacy methods that are now handled by specialized managers but kept for compatibility
 
   addMarker(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager addMarker');
+    // console.log('PolygonMutationManager addMarker');
     this.interactionManager.addMarkers(latlngs, featureGroup);
   }
 
   addHoleMarker(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager addHoleMarker');
+    // console.log('PolygonMutationManager addHoleMarker');
     this.interactionManager.addHoleMarkers(latlngs, featureGroup);
   }
 
   addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager addEdgeClickListeners');
+    // console.log('PolygonMutationManager addEdgeClickListeners');
     this.interactionManager.addEdgeClickListeners(polygon, featureGroup);
   }
 
   enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>): void {
-    console.log('PolygonMutationManager enablePolygonDragging');
+    // console.log('PolygonMutationManager enablePolygonDragging');
     this.interactionManager.enablePolygonDragging(polygon, latlngs);
   }
 
   // Helper methods for backward compatibility
   getMarkerIndex(latlngs: L.LatLngLiteral[], position: any): number {
-    console.log('PolygonMutationManager getMarkerIndex');
+    // console.log('PolygonMutationManager getMarkerIndex');
     // This is now handled internally by the interaction manager
     // Return 0 as a fallback for backward compatibility
     return 0;
   }
 
   ensureMarkerSeparation(polygonLength: number, markers: any): any {
-    console.log('PolygonMutationManager ensureMarkerSeparation');
+    // console.log('PolygonMutationManager ensureMarkerSeparation');
     // This is now handled internally by the interaction manager
     // Return the original markers for backward compatibility
     return {
@@ -843,21 +843,21 @@ export class PolygonMutationManager {
     originalIndex: number,
     usedIndices: Set<number>,
   ): number {
-    console.log('PolygonMutationManager findAlternativeMarkerPosition');
+    // console.log('PolygonMutationManager findAlternativeMarkerPosition');
     // This is now handled internally by the interaction manager
     // Return a simple fallback for backward compatibility
     return (originalIndex + 1) % polygonLength;
   }
 
   createDivIcon(processedClasses: string[]): L.DivIcon {
-    console.log('PolygonMutationManager createDivIcon');
+    // console.log('PolygonMutationManager createDivIcon');
     // This is now handled internally by the interaction manager
     // Return a simple div icon for backward compatibility
     return L.divIcon({ className: processedClasses.join(' ') });
   }
 
   getLatLngInfoString(latlng: L.LatLngLiteral): string {
-    console.log('PolygonMutationManager getLatLngInfoString');
+    // console.log('PolygonMutationManager getLatLngInfoString');
     // This is now handled internally by the interaction manager
     // Return a simple string for backward compatibility
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
@@ -867,7 +867,7 @@ export class PolygonMutationManager {
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
   ): HTMLDivElement {
-    console.log('PolygonMutationManager generateMenuMarkerPopup');
+    // console.log('PolygonMutationManager generateMenuMarkerPopup');
     // This is now handled internally by the interaction manager
     // Return a simple div for backward compatibility
     const div = document.createElement('div');
@@ -876,7 +876,7 @@ export class PolygonMutationManager {
   }
 
   getPolygonGeoJSONFromFeatureGroup(featureGroup: L.FeatureGroup): Feature<Polygon | MultiPolygon> {
-    console.log('PolygonMutationManager getPolygonGeoJSONFromFeatureGroup');
+    // console.log('PolygonMutationManager getPolygonGeoJSONFromFeatureGroup');
     // This is now handled internally by the interaction manager
     // Return a simple polygon for backward compatibility
     return {
@@ -898,14 +898,14 @@ export class PolygonMutationManager {
   }
 
   getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
-    console.log('PolygonMutationManager getTotalPolygonPerimeter');
+    // console.log('PolygonMutationManager getTotalPolygonPerimeter');
     // This is now handled internally by the interaction manager
     // Return a simple value for backward compatibility
     return 1000;
   }
 
   generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
-    console.log('PolygonMutationManager generateInfoMarkerPopup');
+    // console.log('PolygonMutationManager generateInfoMarkerPopup');
     // This is now handled internally by the interaction manager
     // Return a simple div for backward compatibility
     const div = document.createElement('div');
@@ -914,49 +914,49 @@ export class PolygonMutationManager {
   }
 
   onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
-    console.log('PolygonMutationManager onMarkerHoverForEdgeDeletion');
+    // console.log('PolygonMutationManager onMarkerHoverForEdgeDeletion');
     // This is now handled internally by the interaction manager
   }
 
   highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    console.log('PolygonMutationManager highlightEdgeOnHover');
+    // console.log('PolygonMutationManager highlightEdgeOnHover');
     // This is now handled internally by the interaction manager
   }
 
   // Additional methods for backward compatibility with tests
   onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    console.log('PolygonMutationManager onEdgeClick');
+    // console.log('PolygonMutationManager onEdgeClick');
     // Delegate to interaction manager's private method through a public interface
     // For now, just log - the actual functionality is handled internally
   }
 
   removeFeatureGroup(featureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager removeFeatureGroup');
+    // console.log('PolygonMutationManager removeFeatureGroup');
     this.removeFeatureGroupInternal(featureGroup);
   }
 
   onPolygonMouseMove(e: L.LeafletMouseEvent): void {
-    console.log('PolygonMutationManager onPolygonMouseMove');
+    // console.log('PolygonMutationManager onPolygonMouseMove');
     // This is now handled internally by the interaction manager
   }
 
   onPolygonMouseUp(e: L.LeafletMouseEvent): void {
-    console.log('PolygonMutationManager onPolygonMouseUp');
+    // console.log('PolygonMutationManager onPolygonMouseUp');
     // This is now handled internally by the interaction manager
   }
 
   updatePolygonAfterDrag(polygon: any): void {
-    console.log('PolygonMutationManager updatePolygonAfterDrag');
+    // console.log('PolygonMutationManager updatePolygonAfterDrag');
     // This is now handled internally by the interaction manager
   }
 
   setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    console.log('PolygonMutationManager setSubtractVisualMode');
+    // console.log('PolygonMutationManager setSubtractVisualMode');
     // This is now handled internally by the interaction manager
   }
 
   performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
-    console.log('PolygonMutationManager performModifierSubtract');
+    // console.log('PolygonMutationManager performModifierSubtract');
     // Delegate to interaction manager's private method
     // For now, we'll implement the logic here to fix the "bite taken" issue
     try {
