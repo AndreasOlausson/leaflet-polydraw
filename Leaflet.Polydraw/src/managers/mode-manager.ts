@@ -78,7 +78,6 @@ export class ModeManager {
    * Update the interaction state when the draw mode changes
    */
   updateStateForMode(mode: DrawMode): void {
-    const previousMode = this.state.currentMode;
     this.state.currentMode = mode;
 
     switch (mode) {

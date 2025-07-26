@@ -1,10 +1,8 @@
 import * as turf from '@turf/turf';
 import concaveman from 'concaveman';
-import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
-import { MarkerPosition } from './enums';
+import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
-import type { LatLngLiteral } from 'leaflet';
 
 /**
  * Enhanced GeoJSON feature with polydraw-specific metadata

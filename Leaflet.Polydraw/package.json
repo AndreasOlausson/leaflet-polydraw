@@ -1,7 +1,8 @@
 {
   "name": "leaflet-polydraw",
-  "version": "0.8.2",
+  "version": "0.8.5",
   "description": "Advanced polygon drawing and editing plugin for Leaflet with drag-and-drop, smart merging, and comprehensive editing tools",
+  "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
@@ -36,7 +37,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:types",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
