@@ -6,4 +6,7 @@ export default defineConfig({
       allow: ['.', '../Leaflet.Polydraw/dist'],
     },
   },
+  build: {
+    outDir: 'dist',
+  },
 });

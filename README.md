@@ -2,6 +2,8 @@
 
 # Leaflet Polydraw
 
+**Live Demo**: [https://andreasolausson.github.io/leaflet-polydraw](https://andreasolausson.github.io/leaflet-polydraw)
+
 > **Advanced Leaflet plugin for interactive polygon drawing with point-to-point creation, smart merging, and comprehensive editing tools**
 
 Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet maps into interactive polygon drawing and editing environments. With intelligent merging, drag-and-drop functionality, and comprehensive editing tools, it's perfect for GIS applications, mapping tools, and spatial data collection.
@@ -9,6 +11,7 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 [![npm version](https://badge.fury.io/js/leaflet-polydraw.svg)](https://badge.fury.io/js/leaflet-polydraw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
 ## Key Features
 
