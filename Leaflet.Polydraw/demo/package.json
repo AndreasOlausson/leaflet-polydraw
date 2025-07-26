@@ -20,6 +20,6 @@
   "dependencies": {
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
-    "leaflet-polydraw": "^0.8.2"
+    "leaflet-polydraw": "file:../Leaflet.Polydraw"
   }
 }
