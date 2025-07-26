@@ -24,10 +24,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ./Leaflet.Polydraw/package-lock.json
 
-      - name: Show directory contents
-        run: ls -la
-        working-directory: ./Leaflet.Polydraw
-
       - name: Install dependencies
         run: npm ci
         working-directory: ./Leaflet.Polydraw
