@@ -1,7 +1,7 @@
-import "leaflet/dist/leaflet.css";
-import "leaflet-polydraw/dist/leaflet-polydraw.css";
-import * as L from "leaflet";
-import Polydraw from "leaflet-polydraw";
+import 'leaflet/dist/leaflet.css';
+import 'leaflet-polydraw/dist/leaflet-polydraw.css';
+import * as L from 'leaflet';
+import Polydraw from 'leaflet-polydraw';
 
 // coords for a octagon shaped polygon
 const octagon: L.LatLng[][][] = [
@@ -123,9 +123,9 @@ const multipleSimplePolygons: L.LatLng[][][] = [
   ],
 ];
 
-const map = L.map("map").setView([58.402514, 15.606188], 10);
+const map = L.map('map').setView([58.402514, 15.606188], 10);
 
-L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution:
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 }).addTo(map);
@@ -133,12 +133,12 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const polydraw = new Polydraw();
 polydraw.addTo(map as any);
 
-document.getElementById("addDebugPoly")?.addEventListener("click", () => {
+document.getElementById('addDebugPoly')?.addEventListener('click', () => {
   // Example with visual optimization level 5 (moderate simplification)
   polydraw.addPredefinedPolygon(overlappingSquares, {
     visualOptimizationLevel: 0,
   });
-  console.log("Polydraw:", polydraw);
+  console.log('Polydraw:', polydraw);
 });
 
 const linkoping: L.LatLng[][][] = [

@@ -4,7 +4,7 @@
   "description": "Advanced polygon drawing and editing plugin for Leaflet with drag-and-drop, smart merging, and comprehensive editing tools",
   "main": "dist/polydraw.umd.js",
   "module": "dist/polydraw.es.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/polydraw.es.js",
