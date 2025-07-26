@@ -17,7 +17,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      'leaflet-polydraw': path.resolve(__dirname, '..'),
+      'leaflet-polydraw': path.resolve(__dirname, '../dist/polydraw.es.js'),
     },
   },
 });
