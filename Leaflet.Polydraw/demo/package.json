@@ -17,6 +17,6 @@
   "dependencies": {
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
-    "leaflet-polydraw": "file:../"
+    "leaflet-polydraw": "file:../leaflet-polydraw-0.8.2.tgz"
   }
 }

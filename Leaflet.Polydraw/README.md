@@ -9,6 +9,7 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 [![npm version](https://badge.fury.io/js/leaflet-polydraw.svg)](https://badge.fury.io/js/leaflet-polydraw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
 ## Key Features
 
