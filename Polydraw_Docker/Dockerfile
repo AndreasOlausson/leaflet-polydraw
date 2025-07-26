@@ -30,7 +30,7 @@ RUN npm install && \
         echo "                          ⚠️  BUILD FAILED  ⚠️                                   " >> /tmp/error_message && \
         echo "                                                                              " >> /tmp/error_message && \
         echo "  Leaflet.Polydraw failed to build due to compilation errors.                 " >> /tmp/error_message && \
-        echo "  This is a result of a horrible response from one of the models.                 " >> /tmp/error_message && \
+        echo "                   " >> /tmp/error_message && \
         echo "  This may (will) result in missing functionality in the container.                  " >> /tmp/error_message && \
         echo "  The container will still work but without the Polydraw plugin.              " >> /tmp/error_message && \
         echo "                                                                              " >> /tmp/error_message && \
