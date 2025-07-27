@@ -543,15 +543,23 @@ class Polydraw extends L.Control {
 
     if (onoff) {
       try {
-        this.map.getContainer().addEventListener('touchmove', (e) => this.mouseMove(e));
-        this.map.getContainer().addEventListener('touchend', (e) => this.mouseUpLeave(e));
+        this.map.getContainer().addEventListener('touchmove', (e) => this.mouseMove(e), {
+          passive: true,
+        } as AddEventListenerOptions);
+        this.map.getContainer().addEventListener('touchend', (e) => this.mouseUpLeave(e), {
+          passive: true,
+        } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
       }
     } else {
       try {
-        this.map.getContainer().removeEventListener('touchmove', (e) => this.mouseMove(e), true);
-        this.map.getContainer().removeEventListener('touchend', (e) => this.mouseUpLeave(e), true);
+        this.map.getContainer().removeEventListener('touchmove', (e) => this.mouseMove(e), {
+          passive: true,
+        } as AddEventListenerOptions);
+        this.map.getContainer().removeEventListener('touchend', (e) => this.mouseUpLeave(e), {
+          passive: true,
+        } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
       }
@@ -653,13 +661,17 @@ class Polydraw extends L.Control {
 
     if (onoff) {
       try {
-        this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e));
+        this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e), {
+          passive: true,
+        } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
       }
     } else {
       try {
-        this.map.getContainer().removeEventListener('touchstart', (e) => this.mouseDown(e), true);
+        this.map.getContainer().removeEventListener('touchstart', (e) => this.mouseDown(e), {
+          passive: true,
+        } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
       }
