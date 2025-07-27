@@ -10,7 +10,7 @@ COPY Leaflet.Polydraw/src/turf-helper.ts ./src/turf-helper.ts
 # Build the plugin from source inside container
 WORKDIR /app/Leaflet.Polydraw
 RUN npm install && \
-    chmod +x node_modules/.bin/* && \
+    find node_modules/.bin -type f -exec chmod +x {} \; 2>/dev/null || true && \
     echo ">>> Attempting to build Leaflet.Polydraw..." && \
     (npm run build 2>&1 || ( \
         echo "" && \
