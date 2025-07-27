@@ -9,6 +9,7 @@
       "import": "./dist/polydraw.es.js",
       "require": "./dist/polydraw.umd.min.js"
     },
+    "./dist/*": "./dist/*",
     "./leaflet-polydraw.css": "./dist/leaflet-polydraw.css"
   },
   "keywords": [
