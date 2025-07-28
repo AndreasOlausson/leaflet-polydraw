@@ -1449,6 +1449,12 @@ export class PolygonInteractionManager {
     bezier.classList.add('marker-menu-button', 'bezier');
     bezier.title = 'Curve';
 
+    // Add alpha banner for bezier button
+    const alphaBanner: HTMLSpanElement = document.createElement('span');
+    alphaBanner.classList.add('alpha-banner');
+    alphaBanner.textContent = 'ALPHA';
+    bezier.appendChild(alphaBanner);
+
     const separator: HTMLDivElement = document.createElement('div');
     separator.classList.add('separator');
 
