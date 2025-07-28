@@ -929,6 +929,8 @@ map.on('polygon:created', (e) => {
 
 ## Browser Support
 
+> ⚠️ Mobile support is currently **in alpha**. While the plugin includes basic touch functionality, many features (like drag-to-hole, vertex editing, and multi-finger gestures) may not work reliably on mobile browsers. Full mobile support is planned for a future version.
+
 - **Modern Browsers**: Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
 - **Mobile**: iOS Safari 12+, Chrome Mobile 60+
 - **Requirements**: ES6+ support, Leaflet 1.9+, Touch events, CSS transitions
