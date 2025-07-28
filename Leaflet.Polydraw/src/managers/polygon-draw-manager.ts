@@ -33,6 +33,7 @@ export class PolygonDrawManager {
 
   // Point-to-Point drawing state
   private p2pMarkers: L.Marker[] = [];
+  private isModifierKeyHeld: boolean = false;
 
   constructor(dependencies: PolygonDrawManagerDependencies) {
     // console.log('PolygonDrawManager constructor');
@@ -141,6 +142,17 @@ export class PolygonDrawManager {
   /**
    * Handle point-to-point click
    */
+  /**
+   * Set the modifier key status
+   * @param isHeld - Whether the modifier key is held down
+   */
+  public setModifierKey(isHeld: boolean): void {
+    this.isModifierKeyHeld = isHeld;
+  }
+
+  /**
+   * Handle point-to-point click
+   */
   handlePointToPointClick(clickLatLng: L.LatLng): void {
     // console.log('PolygonDrawManager handlePointToPointClick');
     // console.log('=== P2P CLICK DEBUG ===');
@@ -158,27 +170,12 @@ export class PolygonDrawManager {
       return;
     }
 
-    const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
-    // console.log('Current points count:', currentPoints.length);
-    // console.log(
-    //   'Current points:',
-    //   currentPoints.map((p, i) => ({
-    //     index: i,
-    //     lat: p.lat,
-    //     lng: p.lng,
-    //     precision: {
-    //       lat: p.lat.toFixed(10),
-    //       lng: p.lng.toFixed(10),
-    //     },
-    //   })),
-    // );
-
     // console.log('P2P markers count:', this.p2pMarkers.length);
     // console.log('Map zoom level:', this.map.getZoom());
     // console.log('Map center:', this.map.getCenter());
 
     // Check if clicking on the first point to close the polygon
-    if (currentPoints.length >= 3 && this.p2pMarkers.length > 0) {
+    if (this.p2pMarkers.length >= 3) {
       const firstPoint = this.p2pMarkers[0].getLatLng();
       const isClickingFirst = this.isClickingFirstPoint(clickLatLng, firstPoint);
       // console.log('Checking first point click:', {
@@ -204,10 +201,6 @@ export class PolygonDrawManager {
       }
     }
 
-    // Add point to tracer - use addLatLng to ensure points accumulate
-    // console.log('Adding new point to tracer');
-    this.tracer.addLatLng(clickLatLng);
-
     // Add a visual marker for the new point
     try {
       const isFirstMarker = this.p2pMarkers.length === 0;
@@ -218,8 +211,9 @@ export class PolygonDrawManager {
       const pointMarker = new L.Marker(clickLatLng, {
         icon: L.divIcon({
           className: markerClassName,
-          iconSize: isFirstMarker ? [20, 20] : [10, 10],
+          iconSize: isFirstMarker ? [20, 20] : [16, 16],
         }),
+        draggable: this.config.modes.dragElbow,
       }).addTo(this.map);
 
       // Stop propagation on mousedown for all p2p markers to prevent adding new points on top of them
@@ -227,10 +221,27 @@ export class PolygonDrawManager {
         L.DomEvent.stopPropagation(e);
       });
 
+      // Handle marker dragging
+      pointMarker.on('drag', () => {
+        this.updateP2PTracer();
+      });
+
+      // Handle marker deletion on click with modifier key
+      pointMarker.on('click', (e) => {
+        if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+          this.deleteP2PMarker(pointMarker);
+          L.DomEvent.stopPropagation(e);
+        }
+      });
+
+      // Add hover listeners for edge deletion feedback
+      pointMarker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(pointMarker, true));
+      pointMarker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(pointMarker, false));
+
       // Add hover effects and click handler for the first marker when there are enough points to close
       if (isFirstMarker) {
         pointMarker.on('mouseover', () => {
-          if (this.tracer.getLatLngs().length >= 3) {
+          if (this.p2pMarkers.length >= 3) {
             const element = pointMarker.getElement();
             if (element) {
               element.style.backgroundColor = '#4CAF50';
@@ -253,7 +264,13 @@ export class PolygonDrawManager {
 
         // Add click handler to complete polygon when clicking first marker
         pointMarker.on('click', (e) => {
-          if (this.tracer.getLatLngs().length >= 3) {
+          if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+            this.deleteP2PMarker(pointMarker);
+            L.DomEvent.stopPropagation(e);
+            return;
+          }
+
+          if (this.p2pMarkers.length >= 3) {
             L.DomEvent.stopPropagation(e);
             this.completePointToPointPolygon();
           }
@@ -261,20 +278,9 @@ export class PolygonDrawManager {
       }
 
       this.p2pMarkers.push(pointMarker);
+      this.updateP2PTracer();
     } catch (error) {
       // Handle marker creation errors in test environment
-    }
-
-    // Update visual style to show dashed line
-    if (this.tracer.getLatLngs().length >= 2) {
-      try {
-        this.tracer.setStyle({
-          color: this.config.polyLineOptions.color,
-          dashArray: '5, 5',
-        });
-      } catch (error) {
-        // Handle tracer style errors in test environment
-      }
     }
   }
 
@@ -288,10 +294,8 @@ export class PolygonDrawManager {
       return;
     }
 
-    const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
-
     // Need at least 3 points to complete a polygon
-    if (currentPoints.length >= 3) {
+    if (this.p2pMarkers.length >= 3) {
       this.completePointToPointPolygon();
     }
   }
@@ -301,7 +305,7 @@ export class PolygonDrawManager {
    */
   completePointToPointPolygon(): void {
     // console.log('PolygonDrawManager completePointToPointPolygon');
-    const points = this.tracer.getLatLngs() as L.LatLng[];
+    const points = this.p2pMarkers.map((marker) => marker.getLatLng());
     if (points.length < 3) {
       return; // Need at least 3 points
     }
@@ -390,6 +394,13 @@ export class PolygonDrawManager {
   resetTracer(): void {
     // console.log('PolygonDrawManager resetTracer');
     this.tracer.setLatLngs([]);
+    try {
+      this.tracer.setStyle({
+        dashArray: null,
+      });
+    } catch (error) {
+      // Handle tracer style errors in test environment
+    }
   }
 
   /**
@@ -438,6 +449,55 @@ export class PolygonDrawManager {
   }
 
   /**
+   * Update the tracer polyline based on P2P markers
+   */
+  private updateP2PTracer(): void {
+    const latlngs = this.p2pMarkers.map((marker) => marker.getLatLng());
+    this.tracer.setLatLngs(latlngs);
+
+    // Update visual style to show dashed line
+    if (this.p2pMarkers.length >= 2) {
+      try {
+        this.tracer.setStyle({
+          color: this.config.polyLineOptions.color,
+          dashArray: '5, 5',
+        });
+      } catch (error) {
+        // Handle tracer style errors in test environment
+      }
+    } else {
+      // If less than 2 points, clear dash array
+      try {
+        this.tracer.setStyle({
+          dashArray: null,
+        });
+      } catch (error) {
+        // Handle tracer style errors in test environment
+      }
+    }
+  }
+
+  /**
+   * Delete a P2P marker
+   */
+  private deleteP2PMarker(markerToDelete: L.Marker): void {
+    const markerIndex = this.p2pMarkers.findIndex((marker) => marker === markerToDelete);
+    if (markerIndex > -1) {
+      // Remove from array
+      this.p2pMarkers.splice(markerIndex, 1);
+      // Remove from map
+      this.map.removeLayer(markerToDelete);
+      // Update the tracer
+      this.updateP2PTracer();
+
+      // If the first marker was deleted, transfer its properties to the new first marker
+      if (markerIndex === 0 && this.p2pMarkers.length > 0) {
+        this.setupFirstMarker();
+      }
+    }
+  }
+
+  /**
    * Get current P2P markers (for external access)
    */
   getP2pMarkers(): L.Marker[] {
@@ -460,5 +520,116 @@ export class PolygonDrawManager {
     // console.log('PolygonDrawManager getTracerPointsCount');
     const points = this.tracer.getLatLngs() as L.LatLng[];
     return points.length;
+  }
+
+  /**
+   * Set up the first marker with special properties
+   */
+  private setupFirstMarker(): void {
+    if (this.p2pMarkers.length === 0) return;
+
+    const firstMarker = this.p2pMarkers[0];
+    const element = firstMarker.getElement();
+    if (element) {
+      element.classList.add('leaflet-polydraw-p2p-first-marker');
+      firstMarker.setIcon(
+        L.divIcon({
+          className: 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker',
+          iconSize: [20, 20],
+        }),
+      );
+    }
+
+    // Remove existing listeners to avoid duplicates
+    firstMarker.off('mouseover');
+    firstMarker.off('mouseout');
+    firstMarker.off('click');
+
+    // Add hover effects and click handler for the first marker when there are enough points to close
+    firstMarker.on('mouseover', () => {
+      if (this.p2pMarkers.length >= 3) {
+        const element = firstMarker.getElement();
+        if (element) {
+          element.style.backgroundColor = '#4CAF50';
+          element.style.borderColor = '#4CAF50';
+          element.style.cursor = 'pointer';
+          element.title = 'Click to close polygon';
+        }
+      }
+    });
+
+    firstMarker.on('mouseout', () => {
+      const element = firstMarker.getElement();
+      if (element) {
+        element.style.backgroundColor = '';
+        element.style.borderColor = '';
+        element.style.cursor = '';
+        element.title = '';
+      }
+    });
+
+    // Add click handler to complete polygon when clicking first marker
+    firstMarker.on('click', (e) => {
+      if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+        this.deleteP2PMarker(firstMarker);
+        L.DomEvent.stopPropagation(e);
+        return;
+      }
+
+      if (this.p2pMarkers.length >= 3) {
+        L.DomEvent.stopPropagation(e);
+        this.completePointToPointPolygon();
+      }
+    });
+  }
+
+  /**
+   * Handle marker hover for edge deletion feedback
+   */
+  private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
+    const element = marker.getElement();
+    if (!element) return;
+
+    if (isHovering) {
+      const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
+        if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+          element.classList.add('edge-deletion-hover');
+          try {
+            const container = this.map.getContainer();
+            container.style.cursor = 'pointer';
+          } catch (error) {
+            // Handle DOM errors
+          }
+        } else {
+          element.classList.remove('edge-deletion-hover');
+          try {
+            const container = this.map.getContainer();
+            container.style.cursor = '';
+          } catch (error) {
+            // Handle DOM errors
+          }
+        }
+      };
+
+      (marker as any)._polydrawModifierHandler = checkModifierAndUpdate;
+      document.addEventListener('keydown', checkModifierAndUpdate);
+      document.addEventListener('keyup', checkModifierAndUpdate);
+      element.addEventListener('mousemove', checkModifierAndUpdate);
+    } else {
+      element.classList.remove('edge-deletion-hover');
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = '';
+      } catch (error) {
+        // Handle DOM errors
+      }
+      const handler = (marker as any)._polydrawModifierHandler;
+      if (handler) {
+        document.removeEventListener('keydown', handler);
+        document.removeEventListener('keyup', handler);
+        element.removeEventListener('mousemove', handler);
+        delete (marker as any)._polydrawModifierHandler;
+      }
+    }
   }
 }

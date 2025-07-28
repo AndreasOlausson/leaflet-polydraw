@@ -1,11 +1,12 @@
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
-import { DrawMode, MarkerPosition } from './enums';
+import { DrawMode } from './enums';
 import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
 import { PolygonInformationService } from './polygon-information.service';
 import { MapStateService } from './map-state';
 import { ModeManager } from './managers/mode-manager';
+import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
@@ -21,9 +22,9 @@ class Polydraw extends L.Control {
   private mapStateService: MapStateService;
   private polygonInformation: PolygonInformationService;
   private modeManager: ModeManager;
+  private polygonDrawManager: PolygonDrawManager;
   private polygonMutationManager: PolygonMutationManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
-  private p2pMarkers: L.Marker[] = [];
 
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: DrawModeChangeHandler[] = [];
@@ -91,6 +92,7 @@ class Polydraw extends L.Control {
 
     // Initialize PolygonMutationManager - will be properly set up in onAdd when map is available
     this.polygonMutationManager = null as any;
+    this.polygonDrawManager = null as any;
   }
 
   onAdd(_map: L.Map): HTMLElement {
@@ -236,6 +238,15 @@ class Polydraw extends L.Control {
       // Silently handle tracer initialization in test environment
     }
 
+    // Initialize PolygonDrawManager now that map is available
+    this.polygonDrawManager = new PolygonDrawManager({
+      turfHelper: this.turfHelper,
+      map: this.map,
+      config: this.config,
+      modeManager: this.modeManager,
+      tracer: this.tracer,
+    });
+
     // Initialize PolygonMutationManager now that map is available
     this.polygonMutationManager = new PolygonMutationManager({
       turfHelper: this.turfHelper,
@@ -286,6 +297,28 @@ class Polydraw extends L.Control {
     // Listen for polygon deletion events to update the activate button indicator
     this.polygonMutationManager.on('polygonDeleted', () => {
       this.updateActivateButtonIndicator();
+    });
+
+    // Listen for drawing completion events from the draw manager
+    this.polygonDrawManager.on('drawCompleted', async (data) => {
+      this.stopDraw();
+      if (data.isPointToPoint) {
+        // For P2P, add the polygon directly
+        await this.polygonMutationManager.addPolygon(data.polygon, {
+          simplify: false,
+          noMerge: false,
+        });
+      } else {
+        // For freehand, handle based on mode
+        await this.handleFreehandDrawCompletion(data.polygon);
+      }
+      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    });
+
+    // Listen for drawing cancellation events
+    this.polygonDrawManager.on('drawCancelled', () => {
+      this.stopDraw();
+      this.setDrawMode(DrawMode.Off);
     });
 
     return container;
@@ -382,7 +415,7 @@ class Polydraw extends L.Control {
     // Don't reset tracer when entering PointToPoint mode
     if (previousMode === DrawMode.PointToPoint && mode !== DrawMode.PointToPoint) {
       // Clear P2P markers when leaving PointToPoint mode
-      this.clearP2pMarkers();
+      this.polygonDrawManager.clearP2pMarkers();
       this.stopDraw();
     } else if (mode === DrawMode.Off) {
       this.stopDraw();
@@ -579,6 +612,36 @@ class Polydraw extends L.Control {
     }
   }
 
+  private async handleFreehandDrawCompletion(geoPos: Feature<Polygon | MultiPolygon>) {
+    try {
+      switch (this.modeManager.getCurrentMode()) {
+        case DrawMode.Add: {
+          // Use the PolygonMutationManager instead of direct addPolygon
+          const result = await this.polygonMutationManager.addPolygon(geoPos, {
+            simplify: true,
+            noMerge: false,
+          });
+          if (!result.success) {
+            console.error('Error adding polygon via manager:', result.error);
+          }
+          break;
+        }
+        case DrawMode.Subtract: {
+          // Use the PolygonMutationManager for subtraction
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          if (!subtractResult.success) {
+            console.error('Error subtracting polygon via manager:', subtractResult.error);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error in mouseUpLeave polygon operation:', error);
+    }
+  }
+
   private async mouseUpLeave(event: any) {
     // console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
@@ -701,7 +764,7 @@ class Polydraw extends L.Control {
 
     // Handle Point-to-Point mode differently
     if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
-      this.handlePointToPointClick(clickLatLng);
+      this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
     }
 
@@ -732,7 +795,7 @@ class Polydraw extends L.Control {
     // console.log('handleKeyDown');
     if (e.key === 'Escape') {
       if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
-        this.cancelPointToPointDrawing();
+        this.polygonDrawManager.cancelPointToPointDrawing();
       }
     }
 
@@ -740,6 +803,7 @@ class Polydraw extends L.Control {
     const isModifierPressed = this.isModifierKeyPressed(e as any);
     if (isModifierPressed && !this.isModifierKeyHeld) {
       this.isModifierKeyHeld = true;
+      this.polygonDrawManager.setModifierKey(true);
       this.updateAllMarkersForEdgeDeletion(true);
     }
   }
@@ -750,6 +814,7 @@ class Polydraw extends L.Control {
     const isModifierPressed = this.isModifierKeyPressed(e as any);
     if (!isModifierPressed && this.isModifierKeyHeld) {
       this.isModifierKeyHeld = false;
+      this.polygonDrawManager.setModifierKey(false);
       this.updateAllMarkersForEdgeDeletion(false);
     }
   }
@@ -817,193 +882,6 @@ class Polydraw extends L.Control {
     }
   };
 
-  private cancelPointToPointDrawing() {
-    // console.log('cancelPointToPointDrawing');
-    this.clearP2pMarkers();
-    this.stopDraw();
-    this.setDrawMode(DrawMode.Off);
-  }
-
-  // Point-to-Point state management
-  private handlePointToPointClick(clickLatLng: L.LatLng) {
-    // console.log('handlePointToPointClick');
-    // console.log('=== P2P CLICK DEBUG ===');
-    // console.log('Click coordinates:', {
-    //   lat: clickLatLng.lat,
-    //   lng: clickLatLng.lng,
-    //   precision: {
-    //     lat: clickLatLng.lat.toFixed(10),
-    //     lng: clickLatLng.lng.toFixed(10),
-    //   },
-    // });
-
-    if (!clickLatLng) {
-      // console.log('No clickLatLng provided, returning');
-      return;
-    }
-
-    const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
-    // console.log('Current points count:', currentPoints.length);
-    // console.log(
-    //   'Current points:',
-    //   currentPoints.map((p, i) => ({
-    //     index: i,
-    //     lat: p.lat,
-    //     lng: p.lng,
-    //     precision: {
-    //       lat: p.lat.toFixed(10),
-    //       lng: p.lng.toFixed(10),
-    //     },
-    //   })),
-    // );
-
-    // console.log('P2P markers count:', this.p2pMarkers.length);
-    // console.log('Map zoom level:', this.map.getZoom());
-    // console.log('Map center:', this.map.getCenter());
-
-    // Check if clicking on the first point to close the polygon
-    if (currentPoints.length >= 3 && this.p2pMarkers.length > 0) {
-      const firstPoint = this.p2pMarkers[0].getLatLng();
-      const isClickingFirst = this.isClickingFirstPoint(clickLatLng, firstPoint);
-      // console.log('Checking first point click:', {
-      //   firstPoint: {
-      //     lat: firstPoint.lat,
-      //     lng: firstPoint.lng,
-      //     precision: {
-      //       lat: firstPoint.lat.toFixed(10),
-      //       lng: firstPoint.lng.toFixed(10),
-      //     },
-      //   },
-      //   distance: {
-      //     lat: Math.abs(clickLatLng.lat - firstPoint.lat),
-      //     lng: Math.abs(clickLatLng.lng - firstPoint.lng),
-      //   },
-      //   isClickingFirst: isClickingFirst,
-      // });
-
-      if (isClickingFirst) {
-        // console.log('Completing polygon by clicking first point');
-        this.completePointToPointPolygon();
-        return;
-      }
-    }
-
-    // Add point to tracer - use addLatLng to ensure points accumulate
-    // console.log('Adding new point to tracer');
-    this.tracer.addLatLng(clickLatLng);
-
-    // Add a visual marker for the new point
-    try {
-      const isFirstMarker = this.p2pMarkers.length === 0;
-      const markerClassName = isFirstMarker
-        ? 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker'
-        : 'leaflet-polydraw-p2p-marker';
-
-      const pointMarker = new L.Marker(clickLatLng, {
-        icon: L.divIcon({
-          className: markerClassName,
-          iconSize: isFirstMarker ? [20, 20] : [10, 10],
-        }),
-      }).addTo(this.map);
-
-      // Stop propagation on mousedown for all p2p markers to prevent adding new points on top of them
-      pointMarker.on('mousedown', (e) => {
-        L.DomEvent.stopPropagation(e);
-      });
-
-      // Add hover effects and click handler for the first marker when there are enough points to close
-      if (isFirstMarker) {
-        pointMarker.on('mouseover', () => {
-          if (this.tracer.getLatLngs().length >= 3) {
-            const element = pointMarker.getElement();
-            if (element) {
-              element.style.backgroundColor = '#4CAF50';
-              element.style.borderColor = '#4CAF50';
-              element.style.cursor = 'pointer';
-              element.title = 'Click to close polygon';
-            }
-          }
-        });
-
-        pointMarker.on('mouseout', () => {
-          const element = pointMarker.getElement();
-          if (element) {
-            element.style.backgroundColor = '';
-            element.style.borderColor = '';
-            element.style.cursor = '';
-            element.title = '';
-          }
-        });
-
-        // Add click handler to complete polygon when clicking first marker
-        pointMarker.on('click', (e) => {
-          if (this.tracer.getLatLngs().length >= 3) {
-            L.DomEvent.stopPropagation(e);
-            this.completePointToPointPolygon();
-          }
-        });
-      }
-
-      this.p2pMarkers.push(pointMarker);
-    } catch (error) {
-      // Handle marker creation errors in test environment
-    }
-
-    // Update visual style to show dashed line
-    if (this.tracer.getLatLngs().length >= 2) {
-      try {
-        this.tracer.setStyle({
-          color: defaultConfig.polyLineOptions.color,
-          dashArray: '5, 5',
-        });
-      } catch (error) {
-        // Handle tracer style errors in test environment
-      }
-    }
-  }
-
-  private isClickingFirstPoint(clickLatLng: L.LatLng, firstPoint: L.LatLng): boolean {
-    // console.log('isClickingFirstPoint');
-    if (!firstPoint) return false;
-
-    // Use zoom-dependent tolerance - higher zoom = smaller tolerance
-    const zoom = this.map.getZoom();
-    // Base tolerance at zoom 10, scale down exponentially for higher zooms
-    const baseTolerance = 0.0005;
-    const tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
-
-    // console.log('First point click tolerance check:', {
-    //   zoom: zoom,
-    //   baseTolerance: baseTolerance,
-    //   calculatedTolerance: tolerance,
-    //   clickLatLng: {
-    //     lat: clickLatLng.lat.toFixed(10),
-    //     lng: clickLatLng.lng.toFixed(10),
-    //   },
-    //   firstPoint: {
-    //     lat: firstPoint.lat.toFixed(10),
-    //     lng: firstPoint.lng.toFixed(10),
-    //   },
-    //   distances: {
-    //     lat: Math.abs(clickLatLng.lat - firstPoint.lat),
-    //     lng: Math.abs(clickLatLng.lng - firstPoint.lng),
-    //   },
-    // });
-
-    const latDiff = Math.abs(clickLatLng.lat - firstPoint.lat);
-    const lngDiff = Math.abs(clickLatLng.lng - firstPoint.lng);
-    const isClicking = latDiff < tolerance && lngDiff < tolerance;
-
-    // console.log('First point click result:', {
-    //   tolerance: tolerance,
-    //   latDiff: latDiff,
-    //   lngDiff: lngDiff,
-    //   isClicking: isClicking,
-    // });
-
-    return isClicking;
-  }
-
   private handleDoubleClick(e: L.LeafletMouseEvent) {
     // console.log('handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
@@ -1011,85 +889,7 @@ class Polydraw extends L.Control {
       return;
     }
 
-    const currentPoints = this.tracer.getLatLngs() as L.LatLng[];
-
-    // Need at least 3 points to complete a polygon
-    if (currentPoints.length >= 3) {
-      this.completePointToPointPolygon();
-    }
-  }
-
-  private completePointToPointPolygon() {
-    // console.log('completePointToPointPolygon');
-    const points = this.tracer.getLatLngs() as L.LatLng[];
-    if (points.length < 3) {
-      return; // Need at least 3 points
-    }
-
-    // console.log('=== P2P COMPLETION DEBUG ===');
-    // console.log(
-    //   'Original points from tracer:',
-    //   points.map((p, i) => ({
-    //     index: i,
-    //     lat: p.lat.toFixed(10),
-    //     lng: p.lng.toFixed(10),
-    //   })),
-    // );
-
-    // Close the polygon by adding first point at the end if not already closed
-    const closedPoints = [...points];
-    const firstPoint = points[0];
-    const lastPoint = points[points.length - 1];
-
-    if (firstPoint.lat !== lastPoint.lat || firstPoint.lng !== lastPoint.lng) {
-      closedPoints.push(firstPoint);
-    }
-
-    // console.log(
-    //   'Closed points:',
-    //   closedPoints.map((p, i) => ({
-    //     index: i,
-    //     lat: p.lat.toFixed(10),
-    //     lng: p.lng.toFixed(10),
-    //   })),
-    // );
-
-    // Convert to GeoJSON and create polygon directly (bypass createPolygonFromTrace for P2P)
-    try {
-      // Create coordinates array directly from points
-      const coordinates = closedPoints.map((point) => [point.lng, point.lat] as [number, number]);
-      const geoPos = this.turfHelper.getMultiPolygon([[coordinates]]);
-
-      // console.log(
-      //   'Direct polygon creation (bypassing createPolygonFromTrace):',
-      //   geoPos.geometry.coordinates[0].map((coord, i) => ({
-      //     index: i,
-      //     lng: typeof coord[0] === 'number' ? coord[0].toFixed(10) : coord[0],
-      //     lat: typeof coord[1] === 'number' ? coord[1].toFixed(10) : coord[1],
-      //   })),
-      // );
-
-      // Clear P2P markers and stop drawing first
-      this.clearP2pMarkers();
-      this.stopDraw();
-
-      // Add polygon (disable simplification for P2P - every click is intentional)
-      // Allow merging for P2P polygons so they merge with existing polygons
-      this.polygonMutationManager.addPolygon(geoPos, { simplify: false, noMerge: false });
-
-      // Update polygon information
-      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-    } catch (error) {
-      console.warn('Error completing point-to-point polygon:', error);
-      this.clearP2pMarkers();
-      this.stopDraw();
-    }
-  }
-
-  private clearP2pMarkers() {
-    // console.log('clearP2pMarkers');
-    this.p2pMarkers.forEach((marker) => this.map.removeLayer(marker));
-    this.p2pMarkers = [];
+    this.polygonDrawManager.handleDoubleClick(e);
   }
 
   /**

@@ -437,3 +437,15 @@ body {
 .polydraw-hidden-marker.leaflet-marker-draggable {
   cursor: move !important;
 }
+
+.leaflet-polydraw-p2p-marker {
+  margin-left: -8px;
+  margin-top: -8px;
+}
+
+.leaflet-polydraw-p2p-marker.edge-deletion-hover {
+  background-color: #d9460f !important;
+  border-color: #d9460f !important;
+  transform: scale(1.5);
+  transition: all 0.2s ease;
+}

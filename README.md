@@ -60,10 +60,10 @@ You can also use Leaflet.Polydraw directly in the browser via a CDN like [jsDeli
 />
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.0/dist/styles/polydraw.css"
+  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/styles/polydraw.css"
 />
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.0/dist/polydraw.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/polydraw.umd.min.js"></script>
 ```
 
 ### Example Usage
@@ -585,6 +585,8 @@ Create precise polygons by clicking to place each vertex. Perfect for:
    - Click on the first vertex again.
    - **or** Double-click anywhere on the map.
 4. Press `ESC` to cancel the current drawing.
+
+You can also drag markers to adjust the shape and delete them by holding the modifier key (Cmd/Ctrl) and clicking on a marker, just like with regular polygon editing.
 
 ### Smart Polygon Merging
 

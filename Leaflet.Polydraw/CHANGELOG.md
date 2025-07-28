@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.7] – 2025-07-28
+
+### Enhanced
+
+- **Point-to-Point Drawing**: Now supports marker dragging and deletion, mirroring the behavior of regular polygon editing for a consistent user experience.
+- **Visual Feedback**: Point-to-point markers now provide visual feedback (turning red and scaling up) when hovered over with the modifier key held down, indicating that they can be deleted.
+
+### Fixed
+
+- **Configuration**: Point-to-point drawing now respects the `dragElbow` and `edgeDeletion` settings from `config.json`.
+- **Start Point Deletion**: Resolved an issue where deleting the starting marker in point-to-point drawing would prevent the polygon from being closed. The special properties of the starting marker are now correctly transferred to the new starting marker.
+
 ## [0.8.6] – 2025-07-28
 
 ### Added
