@@ -224,32 +224,50 @@ export class PolygonGeometryManager {
         return { success: false, error: 'Invalid polygon coordinates' };
       }
 
+      const processHoles = this.config.menuOperations?.simplify?.processHoles ?? true;
+
       const simplifiedCoords = coords.map((ring) => {
-        const outerRing = ring[0]; // Get the outer ring
-        if (outerRing.length <= 4) {
-          // Cannot simplify further
-          return ring;
+        const simplifiedRings: [number, number][][] = [];
+
+        // Process each ring (outer ring + holes)
+        for (let ringIndex = 0; ringIndex < ring.length; ringIndex++) {
+          const currentRing = ring[ringIndex];
+          const isOuterRing = ringIndex === 0;
+
+          // Always process the outer ring, process holes only if config allows
+          if (isOuterRing || processHoles) {
+            if (currentRing.length <= 4) {
+              // Cannot simplify further
+              simplifiedRings.push(currentRing);
+              continue;
+            }
+
+            // Remove every other point to simplify
+            const simplified: [number, number][] = [];
+            for (let i = 0; i < currentRing.length; i += 2) {
+              simplified.push(currentRing[i]);
+            }
+
+            // Ensure the simplified polygon is closed
+            const firstPoint = simplified[0];
+            const lastPoint = simplified[simplified.length - 1];
+            if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
+              simplified.push(firstPoint);
+            }
+
+            // Check if the simplified polygon is still valid
+            if (simplified.length < 4) {
+              simplifiedRings.push(currentRing); // Return original if simplification results in invalid polygon
+            } else {
+              simplifiedRings.push(simplified);
+            }
+          } else {
+            // Keep holes unchanged if processHoles is false
+            simplifiedRings.push(currentRing);
+          }
         }
 
-        // Remove every other point to simplify
-        const simplified: [number, number][] = [];
-        for (let i = 0; i < outerRing.length; i += 2) {
-          simplified.push(outerRing[i]);
-        }
-
-        // Ensure the simplified polygon is closed
-        const firstPoint = simplified[0];
-        const lastPoint = simplified[simplified.length - 1];
-        if (firstPoint[0] !== lastPoint[0] || firstPoint[1] !== lastPoint[1]) {
-          simplified.push(firstPoint);
-        }
-
-        // Check if the simplified polygon is still valid
-        if (simplified.length < 4) {
-          return ring; // Return original if simplification results in invalid polygon
-        }
-
-        return [simplified, ...ring.slice(1)]; // Keep holes unchanged
+        return simplifiedRings;
       });
 
       const result = this.turfHelper.getMultiPolygon(simplifiedCoords);
@@ -271,7 +289,80 @@ export class PolygonGeometryManager {
   convertToBoundingBox(polygon: Feature<Polygon | MultiPolygon>): GeometryOperationResult {
     // console.log('PolygonGeometryManager convertToBoundingBox');
     try {
-      const result = this.turfHelper.convertToBoundingBoxPolygon(polygon);
+      const coords = this.turfHelper.getCoords(polygon);
+      if (!coords || coords.length === 0) {
+        return { success: false, error: 'Invalid polygon coordinates' };
+      }
+
+      const processHoles = this.config.menuOperations?.bbox?.processHoles ?? true;
+
+      if (!processHoles) {
+        // Only create bounding box for outer ring, ignore holes
+        const result = this.turfHelper.convertToBoundingBoxPolygon(polygon);
+        return {
+          success: true,
+          result: this.turfHelper.getTurfPolygon(result),
+        };
+      }
+
+      // Process holes: create rectangular holes within the outer bounding box
+      const bboxCoords = coords.map((ring) => {
+        const bboxRings: [number, number][][] = [];
+
+        // Process each ring (outer ring + holes)
+        for (let ringIndex = 0; ringIndex < ring.length; ringIndex++) {
+          const currentRing = ring[ringIndex];
+
+          // Calculate bounding box for this ring
+          let minLat = Infinity;
+          let maxLat = -Infinity;
+          let minLng = Infinity;
+          let maxLng = -Infinity;
+
+          for (const coord of currentRing) {
+            if (Array.isArray(coord) && coord.length >= 2) {
+              const lng = coord[0];
+              const lat = coord[1];
+
+              if (
+                typeof lng === 'number' &&
+                typeof lat === 'number' &&
+                !isNaN(lng) &&
+                !isNaN(lat)
+              ) {
+                minLng = Math.min(minLng, lng);
+                maxLng = Math.max(maxLng, lng);
+                minLat = Math.min(minLat, lat);
+                maxLat = Math.max(maxLat, lat);
+              }
+            }
+          }
+
+          // Create rectangular coordinates for this ring
+          if (
+            minLat !== Infinity &&
+            maxLat !== -Infinity &&
+            minLng !== Infinity &&
+            maxLng !== -Infinity
+          ) {
+            const rectangularRing: [number, number][] = [
+              [minLng, minLat], // Bottom-left
+              [minLng, maxLat], // Top-left
+              [maxLng, maxLat], // Top-right
+              [maxLng, minLat], // Bottom-right
+              [minLng, minLat], // Close the ring
+            ];
+            bboxRings.push(rectangularRing);
+          } else {
+            // Fallback: keep original ring if bounding box calculation fails
+            bboxRings.push(currentRing);
+          }
+        }
+
+        return bboxRings;
+      });
+
+      const result = this.turfHelper.getMultiPolygon(bboxCoords);
       return {
         success: true,
         result: this.turfHelper.getTurfPolygon(result),
@@ -307,14 +398,43 @@ export class PolygonGeometryManager {
   /**
    * Double the elbows of a polygon
    */
-  doubleElbowsPolygon(latlngs: L.LatLngLiteral[]): GeometryOperationResult {
+  doubleElbowsPolygon(polygon: Feature<Polygon | MultiPolygon>): GeometryOperationResult {
     // console.log('PolygonGeometryManager doubleElbowsPolygon');
     try {
-      const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
-      const coords = [
-        [doubleLatLngs.map((latlng) => [latlng.lng, latlng.lat] as [number, number])],
-      ];
-      const result = this.turfHelper.getMultiPolygon(coords);
+      const coords = this.turfHelper.getCoords(polygon);
+      if (!coords || coords.length === 0) {
+        return { success: false, error: 'Invalid polygon coordinates' };
+      }
+
+      const processHoles = this.config.menuOperations?.doubleElbows?.processHoles ?? true;
+
+      const doubleElbowCoords = coords.map((ring) => {
+        const processedRings: [number, number][][] = [];
+
+        // Process each ring (outer ring + holes)
+        for (let ringIndex = 0; ringIndex < ring.length; ringIndex++) {
+          const currentRing = ring[ringIndex];
+          const isOuterRing = ringIndex === 0;
+
+          // Always process the outer ring, process holes only if config allows
+          if (isOuterRing || processHoles) {
+            // Convert coordinates to LatLng format for the turf helper
+            const latlngs = currentRing.map((coord) => ({ lat: coord[1], lng: coord[0] }));
+            const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
+            const doubledCoords = doubleLatLngs.map(
+              (latlng) => [latlng.lng, latlng.lat] as [number, number],
+            );
+            processedRings.push(doubledCoords);
+          } else {
+            // Keep holes unchanged if processHoles is false
+            processedRings.push(currentRing);
+          }
+        }
+
+        return processedRings;
+      });
+
+      const result = this.turfHelper.getMultiPolygon(doubleElbowCoords);
       return {
         success: true,
         result: this.turfHelper.getTurfPolygon(result),

@@ -337,6 +337,17 @@ const polyDrawControl = L.control
       "multipiler": 2
     }
   },
+  "menuOperations": {
+    "simplify": {
+      "processHoles": true
+    },
+    "doubleElbows": {
+      "processHoles": true
+    },
+    "bbox": {
+      "processHoles": true
+    }
+  },
   "boundingBox": {
     "addMidPointMarkers": true
   },
@@ -493,6 +504,13 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;**dynamicMode**                                        | object  |                                | Dynamic simplification                                    |
 | &nbsp;&nbsp;&nbsp;&nbsp;fractionGuard                              | number  | `0.9`                          | Fraction guard value                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;multipiler                                 | number  | `2`                            | Tolerance multiplier                                      |
+| **menuOperations**                                                 | object  |                                | Menu marker operation settings                            |
+| &nbsp;&nbsp;**simplify**                                           | object  |                                | Simplify operation configuration                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Whether to simplify holes along with outer ring           |
+| &nbsp;&nbsp;**doubleElbows**                                       | object  |                                | Double elbows operation configuration                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Whether to add elbows to holes along with outer ring      |
+| &nbsp;&nbsp;**bbox**                                               | object  |                                | Bounding box operation configuration                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Whether to create rectangular holes or ignore them        |
 | **boundingBox**                                                    | object  |                                | Bounding box settings                                     |
 | &nbsp;&nbsp;addMidPointMarkers                                     | boolean | `true`                         | Add midpoint markers to bounding box                      |
 | **bezier**                                                         | object  |                                | Bezier curve settings                                     |

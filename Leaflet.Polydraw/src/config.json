@@ -172,6 +172,17 @@
       "multipiler": 2
     }
   },
+  "menuOperations": {
+    "simplify": {
+      "processHoles": true
+    },
+    "doubleElbows": {
+      "processHoles": true
+    },
+    "bbox": {
+      "processHoles": true
+    }
+  },
   "boundingBox": {
     "addMidPointMarkers": true
   },

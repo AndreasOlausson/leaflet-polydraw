@@ -149,6 +149,21 @@ export interface EdgeDeletionConfig {
 }
 
 /**
+ * Menu operations configuration interface
+ */
+export interface MenuOperationsConfig {
+  simplify: {
+    processHoles: boolean;
+  };
+  doubleElbows: {
+    processHoles: boolean;
+  };
+  bbox: {
+    processHoles: boolean;
+  };
+}
+
+/**
  * Complete Polydraw configuration interface
  */
 export interface PolydrawConfig {
@@ -162,6 +177,7 @@ export interface PolydrawConfig {
   modes: ModeConfig;
   dragPolygons: DragPolygonConfig;
   edgeDeletion: EdgeDeletionConfig;
+  menuOperations: MenuOperationsConfig;
   units: {
     metric: boolean;
     imperial: boolean;

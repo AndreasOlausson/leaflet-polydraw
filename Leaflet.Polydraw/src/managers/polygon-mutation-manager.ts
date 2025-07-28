@@ -176,6 +176,9 @@ export class PolygonMutationManager {
     // console.log('PolygonMutationManager handleMenuAction');
     const { action, latLngs, featureGroup } = data;
 
+    // Get the complete polygon GeoJSON including holes before removing the feature group
+    const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(featureGroup);
+
     // Remove the original polygon
     this.removeFeatureGroupInternal(featureGroup);
 
@@ -183,35 +186,23 @@ export class PolygonMutationManager {
 
     switch (action) {
       case 'simplify': {
-        const coords = [
-          [latLngs.map((latlng: any) => [latlng.lng, latlng.lat] as [number, number])],
-        ];
-        const polygon = this.turfHelper.getMultiPolygon(coords);
-        result = this.geometryManager.simplifyPolygon(this.turfHelper.getTurfPolygon(polygon));
+        // Use the complete polygon data including holes for simplification
+        result = this.geometryManager.simplifyPolygon(completePolygonGeoJSON);
         break;
       }
       case 'bbox': {
-        const bboxCoords = [
-          [latLngs.map((latlng: any) => [latlng.lng, latlng.lat] as [number, number])],
-        ];
-        const bboxPolygon = this.turfHelper.getMultiPolygon(bboxCoords);
-        result = this.geometryManager.convertToBoundingBox(
-          this.turfHelper.getTurfPolygon(bboxPolygon),
-        );
+        // For bbox, use the complete polygon data including holes
+        result = this.geometryManager.convertToBoundingBox(completePolygonGeoJSON);
         break;
       }
       case 'doubleElbows': {
-        result = this.geometryManager.doubleElbowsPolygon(latLngs);
+        // For doubleElbows, use the complete polygon data including holes
+        result = this.geometryManager.doubleElbowsPolygon(completePolygonGeoJSON);
         break;
       }
       case 'bezier': {
-        const bezierCoords = [
-          [latLngs.map((latlng: any) => [latlng.lng, latlng.lat] as [number, number])],
-        ];
-        const bezierPolygon = this.turfHelper.getMultiPolygon(bezierCoords);
-        result = this.geometryManager.bezierifyPolygon(
-          this.turfHelper.getTurfPolygon(bezierPolygon),
-        );
+        // For bezier, use the complete polygon data including holes
+        result = this.geometryManager.bezierifyPolygon(completePolygonGeoJSON);
         break;
       }
       default:
@@ -641,6 +632,51 @@ export class PolygonMutationManager {
       featureGroups.splice(index, 1);
     }
     this.map.removeLayer(featureGroup);
+  }
+
+  /**
+   * Get complete polygon GeoJSON including holes from a feature group
+   */
+  private getCompletePolygonFromFeatureGroup(
+    featureGroup: L.FeatureGroup,
+  ): Feature<Polygon | MultiPolygon> {
+    // console.log('PolygonMutationManager getCompletePolygonFromFeatureGroup');
+    try {
+      // Find the polygon layer in the feature group
+      let polygon: L.Polygon | null = null;
+      featureGroup.eachLayer((layer) => {
+        if (layer instanceof L.Polygon) {
+          polygon = layer;
+        }
+      });
+
+      if (!polygon) {
+        // Fallback: create a simple polygon from the first ring
+        throw new Error('No polygon found in feature group');
+      }
+
+      // Get the complete GeoJSON including holes
+      return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+    } catch (error) {
+      console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
+      // Fallback: return a simple polygon
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0, 1],
+              [1, 1],
+              [1, 0],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+    }
   }
 
   // Public methods that delegate to interaction manager
