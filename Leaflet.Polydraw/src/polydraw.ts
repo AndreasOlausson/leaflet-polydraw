@@ -577,10 +577,10 @@ class Polydraw extends L.Control {
     if (onoff) {
       try {
         this.map.getContainer().addEventListener('touchmove', (e) => this.mouseMove(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
         this.map.getContainer().addEventListener('touchend', (e) => this.mouseUpLeave(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
@@ -588,10 +588,10 @@ class Polydraw extends L.Control {
     } else {
       try {
         this.map.getContainer().removeEventListener('touchmove', (e) => this.mouseMove(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
         this.map.getContainer().removeEventListener('touchend', (e) => this.mouseUpLeave(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
@@ -600,7 +600,11 @@ class Polydraw extends L.Control {
   }
 
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent) {
-    // console.log('mouseMove');
+    // Prevent scroll or pull-to-refresh on mobile
+    if ('cancelable' in event && event.cancelable) {
+      event.preventDefault();
+    }
+
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
@@ -643,6 +647,10 @@ class Polydraw extends L.Control {
   }
 
   private async mouseUpLeave(event: any) {
+    // Prevent unintended scroll or refresh on touchend/touchup (mobile)
+    if ('cancelable' in event && event.cancelable) {
+      event.preventDefault();
+    }
     // console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
 
@@ -725,7 +733,7 @@ class Polydraw extends L.Control {
     if (onoff) {
       try {
         this.map.getContainer().addEventListener('touchstart', (e) => this.mouseDown(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
@@ -733,7 +741,7 @@ class Polydraw extends L.Control {
     } else {
       try {
         this.map.getContainer().removeEventListener('touchstart', (e) => this.mouseDown(e), {
-          passive: true,
+          passive: false,
         } as AddEventListenerOptions);
       } catch (error) {
         // Silently handle DOM errors
@@ -742,6 +750,10 @@ class Polydraw extends L.Control {
   }
 
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
+    // Safeguard against unintended browser actions on mobile
+    if ('cancelable' in event && event.cancelable) {
+      event.preventDefault();
+    }
     // console.log('mouseDown');
     // Check if we're still in a drawing mode before processing
     if (this.modeManager.isInOffMode()) {
