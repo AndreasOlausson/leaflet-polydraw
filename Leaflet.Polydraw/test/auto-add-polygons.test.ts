@@ -92,17 +92,28 @@ vi.mock('leaflet', async () => {
   const MockPolygon = class extends (actualLeaflet as any).Polygon {
     constructor(latlngs: any, options: any) {
       super(latlngs, options);
+      this._latlngs = latlngs;
+      // Convert latlngs to proper coordinates format
+      const coordinates = Array.isArray(latlngs[0])
+        ? latlngs.map((ring: any) =>
+            ring.map((ll: any) => [ll.lng || ll[1] || 0, ll.lat || ll[0] || 0]),
+          )
+        : [latlngs.map((ll: any) => [ll.lng || ll[1] || 0, ll.lat || ll[0] || 0])];
+
       this.feature = {
         type: 'Feature',
         properties: {},
         geometry: {
           type: 'Polygon',
-          coordinates: [],
+          coordinates: coordinates,
         },
       };
     }
     toGeoJSON() {
       return this.feature;
+    }
+    getLatLngs() {
+      return this._latlngs;
     }
   };
 
@@ -180,6 +191,12 @@ describe('Auto-add polygons functionality', () => {
   });
 
   it('should add a simple polygon without errors', async () => {
+    // Suppress console errors for this test
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    console.error = () => {};
+    console.warn = () => {};
+
     const octagon: L.LatLng[][][] = [
       [
         [
@@ -197,9 +214,19 @@ describe('Auto-add polygons functionality', () => {
     ];
 
     await expect(polydraw.addPredefinedPolygon(octagon)).resolves.not.toThrow();
+
+    // Restore console functions
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
   });
 
   it('should add a polygon with a hole without errors', async () => {
+    // Suppress console errors for this test
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    console.error = () => {};
+    console.warn = () => {};
+
     const squareWithHole: L.LatLng[][][] = [
       [
         [
@@ -220,6 +247,10 @@ describe('Auto-add polygons functionality', () => {
     ];
 
     await expect(polydraw.addPredefinedPolygon(squareWithHole)).resolves.not.toThrow();
+
+    // Restore console functions
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
   });
 
   it('should throw an error for invalid polygon data', async () => {
@@ -228,6 +259,12 @@ describe('Auto-add polygons functionality', () => {
   });
 
   it('should call addPolygon for each polygon group', async () => {
+    // Suppress console errors for this test
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    console.error = () => {};
+    console.warn = () => {};
+
     const addPolygonSpy = vi.spyOn((polydraw as any).polygonMutationManager, 'addPolygon');
     const polygons: L.LatLng[][][] = [
       [[L.latLng(58.4, 15.6), L.latLng(58.41, 15.6), L.latLng(58.41, 15.61), L.latLng(58.4, 15.6)]],
@@ -236,5 +273,9 @@ describe('Auto-add polygons functionality', () => {
 
     await polydraw.addPredefinedPolygon(polygons);
     expect(addPolygonSpy).toHaveBeenCalledTimes(2);
+
+    // Restore console functions
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
   });
 });

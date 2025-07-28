@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 import { DrawMode } from '../src/enums';
@@ -224,6 +224,10 @@ describe('Integration Tests - End-to-End Workflows', () => {
     });
 
     it('should integrate P2P polygons with existing polygon operations', async () => {
+      // Suppress console errors for this test
+      const originalConsoleError = console.error;
+      console.error = vi.fn();
+
       const testPolygons = TestHelpers.getTestPolygons();
 
       // Create polygon with P2P
@@ -252,6 +256,9 @@ describe('Integration Tests - End-to-End Workflows', () => {
         const geoJSON = TestHelpers.getPolygonGeoJSON(polydraw, i);
         TestHelpers.assertValidPolygonStructure(geoJSON);
       }
+
+      // Restore console.error
+      console.error = originalConsoleError;
     });
   });
 

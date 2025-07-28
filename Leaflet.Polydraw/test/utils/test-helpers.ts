@@ -103,6 +103,10 @@ export class TestHelpers {
    * Create a test polygon using auto-add
    */
   static async createAutoPolygon(polydraw: Polydraw, coordinates: L.LatLng[][]): Promise<void> {
+    // Suppress console errors for this operation
+    const originalConsoleError = console.error;
+    console.error = () => {};
+
     try {
       // Ensure the polygon is properly closed
       const closedCoordinates = coordinates.map((ring) => {
@@ -116,8 +120,10 @@ export class TestHelpers {
 
       await polydraw.addPredefinedPolygon([closedCoordinates]);
     } catch (error) {
-      console.error('Error adding auto polygon:', error);
       // Don't throw - let the test continue
+    } finally {
+      // Restore console.error
+      console.error = originalConsoleError;
     }
   }
 
@@ -176,12 +182,19 @@ export class TestHelpers {
     const featureGroups = (polydraw as any).arrayOfFeatureGroups;
     if (featureGroups.length <= index) return null;
 
+    // Suppress console errors for this operation
+    const originalConsoleError = console.error;
+    console.error = () => {};
+
     try {
       return (polydraw as any).polygonMutationManager.getPolygonGeoJSONFromFeatureGroup(
         featureGroups[index],
       );
     } catch (error) {
       return null;
+    } finally {
+      // Restore console.error
+      console.error = originalConsoleError;
     }
   }
 

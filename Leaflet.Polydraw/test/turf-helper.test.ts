@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { TurfHelper } from '../src/turf-helper';
 import defaultConfig from '../src/config.json';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
@@ -88,8 +89,15 @@ describe('TurfHelper', () => {
       const customConfig = { ...defaultConfig, polygonCreation: { method: 'unknown' } };
       const customHelper = new TurfHelper(customConfig);
 
+      // Suppress console warnings for this test
+      const originalConsoleWarn = console.warn;
+      console.warn = vi.fn();
+
       const result = customHelper.createPolygonFromTrace(testLineString);
       expect(result).toBeDefined();
+
+      // Restore console.warn
+      console.warn = originalConsoleWarn;
     });
 
     it('should handle insufficient points for direct polygon creation', () => {
@@ -790,6 +798,12 @@ describe('TurfHelper', () => {
 
   describe('Error Handling and Edge Cases', () => {
     it('should handle null/undefined inputs gracefully', () => {
+      // Suppress console errors for this test
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      console.error = () => {};
+      console.warn = () => {};
+
       // Test that operations handle null inputs appropriately
       expect(() => {
         turfHelper.getPolygonArea(null as any);
@@ -797,6 +811,10 @@ describe('TurfHelper', () => {
 
       const unionResult = turfHelper.union(null as any, null as any);
       expect(unionResult).toBeNull(); // Should return null for invalid inputs
+
+      // Restore console functions
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
     });
 
     it('should handle empty geometries', () => {
@@ -828,9 +846,19 @@ describe('TurfHelper', () => {
         properties: {},
       };
 
+      // Suppress console errors for this test
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      console.error = () => {};
+      console.warn = () => {};
+
       expect(() => {
         turfHelper.removeDuplicateVertices(malformedPolygon);
       }).not.toThrow();
+
+      // Restore console functions
+      console.error = originalConsoleError;
+      console.warn = originalConsoleWarn;
     });
 
     it('should handle very small polygons', () => {
