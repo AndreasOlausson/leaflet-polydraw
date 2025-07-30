@@ -12,6 +12,7 @@ import type {
   PolydrawEdgePolyline,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
+import { isTouchDevice } from './../utils';
 
 export interface InteractionResult {
   success: boolean;
@@ -57,7 +58,7 @@ export class PolygonInteractionManager {
       removeFeatureGroup: (fg: L.FeatureGroup) => void;
     },
   ) {
-    // console.log('PolygonInteractionManager constructor');
+    console.log('PolygonInteractionManager constructor');
     this.turfHelper = dependencies.turfHelper;
     this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
@@ -74,7 +75,7 @@ export class PolygonInteractionManager {
    * Add event listener
    */
   on(event: string, callback: (...args: any[]) => void): void {
-    // console.log('PolygonInteractionManager on');
+    console.log('PolygonInteractionManager on');
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
     }
@@ -85,7 +86,7 @@ export class PolygonInteractionManager {
    * Emit event to all listeners
    */
   private emit(event: string, data?: any): void {
-    // console.log('PolygonInteractionManager emit');
+    console.log('PolygonInteractionManager emit');
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach((callback) => callback(data));
@@ -96,7 +97,7 @@ export class PolygonInteractionManager {
    * Add markers to a polygon feature group
    */
   addMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager addMarkers');
+    console.log('PolygonInteractionManager addMarkers');
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
     let deleteMarkerIdx = this.getMarkerIndex(
@@ -139,6 +140,33 @@ export class PolygonInteractionManager {
       });
 
       featureGroup.addLayer(marker).addTo(this.map);
+      marker.on('add', () => {
+        const el = marker.getElement();
+        if (el) el.style.pointerEvents = 'auto';
+      });
+
+      marker.on('click', (e) => {
+        e.originalEvent?.stopPropagation?.();
+        L.DomEvent.stopPropagation(e);
+      });
+
+      marker.on('dragend', (e: L.LeafletEvent) => {
+        L.DomEvent.stopPropagation(e);
+      });
+      // Patch: Add touchend event for menu/info markers to simulate click on iOS
+      const el = marker.getElement();
+      if (el) {
+        el.addEventListener('touchstart', (e) => {
+          console.log('marker touchstart');
+          e.stopPropagation();
+        });
+        el.addEventListener('touchend', (e) => {
+          console.log('marker touchend');
+          e.preventDefault();
+          e.stopPropagation();
+          marker.fire('click');
+        });
+      }
 
       // Set high z-index for special markers to ensure they're always visible on top
       if (i === menuMarkerIdx || i === deleteMarkerIdx || i === infoMarkerIdx) {
@@ -162,20 +190,60 @@ export class PolygonInteractionManager {
       }
 
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
-        const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
         marker.options.zIndexOffset =
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
-        marker.bindPopup(menuPopup, { className: 'alter-marker' });
+        marker.on('click', () => {
+          console.log('menu marker clicked');
+          marker.unbindPopup();
+          const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
+          marker.bindPopup(menuPopup, { className: 'alter-marker' });
+          marker.openPopup();
+        });
+        // Patch: Adjust touchAction for map container on popup open/close
+        marker.on('popupopen', () => {
+          console.log('popupopen, setting touchAction to manipulation');
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = 'manipulation';
+          }
+        });
+        marker.on('popupclose', () => {
+          console.log('popupclose, resetting touchAction');
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = '';
+          }
+        });
       }
       if (i === infoMarkerIdx && this.config.markers.infoMarker) {
         // Get the complete polygon GeoJSON to properly handle holes
         const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
         const area = this.turfHelper.getPolygonArea(polygonGeoJSON);
         const perimeter = this.getTotalPolygonPerimeter(polygonGeoJSON);
-        const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
-        marker.bindPopup(infoPopup, { className: 'info-marker' });
+        marker.on('click', () => {
+          console.log('info marker clicked');
+          marker.unbindPopup();
+          const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
+          marker.bindPopup(infoPopup, { className: 'info-marker' });
+          marker.openPopup();
+        });
+        // Patch: Adjust touchAction for map container on popup open/close
+        marker.on('popupopen', () => {
+          console.log('popupopen, setting touchAction to manipulation');
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = 'manipulation';
+          }
+        });
+        marker.on('popupclose', () => {
+          console.log('popupclose, resetting touchAction');
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = '';
+          }
+        });
       }
 
       // Forward mousedown events to the map when in drawing mode
@@ -188,6 +256,7 @@ export class PolygonInteractionManager {
 
       // Generic click handler for all markers
       marker.on('click', (e) => {
+        console.log('marker click');
         if (this.modeManager.isInOffMode()) {
           if (this.isModifierKeyPressed(e.originalEvent)) {
             const poly = (
@@ -211,13 +280,19 @@ export class PolygonInteractionManager {
       marker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(marker, true));
       marker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(marker, false));
     });
+
+    // Global fix for iOS: allow interaction with popups and markers
+    const container = this.map.getContainer();
+    if (container) {
+      container.style.touchAction = 'manipulation';
+    }
   }
 
   /**
    * Add hole markers to a polygon feature group
    */
   addHoleMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager addHoleMarkers');
+    console.log('PolygonInteractionManager addHoleMarkers');
     latlngs.forEach((latlng, i) => {
       // Use holeIcon styles instead of regular markerIcon styles
       const iconClasses = this.config.markers.holeIcon.styleClasses;
@@ -229,7 +304,19 @@ export class PolygonInteractionManager {
         zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
       });
       featureGroup.addLayer(marker).addTo(this.map);
+      marker.on('add', () => {
+        const el = marker.getElement();
+        if (el) el.style.pointerEvents = 'auto';
+      });
 
+      marker.on('click', (e) => {
+        e.originalEvent?.stopPropagation?.();
+        L.DomEvent.stopPropagation(e);
+      });
+
+      marker.on('dragend', (e: L.LeafletEvent) => {
+        L.DomEvent.stopPropagation(e);
+      });
       marker.on('drag', (e) => {
         this.markerDrag(featureGroup);
       });
@@ -243,7 +330,7 @@ export class PolygonInteractionManager {
    * Add edge click listeners to a polygon
    */
   addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager addEdgeClickListeners');
+    console.log('PolygonInteractionManager addEdgeClickListeners');
     const rawLatLngs = polygon.getLatLngs();
 
     // Handle different polygon structures
@@ -322,7 +409,7 @@ export class PolygonInteractionManager {
    * Enable polygon dragging functionality
    */
   enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>): void {
-    // console.log('PolygonInteractionManager enablePolygonDragging');
+    console.log('PolygonInteractionManager enablePolygonDragging');
     if (!this.config.modes.dragPolygons) return;
 
     polygon._polydrawOriginalLatLngs = latlngs;
@@ -333,6 +420,7 @@ export class PolygonInteractionManager {
     };
 
     polygon.on('mousedown', (e: any) => {
+      console.log('polygon mousedown');
       // If not in off mode, it's a drawing click. Forward to map and stop.
       if (!this.modeManager.isInOffMode()) {
         // Stop this event from becoming a drag, but fire it on the map for drawing.
@@ -401,7 +489,7 @@ export class PolygonInteractionManager {
    * Update marker draggable state based on current mode
    */
   updateMarkerDraggableState(): void {
-    // console.log('PolygonInteractionManager updateMarkerDraggableState');
+    console.log('PolygonInteractionManager updateMarkerDraggableState');
     const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.getFeatureGroups().forEach((featureGroup) => {
@@ -432,7 +520,7 @@ export class PolygonInteractionManager {
    * Update all markers for edge deletion visual feedback
    */
   updateAllMarkersForEdgeDeletion(showFeedback: boolean): void {
-    // console.log('PolygonInteractionManager updateAllMarkersForEdgeDeletion');
+    console.log('PolygonInteractionManager updateAllMarkersForEdgeDeletion');
     this.getFeatureGroups().forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -446,7 +534,7 @@ export class PolygonInteractionManager {
    * Update individual marker for edge deletion visual feedback
    */
   updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean): void {
-    // console.log('PolygonInteractionManager updateMarkerForEdgeDeletion');
+    console.log('PolygonInteractionManager updateMarkerForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -467,13 +555,14 @@ export class PolygonInteractionManager {
    * Set modifier key held state
    */
   setModifierKeyHeld(isHeld: boolean): void {
-    // console.log('PolygonInteractionManager setModifierKeyHeld');
+    console.log('PolygonInteractionManager setModifierKeyHeld');
     this.isModifierKeyHeld = isHeld;
   }
 
   // Private methods
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+    console.log('onEdgeClick');
     // console.log('PolygonInteractionManager onEdgeClick');
     // Enforce the configuration setting for attaching elbows.
     if (!this.config.modes.attachElbow) {
@@ -517,7 +606,7 @@ export class PolygonInteractionManager {
   }
 
   private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    // console.log('PolygonInteractionManager highlightEdgeOnHover');
+    console.log('PolygonInteractionManager highlightEdgeOnHover');
     if (isHovering) {
       edgePolyline.setStyle({
         color: '#7a9441',
@@ -534,6 +623,7 @@ export class PolygonInteractionManager {
   }
 
   private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>): void {
+    console.log('elbowClicked');
     // console.log('PolygonInteractionManager elbowClicked');
     // Enforce the configuration setting for edge deletion.
     if (!this.config.modes.edgeDeletion) {
@@ -596,7 +686,7 @@ export class PolygonInteractionManager {
   }
 
   private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
-    // console.log('PolygonInteractionManager findFeatureGroupForPoly');
+    console.log('PolygonInteractionManager findFeatureGroupForPoly');
     for (const featureGroup of this.getFeatureGroups()) {
       const featureCollection = featureGroup.toGeoJSON() as any;
       if (featureCollection && featureCollection.features && featureCollection.features[0]) {
@@ -612,7 +702,7 @@ export class PolygonInteractionManager {
   }
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager markerDrag');
+    console.log('PolygonInteractionManager markerDrag');
     const newPos = [];
     let testarray = [];
     let hole = [];
@@ -692,7 +782,7 @@ export class PolygonInteractionManager {
   }
 
   private async markerDragEnd(featureGroup: L.FeatureGroup): Promise<void> {
-    // console.log('PolygonInteractionManager markerDragEnd');
+    console.log('PolygonInteractionManager markerDragEnd');
     this.polygonInformation.deletePolygonInformationStorage();
     const featureCollection = featureGroup.toGeoJSON() as any;
 
@@ -751,7 +841,7 @@ export class PolygonInteractionManager {
 
   // Polygon dragging methods
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
-    // console.log('PolygonInteractionManager onPolygonMouseMove');
+    console.log('PolygonInteractionManager onPolygonMouseMove');
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
 
     const polygon = this.currentDragPolygon;
@@ -775,7 +865,7 @@ export class PolygonInteractionManager {
   };
 
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
-    // console.log('PolygonInteractionManager onPolygonMouseUp');
+    console.log('PolygonInteractionManager onPolygonMouseUp');
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
 
     const polygon = this.currentDragPolygon;
@@ -815,7 +905,7 @@ export class PolygonInteractionManager {
   };
 
   private offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
-    // console.log('PolygonInteractionManager offsetPolygonCoordinates');
+    console.log('PolygonInteractionManager offsetPolygonCoordinates');
     if (!latLngs) return latLngs;
 
     if (Array.isArray(latLngs[0])) {
@@ -837,7 +927,7 @@ export class PolygonInteractionManager {
     offsetLat: number,
     offsetLng: number,
   ): void {
-    // console.log('PolygonInteractionManager updateMarkersAndHoleLinesDuringDrag');
+    console.log('PolygonInteractionManager updateMarkersAndHoleLinesDuringDrag');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -906,7 +996,7 @@ export class PolygonInteractionManager {
   }
 
   private async updatePolygonAfterDrag(polygon: any): Promise<void> {
-    // console.log('PolygonInteractionManager updatePolygonAfterDrag');
+    console.log('PolygonInteractionManager updatePolygonAfterDrag');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -948,8 +1038,11 @@ export class PolygonInteractionManager {
   }
 
   private detectModifierKey(event: MouseEvent | KeyboardEvent): boolean {
-    // console.log('PolygonInteractionManager detectModifierKey');
+    console.log('PolygonInteractionManager detectModifierKey');
     if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
+      return false;
+    }
+    if (isTouchDevice()) {
       return false;
     }
 
@@ -964,7 +1057,7 @@ export class PolygonInteractionManager {
   }
 
   private setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    // console.log('PolygonInteractionManager setSubtractVisualMode');
+    console.log('PolygonInteractionManager setSubtractVisualMode');
     if (!polygon || !polygon.setStyle) {
       return;
     }
@@ -986,7 +1079,7 @@ export class PolygonInteractionManager {
   }
 
   private updateMarkerColorsForSubtractMode(polygon: any, subtractMode: boolean): void {
-    // console.log('PolygonInteractionManager updateMarkerColorsForSubtractMode');
+    console.log('PolygonInteractionManager updateMarkerColorsForSubtractMode');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -1041,7 +1134,7 @@ export class PolygonInteractionManager {
   }
 
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
-    // console.log('PolygonInteractionManager handleModifierToggleDuringDrag');
+    console.log('PolygonInteractionManager handleModifierToggleDuringDrag');
     const isModifierPressed = this.detectModifierKey(event);
 
     this.currentModifierDragMode = isModifierPressed;
@@ -1053,12 +1146,12 @@ export class PolygonInteractionManager {
   }
 
   private isModifierDragActive(): boolean {
-    // console.log('PolygonInteractionManager isModifierDragActive');
+    console.log('PolygonInteractionManager isModifierDragActive');
     return this.currentModifierDragMode;
   }
 
   private performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager performModifierSubtract');
+    console.log('PolygonInteractionManager performModifierSubtract');
     try {
       const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -1180,7 +1273,11 @@ export class PolygonInteractionManager {
   }
 
   private isModifierKeyPressed(event: MouseEvent): boolean {
-    // console.log('PolygonInteractionManager isModifierKeyPressed');
+    console.log('PolygonInteractionManager isModifierKeyPressed');
+    if (isTouchDevice()) {
+      return false;
+    }
+
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 
@@ -1192,7 +1289,7 @@ export class PolygonInteractionManager {
   }
 
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
-    // console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletion');
+    console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -1264,7 +1361,7 @@ export class PolygonInteractionManager {
   }
 
   private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
-    // console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletionEvent');
+    console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletionEvent');
     if (!this.isModifierKeyHeld) return;
 
     const element = e.target as HTMLElement;
@@ -1276,7 +1373,7 @@ export class PolygonInteractionManager {
   };
 
   private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
-    // console.log('PolygonInteractionManager onMarkerLeaveForEdgeDeletionEvent');
+    console.log('PolygonInteractionManager onMarkerLeaveForEdgeDeletionEvent');
     const element = e.target as HTMLElement;
     if (element) {
       element.style.backgroundColor = '';
@@ -1287,7 +1384,7 @@ export class PolygonInteractionManager {
 
   // Helper methods
   private getMarkerIndex(latlngs: L.LatLngLiteral[], position: MarkerPosition): number {
-    // console.log('PolygonInteractionManager getMarkerIndex');
+    console.log('PolygonInteractionManager getMarkerIndex');
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
       bounds.getSouth(),
@@ -1314,7 +1411,7 @@ export class PolygonInteractionManager {
       info: { index: number; enabled: boolean };
     },
   ): { menu: number; delete: number; info: number } {
-    // console.log('PolygonInteractionManager ensureMarkerSeparation');
+    console.log('PolygonInteractionManager ensureMarkerSeparation');
     // Get list of enabled markers with their indices
     const enabledMarkers: Array<{ type: string; index: number }> = [];
 
@@ -1375,7 +1472,7 @@ export class PolygonInteractionManager {
     originalIndex: number,
     usedIndices: Set<number>,
   ): number {
-    // console.log('PolygonInteractionManager findAlternativeMarkerPosition');
+    console.log('PolygonInteractionManager findAlternativeMarkerPosition');
     // Strategy: Try positions at regular intervals around the polygon
     // Start with positions that are far from the original
     const maxAttempts = polygonLength;
@@ -1408,12 +1505,12 @@ export class PolygonInteractionManager {
   }
 
   private createDivIcon(processedClasses: string[]): L.DivIcon {
-    // console.log('PolygonInteractionManager createDivIcon');
+    console.log('PolygonInteractionManager createDivIcon');
     return IconFactory.createDivIcon(processedClasses);
   }
 
   private getLatLngInfoString(latlng: L.LatLngLiteral): string {
-    // console.log('PolygonInteractionManager getLatLngInfoString');
+    console.log('PolygonInteractionManager getLatLngInfoString');
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
 
@@ -1421,7 +1518,7 @@ export class PolygonInteractionManager {
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
   ): HTMLDivElement {
-    // console.log('PolygonInteractionManager generateMenuMarkerPopup');
+    console.log('PolygonInteractionManager generateMenuMarkerPopup');
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
     const wrapper: HTMLDivElement = document.createElement('div');
@@ -1470,26 +1567,58 @@ export class PolygonInteractionManager {
     markerContentWrapper.appendChild(separator.cloneNode());
     markerContentWrapper.appendChild(bezier);
 
+    simplify.addEventListener('touchend', (e) => {
+      console.log('simplify touchend');
+      e.preventDefault();
+      e.stopPropagation();
+      this.emit('menuAction', { action: 'simplify', latLngs, featureGroup });
+    });
     simplify.onclick = () => {
+      console.log('simplify clicked');
       this.emit('menuAction', { action: 'simplify', latLngs, featureGroup });
     };
+    bbox.addEventListener('touchend', (e) => {
+      console.log('bbox touchend');
+      e.preventDefault();
+      e.stopPropagation();
+      this.emit('menuAction', { action: 'bbox', latLngs, featureGroup });
+    });
     bbox.onclick = () => {
       this.emit('menuAction', { action: 'bbox', latLngs, featureGroup });
     };
+    doubleElbows.addEventListener('touchend', (e) => {
+      console.log('doubleElbows touchend');
+      e.preventDefault();
+      e.stopPropagation();
+      this.emit('menuAction', { action: 'doubleElbows', latLngs, featureGroup });
+    });
     doubleElbows.onclick = () => {
       this.emit('menuAction', { action: 'doubleElbows', latLngs, featureGroup });
     };
+    bezier.addEventListener('touchend', (e) => {
+      console.log('bezier touchend');
+      e.preventDefault();
+      e.stopPropagation();
+      this.emit('menuAction', { action: 'bezier', latLngs, featureGroup });
+    });
     bezier.onclick = () => {
       this.emit('menuAction', { action: 'bezier', latLngs, featureGroup });
     };
+    // Prevent map from swallowing tap events on iOS, allow popup buttons to be interactive
+    L.DomEvent.disableClickPropagation(outerWrapper);
+    outerWrapper.style.pointerEvents = 'auto';
 
+    outerWrapper.querySelectorAll('.marker-menu-button').forEach((btn) => {
+      (btn as HTMLElement).style.pointerEvents = 'auto';
+      btn.addEventListener('click', (e) => e.stopPropagation());
+    });
     return outerWrapper;
   }
 
   private getPolygonGeoJSONFromFeatureGroup(
     featureGroup: L.FeatureGroup,
   ): Feature<Polygon | MultiPolygon> {
-    // console.log('PolygonInteractionManager getPolygonGeoJSONFromFeatureGroup');
+    console.log('PolygonInteractionManager getPolygonGeoJSONFromFeatureGroup');
     try {
       // Find the polygon layer in the feature group
       let polygon: L.Polygon | null = null;
@@ -1529,7 +1658,7 @@ export class PolygonInteractionManager {
   }
 
   private getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
-    // console.log('PolygonInteractionManager getTotalPolygonPerimeter');
+    console.log('PolygonInteractionManager getTotalPolygonPerimeter');
     try {
       if (!polygonGeoJSON || !polygonGeoJSON.geometry) {
         return 0;
@@ -1586,7 +1715,7 @@ export class PolygonInteractionManager {
   }
 
   private generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
-    // console.log('PolygonInteractionManager generateInfoMarkerPopup');
+    console.log('PolygonInteractionManager generateInfoMarkerPopup');
     const _perimeter = new Perimeter(perimeter, this.config as any);
     const _area = new Area(area, this.config as any);
 
@@ -1621,7 +1750,14 @@ export class PolygonInteractionManager {
     outerWrapper.appendChild(wrapper);
     wrapper.appendChild(invertedCorner);
     wrapper.appendChild(markerContent);
+    // Prevent map from swallowing tap events on iOS, allow popup buttons to be interactive
+    L.DomEvent.disableClickPropagation(outerWrapper);
+    outerWrapper.style.pointerEvents = 'auto';
 
+    outerWrapper.querySelectorAll('button').forEach((btn) => {
+      (btn as HTMLElement).style.pointerEvents = 'auto';
+      btn.addEventListener('click', (e) => e.stopPropagation());
+    });
     return outerWrapper;
   }
 }

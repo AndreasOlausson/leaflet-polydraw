@@ -84,3 +84,6 @@ typings/
 # Temporary files
 *.tmp
 *.temp
+
+# Angular development folder
+angular/

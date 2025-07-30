@@ -17,7 +17,7 @@ Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet
 
 [![Feature Overview](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/feature-overview.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/feature-overview.png)
 
-- **Point-to-Point Drawing**: Precise polygon creation with click-by-click vertex placement
+- **Point-to-Point Drawing**: Precise polygon creation with click-by-click vertex placement (Desktop only)
 - **Smart Polygon Merging**: Automatic detection and merging of overlapping polygons (including C-to-O shape completion)
 - **Drag & Drop**: Intuitive polygon repositioning with intelligent spatial interactions
 - **Advanced Editing**: Drag vertices, add/remove points, and reshape polygons
@@ -554,7 +554,7 @@ Simply click the draw button and drag your mouse/finger to create polygon shapes
 
 **Note**: The number of vertices in the final polygon is controlled by the `polygonCreation.simplification` settings in the configuration.
 
-### Subtract Mode
+### Point-to-Point Drawing (Desktop Only)
 
 [![Subtract Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)
 
@@ -587,6 +587,8 @@ Create precise polygons by clicking to place each vertex. Perfect for:
 4. Press `ESC` to cancel the current drawing.
 
 You can also drag markers to adjust the shape and delete them by holding the modifier key (Cmd/Ctrl) and clicking on a marker, just like with regular polygon editing.
+
+**Note**: This feature is currently available on desktop only due to issues with touch devices.
 
 ### Smart Polygon Merging
 
@@ -917,7 +919,7 @@ map.on("polygon:created", (e) => {
 
 ## Browser Support
 
-> ⚠️ Mobile support is considered **experimental** in this version. While basic touch interaction is implemented, advanced workflows (e.g. vertex editing, drag-to-hole) may behave inconsistently across mobile browsers. Full mobile compatibility is planned for a future release.
+> ⚠️ Mobile support is considered **beta** in this version. While basic touch interaction is implemented, advanced workflows may behave inconsistently across mobile browsers. Full mobile compatibility is planned for a future release.
 
 - **Modern Browsers**: Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
 - **Mobile**: iOS Safari 12+, Chrome Mobile 60+

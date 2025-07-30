@@ -2,6 +2,8 @@ import { MarkerPosition } from './enums';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
 
+export const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 /**
  * Utility for polygon bounds.
  */
