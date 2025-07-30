@@ -177,16 +177,18 @@ export class PolygonInteractionManager {
       }
 
       if (this.config.modes.dragElbow) {
-        marker.on('drag', (e) => {
+        const createDragHandler = (fg: L.FeatureGroup) => () => {
           if (this.modeManager.canPerformAction('markerDrag')) {
-            this.markerDrag(featureGroup);
+            this.markerDrag(fg);
           }
-        });
-        marker.on('dragend', (e) => {
+        };
+        const createDragEndHandler = (fg: L.FeatureGroup) => () => {
           if (this.modeManager.canPerformAction('markerDrag')) {
-            this.markerDragEnd(featureGroup);
+            this.markerDragEnd(fg);
           }
-        });
+        };
+        marker.on('drag', createDragHandler(featureGroup));
+        marker.on('dragend', createDragEndHandler(featureGroup));
       }
 
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
@@ -702,7 +704,7 @@ export class PolygonInteractionManager {
   }
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
-    console.log('PolygonInteractionManager markerDrag');
+    console.log('PolygonInteractionManager markerDrag', featureGroup);
     const newPos = [];
     let testarray = [];
     let hole = [];
