@@ -33,6 +33,7 @@ export interface PolygonInteractionManagerDependencies {
  * This includes dragging polygons, dragging markers, edge interactions, and popup menus.
  */
 export class PolygonInteractionManager {
+  private _activeMarker: L.Marker | null = null;
   private turfHelper: TurfHelper;
   private polygonInformation: PolygonInformationService;
   private map: L.Map;
@@ -140,6 +141,10 @@ export class PolygonInteractionManager {
       });
 
       featureGroup.addLayer(marker).addTo(this.map);
+
+      // Attach reference to featureGroup for dragend/touchend logic
+      (marker as any)._polydrawFeatureGroup = featureGroup;
+
       marker.on('add', () => {
         const el = marker.getElement();
         if (el) el.style.pointerEvents = 'auto';
@@ -149,8 +154,16 @@ export class PolygonInteractionManager {
         e.originalEvent?.stopPropagation?.();
         L.DomEvent.stopPropagation(e);
       });
-
+      // Replace dragend binding to use _polydrawFeatureGroup and allow correct logic
+      marker.on('dragstart', () => {
+        this._activeMarker = marker;
+      });
       marker.on('dragend', (e: L.LeafletEvent) => {
+        const fg = (marker as any)._polydrawFeatureGroup;
+        if (this.modeManager.canPerformAction('markerDrag') && fg) {
+          this.markerDragEnd(fg);
+        }
+        this._activeMarker = null;
         L.DomEvent.stopPropagation(e);
       });
       // Patch: Add touchend event for menu/info markers to simulate click on iOS
@@ -165,6 +178,12 @@ export class PolygonInteractionManager {
           e.preventDefault();
           e.stopPropagation();
           marker.fire('click');
+          // Also fire drag end logic for touch devices
+          const fg = (marker as any)._polydrawFeatureGroup;
+          if (this.modeManager.canPerformAction('markerDrag') && fg) {
+            this.markerDragEnd(fg);
+          }
+          this._activeMarker = null;
         });
       }
 
@@ -182,13 +201,8 @@ export class PolygonInteractionManager {
             this.markerDrag(fg);
           }
         };
-        const createDragEndHandler = (fg: L.FeatureGroup) => () => {
-          if (this.modeManager.canPerformAction('markerDrag')) {
-            this.markerDragEnd(fg);
-          }
-        };
         marker.on('drag', createDragHandler(featureGroup));
-        marker.on('dragend', createDragEndHandler(featureGroup));
+        // dragend is already handled above with the _polydrawFeatureGroup logic
       }
 
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
@@ -254,6 +268,7 @@ export class PolygonInteractionManager {
           L.DomEvent.stopPropagation(e);
           this.map.fire('mousedown', e);
         }
+        this._activeMarker = marker;
       });
 
       // Generic click handler for all markers
@@ -704,6 +719,10 @@ export class PolygonInteractionManager {
   }
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
+    if (!this._activeMarker) {
+      console.warn('No active marker set for dragging.');
+      return;
+    }
     console.log('PolygonInteractionManager markerDrag', featureGroup);
     const newPos = [];
     let testarray = [];
