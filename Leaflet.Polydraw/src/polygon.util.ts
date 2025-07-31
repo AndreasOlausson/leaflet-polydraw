@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import { TurfHelper } from './turf-helper';
 import defaultConfig from './config.json';
+import type { Feature, Polygon, MultiPolygon } from 'geojson';
 
 /**
  * Utility class for polygon calculations.
@@ -125,5 +126,18 @@ export class PolygonUtil {
     const bounds = polyLine.getBounds();
 
     return bounds;
+  }
+
+  /**
+   * Calculates the center of mass of the polygon.
+   * @param polygon A GeoJSON polygon.
+   * @returns The center LatLng.
+   */
+  static getCenterOfMass(polygon: Feature<Polygon | MultiPolygon>): L.LatLngLiteral {
+    const centerOfMass = this.turfHelper.getCenterOfMass(polygon);
+    return {
+      lat: centerOfMass.geometry.coordinates[1],
+      lng: centerOfMass.geometry.coordinates[0],
+    };
   }
 }

@@ -645,6 +645,10 @@ export class TurfHelper {
     return length;
   }
 
+  getCenterOfMass(feature: Feature<Polygon | MultiPolygon>) {
+    return turf.centerOfMass(feature);
+  }
+
   getDoubleElbowLatLngs(points: L.LatLngLiteral[]): L.LatLngLiteral[] {
     const doubleized: L.LatLngLiteral[] = [];
     const len = points.length;

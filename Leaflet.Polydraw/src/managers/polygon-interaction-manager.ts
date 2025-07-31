@@ -48,6 +48,7 @@ export class PolygonInteractionManager {
   private currentDragPolygon: any = null;
   private currentModifierDragMode: boolean = false;
   private isModifierKeyHeld: boolean = false;
+  private _openMenuPopup: L.Popup | null = null;
 
   // Read-only access to feature groups
   private getFeatureGroups: () => L.FeatureGroup[];
@@ -204,10 +205,10 @@ export class PolygonInteractionManager {
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           console.log('menu marker clicked');
-          marker.unbindPopup();
+          const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
+          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
           const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
-          marker.bindPopup(menuPopup, { className: 'alter-marker' });
-          marker.openPopup();
+          menuPopup.setLatLng(centerOfMass).openOn(this.map);
         });
         // Patch: Adjust touchAction for map container on popup open/close
         marker.on('popupopen', (e) => {
@@ -252,10 +253,9 @@ export class PolygonInteractionManager {
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           console.log('info marker clicked');
-          marker.unbindPopup();
           const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
-          marker.bindPopup(infoPopup, { className: 'info-marker' });
-          marker.openPopup();
+          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
+          infoPopup.setLatLng(centerOfMass).openOn(this.map);
         });
         // Patch: Adjust touchAction for map container on popup open/close
         marker.on('popupopen', (e) => {
@@ -314,6 +314,7 @@ export class PolygonInteractionManager {
           } else {
             // Handle non-modifier clicks for special markers
             if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+              this.map.closePopup();
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
               this.eventManager.emit('polydraw:polygon:deleted', undefined);
@@ -1583,7 +1584,7 @@ export class PolygonInteractionManager {
   private generateMenuMarkerPopup(
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
-  ): HTMLDivElement {
+  ): L.Popup {
     console.log('PolygonInteractionManager generateMenuMarkerPopup');
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
@@ -1633,8 +1634,14 @@ export class PolygonInteractionManager {
     markerContentWrapper.appendChild(separator.cloneNode());
     markerContentWrapper.appendChild(bezier);
 
+    const closePopupIfOpen = () => {
+      if (this._openMenuPopup) {
+        this.map.closePopup(this._openMenuPopup);
+        this._openMenuPopup = null;
+      }
+    };
+
     simplify.addEventListener('touchend', (e) => {
-      console.log('simplify touchend');
       e.preventDefault();
       e.stopPropagation();
       this.eventManager.emit('polydraw:menu:action', {
@@ -1642,26 +1649,37 @@ export class PolygonInteractionManager {
         latLngs,
         featureGroup,
       });
+      closePopupIfOpen();
     });
     simplify.onclick = () => {
-      console.log('simplify clicked');
       this.eventManager.emit('polydraw:menu:action', {
         action: 'simplify',
         latLngs,
         featureGroup,
       });
+      closePopupIfOpen();
     };
+
     bbox.addEventListener('touchend', (e) => {
-      console.log('bbox touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', { action: 'bbox', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'bbox',
+        latLngs,
+        featureGroup,
+      });
+      closePopupIfOpen();
     });
     bbox.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', { action: 'bbox', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'bbox',
+        latLngs,
+        featureGroup,
+      });
+      closePopupIfOpen();
     };
+
     doubleElbows.addEventListener('touchend', (e) => {
-      console.log('doubleElbows touchend');
       e.preventDefault();
       e.stopPropagation();
       this.eventManager.emit('polydraw:menu:action', {
@@ -1669,6 +1687,7 @@ export class PolygonInteractionManager {
         latLngs,
         featureGroup,
       });
+      closePopupIfOpen();
     });
     doubleElbows.onclick = () => {
       this.eventManager.emit('polydraw:menu:action', {
@@ -1676,17 +1695,28 @@ export class PolygonInteractionManager {
         latLngs,
         featureGroup,
       });
+      closePopupIfOpen();
     };
+
     bezier.addEventListener('touchend', (e) => {
-      console.log('bezier touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', { action: 'bezier', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'bezier',
+        latLngs,
+        featureGroup,
+      });
+      closePopupIfOpen();
     });
     bezier.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', { action: 'bezier', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'bezier',
+        latLngs,
+        featureGroup,
+      });
+      closePopupIfOpen();
     };
-    // Prevent map from swallowing tap events on iOS, allow popup buttons to be interactive
+
     L.DomEvent.disableClickPropagation(outerWrapper);
     outerWrapper.style.pointerEvents = 'auto';
 
@@ -1694,7 +1724,15 @@ export class PolygonInteractionManager {
       (btn as HTMLElement).style.pointerEvents = 'auto';
       btn.addEventListener('click', (e) => e.stopPropagation());
     });
-    return outerWrapper;
+
+    const popup = L.popup({
+      closeButton: false,
+      autoClose: true,
+      className: 'menu-popup',
+    }).setContent(outerWrapper);
+
+    this._openMenuPopup = popup;
+    return popup;
   }
 
   private getPolygonGeoJSONFromFeatureGroup(
@@ -1796,7 +1834,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private generateInfoMarkerPopup(area: number, perimeter: number): HTMLDivElement {
+  private generateInfoMarkerPopup(area: number, perimeter: number): L.Popup {
     console.log('PolygonInteractionManager generateInfoMarkerPopup');
     const _perimeter = new Perimeter(perimeter, this.config as any);
     const _area = new Area(area, this.config as any);
@@ -1810,21 +1848,17 @@ export class PolygonInteractionManager {
     const markerContent: HTMLDivElement = document.createElement('div');
     markerContent.classList.add('content');
 
-    // Create content wrapper for the info
     const infoContentWrapper: HTMLDivElement = document.createElement('div');
     infoContentWrapper.classList.add('info-marker-content');
 
-    // Add area information
     const areaDiv: HTMLDivElement = document.createElement('div');
     areaDiv.classList.add('info-item', 'area');
     areaDiv.innerHTML = `<strong>Area:</strong> ${_area.metricArea} ${_area.metricUnit}`;
 
-    // Add perimeter information
     const perimeterDiv: HTMLDivElement = document.createElement('div');
     perimeterDiv.classList.add('info-item', 'perimeter');
     perimeterDiv.innerHTML = `<strong>Perimeter:</strong> ${_perimeter.metricLength} ${_perimeter.metricUnit}`;
 
-    // Assemble the popup
     infoContentWrapper.appendChild(areaDiv);
     infoContentWrapper.appendChild(perimeterDiv);
     markerContent.appendChild(infoContentWrapper);
@@ -1832,7 +1866,7 @@ export class PolygonInteractionManager {
     outerWrapper.appendChild(wrapper);
     wrapper.appendChild(invertedCorner);
     wrapper.appendChild(markerContent);
-    // Prevent map from swallowing tap events on iOS, allow popup buttons to be interactive
+
     L.DomEvent.disableClickPropagation(outerWrapper);
     outerWrapper.style.pointerEvents = 'auto';
 
@@ -1840,6 +1874,13 @@ export class PolygonInteractionManager {
       (btn as HTMLElement).style.pointerEvents = 'auto';
       btn.addEventListener('click', (e) => e.stopPropagation());
     });
-    return outerWrapper;
+
+    const popup = L.popup({
+      closeButton: false,
+      autoClose: true,
+      className: 'info-popup',
+    }).setContent(outerWrapper);
+
+    return popup;
   }
 }
