@@ -7,14 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-# Changelog
+## [0.8.10] - 2025-07-31
 
-All notable changes to this project will be documented in this file.
+### Fixed
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- **Test Suite**: Repaired the entire test suite after a major touch support refactoring. This involved mocking `isTouchDevice` to ensure consistent behavior in the JSDOM environment and fixing incomplete Leaflet mocks.
 
----
+## [0.8.9] - 2025-07-31
+
+### Added
+
+- **Touch Support**: Implemented comprehensive touch support for drawing and interacting with polygons on mobile devices.
+
+### Fixed
+
+- **Click Events**: Refactored click events to accommodate both mouse and touch interactions, resolving inconsistencies between platforms.
 
 ## [0.8.8] – 2025-07-28
 

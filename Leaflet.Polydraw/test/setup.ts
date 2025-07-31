@@ -1,5 +1,13 @@
 import { vi } from 'vitest';
 
+vi.mock('./src/utils', async () => {
+  const actual = await vi.importActual('./src/utils');
+  return {
+    ...actual,
+    isTouchDevice: () => false,
+  };
+});
+
 // Mock for requestAnimationFrame
 if (typeof window !== 'undefined') {
   window.requestAnimationFrame = vi.fn((cb) => {

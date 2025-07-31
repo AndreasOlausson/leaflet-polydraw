@@ -4,6 +4,14 @@ import { createButtons } from '../src/buttons';
 import { PolydrawConfig } from '../src/types/polydraw-interfaces';
 import defaultConfig from '../src/config.json';
 
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
+  return {
+    ...actual,
+    isTouchDevice: () => false,
+  };
+});
+
 // Mock Leaflet's DomUtil to inspect what's being created
 vi.mock('leaflet', async () => {
   const actualLeaflet = await vi.importActual('leaflet');

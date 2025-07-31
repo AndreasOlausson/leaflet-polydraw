@@ -96,11 +96,16 @@ vi.mock('leaflet', () => {
 
   const DomEvent = {
     stopPropagation: vi.fn(),
+    disableClickPropagation: vi.fn(),
     on: vi.fn(),
   };
   DomEvent.on.mockReturnValue(DomEvent);
 
   return {
+    Browser: {
+      touch: false,
+      mobile: false,
+    },
     Control: MockControl,
     Map: MockMap,
     FeatureGroup: MockFeatureGroup,

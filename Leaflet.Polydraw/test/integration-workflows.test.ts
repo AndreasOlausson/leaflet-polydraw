@@ -2,6 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 import { DrawMode } from '../src/enums';
+
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
+  return {
+    ...actual,
+    isTouchDevice: () => false,
+  };
+});
 import { TestHelpers, TestScenarios } from './utils/test-helpers';
 
 describe('Integration Tests - End-to-End Workflows', () => {

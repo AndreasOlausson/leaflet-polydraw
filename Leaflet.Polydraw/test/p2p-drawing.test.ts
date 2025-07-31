@@ -3,6 +3,14 @@ import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
 import { DrawMode } from '../src/enums';
 
+vi.mock('../src/utils', async () => {
+  const actual = await vi.importActual('../src/utils');
+  return {
+    ...actual,
+    isTouchDevice: () => false,
+  };
+});
+
 describe('Point-to-Point Drawing - Functional Tests', () => {
   let map: L.Map;
   let polydraw: Polydraw;

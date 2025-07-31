@@ -919,9 +919,6 @@ class Polydraw extends L.Control {
    */
   private isModifierKeyPressed(event: MouseEvent): boolean {
     console.log('isModifierKeyPressed');
-    if (isTouchDevice()) {
-      return false;
-    }
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 
