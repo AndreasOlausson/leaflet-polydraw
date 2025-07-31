@@ -4,6 +4,7 @@ import { PolygonInformationService } from '../polygon-information.service';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
+import { EventManager } from './event-manager';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
@@ -29,6 +30,7 @@ export interface MutationManagerDependencies {
   map: L.Map;
   config: PolydrawConfig;
   modeManager: ModeManager;
+  eventManager: EventManager;
   getFeatureGroups: () => L.FeatureGroup[];
 }
 
@@ -43,8 +45,8 @@ export class PolygonMutationManager {
   private map: L.Map;
   private config: PolydrawConfig;
   private modeManager: ModeManager;
+  private eventManager: EventManager;
   private getFeatureGroups: () => L.FeatureGroup[];
-  private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
   // Specialized managers
   private geometryManager: PolygonGeometryManager;
@@ -58,6 +60,7 @@ export class PolygonMutationManager {
     this.map = dependencies.map;
     this.config = dependencies.config;
     this.modeManager = dependencies.modeManager;
+    this.eventManager = dependencies.eventManager;
     this.getFeatureGroups = dependencies.getFeatureGroups;
 
     // Initialize specialized managers
@@ -84,6 +87,7 @@ export class PolygonMutationManager {
       map: dependencies.map,
       config: dependencies.config,
       modeManager: dependencies.modeManager,
+      eventManager: this.eventManager,
       tracer: placeholderTracer,
     });
 
@@ -95,6 +99,7 @@ export class PolygonMutationManager {
         map: dependencies.map,
         config: dependencies.config,
         modeManager: dependencies.modeManager,
+        eventManager: this.eventManager,
       },
       {
         getFeatureGroups: this.getFeatureGroups,
@@ -113,42 +118,34 @@ export class PolygonMutationManager {
   private setupEventForwarding(): void {
     // console.log('PolygonMutationManager setupEventForwarding');
 
-    // Forward draw manager events
-    this.drawManager.on('drawCompleted', (data) => {
-      this.handleDrawCompleted(data);
-    });
-    this.drawManager.on('drawCancelled', (data) => {
+    this.eventManager.on('polydraw:draw:cancel', (data) => {
       this.emit('drawCancelled', data);
     });
 
     // Forward interaction manager events
-    this.interactionManager.on('polygonModified', (data) => {
+    this.eventManager.on('polydraw:polygon:updated', (data) => {
       this.handlePolygonModified(data);
     });
-    this.interactionManager.on('menuAction', (data) => {
+
+    this.eventManager.on('polydraw:menu:action', (data) => {
       this.handleMenuAction(data);
     });
-    this.interactionManager.on('checkIntersection', (data) => {
+
+    this.eventManager.on('polydraw:check:intersection', (data) => {
       const hasIntersection = this.geometryManager.checkPolygonIntersection(
         data.polygon1,
         data.polygon2,
       );
       data.callback(hasIntersection);
     });
-    this.interactionManager.on('performSubtractOperation', (data) => {
+
+    this.eventManager.on('polydraw:subtract', (data) => {
       this.subtractPolygon(data.subtractPolygon);
     });
-    this.interactionManager.on('polygonDeleted', () => {
+
+    this.eventManager.on('polydraw:polygon:deleted', () => {
       this.emit('polygonDeleted');
     });
-  }
-
-  /**
-   * Handle draw completion from draw manager
-   */
-  private async handleDrawCompleted(data: any): Promise<void> {
-    // console.log('PolygonMutationManager handleDrawCompleted');
-    await this.addPolygon(data.polygon, { simplify: true });
   }
 
   /**
@@ -225,22 +222,14 @@ export class PolygonMutationManager {
    * Add event listener
    */
   on(event: string, callback: (...args: any[]) => void): void {
-    // console.log('PolygonMutationManager on');
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, []);
-    }
-    this.eventListeners.get(event)!.push(callback);
+    this.eventManager.on(event as any, callback);
   }
 
   /**
    * Emit event to all listeners
    */
   private emit(event: string, data?: any): void {
-    // console.log('PolygonMutationManager emit');
-    const listeners = this.eventListeners.get(event);
-    if (listeners) {
-      listeners.forEach((callback) => callback(data));
-    }
+    this.eventManager.emit(event as any, data);
   }
 
   /**

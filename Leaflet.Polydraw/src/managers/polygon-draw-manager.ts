@@ -4,6 +4,7 @@ import { DrawMode } from '../enums';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
+import { EventManager } from './event-manager';
 
 export interface DrawResult {
   success: boolean;
@@ -16,6 +17,7 @@ export interface PolygonDrawManagerDependencies {
   map: L.Map;
   config: PolydrawConfig;
   modeManager: ModeManager;
+  eventManager: EventManager;
   tracer: L.Polyline;
 }
 
@@ -28,8 +30,8 @@ export class PolygonDrawManager {
   private map: L.Map;
   private config: PolydrawConfig;
   private modeManager: ModeManager;
+  private eventManager: EventManager;
   private tracer: L.Polyline;
-  private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
   // Point-to-Point drawing state
   private p2pMarkers: L.Marker[] = [];
@@ -41,29 +43,8 @@ export class PolygonDrawManager {
     this.map = dependencies.map;
     this.config = dependencies.config;
     this.modeManager = dependencies.modeManager;
+    this.eventManager = dependencies.eventManager;
     this.tracer = dependencies.tracer;
-  }
-
-  /**
-   * Add event listener
-   */
-  on(event: string, callback: (...args: any[]) => void): void {
-    console.log('PolygonDrawManager on');
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, []);
-    }
-    this.eventListeners.get(event)!.push(callback);
-  }
-
-  /**
-   * Emit event to all listeners
-   */
-  private emit(event: string, data?: any): void {
-    console.log('PolygonDrawManager emit');
-    const listeners = this.eventListeners.get(event);
-    if (listeners) {
-      listeners.forEach((callback) => callback(data));
-    }
   }
 
   /**
@@ -130,7 +111,7 @@ export class PolygonDrawManager {
       };
     }
 
-    this.emit('drawCompleted', {
+    this.eventManager.emit('polydraw:polygon:created', {
       polygon: geoPos,
       mode: this.modeManager.getCurrentMode(),
     });
@@ -363,7 +344,7 @@ export class PolygonDrawManager {
       this.clearP2pMarkers();
       this.resetTracer();
 
-      this.emit('drawCompleted', {
+      this.eventManager.emit('polydraw:polygon:created', {
         polygon: geoPos,
         mode: DrawMode.PointToPoint,
         isPointToPoint: true,
@@ -382,7 +363,9 @@ export class PolygonDrawManager {
     console.log('PolygonDrawManager cancelPointToPointDrawing');
     this.clearP2pMarkers();
     this.resetTracer();
-    this.emit('drawCancelled', { mode: DrawMode.PointToPoint });
+    this.eventManager.emit('polydraw:draw:cancel', {
+      mode: DrawMode.PointToPoint,
+    });
   }
 
   /**

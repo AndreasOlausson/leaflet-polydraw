@@ -1,4 +1,17 @@
 import { vi } from 'vitest';
+import { JSDOM } from 'jsdom';
+
+// Set up a basic JSDOM environment
+const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+  url: 'http://localhost',
+});
+
+global.window = dom.window;
+global.document = dom.window.document;
+global.navigator = dom.window.navigator;
+global.HTMLElement = dom.window.HTMLElement;
+global.SVGElement = dom.window.SVGElement;
+global.HTMLCanvasElement = dom.window.HTMLCanvasElement;
 
 vi.mock('./src/utils', async () => {
   const actual = await vi.importActual('./src/utils');

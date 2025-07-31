@@ -197,6 +197,24 @@ export type TouchEventHandler = (event: TouchEvent) => void;
 export type MarkerEventHandler = (event: L.LeafletEvent) => void;
 export type PolygonEventHandler = (event: L.LeafletEvent) => void;
 
+export type PolydrawEvent =
+  | 'polydraw:ready'
+  | 'polydraw:start'
+  | 'polydraw:stop'
+  | 'polydraw:mode:change'
+  | 'polydraw:polygon:created'
+  | 'polydraw:polygon:updated'
+  | 'polydraw:polygon:deleted'
+  | 'polydraw:marker:click'
+  | 'polydraw:marker:dragstart'
+  | 'polydraw:marker:dragend'
+  | 'polydraw:draw:cancel'
+  | 'polydraw:menu:action'
+  | 'polydraw:check:intersection'
+  | 'polydraw:subtract';
+
+export type PolydrawEventCallback = (data?: any) => void;
+
 /**
  * Polygon information interface
  */

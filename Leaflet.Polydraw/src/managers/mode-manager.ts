@@ -1,5 +1,6 @@
 import { DrawMode } from '../enums';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
+import { EventManager } from './event-manager';
 
 /**
  * Represents the current state of all user interactions in Polydraw
@@ -37,9 +38,11 @@ export interface InteractionState {
 export class ModeManager {
   private state: InteractionState;
   private config: PolydrawConfig;
+  private eventManager: EventManager;
 
-  constructor(config: PolydrawConfig) {
+  constructor(config: PolydrawConfig, eventManager: EventManager) {
     this.config = config;
+    this.eventManager = eventManager;
     this.state = this.createInitialState();
   }
 
@@ -97,6 +100,8 @@ export class ModeManager {
 
     // Update drawing active state
     this.state.isDrawingActive = mode !== DrawMode.Off;
+
+    this.eventManager.emit('polydraw:mode:change', { mode });
   }
 
   /**

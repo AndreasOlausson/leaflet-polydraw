@@ -184,10 +184,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).arrayOfFeatureGroups = [draggedFeatureGroup, targetFeatureGroup];
 
       // Mock the emit method to capture polygon modification events
-      const emitSpy = vi.spyOn(
-        (polydraw as any).polygonMutationManager.polygonInteractionManager,
-        'emit',
-      );
+      const emitSpy = vi.spyOn((polydraw as any).eventManager, 'emit');
 
       // Mock the removeFeatureGroup method to track calls
       const removeFeatureGroupSpy = vi
@@ -210,7 +207,7 @@ describe('Polygon Dragging Tests', () => {
       // Verify the actual behavior: intersecting polygon should be processed
       expect(removeFeatureGroupSpy).toHaveBeenCalledWith(targetFeatureGroup);
       expect(emitSpy).toHaveBeenCalledWith(
-        'polygonModified',
+        'polydraw:polygon:updated',
         expect.objectContaining({
           operation: 'modifierSubtract',
         }),
@@ -789,10 +786,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).arrayOfFeatureGroups = [draggedFeatureGroup, targetFeatureGroup];
 
       // Mock the emit method to capture polygon modification events
-      const emitSpy = vi.spyOn(
-        (polydraw as any).polygonMutationManager.polygonInteractionManager,
-        'emit',
-      );
+      const emitSpy = vi.spyOn((polydraw as any).eventManager, 'emit');
 
       // Mock the removeFeatureGroup method to track calls
       const removeFeatureGroupSpy = vi
@@ -811,7 +805,7 @@ describe('Polygon Dragging Tests', () => {
       // Verify that intersecting polygons are processed
       expect(removeFeatureGroupSpy).toHaveBeenCalledWith(targetFeatureGroup);
       expect(emitSpy).toHaveBeenCalledWith(
-        'polygonModified',
+        'polydraw:polygon:updated',
         expect.objectContaining({
           operation: 'modifierSubtract',
         }),

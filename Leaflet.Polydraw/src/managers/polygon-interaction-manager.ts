@@ -12,6 +12,7 @@ import type {
   PolydrawEdgePolyline,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
+import { EventManager } from './event-manager';
 import { isTouchDevice } from './../utils';
 
 export interface InteractionResult {
@@ -26,6 +27,7 @@ export interface PolygonInteractionManagerDependencies {
   map: L.Map;
   config: PolydrawConfig;
   modeManager: ModeManager;
+  eventManager: EventManager;
 }
 
 /**
@@ -40,7 +42,7 @@ export class PolygonInteractionManager {
   private map: L.Map;
   private config: PolydrawConfig;
   private modeManager: ModeManager;
-  private eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
+  private eventManager: EventManager;
 
   // Polygon drag state
   private currentDragPolygon: any = null;
@@ -66,33 +68,12 @@ export class PolygonInteractionManager {
     this.map = dependencies.map;
     this.config = dependencies.config;
     this.modeManager = dependencies.modeManager;
+    this.eventManager = dependencies.eventManager;
 
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
     this.addFeatureGroup = featureGroupAccess.addFeatureGroup;
     this.removeFeatureGroup = featureGroupAccess.removeFeatureGroup;
-  }
-
-  /**
-   * Add event listener
-   */
-  on(event: string, callback: (...args: any[]) => void): void {
-    console.log('PolygonInteractionManager on');
-    if (!this.eventListeners.has(event)) {
-      this.eventListeners.set(event, []);
-    }
-    this.eventListeners.get(event)!.push(callback);
-  }
-
-  /**
-   * Emit event to all listeners
-   */
-  private emit(event: string, data?: any): void {
-    console.log('PolygonInteractionManager emit');
-    const listeners = this.eventListeners.get(event);
-    if (listeners) {
-      listeners.forEach((callback) => callback(data));
-    }
   }
 
   /**
@@ -133,6 +114,10 @@ export class PolygonInteractionManager {
       }
 
       const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+      const isSpecialMarker =
+        (i === menuMarkerIdx && this.config.markers.menuMarker) ||
+        (i === deleteMarkerIdx && this.config.markers.deleteMarker) ||
+        (i === infoMarkerIdx && this.config.markers.infoMarker);
       const marker = new L.Marker(latlng, {
         icon: this.createDivIcon(processedClasses),
         draggable: this.config.modes.dragElbow,
@@ -186,7 +171,7 @@ export class PolygonInteractionManager {
           e.stopPropagation();
           marker.fire('click');
           // Also fire drag end logic for touch devices
-          if (this.isDraggingMarker) {
+          if (this.isDraggingMarker && !isSpecialMarker) {
             const fg = (marker as any)._polydrawFeatureGroup;
             if (this.modeManager.canPerformAction('markerDrag') && fg) {
               this.markerDragEnd(fg);
@@ -225,7 +210,25 @@ export class PolygonInteractionManager {
           marker.openPopup();
         });
         // Patch: Adjust touchAction for map container on popup open/close
-        marker.on('popupopen', () => {
+        marker.on('popupopen', (e) => {
+          const popup = e.popup;
+          const popupContent = popup.getElement();
+          if (!popupContent) return;
+
+          // Use a timeout to allow the popup to be fully rendered and positioned
+          setTimeout(() => {
+            const mapContainer = this.map.getContainer();
+            const mapBounds = mapContainer.getBoundingClientRect();
+            const popupBounds = popupContent.getBoundingClientRect();
+
+            // Check if popup is out of bounds and adjust
+            if (popupBounds.left < mapBounds.left) {
+              popupContent.style.transform = `translateX(${mapBounds.left - popupBounds.left}px)`;
+            } else if (popupBounds.right > mapBounds.right) {
+              popupContent.style.transform = `translateX(${mapBounds.right - popupBounds.right}px)`;
+            }
+          }, 0);
+
           console.log('popupopen, setting touchAction to manipulation');
           const container = this.map.getContainer();
           if (container) {
@@ -255,7 +258,24 @@ export class PolygonInteractionManager {
           marker.openPopup();
         });
         // Patch: Adjust touchAction for map container on popup open/close
-        marker.on('popupopen', () => {
+        marker.on('popupopen', (e) => {
+          const popup = e.popup;
+          const popupContent = popup.getElement();
+          if (!popupContent) return;
+
+          // Use a timeout to allow the popup to be fully rendered and positioned
+          setTimeout(() => {
+            const mapContainer = this.map.getContainer();
+            const mapBounds = mapContainer.getBoundingClientRect();
+            const popupBounds = popupContent.getBoundingClientRect();
+
+            // Check if popup is out of bounds and adjust
+            if (popupBounds.left < mapBounds.left) {
+              popupContent.style.transform = `translateX(${mapBounds.left - popupBounds.left}px)`;
+            } else if (popupBounds.right > mapBounds.right) {
+              popupContent.style.transform = `translateX(${mapBounds.right - popupBounds.right}px)`;
+            }
+          }, 0);
           console.log('popupopen, setting touchAction to manipulation');
           const container = this.map.getContainer();
           if (container) {
@@ -296,7 +316,7 @@ export class PolygonInteractionManager {
             if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
-              this.emit('polygonDeleted');
+              this.eventManager.emit('polydraw:polygon:deleted', undefined);
             }
           }
         }
@@ -617,7 +637,7 @@ export class PolygonInteractionManager {
             const polydrawPolygon = parentPolygon as PolydrawPolygon;
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             this.removeFeatureGroup(parentFeatureGroup);
-            this.emit('polygonModified', {
+            this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'addVertex',
               polygon: newPolygon,
               optimizationLevel,
@@ -705,7 +725,7 @@ export class PolygonInteractionManager {
     }
 
     const newPolygon = this.turfHelper.getMultiPolygon([newAllRings]);
-    this.emit('polygonModified', {
+    this.eventManager.emit('polydraw:polygon:updated', {
       operation: 'removeVertex',
       polygon: newPolygon,
     });
@@ -816,6 +836,10 @@ export class PolygonInteractionManager {
     this.polygonInformation.deletePolygonInformationStorage();
     const featureCollection = featureGroup.toGeoJSON() as any;
 
+    if (!featureCollection.features || featureCollection.features.length === 0) {
+      return;
+    }
+
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
 
@@ -827,7 +851,7 @@ export class PolygonInteractionManager {
           const unkink = this.turfHelper.getKinks(feature);
           for (const polygon of unkink) {
             // Allow merging after marker drag - this enables polygon merging when dragged into each other
-            this.emit('polygonModified', {
+            this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true,
@@ -835,7 +859,7 @@ export class PolygonInteractionManager {
           }
         } else {
           // Allow merging after marker drag - this enables polygon merging when dragged into each other
-          this.emit('polygonModified', {
+          this.eventManager.emit('polydraw:polygon:updated', {
             operation: 'markerDrag',
             polygon: feature,
             allowMerge: true,
@@ -851,7 +875,13 @@ export class PolygonInteractionManager {
         const unkink = this.turfHelper.getKinks(feature);
         for (const polygon of unkink) {
           // Allow merging after marker drag - this enables polygon merging when dragged into each other
-          this.emit('polygonModified', {
+          this.eventManager.emit('polydraw:polygon:updated', {
+            operation: 'markerDrag',
+            polygon: this.turfHelper.getTurfPolygon(polygon),
+            allowMerge: true,
+          });
+          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          this.eventManager.emit('polydraw:polygon:updated', {
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: true,
@@ -859,7 +889,13 @@ export class PolygonInteractionManager {
         }
       } else {
         // Allow merging after marker drag - this enables polygon merging when dragged into each other
-        this.emit('polygonModified', {
+        this.eventManager.emit('polydraw:polygon:updated', {
+          operation: 'markerDrag',
+          polygon: feature,
+          allowMerge: true,
+        });
+        // Allow merging after marker drag - this enables polygon merging when dragged into each other
+        this.eventManager.emit('polydraw:polygon:updated', {
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: true,
@@ -1055,7 +1091,7 @@ export class PolygonInteractionManager {
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
-      this.emit('polygonModified', {
+      this.eventManager.emit('polydraw:polygon:updated', {
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
@@ -1261,7 +1297,7 @@ export class PolygonInteractionManager {
                 const individualPolygon = this.turfHelper.getMultiPolygon([coordSet]);
 
                 // Emit each result polygon separately to ensure they get separate feature groups
-                this.emit('polygonModified', {
+                this.eventManager.emit('polydraw:polygon:updated', {
                   operation: 'modifierSubtract',
                   polygon: this.turfHelper.getTurfPolygon(individualPolygon),
                   allowMerge: false, // Don't merge the result of subtract operations
@@ -1271,7 +1307,7 @@ export class PolygonInteractionManager {
           } catch (differenceError) {
             console.warn('Failed to perform difference operation:', differenceError);
             // If difference fails, try to add the original polygon back
-            this.emit('polygonModified', {
+            this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'modifierSubtractFallback',
               polygon: existingPolygon,
               allowMerge: false,
@@ -1601,38 +1637,54 @@ export class PolygonInteractionManager {
       console.log('simplify touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.emit('menuAction', { action: 'simplify', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'simplify',
+        latLngs,
+        featureGroup,
+      });
     });
     simplify.onclick = () => {
       console.log('simplify clicked');
-      this.emit('menuAction', { action: 'simplify', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'simplify',
+        latLngs,
+        featureGroup,
+      });
     };
     bbox.addEventListener('touchend', (e) => {
       console.log('bbox touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.emit('menuAction', { action: 'bbox', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', { action: 'bbox', latLngs, featureGroup });
     });
     bbox.onclick = () => {
-      this.emit('menuAction', { action: 'bbox', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', { action: 'bbox', latLngs, featureGroup });
     };
     doubleElbows.addEventListener('touchend', (e) => {
       console.log('doubleElbows touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.emit('menuAction', { action: 'doubleElbows', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'doubleElbows',
+        latLngs,
+        featureGroup,
+      });
     });
     doubleElbows.onclick = () => {
-      this.emit('menuAction', { action: 'doubleElbows', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'doubleElbows',
+        latLngs,
+        featureGroup,
+      });
     };
     bezier.addEventListener('touchend', (e) => {
       console.log('bezier touchend');
       e.preventDefault();
       e.stopPropagation();
-      this.emit('menuAction', { action: 'bezier', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', { action: 'bezier', latLngs, featureGroup });
     });
     bezier.onclick = () => {
-      this.emit('menuAction', { action: 'bezier', latLngs, featureGroup });
+      this.eventManager.emit('polydraw:menu:action', { action: 'bezier', latLngs, featureGroup });
     };
     // Prevent map from swallowing tap events on iOS, allow popup buttons to be interactive
     L.DomEvent.disableClickPropagation(outerWrapper);

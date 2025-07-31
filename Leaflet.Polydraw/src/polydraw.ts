@@ -5,6 +5,7 @@ import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
 import { PolygonInformationService } from './polygon-information.service';
 import { MapStateService } from './map-state';
+import { EventManager } from './managers/event-manager';
 import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
@@ -21,6 +22,7 @@ class Polydraw extends L.Control {
   private subContainer?: HTMLElement;
   private config: PolydrawConfig;
   private mapStateService: MapStateService;
+  private eventManager: EventManager;
   private polygonInformation: PolygonInformationService;
   private modeManager: ModeManager;
   private polygonDrawManager: PolygonDrawManager;
@@ -86,8 +88,9 @@ class Polydraw extends L.Control {
   private initializeComponents() {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
+    this.eventManager = new EventManager();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
-    this.modeManager = new ModeManager(this.config);
+    this.modeManager = new ModeManager(this.config, this.eventManager);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       // This is the perfect central place to keep the indicator in sync.
       this.updateActivateButtonIndicator();
@@ -263,6 +266,7 @@ class Polydraw extends L.Control {
       map: this.map,
       config: this.config,
       modeManager: this.modeManager,
+      eventManager: this.eventManager,
       tracer: this.tracer,
     });
 
@@ -273,6 +277,7 @@ class Polydraw extends L.Control {
       map: this.map,
       config: this.config,
       modeManager: this.modeManager,
+      eventManager: this.eventManager,
       getFeatureGroups: () => this.arrayOfFeatureGroups,
     });
 
@@ -320,7 +325,7 @@ class Polydraw extends L.Control {
     });
 
     // Listen for drawing completion events from the draw manager
-    this.polygonDrawManager.on('drawCompleted', async (data) => {
+    this.eventManager.on('polydraw:polygon:created', async (data) => {
       this.stopDraw();
       if (data.isPointToPoint) {
         // For P2P, add the polygon directly
@@ -336,7 +341,7 @@ class Polydraw extends L.Control {
     });
 
     // Listen for drawing cancellation events
-    this.polygonDrawManager.on('drawCancelled', () => {
+    this.eventManager.on('polydraw:draw:cancel', () => {
       this.stopDraw();
       this.setDrawMode(DrawMode.Off);
     });
@@ -499,21 +504,19 @@ class Polydraw extends L.Control {
     return this.modeManager.getCurrentMode();
   }
 
-  public onDrawModeChangeListener(callback: DrawModeChangeHandler): void {
-    console.log('onDrawModeChangeListener');
-    this.drawModeListeners.push(callback);
+  public on(event: any, callback: any): void {
+    this.eventManager.on(event, callback);
   }
 
-  public offDrawModeChangeListener(callback: DrawModeChangeHandler): void {
-    console.log('offDrawModeChangeListener');
-    const index = this.drawModeListeners.indexOf(callback);
-    if (index > -1) {
-      this.drawModeListeners.splice(index, 1);
-    }
+  public off(event: any, callback: any): void {
+    this.eventManager.off(event, callback);
   }
 
   private emitDrawModeChanged(): void {
     console.log('emitDrawModeChanged');
+    this.eventManager.emit('polydraw:mode:change', {
+      mode: this.modeManager.getCurrentMode(),
+    });
     for (const cb of this.drawModeListeners) {
       cb(this.modeManager.getCurrentMode());
     }

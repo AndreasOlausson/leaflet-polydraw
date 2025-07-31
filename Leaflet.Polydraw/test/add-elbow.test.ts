@@ -140,10 +140,20 @@ vi.mock('leaflet', () => {
 
 describe('Add Elbow Functionality', () => {
   let polydraw: Polydraw;
-  let map: L.Map;
+  let map: any;
 
   beforeEach(() => {
-    map = new L.Map(document.createElement('div'));
+    map = {
+      dragging: { enable: vi.fn(), disable: vi.fn() },
+      doubleClickZoom: { enable: vi.fn(), disable: vi.fn() },
+      scrollWheelZoom: { enable: vi.fn(), disable: vi.fn() },
+      getContainer: () => document.createElement('div'),
+      on: vi.fn(),
+      off: vi.fn(),
+      removeLayer: vi.fn(),
+      addLayer: vi.fn(),
+      containerPointToLatLng: () => ({ lat: 0, lng: 0 }),
+    };
     // Create a custom config for these tests that enables attachElbow
     const testConfig = {
       modes: {

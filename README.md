@@ -1091,19 +1091,6 @@ PolyDraw was initially inspired by:
 
 Big thank you and kudos to these amazing developers!
 
-## Changelog
-
-### v0.8.0 (Initial release)
-
-- **Polygon Dragging**: Complete drag-and-drop functionality
-- **Smart Merging**: Dual merge systems for drawing and dragging
-- **Marker Separation**: Intelligent positioning prevents overlaps
-- **Enhanced Events**: Comprehensive event system
-- **Production Ready**: 167+ passing tests, full TypeScript support
-- **Performance Optimized**: Efficient geometric operations
-
----
-
 **Created and maintained by [Andreas Olausson](https://github.com/AndreasOlausson)**
 
 [![GitHub stars](https://img.shields.io/github/stars/AndreasOlausson/leaflet-polydraw.svg?style=social&label=Star)](https://github.com/AndreasOlausson/leaflet-polydraw)

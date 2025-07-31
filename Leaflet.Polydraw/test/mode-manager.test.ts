@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ModeManager } from '../src/managers/mode-manager';
+import { EventManager } from '../src/managers/event-manager';
 import { DrawMode } from '../src/enums';
 import type { PolydrawConfig } from '../src/types/polydraw-interfaces';
 import defaultConfig from '../src/config.json';
 
 describe('ModeManager', () => {
   let modeManager: ModeManager;
+  let eventManager: EventManager;
   const config: PolydrawConfig = {
     ...defaultConfig,
     visualOptimizationLevel: 0,
@@ -58,7 +60,13 @@ describe('ModeManager', () => {
   } as PolydrawConfig;
 
   beforeEach(() => {
-    modeManager = new ModeManager(config);
+    eventManager = {
+      emit: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      eventListeners: new Map(),
+    } as any;
+    modeManager = new ModeManager(config, eventManager);
   });
 
   it('should initialize in Off mode', () => {
@@ -97,7 +105,7 @@ describe('ModeManager', () => {
       ...config,
       modes: { ...config.modes, dragElbow: true },
     };
-    const managerWithDrag = new ModeManager(testConfig);
+    const managerWithDrag = new ModeManager(testConfig, eventManager);
 
     // Go into a drawing mode first
     managerWithDrag.updateStateForMode(DrawMode.Add);
@@ -118,7 +126,7 @@ describe('ModeManager', () => {
       ...config,
       modes: { ...config.modes, dragPolygons: false, dragElbow: false },
     };
-    const manager = new ModeManager(customConfig);
+    const manager = new ModeManager(customConfig, eventManager);
     expect(manager.canPerformAction('polygonDrag')).toBe(false);
     expect(manager.canPerformAction('markerDrag')).toBe(false);
   });
