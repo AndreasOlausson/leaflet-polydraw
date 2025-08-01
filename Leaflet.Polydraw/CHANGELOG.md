@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2025-07-31
+
+### Added
+
+- Menu and info popups now use native Leaflet `L.Popup` for correct behavior and positioning
+- `eventManager` is now used to emit menu actions cleanly from UI buttons
+
+### Fixed
+
+- Popups now close when polygon is deleted (via trash icon or erase-all button)
+- Improved popup handling on touch devices (e.g. iOS) with consistent `pointerEvents`
+- General touch support improved for mobile and tablet devices
+
+### Changed
+
+- Menu popup logic refactored for maintainability
+- Info popup converted to consistent Leaflet popup rendering
+
 ## [0.8.10] - 2025-07-31
 
 ### Fixed

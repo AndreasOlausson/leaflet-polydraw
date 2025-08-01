@@ -1590,8 +1590,6 @@ export class PolygonInteractionManager {
     outerWrapper.classList.add('alter-marker-outer-wrapper');
     const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.classList.add('alter-marker-wrapper');
-    const invertedCorner: HTMLElement = document.createElement('i');
-    invertedCorner.classList.add('inverted-corner');
     const markerContent: HTMLDivElement = document.createElement('div');
     markerContent.classList.add('content');
     const markerContentWrapper: HTMLDivElement = document.createElement('div');
@@ -1623,7 +1621,6 @@ export class PolygonInteractionManager {
     separator.classList.add('separator');
 
     outerWrapper.appendChild(wrapper);
-    wrapper.appendChild(invertedCorner);
     wrapper.appendChild(markerContent);
     markerContent.appendChild(markerContentWrapper);
     markerContentWrapper.appendChild(simplify);
@@ -1726,7 +1723,7 @@ export class PolygonInteractionManager {
     });
 
     const popup = L.popup({
-      closeButton: false,
+      closeButton: true,
       autoClose: true,
       className: 'menu-popup',
     }).setContent(outerWrapper);
@@ -1843,8 +1840,6 @@ export class PolygonInteractionManager {
     outerWrapper.classList.add('info-marker-outer-wrapper');
     const wrapper: HTMLDivElement = document.createElement('div');
     wrapper.classList.add('info-marker-wrapper');
-    const invertedCorner: HTMLElement = document.createElement('i');
-    invertedCorner.classList.add('inverted-corner');
     const markerContent: HTMLDivElement = document.createElement('div');
     markerContent.classList.add('content');
 
@@ -1864,7 +1859,6 @@ export class PolygonInteractionManager {
     markerContent.appendChild(infoContentWrapper);
 
     outerWrapper.appendChild(wrapper);
-    wrapper.appendChild(invertedCorner);
     wrapper.appendChild(markerContent);
 
     L.DomEvent.disableClickPropagation(outerWrapper);
@@ -1876,7 +1870,7 @@ export class PolygonInteractionManager {
     });
 
     const popup = L.popup({
-      closeButton: false,
+      closeButton: true,
       autoClose: true,
       className: 'info-popup',
     }).setContent(outerWrapper);
