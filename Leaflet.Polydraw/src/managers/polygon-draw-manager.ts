@@ -38,7 +38,7 @@ export class PolygonDrawManager {
   private isModifierKeyHeld: boolean = false;
 
   constructor(dependencies: PolygonDrawManagerDependencies) {
-    console.log('PolygonDrawManager constructor');
+    // console.log('PolygonDrawManager constructor');
     this.turfHelper = dependencies.turfHelper;
     this.map = dependencies.map;
     this.config = dependencies.config;
@@ -51,7 +51,7 @@ export class PolygonDrawManager {
    * Handle mouse move during freehand drawing
    */
   mouseMove(event: L.LeafletMouseEvent | TouchEvent): void {
-    console.log('mouseMove');
+    // console.log('mouseMove');
     // console.log('PolygonDrawManager mouseMove');
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
@@ -68,7 +68,7 @@ export class PolygonDrawManager {
    * Handle mouse up/leave to complete freehand drawing
    */
   async mouseUpLeave(event: any): Promise<DrawResult> {
-    console.log('mouseUpLeave');
+    // console.log('mouseUpLeave');
     // console.log('PolygonDrawManager mouseUpLeave');
     // Get tracer coordinates and validate before processing
     const tracerGeoJSON = this.tracer.toGeoJSON() as any;
@@ -137,7 +137,7 @@ export class PolygonDrawManager {
    * Handle point-to-point click
    */
   handlePointToPointClick(clickLatLng: L.LatLng): void {
-    console.log('handlePointToPointClick');
+    // console.log('handlePointToPointClick');
     // console.log('PolygonDrawManager handlePointToPointClick');
     // console.log('=== P2P CLICK DEBUG ===');
     // console.log('Click coordinates:', {
@@ -212,7 +212,7 @@ export class PolygonDrawManager {
 
       // Handle marker deletion on click with modifier key
       pointMarker.on('click', (e) => {
-        console.log('p2p marker click');
+        // console.log('p2p marker click');
         if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
           this.deleteP2PMarker(pointMarker);
           L.DomEvent.stopPropagation(e);
@@ -249,7 +249,7 @@ export class PolygonDrawManager {
 
         // Add click handler to complete polygon when clicking first marker
         pointMarker.on('click', (e) => {
-          console.log('p2p first marker click');
+          // console.log('p2p first marker click');
           if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
             this.deleteP2PMarker(pointMarker);
             L.DomEvent.stopPropagation(e);
@@ -274,7 +274,7 @@ export class PolygonDrawManager {
    * Handle double-click to complete point-to-point polygon
    */
   handleDoubleClick(e: L.LeafletMouseEvent): void {
-    console.log('handleDoubleClick');
+    // console.log('handleDoubleClick');
     // console.log('PolygonDrawManager handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
     if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
@@ -291,7 +291,7 @@ export class PolygonDrawManager {
    * Complete point-to-point polygon drawing
    */
   completePointToPointPolygon(): void {
-    console.log('PolygonDrawManager completePointToPointPolygon');
+    // console.log('PolygonDrawManager completePointToPointPolygon');
     const points = this.p2pMarkers.map((marker) => marker.getLatLng());
     if (points.length < 3) {
       return; // Need at least 3 points
@@ -360,7 +360,7 @@ export class PolygonDrawManager {
    * Cancel point-to-point drawing
    */
   cancelPointToPointDrawing(): void {
-    console.log('PolygonDrawManager cancelPointToPointDrawing');
+    // console.log('PolygonDrawManager cancelPointToPointDrawing');
     this.clearP2pMarkers();
     this.resetTracer();
     this.eventManager.emit('polydraw:draw:cancel', {
@@ -372,7 +372,7 @@ export class PolygonDrawManager {
    * Clear all P2P markers
    */
   clearP2pMarkers(): void {
-    console.log('PolygonDrawManager clearP2pMarkers');
+    // console.log('PolygonDrawManager clearP2pMarkers');
     this.p2pMarkers.forEach((marker) => this.map.removeLayer(marker));
     this.p2pMarkers = [];
   }
@@ -381,7 +381,7 @@ export class PolygonDrawManager {
    * Reset the tracer
    */
   resetTracer(): void {
-    console.log('PolygonDrawManager resetTracer');
+    // console.log('PolygonDrawManager resetTracer');
     this.tracer.setLatLngs([]);
     try {
       this.tracer.setStyle({
@@ -396,7 +396,7 @@ export class PolygonDrawManager {
    * Check if clicking on the first point to close polygon
    */
   private isClickingFirstPoint(clickLatLng: L.LatLng, firstPoint: L.LatLng): boolean {
-    console.log('PolygonDrawManager isClickingFirstPoint');
+    // console.log('PolygonDrawManager isClickingFirstPoint');
     if (!firstPoint) return false;
 
     // Use zoom-dependent tolerance - higher zoom = smaller tolerance
@@ -490,7 +490,7 @@ export class PolygonDrawManager {
    * Get current P2P markers (for external access)
    */
   getP2pMarkers(): L.Marker[] {
-    console.log('PolygonDrawManager getP2pMarkers');
+    // console.log('PolygonDrawManager getP2pMarkers');
     return [...this.p2pMarkers];
   }
 
@@ -498,7 +498,7 @@ export class PolygonDrawManager {
    * Check if currently in point-to-point drawing mode
    */
   isInPointToPointMode(): boolean {
-    console.log('PolygonDrawManager isInPointToPointMode');
+    // console.log('PolygonDrawManager isInPointToPointMode');
     return this.modeManager.getCurrentMode() === DrawMode.PointToPoint;
   }
 
@@ -506,7 +506,7 @@ export class PolygonDrawManager {
    * Get current tracer points count
    */
   getTracerPointsCount(): number {
-    console.log('PolygonDrawManager getTracerPointsCount');
+    // console.log('PolygonDrawManager getTracerPointsCount');
     const points = this.tracer.getLatLngs() as L.LatLng[];
     return points.length;
   }

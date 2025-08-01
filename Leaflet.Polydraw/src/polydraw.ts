@@ -39,7 +39,7 @@ class Polydraw extends L.Control {
   private _boundTouchStart: (e: TouchEvent) => void;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
-    console.log('constructor');
+    // console.log('constructor');
     super(options);
 
     // Initialize with default config first
@@ -109,8 +109,8 @@ class Polydraw extends L.Control {
     if ((L as any).Browser.touch && (L as any).Browser.mobile) {
       (_map as any).tap = false;
     }
-    console.log('iOS touch workaround applied');
-    console.log('onAdd');
+    // console.log('iOS touch workaround applied');
+    // console.log('onAdd');
     this.map = _map;
     const style = document.createElement('style');
     style.innerHTML = `
@@ -160,7 +160,7 @@ class Polydraw extends L.Control {
     };
 
     const onDrawClick = (e?: Event) => {
-      console.log('onDrawClick');
+      // console.log('onDrawClick');
       if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -177,7 +177,7 @@ class Polydraw extends L.Control {
     };
 
     const onSubtractClick = (e?: Event) => {
-      console.log('onSubtractClick');
+      // console.log('onSubtractClick');
       // Prevent multiple rapid clicks
       if (e) {
         e.preventDefault();
@@ -211,7 +211,7 @@ class Polydraw extends L.Control {
     };
 
     const onPointToPointClick = (e?: Event) => {
-      console.log('onPointToPointClick');
+      // console.log('onPointToPointClick');
       if (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -278,7 +278,7 @@ class Polydraw extends L.Control {
 
     // Listen for polygon operation completion events to reset draw mode
     this.polygonMutationManager.on('polygonOperationComplete', (data) => {
-      console.log('polygonOperationComplete');
+      // console.log('polygonOperationComplete');
       // Update the indicator state after any polygon operation
       this.updateActivateButtonIndicator();
       // Use the interaction state manager to reset to Off mode
@@ -345,7 +345,7 @@ class Polydraw extends L.Control {
   }
 
   public addTo(map: L.Map): this {
-    console.log('addTo');
+    // console.log('addTo');
     super.addTo(map);
     return this;
   }
@@ -355,7 +355,7 @@ class Polydraw extends L.Control {
   }
 
   onRemove(_map: L.Map) {
-    console.log('onRemove');
+    // console.log('onRemove');
     this.removeKeyboardHandlers();
     if (this.tracer) {
       this.map.removeLayer(this.tracer);
@@ -367,7 +367,7 @@ class Polydraw extends L.Control {
     geographicBorders: L.LatLng[][][],
     options?: { visualOptimizationLevel?: number },
   ): Promise<void> {
-    console.log('addPredefinedPolygon');
+    // console.log('addPredefinedPolygon');
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');
@@ -419,7 +419,7 @@ class Polydraw extends L.Control {
   }
 
   setDrawMode(mode: DrawMode) {
-    console.log('setDrawMode');
+    // console.log('setDrawMode');
     const previousMode = this.drawMode;
     this.drawMode = mode;
 
@@ -495,7 +495,7 @@ class Polydraw extends L.Control {
   }
 
   getDrawMode(): DrawMode {
-    console.log('getDrawMode');
+    // console.log('getDrawMode');
     return this.modeManager.getCurrentMode();
   }
 
@@ -508,7 +508,7 @@ class Polydraw extends L.Control {
   }
 
   private emitDrawModeChanged(): void {
-    console.log('emitDrawModeChanged');
+    // console.log('emitDrawModeChanged');
     this.eventManager.emit('polydraw:mode:change', {
       mode: this.modeManager.getCurrentMode(),
     });
@@ -521,7 +521,7 @@ class Polydraw extends L.Control {
    * Update the draggable state of all existing markers when draw mode changes
    */
   private updateMarkerDraggableState(): void {
-    console.log('updateMarkerDraggableState');
+    // console.log('updateMarkerDraggableState');
     const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
@@ -549,7 +549,7 @@ class Polydraw extends L.Control {
   }
 
   removeAllFeatureGroups() {
-    console.log('removeAllFeatureGroups');
+    // console.log('removeAllFeatureGroups');
     this.arrayOfFeatureGroups.forEach((featureGroups) => {
       try {
         this.map.removeLayer(featureGroups);
@@ -565,7 +565,7 @@ class Polydraw extends L.Control {
   }
 
   private stopDraw() {
-    console.log('stopDraw');
+    // console.log('stopDraw');
     this.resetTracker();
     this.drawStartedEvents(false);
   }
@@ -575,19 +575,19 @@ class Polydraw extends L.Control {
     enableDoubleClickZoom: boolean,
     enableScrollWheelZoom: boolean,
   ) {
-    console.log('setLeafletMapEvents');
+    // console.log('setLeafletMapEvents');
     enableDragging ? this.map.dragging.enable() : this.map.dragging.disable();
     enableDoubleClickZoom ? this.map.doubleClickZoom.enable() : this.map.doubleClickZoom.disable();
     enableScrollWheelZoom ? this.map.scrollWheelZoom.enable() : this.map.scrollWheelZoom.disable();
   }
 
   private resetTracker() {
-    console.log('resetTracker');
+    // console.log('resetTracker');
     this.tracer.setLatLngs([]);
   }
 
   private drawStartedEvents(onoff: boolean) {
-    console.log('drawStartedEvents');
+    // console.log('drawStartedEvents');
     const onoroff = onoff ? 'on' : 'off';
 
     this.map[onoroff]('mousemove', this.mouseMove, this);
@@ -611,7 +611,7 @@ class Polydraw extends L.Control {
   }
 
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent) {
-    console.log('mouseMove');
+    // console.log('mouseMove');
     // Prevent scroll or pull-to-refresh on mobile
     if ('cancelable' in event && event.cancelable) {
       event.preventDefault();
@@ -663,7 +663,7 @@ class Polydraw extends L.Control {
     if ('cancelable' in event && event.cancelable) {
       event.preventDefault();
     }
-    console.log('mouseUpLeave');
+    // console.log('mouseUpLeave');
     // console.log('mouseUpLeave');
     this.polygonInformation.deletePolygonInformationStorage();
 
@@ -736,7 +736,7 @@ class Polydraw extends L.Control {
   }
 
   private events(onoff: boolean) {
-    console.log('events');
+    // console.log('events');
     const onoroff = onoff ? 'on' : 'off';
     this.map[onoroff]('mousedown', this.mouseDown, this);
 
@@ -760,7 +760,7 @@ class Polydraw extends L.Control {
     if ('cancelable' in event && event.cancelable) {
       event.preventDefault();
     }
-    console.log('mouseDown');
+    // console.log('mouseDown');
     // console.log('mouseDown');
     // Check if we're still in a drawing mode before processing
     if (this.modeManager.isInOffMode()) {
@@ -793,25 +793,25 @@ class Polydraw extends L.Control {
   }
 
   private startDraw() {
-    console.log('startDraw');
+    // console.log('startDraw');
     this.drawStartedEvents(true);
   }
 
   private setupKeyboardHandlers() {
-    console.log('setupKeyboardHandlers');
+    // console.log('setupKeyboardHandlers');
     this._boundKeyUpHandler = this.handleKeyUp.bind(this);
     document.addEventListener('keydown', this._boundKeyDownHandler);
     document.addEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private removeKeyboardHandlers() {
-    console.log('removeKeyboardHandlers');
+    // console.log('removeKeyboardHandlers');
     document.removeEventListener('keydown', this._boundKeyDownHandler);
     document.removeEventListener('keyup', this._boundKeyUpHandler);
   }
 
   private handleKeyDown(e: KeyboardEvent) {
-    console.log('handleKeyDown');
+    // console.log('handleKeyDown');
     if (e.key === 'Escape') {
       if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
         this.polygonDrawManager.cancelPointToPointDrawing();
@@ -828,7 +828,7 @@ class Polydraw extends L.Control {
   }
 
   private handleKeyUp(e: KeyboardEvent) {
-    console.log('handleKeyUp');
+    // console.log('handleKeyUp');
     // Track modifier key state for edge deletion visual feedback
     const isModifierPressed = this.isModifierKeyPressed(e as any);
     if (!isModifierPressed && this.isModifierKeyHeld) {
@@ -842,7 +842,7 @@ class Polydraw extends L.Control {
    * Update all markers to show/hide edge deletion visual feedback
    */
   private updateAllMarkersForEdgeDeletion(showFeedback: boolean) {
-    console.log('updateAllMarkersForEdgeDeletion');
+    // console.log('updateAllMarkersForEdgeDeletion');
     this.arrayOfFeatureGroups.forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -856,7 +856,7 @@ class Polydraw extends L.Control {
    * Update individual marker for edge deletion visual feedback
    */
   private updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean) {
-    console.log('updateMarkerForEdgeDeletion');
+    // console.log('updateMarkerForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -877,7 +877,7 @@ class Polydraw extends L.Control {
    * Handle marker hover when modifier key is held - event handler version
    */
   private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
-    console.log('onMarkerHoverForEdgeDeletionEvent');
+    // console.log('onMarkerHoverForEdgeDeletionEvent');
     if (!this.isModifierKeyHeld) return;
 
     const element = e.target as HTMLElement;
@@ -892,7 +892,7 @@ class Polydraw extends L.Control {
    * Handle marker leave when modifier key is held - event handler version
    */
   private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
-    console.log('onMarkerLeaveForEdgeDeletionEvent');
+    // console.log('onMarkerLeaveForEdgeDeletionEvent');
     const element = e.target as HTMLElement;
     if (element) {
       element.style.backgroundColor = '';
@@ -902,7 +902,7 @@ class Polydraw extends L.Control {
   };
 
   private handleDoubleClick(e: L.LeafletMouseEvent) {
-    console.log('handleDoubleClick');
+    // console.log('handleDoubleClick');
     // console.log('handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
     if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
@@ -916,7 +916,7 @@ class Polydraw extends L.Control {
    * Detect if modifier key is pressed (Ctrl on Windows/Linux, Cmd on Mac)
    */
   private isModifierKeyPressed(event: MouseEvent): boolean {
-    console.log('isModifierKeyPressed');
+    // console.log('isModifierKeyPressed');
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 
