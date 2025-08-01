@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.1] - 2025-08-01
+
+### Fixed
+
+- Resolved a browser warning by marking the `touchstart` event listener as passive, improving performance on touch devices.
+- Corrected the positioning of `menuMarker` and `infoMarker` popups on touch devices to ensure they consistently open at the polygon's center of mass.
+
 ## [0.9.0] - 2025-07-31
 
 ### Added
