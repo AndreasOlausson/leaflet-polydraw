@@ -2,7 +2,7 @@
 
 # Leaflet Polydraw
 
-**Live Demo**: [https://andreasolausson.github.io/leaflet-polydraw](https://polydraw.ao-tech.se)
+**Live Demo**: [https://polydraw.ao-tech.se](https://polydraw.ao-tech.se)
 
 > **Advanced Leaflet plugin for interactive polygon drawing with point-to-point creation, smart merging, and comprehensive editing tools**
 
