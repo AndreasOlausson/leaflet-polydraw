@@ -25,6 +25,7 @@
     "geometry"
   ],
   "homepage": "https://github.com/andreasolausson/leaflet-polydraw",
+  "demo": "https://polydraw.ao-tech.se",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/andreasolausson/leaflet-polydraw.git"
@@ -37,13 +38,19 @@
     "url": "https://github.com/andreasolausson"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=18",
+    "npm": ">=9"
+  },
+  "packageManager": "npm@10.2.0",
   "scripts": {
     "build": "tsc && vite build && npm run build:types",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",
-    "lint": "eslint ./src --ext .ts"
+    "lint": "eslint ./src --ext .ts",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/geojson": "^7946.0.16",

@@ -11,8 +11,21 @@ import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import './styles/polydraw.css';
+import { injectDynamicStyles } from './styles/dynamic-styles';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
+
+// Create a local interface that extends L.Map for our specific needs
+interface ExtendedMap extends L.Map {
+  _onResize?: () => void;
+  tap?: boolean;
+}
+
+// Create a type for the extended browser object
+type ExtendedBrowser = typeof L.Browser & {
+  touch: boolean;
+  mobile: boolean;
+};
 
 class Polydraw extends L.Control {
   private map: L.Map;
@@ -60,11 +73,15 @@ class Polydraw extends L.Control {
    * @returns The control's container element.
    */
   public onAdd(_map: L.Map): HTMLElement {
+    const extendedMap = _map as ExtendedMap;
+    const browser = L.Browser as ExtendedBrowser;
+
     // Prevent iOS click hijack behavior
-    (_map as any)._onResize = () => {};
+    extendedMap._onResize = () => {};
+
     // Workaround: disable native tap handling on iOS
-    if ((L as any).Browser.touch && (L as any).Browser.mobile) {
-      (_map as any).tap = false;
+    if (browser.touch && browser.mobile) {
+      extendedMap.tap = false;
     }
     this.map = _map;
 
@@ -183,15 +200,7 @@ class Polydraw extends L.Control {
    */
   public setDrawMode(mode: DrawMode) {
     const previousMode = this.drawMode;
-    this.drawMode = mode;
-
-    // Update interaction state manager
-    this.modeManager.updateStateForMode(mode);
-
-    this.emitDrawModeChanged();
-
-    // Update marker draggable state when mode changes
-    this.updateMarkerDraggableState();
+    this._updateDrawModeState(mode);
 
     // Only stop draw if we're switching away from PointToPoint mode or going to Off mode
     // Don't reset tracer when entering PointToPoint mode
@@ -206,53 +215,8 @@ class Polydraw extends L.Control {
     }
 
     if (this.map) {
-      // Use interaction state manager for UI updates
-      const shouldShowCrosshair = this.modeManager.shouldShowCrosshairCursor();
-      const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
-      const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
-      const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
-
-      // Update cursor
-      if (shouldShowCrosshair) {
-        L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-      } else {
-        L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
-      }
-
-      // Update events
-      this.events(mode !== DrawMode.Off);
-
-      // Update tracer style based on mode
-      try {
-        switch (mode) {
-          case DrawMode.Off:
-            this.tracer.setStyle({ color: '' });
-            break;
-          case DrawMode.Add:
-            this.tracer.setStyle({
-              color: defaultConfig.polyLineOptions.color,
-              dashArray: null, // Reset to solid line
-            });
-            break;
-          case DrawMode.Subtract:
-            this.tracer.setStyle({
-              color: '#D9460F',
-              dashArray: null, // Reset to solid line
-            });
-            break;
-          case DrawMode.PointToPoint:
-            this.tracer.setStyle({
-              color: defaultConfig.polyLineOptions.color,
-              dashArray: '5, 5',
-            });
-            break;
-        }
-      } catch (error) {
-        // Handle case where tracer renderer is not initialized
-      }
-
-      // Update map interactions based on state manager
-      this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
+      this._updateUIAfterDrawModeChange(mode);
+      this._updateMapInteractions();
     }
   }
 
@@ -305,20 +269,7 @@ class Polydraw extends L.Control {
    * @param container - The main control container element.
    */
   private initializeUI(container: HTMLElement): void {
-    // Inject style
-    const style = document.createElement('style');
-    style.innerHTML = `
-      .leaflet-control a { background-color: #fff; color: #000; display: flex; align-items: center; justify-content: center; }
-      .leaflet-control a:hover { background-color: #f4f4f4; }
-      .leaflet-control a.active { background-color:rgb(128, 218, 255); color: #fff; }
-      .polydraw-indicator-active { background-color: #ffcc00 !important; }
-      .crosshair-cursor-enabled { cursor: crosshair !important; }
-      .crosshair-cursor-enabled * { cursor: crosshair !important; }
-      .leaflet-polydraw-p2p-marker { background-color: #fff; border: 2px solid #50622b; border-radius: 50%; box-sizing: border-box; }
-      .leaflet-polydraw-p2p-first-marker { position: relative; }
-      .leaflet-polydraw-p2p-first-marker:hover { transform: scale(1.5); transition: all 0.2s ease; }
-    `;
-    document.head.appendChild(style);
+    injectDynamicStyles();
 
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation);
@@ -332,90 +283,15 @@ class Polydraw extends L.Control {
     this.subContainer.style.overflow = 'hidden';
     this.subContainer.style.transition = 'max-height 0.3s ease';
 
-    const onActivateToggle = () => {
-      const activate = container.querySelector('.icon-activate') as HTMLElement;
-      if (L.DomUtil.hasClass(activate, 'active')) {
-        L.DomUtil.removeClass(activate, 'active');
-        if (this.subContainer) {
-          this.subContainer.style.maxHeight = '0px';
-        }
-      } else {
-        L.DomUtil.addClass(activate, 'active');
-        if (this.subContainer) {
-          this.subContainer.style.maxHeight = '250px';
-        }
-      }
-      // Update the indicator state whenever the panel is toggled
-      this.updateActivateButtonIndicator();
-    };
-
-    const onDrawClick = (e?: Event) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // If already in Add mode, turn it off instead of ignoring
-      if (this.modeManager.getCurrentMode() === DrawMode.Add) {
-        this.setDrawMode(DrawMode.Off);
-        return;
-      }
-      this.setDrawMode(DrawMode.Add);
-      this.polygonInformation.saveCurrentState();
-    };
-
-    const onSubtractClick = (e?: Event) => {
-      // Prevent multiple rapid clicks
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // If already in Subtract mode, turn it off instead of ignoring
-      if (this.modeManager.getCurrentMode() === DrawMode.Subtract) {
-        this.setDrawMode(DrawMode.Off);
-        return;
-      }
-      this.setDrawMode(DrawMode.Subtract);
-      this.polygonInformation.saveCurrentState();
-    };
-
-    const onEraseClick = (e?: Event) => {
-      // Close any open popup before erasing polygons
-      this.map.closePopup();
-      // Prevent multiple rapid clicks
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // Only erase if there are polygons to erase
-      if (this.arrayOfFeatureGroups.length === 0) {
-        return;
-      }
-      this.removeAllFeatureGroups();
-    };
-
-    const onPointToPointClick = (e?: Event) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      // If already in PointToPoint mode, turn it off instead of ignoring
-      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
-        this.setDrawMode(DrawMode.Off);
-        return;
-      }
-      this.setDrawMode(DrawMode.PointToPoint);
-      this.polygonInformation.saveCurrentState();
-    };
-
     createButtons(
       container,
       this.subContainer,
       this.config,
-      onActivateToggle,
-      onDrawClick,
-      onSubtractClick,
-      onEraseClick,
-      onPointToPointClick,
+      this._handleActivateToggle,
+      this._handleDrawClick,
+      this._handleSubtractClick,
+      this._handleEraseClick,
+      this._handlePointToPointClick,
     );
 
     // Simple UI update listener
@@ -573,6 +449,148 @@ class Polydraw extends L.Control {
   /**
    * Initializes the core components of the Polydraw control.
    */
+  /**
+   * Updates the state of the drawing mode.
+   * @param mode - The new drawing mode.
+   */
+  private _updateDrawModeState(mode: DrawMode) {
+    this.drawMode = mode;
+    this.modeManager.updateStateForMode(mode);
+    this.emitDrawModeChanged();
+    this.updateMarkerDraggableState();
+  }
+
+  /**
+   * Updates the UI after a change in the drawing mode.
+   * @param mode - The new drawing mode.
+   */
+  private _updateUIAfterDrawModeChange(mode: DrawMode) {
+    const shouldShowCrosshair = this.modeManager.shouldShowCrosshairCursor();
+    if (shouldShowCrosshair) {
+      L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+    } else {
+      L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+    }
+
+    try {
+      switch (mode) {
+        case DrawMode.Off:
+          this.tracer.setStyle({ color: '' });
+          break;
+        case DrawMode.Add:
+          this.tracer.setStyle({
+            color: defaultConfig.polyLineOptions.color,
+            dashArray: null, // Reset to solid line
+          });
+          break;
+        case DrawMode.Subtract:
+          this.tracer.setStyle({
+            color: this.config.dragPolygons.modifierSubtract.subtractColor,
+            dashArray: null, // Reset to solid line
+          });
+          break;
+        case DrawMode.PointToPoint:
+          this.tracer.setStyle({
+            color: defaultConfig.polyLineOptions.color,
+            dashArray: '5, 5',
+          });
+          break;
+      }
+    } catch (error) {
+      // Handle case where tracer renderer is not initialized
+    }
+  }
+
+  /**
+   * Updates map interactions based on the current drawing mode.
+   */
+  private _handleActivateToggle = () => {
+    const container = this.getContainer();
+    if (!container) return;
+
+    const activate = container.querySelector('.icon-activate') as HTMLElement;
+    if (L.DomUtil.hasClass(activate, 'active')) {
+      L.DomUtil.removeClass(activate, 'active');
+      if (this.subContainer) {
+        this.subContainer.style.maxHeight = '0px';
+      }
+    } else {
+      L.DomUtil.addClass(activate, 'active');
+      if (this.subContainer) {
+        this.subContainer.style.maxHeight = '250px';
+      }
+    }
+    // Update the indicator state whenever the panel is toggled
+    this.updateActivateButtonIndicator();
+  };
+
+  private _handleDrawClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // If already in Add mode, turn it off instead of ignoring
+    if (this.modeManager.getCurrentMode() === DrawMode.Add) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.Add);
+    this.polygonInformation.saveCurrentState();
+  };
+
+  private _handleSubtractClick = (e?: Event) => {
+    // Prevent multiple rapid clicks
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // If already in Subtract mode, turn it off instead of ignoring
+    if (this.modeManager.getCurrentMode() === DrawMode.Subtract) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.Subtract);
+    this.polygonInformation.saveCurrentState();
+  };
+
+  private _handleEraseClick = (e?: Event) => {
+    // Close any open popup before erasing polygons
+    this.map.closePopup();
+    // Prevent multiple rapid clicks
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // Only erase if there are polygons to erase
+    if (this.arrayOfFeatureGroups.length === 0) {
+      return;
+    }
+    this.removeAllFeatureGroups();
+  };
+
+  private _handlePointToPointClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // If already in PointToPoint mode, turn it off instead of ignoring
+    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.PointToPoint);
+    this.polygonInformation.saveCurrentState();
+  };
+
+  private _updateMapInteractions() {
+    const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
+    const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
+    const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
+
+    this.events(this.drawMode !== DrawMode.Off);
+    this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
+  }
+
   private initializeComponents() {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
