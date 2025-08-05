@@ -363,14 +363,21 @@ export class PolygonInteractionManager {
         L.DomEvent.stopPropagation(e);
       });
 
-      marker.on('dragend', (e: L.LeafletEvent) => {
-        L.DomEvent.stopPropagation(e);
+      marker.on('dragstart', () => {
+        this.isDraggingMarker = true;
+        this._activeMarker = marker;
       });
-      marker.on('drag', (e) => {
+
+      marker.on('drag', () => {
         this.markerDrag(featureGroup);
       });
-      marker.on('dragend', (e) => {
+
+      marker.on('dragend', () => {
         this.markerDragEnd(featureGroup);
+        this._activeMarker = null;
+        setTimeout(() => {
+          this.isDraggingMarker = false;
+        }, 10);
       });
     });
   }

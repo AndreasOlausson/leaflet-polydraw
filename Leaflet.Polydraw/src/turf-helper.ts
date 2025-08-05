@@ -1,6 +1,6 @@
 import * as turf from '@turf/turf';
 import concaveman from 'concaveman';
-import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
 
@@ -483,7 +483,17 @@ export class TurfHelper {
       return true;
     }
   }
-
+  /**
+   * Check if a point lies within a polygon
+   */
+  isPointInsidePolygon(point: Feature<Point>, polygon: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      return turf.booleanPointInPolygon(point, polygon);
+    } catch (error) {
+      console.warn('Error in isPointInsidePolygon:', error.message);
+      return false;
+    }
+  }
   /**
    * Checks if two polygons are equal.
    * @param polygon1 First polygon.
