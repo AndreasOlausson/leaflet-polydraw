@@ -35,6 +35,8 @@ export interface PolygonInteractionManagerDependencies {
  * This includes dragging polygons, dragging markers, edge interactions, and popup menus.
  */
 export class PolygonInteractionManager {
+  private markerFeatureGroupMap = new WeakMap<L.Marker, L.FeatureGroup>();
+  private markerModifierHandlers = new WeakMap<L.Marker, (e: Event) => void>();
   private _activeMarker: L.Marker | null = null;
   private isDraggingMarker = false;
   private turfHelper: TurfHelper;
@@ -45,7 +47,7 @@ export class PolygonInteractionManager {
   private eventManager: EventManager;
 
   // Polygon drag state
-  private currentDragPolygon: any = null;
+  private currentDragPolygon: PolydrawPolygon | null = null;
   private currentModifierDragMode: boolean = false;
   private isModifierKeyHeld: boolean = false;
   private _openMenuPopup: L.Popup | null = null;
@@ -130,7 +132,7 @@ export class PolygonInteractionManager {
       featureGroup.addLayer(marker).addTo(this.map);
 
       // Attach reference to featureGroup for dragend/touchend logic
-      (marker as any)._polydrawFeatureGroup = featureGroup;
+      this.markerFeatureGroupMap.set(marker, featureGroup);
 
       marker.on('add', () => {
         const el = marker.getElement();
@@ -149,7 +151,7 @@ export class PolygonInteractionManager {
         this._activeMarker = marker;
       });
       marker.on('dragend', (e: L.LeafletEvent) => {
-        const fg = (marker as any)._polydrawFeatureGroup;
+        const fg = this.markerFeatureGroupMap.get(marker);
         if (this.modeManager.canPerformAction('markerDrag') && fg) {
           this.markerDragEnd(fg);
         }
@@ -177,7 +179,7 @@ export class PolygonInteractionManager {
           marker.fire('click');
           // Also fire drag end logic for touch devices
           if (this.isDraggingMarker && !isSpecialMarker) {
-            const fg = (marker as any)._polydrawFeatureGroup;
+            const fg = this.markerFeatureGroupMap.get(marker);
             if (this.modeManager.canPerformAction('markerDrag') && fg) {
               this.markerDragEnd(fg);
             }
@@ -464,7 +466,7 @@ export class PolygonInteractionManager {
   /**
    * Enable polygon dragging functionality
    */
-  enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>): void {
+  enablePolygonDragging(polygon: PolydrawPolygon, latlngs: Feature<Polygon | MultiPolygon>): void {
     // console.log('PolygonInteractionManager enablePolygonDragging');
     if (!this.config.modes.dragPolygons) return;
 
@@ -475,7 +477,7 @@ export class PolygonInteractionManager {
       startLatLngs: null,
     };
 
-    polygon.on('mousedown', (e: any) => {
+    polygon.on('mousedown', (e: L.LeafletMouseEvent) => {
       // console.log('polygon mousedown');
       // If not in off mode, it's a drawing click. Forward to map and stop.
       if (!this.modeManager.isInOffMode()) {
@@ -488,10 +490,10 @@ export class PolygonInteractionManager {
       if (!this.modeManager.canPerformAction('polygonDrag')) {
         return;
       }
-      L.DomEvent.stopPropagation(e);
-      L.DomEvent.preventDefault(e);
+      L.DomEvent.stopPropagation(e.originalEvent);
+      L.DomEvent.preventDefault(e.originalEvent);
 
-      const isModifierPressed = this.detectModifierKey(e.originalEvent || e);
+      const isModifierPressed = this.detectModifierKey(e.originalEvent);
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
@@ -678,7 +680,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private elbowClicked(e: any, poly: Feature<Polygon | MultiPolygon>): void {
+  private elbowClicked(e: L.LeafletMouseEvent, poly: Feature<Polygon | MultiPolygon>): void {
     // console.log('elbowClicked');
     // console.log('PolygonInteractionManager elbowClicked');
     // Enforce the configuration setting for edge deletion.
@@ -1071,7 +1073,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private async updatePolygonAfterDrag(polygon: any): Promise<void> {
+  private async updatePolygonAfterDrag(polygon: PolydrawPolygon): Promise<void> {
     // console.log('PolygonInteractionManager updatePolygonAfterDrag');
     try {
       let featureGroup: L.FeatureGroup | null = null;
@@ -1404,8 +1406,8 @@ export class PolygonInteractionManager {
       const initialEvent = new MouseEvent('mouseover');
       checkModifierAndUpdate(initialEvent);
 
-      // Store the handler for cleanup
-      (marker as any)._polydrawModifierHandler = checkModifierAndUpdate;
+      // Store the handler for cleanup in WeakMap
+      this.markerModifierHandlers.set(marker, checkModifierAndUpdate);
 
       // Listen for keyboard events to update in real-time
       document.addEventListener('keydown', checkModifierAndUpdate);
@@ -1426,12 +1428,12 @@ export class PolygonInteractionManager {
       }
 
       // Remove event listeners
-      const handler = (marker as any)._polydrawModifierHandler;
+      const handler = this.markerModifierHandlers.get(marker);
       if (handler) {
         document.removeEventListener('keydown', handler);
         document.removeEventListener('keyup', handler);
         element.removeEventListener('mousemove', handler);
-        delete (marker as any)._polydrawModifierHandler;
+        this.markerModifierHandlers.delete(marker);
       }
     }
   }

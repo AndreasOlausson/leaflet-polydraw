@@ -306,6 +306,22 @@ export interface PolydrawPolygon extends L.Polygon {
     startPosition: L.LatLngLiteral | null;
     startLatLngs: any;
   };
+  /**
+   * Original marker positions before drag, keyed by marker instance.
+   */
+  _polydrawOriginalMarkerPositions?: Map<L.Marker, L.LatLng>;
+  /**
+   * Original hole polyline positions before drag, keyed by polyline instance.
+   */
+  _polydrawOriginalHoleLinePositions?: Map<L.Polyline, L.LatLng[]>;
+  /**
+   * Identifier for the current drag session, if any.
+   */
+  _polydrawCurrentDragSession?: string;
+  /**
+   * Original GeoJSON coordinates before drag, if any.
+   */
+  _polydrawOriginalLatLngs?: Feature<Polygon | MultiPolygon>;
 }
 
 /**

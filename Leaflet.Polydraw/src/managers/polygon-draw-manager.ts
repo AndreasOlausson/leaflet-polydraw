@@ -36,6 +36,7 @@ export class PolygonDrawManager {
   // Point-to-Point drawing state
   private p2pMarkers: L.Marker[] = [];
   private isModifierKeyHeld: boolean = false;
+  private markerModifierHandlers = new WeakMap<L.Marker, (e: Event) => void>();
 
   constructor(dependencies: PolygonDrawManagerDependencies) {
     // console.log('PolygonDrawManager constructor');
@@ -51,7 +52,6 @@ export class PolygonDrawManager {
    * Handle mouse move during freehand drawing
    */
   mouseMove(event: L.LeafletMouseEvent | TouchEvent): void {
-    // console.log('mouseMove');
     // console.log('PolygonDrawManager mouseMove');
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
@@ -67,11 +67,10 @@ export class PolygonDrawManager {
   /**
    * Handle mouse up/leave to complete freehand drawing
    */
-  async mouseUpLeave(event: any): Promise<DrawResult> {
-    // console.log('mouseUpLeave');
+  async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent): Promise<DrawResult> {
     // console.log('PolygonDrawManager mouseUpLeave');
     // Get tracer coordinates and validate before processing
-    const tracerGeoJSON = this.tracer.toGeoJSON() as any;
+    const tracerGeoJSON = this.tracer.toGeoJSON() as ReturnType<L.Polyline['toGeoJSON']>;
 
     // Check if tracer has valid coordinates before processing
     if (
@@ -83,7 +82,7 @@ export class PolygonDrawManager {
       // Not enough points to form a valid polygon
       return {
         success: false,
-        error: 'Not enough points to form a valid polygon',
+        error: 'Not enough points to form a valid polygon. Event: ' + JSON.stringify(event),
       };
     }
 
@@ -94,7 +93,10 @@ export class PolygonDrawManager {
       // Handle polygon creation errors (e.g., invalid polygon)
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to create polygon from trace',
+        error:
+          (error instanceof Error ? error.message : 'Failed to create polygon from trace') +
+          '. Event: ' +
+          JSON.stringify(event),
       };
     }
 
@@ -107,7 +109,7 @@ export class PolygonDrawManager {
     ) {
       return {
         success: false,
-        error: 'Invalid polygon created from trace',
+        error: 'Invalid polygon created from trace. Event: ' + JSON.stringify(event),
       };
     }
 
@@ -600,7 +602,7 @@ export class PolygonDrawManager {
         }
       };
 
-      (marker as any)._polydrawModifierHandler = checkModifierAndUpdate;
+      this.markerModifierHandlers.set(marker, checkModifierAndUpdate);
       document.addEventListener('keydown', checkModifierAndUpdate);
       document.addEventListener('keyup', checkModifierAndUpdate);
       element.addEventListener('mousemove', checkModifierAndUpdate);
@@ -612,12 +614,12 @@ export class PolygonDrawManager {
       } catch (error) {
         // Handle DOM errors
       }
-      const handler = (marker as any)._polydrawModifierHandler;
+      const handler = this.markerModifierHandlers.get(marker);
       if (handler) {
         document.removeEventListener('keydown', handler);
         document.removeEventListener('keyup', handler);
         element.removeEventListener('mousemove', handler);
-        delete (marker as any)._polydrawModifierHandler;
+        this.markerModifierHandlers.delete(marker);
       }
     }
   }
