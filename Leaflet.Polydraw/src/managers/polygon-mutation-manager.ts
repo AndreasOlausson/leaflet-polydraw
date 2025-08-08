@@ -2,14 +2,14 @@ import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
 import { PolygonInformationService } from '../polygon-information.service';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import type { PolydrawConfig } from '../types/polydraw-interfaces';
+import type { PolydrawConfig, MenuActionData } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
-import { PolygonDrawManager, DrawResult } from './polygon-draw-manager';
-import { PolygonInteractionManager, InteractionResult } from './polygon-interaction-manager';
+import { PolygonDrawManager } from './polygon-draw-manager';
+import { PolygonInteractionManager } from './polygon-interaction-manager';
 
 export interface MutationResult {
   success: boolean;
@@ -128,7 +128,7 @@ export class PolygonMutationManager {
     });
 
     this.eventManager.on('polydraw:menu:action', (data) => {
-      this.handleMenuAction(data);
+      this.handleMenuAction(data as MenuActionData);
     });
 
     this.eventManager.on('polydraw:check:intersection', (data) => {
@@ -169,19 +169,18 @@ export class PolygonMutationManager {
   /**
    * Handle menu actions from interaction manager
    */
-  private async handleMenuAction(data: any): Promise<void> {
+  private async handleMenuAction(data: MenuActionData): Promise<void> {
     // console.log('PolygonMutationManager handleMenuAction');
-    const { action, latLngs, featureGroup } = data;
 
     // Get the complete polygon GeoJSON including holes before removing the feature group
-    const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(featureGroup);
+    const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);
 
     // Remove the original polygon
-    this.removeFeatureGroupInternal(featureGroup);
+    this.removeFeatureGroupInternal(data.featureGroup);
 
     let result: GeometryOperationResult;
 
-    switch (action) {
+    switch (data.action) {
       case 'simplify': {
         // Use the complete polygon data including holes for simplification
         result = this.geometryManager.simplifyPolygon(completePolygonGeoJSON);

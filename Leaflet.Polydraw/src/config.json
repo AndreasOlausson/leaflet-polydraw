@@ -115,6 +115,11 @@
       "styleClasses": ["polygon-marker", "delete"],
       "zIndexOffset": 10000
     },
+    "holeMarkers": {
+      "menuMarker": true,
+      "deleteMarker": true,
+      "infoMarker": true
+    },
     "visualOptimization": {
       "sharpAngleThreshold": 30,
       "thresholdBoundingBox": 0.05,

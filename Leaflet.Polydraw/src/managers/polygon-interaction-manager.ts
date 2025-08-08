@@ -5,7 +5,7 @@ import { IconFactory } from '../icon-factory';
 import { PolygonUtil } from '../polygon.util';
 import { MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, FeatureCollection } from 'geojson';
 import type {
   PolydrawConfig,
   PolydrawPolygon,
@@ -340,29 +340,76 @@ export class PolygonInteractionManager {
   }
 
   /**
-   * Add hole markers to a polygon feature group
+   * Add hole markers to a polygon feature group, with configurable special markers.
    */
   addHoleMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
     // console.log('PolygonInteractionManager addHoleMarkers');
+
+    // Determine if special markers for holes are enabled
+    const holeMenuEnabled = this.config.markers.holeMarkers?.menuMarker ?? false;
+    const holeDeleteEnabled = this.config.markers.holeMarkers?.deleteMarker ?? false;
+    const holeInfoEnabled = this.config.markers.holeMarkers?.infoMarker ?? false;
+
+    // Get initial marker positions
+    let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
+    let deleteMarkerIdx = this.getMarkerIndex(
+      latlngs,
+      this.config.markers.markerDeleteIcon.position,
+    );
+    let infoMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerInfoIcon.position);
+
+    // Apply fallback separation logic to ensure markers don't overlap
+    const separatedIndices = this.ensureMarkerSeparation(latlngs.length, {
+      menu: { index: menuMarkerIdx, enabled: holeMenuEnabled },
+      delete: { index: deleteMarkerIdx, enabled: holeDeleteEnabled },
+      info: { index: infoMarkerIdx, enabled: holeInfoEnabled },
+    });
+
+    // Update indices with separated values
+    menuMarkerIdx = separatedIndices.menu;
+    deleteMarkerIdx = separatedIndices.delete;
+    infoMarkerIdx = separatedIndices.info;
+
     latlngs.forEach((latlng, i) => {
-      // Use holeIcon styles instead of regular markerIcon styles
-      const iconClasses = this.config.markers.holeIcon.styleClasses;
+      let iconClasses = this.config.markers.holeIcon.styleClasses;
+      if (i === menuMarkerIdx && holeMenuEnabled) {
+        iconClasses = this.config.markers.markerMenuIcon.styleClasses;
+      }
+      if (i === deleteMarkerIdx && holeDeleteEnabled) {
+        iconClasses = this.config.markers.markerDeleteIcon.styleClasses;
+      }
+      if (i === infoMarkerIdx && holeInfoEnabled) {
+        iconClasses = this.config.markers.markerInfoIcon.styleClasses;
+      }
+
       const processedClasses = Array.isArray(iconClasses) ? iconClasses : [iconClasses];
+      const isSpecialMarker =
+        (i === menuMarkerIdx && holeMenuEnabled) ||
+        (i === deleteMarkerIdx && holeDeleteEnabled) ||
+        (i === infoMarkerIdx && holeInfoEnabled);
+
       const marker = new L.Marker(latlng, {
         icon: this.createDivIcon(processedClasses),
-        draggable: true,
-        title: this.getLatLngInfoString(latlng),
+        draggable: this.config.modes.dragElbow,
+        title: this.config.markers.coordsTitle ? this.getLatLngInfoString(latlng) : '',
         zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
       });
+
       featureGroup.addLayer(marker).addTo(this.map);
+
+      // Attach reference to featureGroup for dragend/touchend logic
+      this.markerFeatureGroupMap.set(marker, featureGroup);
+
       marker.on('add', () => {
         const el = marker.getElement();
         if (el) el.style.pointerEvents = 'auto';
       });
 
       marker.on('click', (e) => {
-        e.originalEvent?.stopPropagation?.();
-        L.DomEvent.stopPropagation(e);
+        if (this.isDraggingMarker) {
+          e.originalEvent?.stopPropagation?.();
+          L.DomEvent.stopPropagation(e);
+        }
       });
 
       marker.on('dragstart', () => {
@@ -370,17 +417,151 @@ export class PolygonInteractionManager {
         this._activeMarker = marker;
       });
 
-      marker.on('drag', () => {
-        this.markerDrag(featureGroup);
-      });
-
-      marker.on('dragend', () => {
-        this.markerDragEnd(featureGroup);
+      marker.on('dragend', (e: L.LeafletEvent) => {
+        const fg = this.markerFeatureGroupMap.get(marker);
+        if (this.modeManager.canPerformAction('markerDrag') && fg) {
+          this.markerDragEnd(fg);
+        }
         this._activeMarker = null;
+        L.DomEvent.stopPropagation(e);
         setTimeout(() => {
           this.isDraggingMarker = false;
         }, 10);
       });
+
+      const el = marker.getElement();
+      if (el) {
+        el.addEventListener(
+          'touchstart',
+          (e) => {
+            e.stopPropagation();
+          },
+          { passive: true },
+        );
+        el.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          marker.fire('click');
+          if (this.isDraggingMarker && !isSpecialMarker) {
+            const fg = this.markerFeatureGroupMap.get(marker);
+            if (this.modeManager.canPerformAction('markerDrag') && fg) {
+              this.markerDragEnd(fg);
+            }
+          }
+          this._activeMarker = null;
+        });
+      }
+
+      if (i === menuMarkerIdx || i === deleteMarkerIdx || i === infoMarkerIdx) {
+        const element = marker.getElement();
+        if (element) {
+          element.style.zIndex = '10000';
+        }
+      }
+
+      if (this.config.modes.dragElbow) {
+        const createDragHandler = (fg: L.FeatureGroup) => () => {
+          if (this.modeManager.canPerformAction('markerDrag')) {
+            this.markerDrag(fg);
+          }
+        };
+        marker.on('drag', createDragHandler(featureGroup));
+      }
+
+      // --- Special Marker Logic for Holes ---
+
+      if (i === menuMarkerIdx && holeMenuEnabled) {
+        marker.options.zIndexOffset =
+          this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+        marker.on('click', () => {
+          // For now, the menu for a hole does nothing, but the hook is here.
+          // A potential implementation could be to offer hole-specific actions.
+          console.log('Hole menu clicked. No actions implemented yet.');
+        });
+      }
+
+      if (i === infoMarkerIdx && holeInfoEnabled) {
+        const ring = latlngs.map((latlng) => [latlng.lng, latlng.lat]);
+        ring.push(ring[0]); // Close the ring
+
+        const holePolygon: Feature<Polygon> = {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: [ring],
+          },
+        };
+        const area = this.turfHelper.getPolygonArea(holePolygon);
+        const perimeter = this.turfHelper.getPolygonPerimeter(holePolygon) * 1000; // to meters
+
+        marker.options.zIndexOffset =
+          this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+        marker.on('click', () => {
+          const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
+          infoPopup.setLatLng(latlng).openOn(this.map);
+        });
+      }
+
+      marker.on('mousedown', (e) => {
+        if (!this.modeManager.isInOffMode()) {
+          L.DomEvent.stopPropagation(e);
+          this.map.fire('mousedown', e);
+        }
+        this._activeMarker = marker;
+      });
+
+      marker.on('click', (e) => {
+        if (this.modeManager.isInOffMode()) {
+          if (this.isModifierKeyPressed(e.originalEvent)) {
+            const poly = (
+              featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
+            )?.toGeoJSON();
+            if (poly) {
+              this.elbowClicked(e, poly);
+            }
+          } else {
+            if (i === deleteMarkerIdx && holeDeleteEnabled) {
+              this.map.closePopup();
+              // Logic to delete just the hole
+              const parentPolygon = featureGroup
+                .getLayers()
+                .find((layer) => layer instanceof L.Polygon) as L.Polygon;
+              if (parentPolygon) {
+                const polyGeoJSON = parentPolygon.toGeoJSON();
+                const coords = this.turfHelper.getCoords(polyGeoJSON);
+
+                // Find the index of the hole to remove using the delete marker's position
+                const deleteMarkerLatLng = latlngs[i];
+                const EPSILON = 1e-9; // Tolerance for float comparison
+
+                const holeIndex = coords.findIndex((ring, index) => {
+                  if (index === 0) return false; // Don't check the outer ring
+                  return ring.some(
+                    (coord) =>
+                      Math.abs(coord[1] - deleteMarkerLatLng.lat) < EPSILON &&
+                      Math.abs(coord[0] - deleteMarkerLatLng.lng) < EPSILON,
+                  );
+                });
+
+                if (holeIndex > 0) {
+                  // A hole was found (index > 0)
+                  coords.splice(holeIndex, 1);
+                  const newPolygon = this.turfHelper.getMultiPolygon([coords]);
+                  this.removeFeatureGroup(featureGroup);
+                  this.eventManager.emit('polydraw:polygon:updated', {
+                    operation: 'removeHole',
+                    polygon: newPolygon,
+                  });
+                }
+              }
+            }
+          }
+        }
+      });
+
+      marker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(marker, true));
+      marker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(marker, false));
     });
   }
 
@@ -641,10 +822,11 @@ export class PolygonInteractionManager {
         }
         const poly = parentPolygon.toGeoJSON();
         if (poly.geometry.type === 'MultiPolygon' || poly.geometry.type === 'Polygon') {
-          const newPolygon = this.turfHelper.injectPointToPolygon(poly, [
-            newPoint.lng,
-            newPoint.lat,
-          ]);
+          const newPolygon = this.turfHelper.injectPointToPolygon(
+            poly,
+            [newPoint.lng, newPoint.lat],
+            edgeInfo.ringIndex,
+          );
           if (newPolygon) {
             const polydrawPolygon = parentPolygon as PolydrawPolygon;
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
@@ -692,7 +874,7 @@ export class PolygonInteractionManager {
     }
 
     const clickedLatLng = e.latlng;
-    const allRings = poly.geometry.coordinates[0];
+    const allRings = this.turfHelper.getCoords(poly);
 
     let targetRingIndex = -1;
     let targetVertexIndex = -1;
@@ -746,12 +928,12 @@ export class PolygonInteractionManager {
   private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
     // console.log('PolygonInteractionManager findFeatureGroupForPoly');
     for (const featureGroup of this.getFeatureGroups()) {
-      const featureCollection = featureGroup.toGeoJSON() as any;
+      const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+        Polygon | MultiPolygon
+      >;
       if (featureCollection && featureCollection.features && featureCollection.features[0]) {
         const feature = featureCollection.features[0];
-        if (
-          JSON.stringify(feature.geometry.coordinates) === JSON.stringify(poly.geometry.coordinates)
-        ) {
+        if (this.turfHelper.equalPolygons(feature, poly)) {
           return featureGroup;
         }
       }
@@ -799,7 +981,7 @@ export class PolygonInteractionManager {
           }
           newPos.push(hole);
         } else {
-          length += posarrays[index - 1][0].length;
+          length += posarrays[index - 1].length;
           for (let j = length; j < posarrays[index][0].length + length; j++) {
             if (markers[j]) {
               testarray.push(markers[j].getLatLng());
@@ -846,7 +1028,7 @@ export class PolygonInteractionManager {
   private async markerDragEnd(featureGroup: L.FeatureGroup): Promise<void> {
     // console.log('PolygonInteractionManager markerDragEnd');
     this.polygonInformation.deletePolygonInformationStorage();
-    const featureCollection = featureGroup.toGeoJSON() as any;
+    const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<Polygon | MultiPolygon>;
 
     if (!featureCollection.features || featureCollection.features.length === 0) {
       return;
@@ -855,7 +1037,7 @@ export class PolygonInteractionManager {
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
 
-    if (featureCollection.features[0].geometry.coordinates.length > 1) {
+    if (featureCollection.features[0].geometry.type === 'MultiPolygon') {
       for (const element of featureCollection.features[0].geometry.coordinates) {
         const feature = this.turfHelper.getMultiPolygon([element]);
 
@@ -879,9 +1061,9 @@ export class PolygonInteractionManager {
         }
       }
     } else {
-      const feature = this.turfHelper.getMultiPolygon(
+      const feature = this.turfHelper.getMultiPolygon([
         featureCollection.features[0].geometry.coordinates,
-      );
+      ]);
 
       if (this.turfHelper.hasKinks(feature)) {
         const unkink = this.turfHelper.getKinks(feature);
@@ -892,20 +1074,8 @@ export class PolygonInteractionManager {
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: true,
           });
-          // Allow merging after marker drag - this enables polygon merging when dragged into each other
-          this.eventManager.emit('polydraw:polygon:updated', {
-            operation: 'markerDrag',
-            polygon: this.turfHelper.getTurfPolygon(polygon),
-            allowMerge: true,
-          });
         }
       } else {
-        // Allow merging after marker drag - this enables polygon merging when dragged into each other
-        this.eventManager.emit('polydraw:polygon:updated', {
-          operation: 'markerDrag',
-          polygon: feature,
-          allowMerge: true,
-        });
         // Allow merging after marker drag - this enables polygon merging when dragged into each other
         this.eventManager.emit('polydraw:polygon:updated', {
           operation: 'markerDrag',

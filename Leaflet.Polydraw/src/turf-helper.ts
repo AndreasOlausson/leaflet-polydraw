@@ -502,8 +502,8 @@ export class TurfHelper {
   equalPolygons(
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
-  ) {
-    // Use turf.booleanEqual(polygon1, polygon2)
+  ): boolean {
+    return turf.booleanEqual(polygon1, polygon2);
   }
 
   convertToBoundingBoxPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> {
@@ -518,47 +518,47 @@ export class TurfHelper {
     return multi;
   }
 
-  injectPointToPolygon(polygon, point) {
+  injectPointToPolygon(
+    polygon: Feature<Polygon | MultiPolygon>,
+    point: Position,
+    ringIndex: number,
+  ): Feature<Polygon | MultiPolygon> {
     // Clone polygon to avoid modifying original
     const newPoly = JSON.parse(JSON.stringify(polygon));
 
+    let targetRing: Position[];
+
     if (newPoly.geometry.type === 'MultiPolygon') {
-      const coordinates = newPoly.geometry.coordinates[0][0];
-      // Find the closest edge and insert the point
-      let minDistance = Infinity;
-      let insertIndex = 0;
-
-      for (let i = 0; i < coordinates.length - 1; i++) {
-        const edgeStart = coordinates[i];
-        const edgeEnd = coordinates[i + 1];
-        const distance = this.distanceToLineSegment(point, edgeStart, edgeEnd);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          insertIndex = i + 1;
-        }
-      }
-
-      coordinates.splice(insertIndex, 0, point);
+      // For MultiPolygon, we assume the first polygon is the target
+      targetRing = newPoly.geometry.coordinates[0][ringIndex];
     } else if (newPoly.geometry.type === 'Polygon') {
-      const coordinates = newPoly.geometry.coordinates[0];
-      // Find the closest edge and insert the point
-      let minDistance = Infinity;
-      let insertIndex = 0;
-
-      for (let i = 0; i < coordinates.length - 1; i++) {
-        const edgeStart = coordinates[i];
-        const edgeEnd = coordinates[i + 1];
-        const distance = this.distanceToLineSegment(point, edgeStart, edgeEnd);
-
-        if (distance < minDistance) {
-          minDistance = distance;
-          insertIndex = i + 1;
-        }
-      }
-
-      coordinates.splice(insertIndex, 0, point);
+      targetRing = newPoly.geometry.coordinates[ringIndex];
+    } else {
+      // Should not happen with proper input
+      return newPoly;
     }
+
+    if (!targetRing) {
+      // Invalid ring index
+      return newPoly;
+    }
+
+    // Find the closest edge and insert the point
+    let minDistance = Infinity;
+    let insertIndex = 0;
+
+    for (let i = 0; i < targetRing.length - 1; i++) {
+      const edgeStart = targetRing[i];
+      const edgeEnd = targetRing[i + 1];
+      const distance = this.distanceToLineSegment(point, edgeStart, edgeEnd);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        insertIndex = i + 1;
+      }
+    }
+
+    targetRing.splice(insertIndex, 0, point);
 
     return newPoly;
   }

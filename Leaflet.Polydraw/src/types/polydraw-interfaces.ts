@@ -70,6 +70,11 @@ export interface MarkerOptions {
   menuMarker: boolean;
   deleteMarker: boolean;
   infoMarker: boolean;
+  holeMarkers?: {
+    menuMarker?: boolean;
+    deleteMarker?: boolean;
+    infoMarker?: boolean;
+  };
 }
 
 /**
@@ -214,6 +219,15 @@ export type PolydrawEvent =
   | 'polydraw:subtract';
 
 export type PolydrawEventCallback = (data?: any) => void;
+
+/**
+ * Data interface for menu actions
+ */
+export interface MenuActionData {
+  action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier';
+  latLngs: L.LatLngLiteral[];
+  featureGroup: L.FeatureGroup;
+}
 
 /**
  * Polygon information interface
