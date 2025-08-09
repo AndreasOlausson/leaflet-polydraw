@@ -5,7 +5,7 @@ import { IconFactory } from '../icon-factory';
 import { PolygonUtil } from '../polygon.util';
 import { MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
-import type { Feature, Polygon, MultiPolygon, FeatureCollection } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
   PolydrawPolygon,
@@ -947,24 +947,33 @@ export class PolygonInteractionManager {
       return;
     }
     // console.log('PolygonInteractionManager markerDrag', featureGroup);
-    const newPos = [];
-    let testarray = [];
-    let hole = [];
-    const layerLength = featureGroup.getLayers() as any;
-    const posarrays = layerLength[0].getLatLngs();
+    const newPos: L.LatLng[][][] = [];
+    let testarray: L.LatLng[] = [];
+    let hole: L.LatLng[][] = [];
+    const layers: L.Layer[] = featureGroup.getLayers();
+    const polygonLayer = layers.find((l) => l instanceof L.Polygon) as L.Polygon;
+    const posarrays = polygonLayer.getLatLngs() as L.LatLng[][][] | L.LatLng[][];
     let length = 0;
 
     // Filter out only markers from the layers (exclude polylines for holes)
-    const markers = layerLength.filter((layer: any) => layer instanceof L.Marker);
+    const markers = layers.filter((layer): layer is L.Marker => layer instanceof L.Marker);
 
     if (posarrays.length > 1) {
       for (let index = 0; index < posarrays.length; index++) {
         testarray = [];
         hole = [];
         if (index === 0) {
-          if (posarrays[0].length > 1) {
-            for (let i = 0; i < posarrays[0].length; i++) {
-              for (let j = 0; j < posarrays[0][i].length; j++) {
+          if ((posarrays[0] as unknown as L.LatLng[][] | L.LatLng[]).length > 1) {
+            for (
+              let i = 0;
+              i < (posarrays[0] as unknown as L.LatLng[][] | L.LatLng[]).length;
+              i++
+            ) {
+              for (
+                let j = 0;
+                j < ((posarrays[0] as unknown as L.LatLng[][])[i] as L.LatLng[]).length;
+                j++
+              ) {
                 if (markers[j]) {
                   testarray.push(markers[j].getLatLng());
                 }
@@ -972,7 +981,11 @@ export class PolygonInteractionManager {
               hole.push(testarray);
             }
           } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
+            for (
+              let j = 0;
+              j < ((posarrays[0] as unknown as L.LatLng[][])[0] as L.LatLng[]).length;
+              j++
+            ) {
               if (markers[j]) {
                 testarray.push(markers[j].getLatLng());
               }
@@ -981,8 +994,12 @@ export class PolygonInteractionManager {
           }
           newPos.push(hole);
         } else {
-          length += posarrays[index - 1].length;
-          for (let j = length; j < posarrays[index][0].length + length; j++) {
+          length += (posarrays[index - 1] as unknown as L.LatLng[][]).length;
+          for (
+            let j = length;
+            j < ((posarrays[index] as unknown as L.LatLng[][])[0] as L.LatLng[]).length + length;
+            j++
+          ) {
             if (markers[j]) {
               testarray.push(markers[j].getLatLng());
             }
@@ -994,25 +1011,37 @@ export class PolygonInteractionManager {
     } else {
       hole = [];
       let length2 = 0;
-      for (let index = 0; index < posarrays[0].length; index++) {
+      for (let index = 0; index < (posarrays[0] as unknown as L.LatLng[][]).length; index++) {
         testarray = [];
         if (index === 0) {
-          if (posarrays[0][index].length > 1) {
-            for (let j = 0; j < posarrays[0][index].length; j++) {
+          if (((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length > 1) {
+            for (
+              let j = 0;
+              j < ((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length;
+              j++
+            ) {
               if (markers[j]) {
                 testarray.push(markers[j].getLatLng());
               }
             }
           } else {
-            for (let j = 0; j < posarrays[0][0].length; j++) {
+            for (
+              let j = 0;
+              j < ((posarrays[0] as unknown as L.LatLng[][])[0] as L.LatLng[]).length;
+              j++
+            ) {
               if (markers[j]) {
                 testarray.push(markers[j].getLatLng());
               }
             }
           }
         } else {
-          length2 += posarrays[0][index - 1].length;
-          for (let j = length2; j < posarrays[0][index].length + length2; j++) {
+          length2 += ((posarrays[0] as unknown as L.LatLng[][])[index - 1] as L.LatLng[]).length;
+          for (
+            let j = length2;
+            j < ((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length + length2;
+            j++
+          ) {
             if (markers[j]) {
               testarray.push(markers[j].getLatLng());
             }
@@ -1022,7 +1051,7 @@ export class PolygonInteractionManager {
       }
       newPos.push(hole);
     }
-    layerLength[0].setLatLngs(newPos);
+    polygonLayer.setLatLngs(newPos as unknown as L.LatLng[][] | L.LatLng[][][]);
   }
 
   private async markerDragEnd(featureGroup: L.FeatureGroup): Promise<void> {
@@ -1114,6 +1143,7 @@ export class PolygonInteractionManager {
 
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
     // console.log('PolygonInteractionManager onPolygonMouseUp');
+    void e; // mark parameter as used to satisfy ESLint while keeping the name
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
 
     const polygon = this.currentDragPolygon;
@@ -1152,26 +1182,27 @@ export class PolygonInteractionManager {
     this.currentDragPolygon = null;
   };
 
-  private offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
+  private offsetPolygonCoordinates(
+    latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+    offsetLat: number,
+    offsetLng: number,
+  ): L.LatLng[] | L.LatLng[][] | L.LatLng[][][] {
     // console.log('PolygonInteractionManager offsetPolygonCoordinates');
-    if (!latLngs) return latLngs;
+    if (!latLngs) return latLngs as unknown as L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
 
-    if (Array.isArray(latLngs[0])) {
-      return latLngs.map((ring: any) => this.offsetPolygonCoordinates(ring, offsetLat, offsetLng));
-    } else if (latLngs.lat !== undefined && latLngs.lng !== undefined) {
-      return {
-        lat: latLngs.lat + offsetLat,
-        lng: latLngs.lng + offsetLng,
-      };
-    } else {
-      return latLngs.map((coord: any) =>
-        this.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
-      );
+    // If nested arrays, recurse until we reach arrays of LatLng
+    if (Array.isArray((latLngs as unknown as unknown[])[0])) {
+      return (latLngs as unknown as (L.LatLng[] | L.LatLng[][])[]).map((ring) =>
+        this.offsetPolygonCoordinates(ring as L.LatLng[] | L.LatLng[][], offsetLat, offsetLng),
+      ) as L.LatLng[][] | L.LatLng[][][];
     }
+
+    // Base case: array of LatLng -> return array of shifted LatLng
+    return (latLngs as L.LatLng[]).map((p) => L.latLng(p.lat + offsetLat, p.lng + offsetLng));
   }
 
   private updateMarkersAndHoleLinesDuringDrag(
-    polygon: any,
+    polygon: PolydrawPolygon,
     offsetLat: number,
     offsetLng: number,
   ): void {
@@ -1209,7 +1240,8 @@ export class PolygonInteractionManager {
           if (layer instanceof L.Marker) {
             polygon._polydrawOriginalMarkerPositions.set(layer, layer.getLatLng());
           } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-            polygon._polydrawOriginalHoleLinePositions.set(layer, layer.getLatLngs());
+            const latLngs = layer.getLatLngs() as unknown as L.LatLng[];
+            polygon._polydrawOriginalHoleLinePositions.set(layer, latLngs);
           }
         });
       }
@@ -1227,12 +1259,25 @@ export class PolygonInteractionManager {
             layer.setLatLng(newLatLng);
           }
         } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-          const originalPositions = polygon._polydrawOriginalHoleLinePositions.get(layer);
+          const originalPositions = polygon._polydrawOriginalHoleLinePositions.get(layer) as
+            | L.LatLng[]
+            | L.LatLng[][]
+            | undefined;
           if (originalPositions) {
-            const newLatLngs = originalPositions.map((latlng: L.LatLng) => ({
-              lat: latlng.lat + offsetLat,
-              lng: latlng.lng + offsetLng,
-            }));
+            let newLatLngs: L.LatLng[] | L.LatLng[][];
+
+            if (Array.isArray((originalPositions as unknown as unknown[])[0])) {
+              // MultiPolyline: LatLng[][]
+              newLatLngs = (originalPositions as L.LatLng[][]).map((ring) =>
+                ring.map((latlng) => L.latLng(latlng.lat + offsetLat, latlng.lng + offsetLng)),
+              );
+            } else {
+              // Simple Polyline: LatLng[]
+              newLatLngs = (originalPositions as L.LatLng[]).map((latlng) =>
+                L.latLng(latlng.lat + offsetLat, latlng.lng + offsetLng),
+              );
+            }
+
             layer.setLatLngs(newLatLngs);
           }
         }
@@ -1304,7 +1349,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private setSubtractVisualMode(polygon: any, enabled: boolean): void {
+  private setSubtractVisualMode(polygon: L.Polygon, enabled: boolean): void {
     // console.log('PolygonInteractionManager setSubtractVisualMode');
     if (!polygon || !polygon.setStyle) {
       return;
@@ -1326,7 +1371,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private updateMarkerColorsForSubtractMode(polygon: any, subtractMode: boolean): void {
+  private updateMarkerColorsForSubtractMode(polygon: L.Polygon, subtractMode: boolean): void {
     // console.log('PolygonInteractionManager updateMarkerColorsForSubtractMode');
     try {
       let featureGroup: L.FeatureGroup | null = null;
@@ -1398,7 +1443,10 @@ export class PolygonInteractionManager {
     return this.currentModifierDragMode;
   }
 
-  private performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
+  private performModifierSubtract(
+    draggedGeoJSON: Feature<Polygon | MultiPolygon>,
+    originalFeatureGroup: L.FeatureGroup,
+  ): void {
     // console.log('PolygonInteractionManager performModifierSubtract');
     try {
       const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
@@ -1411,12 +1459,14 @@ export class PolygonInteractionManager {
         }
 
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
             return;
           }
 
-          const firstFeature = featureCollection.features[0];
+          const firstFeature = featureCollection.features[0] as Feature<Polygon | MultiPolygon>;
           if (!firstFeature.geometry || !firstFeature.geometry.coordinates) {
             return;
           }
@@ -1426,12 +1476,11 @@ export class PolygonInteractionManager {
           // Check intersection directly using geometry operations
           try {
             const intersection = this.turfHelper.getIntersection(existingPolygon, draggedPolygon);
-            if (
-              intersection &&
-              intersection.geometry &&
-              intersection.geometry.coordinates.length > 0
-            ) {
-              intersectingFeatureGroups.push(featureGroup);
+            if (intersection && intersection.geometry && 'coordinates' in intersection.geometry) {
+              const coords = (intersection.geometry as Polygon | MultiPolygon).coordinates;
+              if (coords.length > 0) {
+                intersectingFeatureGroups.push(featureGroup);
+              }
             }
           } catch (intersectError) {
             // If intersection fails, try the polygonIntersect method
@@ -1459,7 +1508,9 @@ export class PolygonInteractionManager {
       // This creates the "bite taken" effect
       intersectingFeatureGroups.forEach((featureGroup) => {
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
           // Remove the existing polygon before creating the result
@@ -1647,7 +1698,10 @@ export class PolygonInteractionManager {
     };
     const targetPoint = this.turfHelper.getCoord(latLngPoint);
     const fc = this.turfHelper.getFeaturePointCollection(latlngs);
-    const nearestPointIdx = this.turfHelper.getNearestPointIndex(targetPoint, fc as any);
+    const nearestPointIdx = this.turfHelper.getNearestPointIndex(
+      targetPoint,
+      fc as FeatureCollection<Point>,
+    );
     return nearestPointIdx;
   }
 
@@ -1934,7 +1988,11 @@ export class PolygonInteractionManager {
       // Get the complete GeoJSON including holes
       return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
     } catch (error) {
-      console.warn('Error getting polygon GeoJSON from feature group:', error.message);
+      if (error instanceof Error) {
+        console.warn('Error getting polygon GeoJSON from feature group:', error.message);
+      } else {
+        console.warn('Error getting polygon GeoJSON from feature group:', error);
+      }
       // Fallback: return a simple polygon
       return {
         type: 'Feature',
@@ -2006,15 +2064,21 @@ export class PolygonInteractionManager {
       // Convert from kilometers to meters to match original behavior
       return totalPerimeter * 1000;
     } catch (error) {
-      console.warn('Error calculating total polygon perimeter:', error.message);
+      if (error instanceof Error) {
+        console.warn('Error calculating total polygon perimeter:', error.message);
+      } else {
+        console.warn('Error calculating total polygon perimeter:', error);
+      }
       // Fallback to turf helper calculation
       return this.turfHelper.getPolygonPerimeter(polygonGeoJSON) * 1000;
     }
   }
 
   private generateInfoMarkerPopup(area: number, perimeter: number): L.Popup {
-    const _perimeter = new Perimeter(perimeter, this.config as any);
-    const _area = new Area(area, this.config as any);
+    type PerimeterConfig = ConstructorParameters<typeof Perimeter>[1];
+    type AreaConfig = ConstructorParameters<typeof Area>[1];
+    const _perimeter = new Perimeter(perimeter, this.config as unknown as PerimeterConfig);
+    const _area = new Area(area, this.config as unknown as AreaConfig);
 
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('info-marker-outer-wrapper');
