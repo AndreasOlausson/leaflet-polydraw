@@ -10,6 +10,7 @@ import type {
   PolydrawConfig,
   PolydrawPolygon,
   PolydrawEdgePolyline,
+  PolygonUpdatedEventData,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -552,7 +553,7 @@ export class PolygonInteractionManager {
                   this.eventManager.emit('polydraw:polygon:updated', {
                     operation: 'removeHole',
                     polygon: newPolygon,
-                  });
+                  } as PolygonUpdatedEventData);
                 }
               }
             }
@@ -835,7 +836,7 @@ export class PolygonInteractionManager {
               operation: 'addVertex',
               polygon: newPolygon,
               optimizationLevel,
-            });
+            } as PolygonUpdatedEventData);
           }
         }
       } catch (error) {
@@ -922,7 +923,7 @@ export class PolygonInteractionManager {
     this.eventManager.emit('polydraw:polygon:updated', {
       operation: 'removeVertex',
       polygon: newPolygon,
-    });
+    } as PolygonUpdatedEventData);
   }
 
   private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
@@ -1078,7 +1079,7 @@ export class PolygonInteractionManager {
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true,
-            });
+            } as PolygonUpdatedEventData);
           }
         } else {
           // Allow merging after marker drag - this enables polygon merging when dragged into each other
@@ -1086,7 +1087,7 @@ export class PolygonInteractionManager {
             operation: 'markerDrag',
             polygon: feature,
             allowMerge: true,
-          });
+          } as PolygonUpdatedEventData);
         }
       }
     } else {
@@ -1102,7 +1103,7 @@ export class PolygonInteractionManager {
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: true,
-          });
+          } as PolygonUpdatedEventData);
         }
       } else {
         // Allow merging after marker drag - this enables polygon merging when dragged into each other
@@ -1110,7 +1111,7 @@ export class PolygonInteractionManager {
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: true,
-        });
+        } as PolygonUpdatedEventData);
       }
     }
     this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -1322,7 +1323,7 @@ export class PolygonInteractionManager {
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
-      });
+      } as PolygonUpdatedEventData);
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
     } catch (error) {
@@ -1534,7 +1535,7 @@ export class PolygonInteractionManager {
                   operation: 'modifierSubtract',
                   polygon: this.turfHelper.getTurfPolygon(individualPolygon),
                   allowMerge: false, // Don't merge the result of subtract operations
-                });
+                } as PolygonUpdatedEventData);
               }
             }
           } catch (differenceError) {
@@ -1544,7 +1545,7 @@ export class PolygonInteractionManager {
               operation: 'modifierSubtractFallback',
               polygon: existingPolygon,
               allowMerge: false,
-            });
+            } as PolygonUpdatedEventData);
           }
         } catch (error) {
           console.warn('Error in modifier subtract operation:', error);

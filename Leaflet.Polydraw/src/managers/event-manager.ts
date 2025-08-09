@@ -2,9 +2,31 @@ import { Feature, Polygon, MultiPolygon } from 'geojson';
 import { DrawMode } from '../enums';
 import { FeatureGroup, LatLngExpression } from 'leaflet';
 
-type PolydrawEventPayloads = {
+export type PolydrawEventPayloads = {
   'polygon:add': { polygon: Feature<Polygon | MultiPolygon> };
   'polydraw:subtract': { subtractPolygon: Feature<Polygon | MultiPolygon> };
+  drawCancelled: { mode?: DrawMode };
+  polygonDeleted: undefined;
+  polygonSubtracted: {
+    subtractedPolygon: Feature<Polygon | MultiPolygon>;
+    affectedFeatureGroups: FeatureGroup[];
+    resultFeatureGroups: FeatureGroup[];
+  };
+  polygonOperationComplete: {
+    operation: string;
+    polygon: Feature<Polygon | MultiPolygon>;
+    featureGroup?: FeatureGroup;
+    resultFeatureGroups?: FeatureGroup[];
+  };
+  polygonAdded: {
+    polygon: Feature<Polygon | MultiPolygon>;
+    featureGroup: FeatureGroup;
+  };
+  polygonsUnioned: {
+    originalPolygons: Feature<Polygon | MultiPolygon>[];
+    resultPolygon: Feature<Polygon | MultiPolygon>;
+    featureGroups?: FeatureGroup[];
+  };
   'polygon:intersect': {
     polygon1: Feature<Polygon | MultiPolygon>;
     polygon2: Feature<Polygon | MultiPolygon>;

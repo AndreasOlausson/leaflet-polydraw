@@ -1,10 +1,21 @@
 import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
 import { PolygonInformationService } from '../polygon-information.service';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import type { PolydrawConfig, MenuActionData } from '../types/polydraw-interfaces';
+import type { Feature, Polygon, MultiPolygon, FeatureCollection } from 'geojson';
+import type {
+  PolydrawConfig,
+  MenuActionData,
+  PolygonUpdatedEventData,
+  Position,
+  PolydrawPolygon,
+} from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
-import { EventManager } from './event-manager';
+import {
+  EventManager,
+  PolydrawEvent,
+  PolydrawEventCallback,
+  PolydrawEventPayloads,
+} from './event-manager';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
@@ -124,7 +135,7 @@ export class PolygonMutationManager {
 
     // Forward interaction manager events
     this.eventManager.on('polydraw:polygon:updated', (data) => {
-      this.handlePolygonModified(data);
+      this.handlePolygonModified(data as PolygonUpdatedEventData);
     });
 
     this.eventManager.on('polydraw:menu:action', (data) => {
@@ -144,14 +155,14 @@ export class PolygonMutationManager {
     });
 
     this.eventManager.on('polydraw:polygon:deleted', () => {
-      this.emit('polygonDeleted');
+      this.emit('polygonDeleted', undefined);
     });
   }
 
   /**
    * Handle polygon modification from interaction manager
    */
-  private async handlePolygonModified(data: any): Promise<void> {
+  private async handlePolygonModified(data: PolygonUpdatedEventData): Promise<void> {
     // Don't simplify drag operations to preserve vertex count
     const shouldSimplify =
       data.operation !== 'addVertex' &&
@@ -220,15 +231,15 @@ export class PolygonMutationManager {
   /**
    * Add event listener
    */
-  on(event: string, callback: (...args: any[]) => void): void {
-    this.eventManager.on(event as any, callback);
+  on<T extends PolydrawEvent>(event: T, callback: PolydrawEventCallback<T>): void {
+    this.eventManager.on(event, callback);
   }
 
   /**
    * Emit event to all listeners
    */
-  private emit(event: string, data?: any): void {
-    this.eventManager.emit(event as any, data);
+  private emit<T extends PolydrawEvent>(event: T, data: PolydrawEventPayloads[T]): void {
+    this.eventManager.emit(event, data);
   }
 
   /**
@@ -239,7 +250,9 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygon');
-    const { simplify = true, noMerge = false } = options;
+    const { noMerge = false } = options;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { simplify = true } = options; // Keep simplify for clarity, but mark as unused
 
     try {
       if (
@@ -271,7 +284,9 @@ export class PolygonMutationManager {
 
       this.getFeatureGroups().forEach((featureGroup) => {
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
             return;
           }
@@ -302,7 +317,9 @@ export class PolygonMutationManager {
 
       for (const featureGroup of intersectingFeatureGroups) {
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           const feature = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
           // Use geometry manager for subtraction
@@ -370,7 +387,7 @@ export class PolygonMutationManager {
 
       const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
-      let polygon: any;
+      let polygon: L.Polygon & Record<string, unknown>;
       try {
         polygon = this.getPolygon(latLngs);
         if (!polygon) {
@@ -395,7 +412,7 @@ export class PolygonMutationManager {
 
       // Add markers using interaction manager
       try {
-        markerLatlngs.forEach((polygon: any) => {
+        markerLatlngs.forEach((polygon: unknown) => {
           if (!polygon || !Array.isArray(polygon)) {
             return;
           }
@@ -474,7 +491,9 @@ export class PolygonMutationManager {
 
       this.getFeatureGroups().forEach((featureGroup) => {
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
             return;
           }
@@ -484,19 +503,24 @@ export class PolygonMutationManager {
             return;
           }
 
-          if (firstFeature.geometry.coordinates.length > 1) {
-            firstFeature.geometry.coordinates.forEach((element: any) => {
-              try {
-                const feature = this.turfHelper.getMultiPolygon([element]);
-                polyIntersection = this.geometryManager.checkPolygonIntersection(feature, latlngs);
-                if (polyIntersection) {
-                  intersectingFeatureGroups.push(featureGroup);
-                  polygonFeature.push(feature);
+          if (this.isPositionArrayofArrays(firstFeature.geometry.coordinates)) {
+            (firstFeature.geometry.coordinates as Position[][][]).forEach(
+              (element: Position[][]) => {
+                try {
+                  const feature = this.turfHelper.getMultiPolygon([element]);
+                  polyIntersection = this.geometryManager.checkPolygonIntersection(
+                    feature,
+                    latlngs,
+                  );
+                  if (polyIntersection) {
+                    intersectingFeatureGroups.push(featureGroup);
+                    polygonFeature.push(feature);
+                  }
+                } catch (error) {
+                  // Continue with other elements
                 }
-              } catch (error) {
-                // Continue with other elements
-              }
-            });
+              },
+            );
           } else {
             try {
               const feature = this.turfHelper.getTurfPolygon(firstFeature);
@@ -577,9 +601,31 @@ export class PolygonMutationManager {
   /**
    * Create a polygon from GeoJSON feature
    */
-  private getPolygon(latlngs: Feature<Polygon | MultiPolygon>) {
+  private isPositionArrayofArrays(arr: unknown): arr is Position[][][] {
+    if (!Array.isArray(arr) || arr.length === 0) return false;
+
+    const first = arr[0];
+    if (!Array.isArray(first) || first.length === 0) return false;
+
+    const second = first[0];
+    if (!Array.isArray(second) || second.length === 0) return false;
+
+    const leaf = second[0];
+    return this.isPosition(leaf);
+  }
+
+  private isPosition(val: unknown): val is Position {
+    return Array.isArray(val) && val.length >= 2 && val.every((n) => typeof n === 'number');
+  }
+
+  /**
+   * Create a polygon from GeoJSON feature
+   */
+  private getPolygon(
+    latlngs: Feature<Polygon | MultiPolygon>,
+  ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
-    const polygon = L.GeoJSON.geometryToLayer(latlngs) as any;
+    const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
     polygon.setStyle(this.config.polygonOptions);
 
     // Ensure each polygon has a unique identifier to prevent cross-contamination
@@ -838,27 +884,31 @@ export class PolygonMutationManager {
     this.interactionManager.addEdgeClickListeners(polygon, featureGroup);
   }
 
-  enablePolygonDragging(polygon: any, latlngs: Feature<Polygon | MultiPolygon>): void {
+  enablePolygonDragging(polygon: PolydrawPolygon, latlngs: Feature<Polygon | MultiPolygon>): void {
     // console.log('PolygonMutationManager enablePolygonDragging');
     this.interactionManager.enablePolygonDragging(polygon, latlngs);
   }
 
   // Helper methods for backward compatibility
-  getMarkerIndex(latlngs: L.LatLngLiteral[], position: any): number {
-    // console.log('PolygonMutationManager getMarkerIndex');
-    // This is now handled internally by the interaction manager
-    // Return 0 as a fallback for backward compatibility
+  getMarkerIndex(latlngs: L.LatLngLiteral[], position: L.LatLngLiteral): number {
+    void latlngs;
+    void position;
     return 0;
   }
 
-  ensureMarkerSeparation(polygonLength: number, markers: any): any {
-    // console.log('PolygonMutationManager ensureMarkerSeparation');
-    // This is now handled internally by the interaction manager
-    // Return the original markers for backward compatibility
+  ensureMarkerSeparation(
+    polygonLength: number,
+    markers: {
+      menu?: { index?: number };
+      delete?: { index?: number };
+      info?: { index?: number };
+    },
+  ): { menu: number; delete: number; info: number } {
+    void polygonLength;
     return {
-      menu: markers.menu?.index || 0,
-      delete: markers.delete?.index || 1,
-      info: markers.info?.index || 2,
+      menu: markers.menu?.index ?? 0,
+      delete: markers.delete?.index ?? 1,
+      info: markers.info?.index ?? 2,
     };
   }
 
@@ -867,6 +917,7 @@ export class PolygonMutationManager {
     originalIndex: number,
     usedIndices: Set<number>,
   ): number {
+    void usedIndices; // Keep for clarity, but mark as unused
     // console.log('PolygonMutationManager findAlternativeMarkerPosition');
     // This is now handled internally by the interaction manager
     // Return a simple fallback for backward compatibility
@@ -891,6 +942,8 @@ export class PolygonMutationManager {
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
   ): HTMLDivElement {
+    void latLngs; // Keep for clarity, but mark as unused
+    void featureGroup; // Keep for clarity, but mark as unused
     // console.log('PolygonMutationManager generateMenuMarkerPopup');
     // This is now handled internally by the interaction manager
     // Return a simple div for backward compatibility
@@ -900,6 +953,7 @@ export class PolygonMutationManager {
   }
 
   getPolygonGeoJSONFromFeatureGroup(featureGroup: L.FeatureGroup): Feature<Polygon | MultiPolygon> {
+    void featureGroup; // Keep for clarity, but mark as unused
     // console.log('PolygonMutationManager getPolygonGeoJSONFromFeatureGroup');
     // This is now handled internally by the interaction manager
     // Return a simple polygon for backward compatibility
@@ -922,6 +976,7 @@ export class PolygonMutationManager {
   }
 
   getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
+    void polygonGeoJSON; // Keep for clarity, but mark as unused
     // console.log('PolygonMutationManager getTotalPolygonPerimeter');
     // This is now handled internally by the interaction manager
     // Return a simple value for backward compatibility
@@ -938,20 +993,19 @@ export class PolygonMutationManager {
   }
 
   onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
-    // console.log('PolygonMutationManager onMarkerHoverForEdgeDeletion');
-    // This is now handled internally by the interaction manager
+    void marker;
+    void isHovering;
   }
 
   highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    // console.log('PolygonMutationManager highlightEdgeOnHover');
-    // This is now handled internally by the interaction manager
+    void edgePolyline;
+    void isHovering;
   }
 
   // Additional methods for backward compatibility with tests
   onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    // console.log('PolygonMutationManager onEdgeClick');
-    // Delegate to interaction manager's private method through a public interface
-    // For now, just log - the actual functionality is handled internally
+    void e;
+    void edgePolyline;
   }
 
   removeFeatureGroup(featureGroup: L.FeatureGroup): void {
@@ -960,26 +1014,26 @@ export class PolygonMutationManager {
   }
 
   onPolygonMouseMove(e: L.LeafletMouseEvent): void {
-    // console.log('PolygonMutationManager onPolygonMouseMove');
-    // This is now handled internally by the interaction manager
+    void e;
   }
 
   onPolygonMouseUp(e: L.LeafletMouseEvent): void {
-    // console.log('PolygonMutationManager onPolygonMouseUp');
-    // This is now handled internally by the interaction manager
+    void e;
   }
 
-  updatePolygonAfterDrag(polygon: any): void {
-    // console.log('PolygonMutationManager updatePolygonAfterDrag');
-    // This is now handled internally by the interaction manager
+  updatePolygonAfterDrag(polygon: L.Polygon): void {
+    void polygon;
   }
 
-  setSubtractVisualMode(polygon: any, enabled: boolean): void {
-    // console.log('PolygonMutationManager setSubtractVisualMode');
-    // This is now handled internally by the interaction manager
+  setSubtractVisualMode(polygon: L.Polygon, enabled: boolean): void {
+    void polygon;
+    void enabled;
   }
 
-  performModifierSubtract(draggedGeoJSON: any, originalFeatureGroup: L.FeatureGroup): void {
+  performModifierSubtract(
+    draggedGeoJSON: Feature<Polygon | MultiPolygon>,
+    originalFeatureGroup: L.FeatureGroup,
+  ): void {
     // console.log('PolygonMutationManager performModifierSubtract');
     // Delegate to interaction manager's private method
     // For now, we'll implement the logic here to fix the "bite taken" issue
@@ -994,7 +1048,9 @@ export class PolygonMutationManager {
         }
 
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
             return;
           }
@@ -1027,7 +1083,9 @@ export class PolygonMutationManager {
       // This creates the "bite taken" effect
       intersectingFeatureGroups.forEach((featureGroup) => {
         try {
-          const featureCollection = featureGroup.toGeoJSON() as any;
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
           const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
 
           // Remove the existing polygon

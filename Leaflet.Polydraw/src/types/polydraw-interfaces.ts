@@ -1,6 +1,8 @@
 import * as L from 'leaflet';
 import { DrawMode, MarkerPosition } from '../enums';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
+
+export type { Position };
 
 /**
  * Bounding box data structure compatible with Leaflet's LatLngBounds
@@ -227,6 +229,13 @@ export interface MenuActionData {
   action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier';
   latLngs: L.LatLngLiteral[];
   featureGroup: L.FeatureGroup;
+}
+
+export interface PolygonUpdatedEventData {
+  operation: string;
+  polygon: Feature<Polygon | MultiPolygon>;
+  allowMerge?: boolean;
+  optimizationLevel?: number;
 }
 
 /**
