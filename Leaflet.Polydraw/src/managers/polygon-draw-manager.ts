@@ -231,8 +231,8 @@ export class PolygonDrawManager {
           if (this.p2pMarkers.length >= 3) {
             const element = pointMarker.getElement();
             if (element) {
-              element.style.backgroundColor = '#4CAF50';
-              element.style.borderColor = '#4CAF50';
+              element.style.backgroundColor = this.config.colors.p2p.closingMarker;
+              element.style.borderColor = this.config.colors.p2p.closingMarker;
               element.style.cursor = 'pointer';
               element.title = 'Click to close polygon';
             }
@@ -541,8 +541,8 @@ export class PolygonDrawManager {
       if (this.p2pMarkers.length >= 3) {
         const element = firstMarker.getElement();
         if (element) {
-          element.style.backgroundColor = '#4CAF50';
-          element.style.borderColor = '#4CAF50';
+          element.style.backgroundColor = this.config.colors.p2p.closingMarker;
+          element.style.borderColor = this.config.colors.p2p.closingMarker;
           element.style.cursor = 'pointer';
           element.title = 'Click to close polygon';
         }

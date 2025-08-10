@@ -309,7 +309,7 @@ export class PolygonInteractionManager {
       marker.on('click', (e) => {
         // console.log('marker click');
         if (this.modeManager.isInOffMode()) {
-          if (this.isModifierKeyPressed(e.originalEvent)) {
+          if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
             const polygonLayer = featureGroup
               .getLayers()
               .find((layer) => layer instanceof L.Polygon) as L.Polygon | undefined;
@@ -474,10 +474,52 @@ export class PolygonInteractionManager {
       if (i === menuMarkerIdx && holeMenuEnabled) {
         marker.options.zIndexOffset =
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
+
         marker.on('click', () => {
-          // For now, the menu for a hole does nothing, but the hook is here.
-          // A potential implementation could be to offer hole-specific actions.
-          console.log('Hole menu clicked. No actions implemented yet.');
+          // Build a minimal GeoJSON for this hole ring to compute center-of-mass
+          const ring = latlngs.map((pt) => [pt.lng, pt.lat]);
+          ring.push(ring[0]); // close ring
+
+          const holePolygon: Feature<Polygon> = {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: [ring],
+            },
+          };
+
+          const centerOfMass = PolygonUtil.getCenterOfMass(holePolygon);
+          const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
+
+          menuPopup.setLatLng(centerOfMass).openOn(this.map);
+        });
+
+        // Keep popup positioning/touch behaviour consistent with outer ring menu
+        marker.on('popupopen', (e) => {
+          const popup = e.popup;
+          const popupContent = popup.getElement();
+          if (!popupContent) return;
+          setTimeout(() => {
+            const mapContainer = this.map.getContainer();
+            const mapBounds = mapContainer.getBoundingClientRect();
+            const popupBounds = popupContent.getBoundingClientRect();
+            if (popupBounds.left < mapBounds.left) {
+              popupContent.style.transform = `translateX(${mapBounds.left - popupBounds.left}px)`;
+            } else if (popupBounds.right > mapBounds.right) {
+              popupContent.style.transform = `translateX(${mapBounds.right - popupBounds.right}px)`;
+            }
+          }, 0);
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = 'manipulation';
+          }
+        });
+        marker.on('popupclose', () => {
+          const container = this.map.getContainer();
+          if (container) {
+            container.style.touchAction = '';
+          }
         });
       }
 
@@ -514,7 +556,7 @@ export class PolygonInteractionManager {
 
       marker.on('click', (e) => {
         if (this.modeManager.isInOffMode()) {
-          if (this.isModifierKeyPressed(e.originalEvent)) {
+          if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
             const polygonLayer = featureGroup
               .getLayers()
               .find((layer) => layer instanceof L.Polygon) as L.Polygon | undefined;
@@ -705,7 +747,7 @@ export class PolygonInteractionManager {
       L.DomEvent.stopPropagation(e.originalEvent);
       L.DomEvent.preventDefault(e.originalEvent);
 
-      const isModifierPressed = this.detectModifierKey(e.originalEvent);
+      const isModifierPressed = this.detectDragSubtractModifierKey(e.originalEvent);
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
@@ -880,7 +922,7 @@ export class PolygonInteractionManager {
     // console.log('PolygonInteractionManager highlightEdgeOnHover');
     if (isHovering) {
       edgePolyline.setStyle({
-        color: '#7a9441',
+        color: this.config.colors.edgeHover,
         weight: 4,
         opacity: 1,
       });
@@ -900,7 +942,7 @@ export class PolygonInteractionManager {
   ): void {
     // Enforce settings
     if (!this.config.modes.edgeDeletion) return;
-    if (!this.isModifierKeyPressed(e.originalEvent)) return;
+    if (!this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) return;
 
     const clickedLatLng = forcedLatLng ?? e.latlng;
 
@@ -1195,7 +1237,7 @@ export class PolygonInteractionManager {
     const dragData = polygon._polydrawDragData;
 
     const eventToCheck = e.originalEvent && 'metaKey' in e.originalEvent ? e.originalEvent : e;
-    const currentModifierState = this.detectModifierKey(eventToCheck as MouseEvent);
+    const currentModifierState = this.detectDragSubtractModifierKey(eventToCheck as MouseEvent);
     if (currentModifierState !== this.currentModifierDragMode) {
       this.handleModifierToggleDuringDrag(eventToCheck as MouseEvent);
     }
@@ -1400,8 +1442,20 @@ export class PolygonInteractionManager {
     }
   }
 
-  private detectModifierKey(event: MouseEvent | KeyboardEvent): boolean {
-    // console.log('PolygonInteractionManager detectModifierKey');
+  private getDragSubtractModifierKey(): string {
+    const { keys } = this.config.dragPolygons.modifierSubtract;
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMac = userAgent.includes('mac');
+    const isWindows = userAgent.includes('windows');
+
+    if (isMac && keys.mac) return keys.mac;
+    if (isWindows && keys.windows) return keys.windows;
+    if (keys.linux) return keys.linux;
+
+    return isMac ? 'metaKey' : 'ctrlKey';
+  }
+
+  private detectDragSubtractModifierKey(event: MouseEvent | KeyboardEvent): boolean {
     if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
       return false;
     }
@@ -1409,14 +1463,8 @@ export class PolygonInteractionManager {
       return false;
     }
 
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isMac = userAgent.includes('mac');
-
-    if (isMac) {
-      return event.metaKey;
-    } else {
-      return event.ctrlKey;
-    }
+    const modifierKey = this.getDragSubtractModifierKey();
+    return !!event[modifierKey as keyof MouseEvent];
   }
 
   private setSubtractVisualMode(polygon: L.Polygon, enabled: boolean): void {
@@ -1498,7 +1546,7 @@ export class PolygonInteractionManager {
 
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
     // console.log('PolygonInteractionManager handleModifierToggleDuringDrag');
-    const isModifierPressed = this.detectModifierKey(event);
+    const isModifierPressed = this.detectDragSubtractModifierKey(event);
 
     this.currentModifierDragMode = isModifierPressed;
     this.isModifierKeyHeld = isModifierPressed;
@@ -1641,20 +1689,34 @@ export class PolygonInteractionManager {
     );
   }
 
-  private isModifierKeyPressed(event: MouseEvent): boolean {
-    // console.log('PolygonInteractionManager isModifierKeyPressed');
+  private isDragSubtractModifierKeyPressed(event: MouseEvent): boolean {
     if (isTouchDevice()) {
       return false;
     }
 
+    const modifierKey = this.getDragSubtractModifierKey();
+    return !!event[modifierKey as keyof MouseEvent];
+  }
+
+  private getEdgeDeletionModifierKey(): string {
+    const { keys } = this.config.edgeDeletion;
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
+    const isWindows = userAgent.includes('windows');
 
-    if (isMac) {
-      return event.metaKey;
-    } else {
-      return event.ctrlKey;
+    if (isMac && keys.mac) return keys.mac;
+    if (isWindows && keys.windows) return keys.windows;
+    if (keys.linux) return keys.linux;
+
+    return isMac ? 'metaKey' : 'ctrlKey';
+  }
+
+  private isEdgeDeletionModifierKeyPressed(event: MouseEvent): boolean {
+    if (isTouchDevice()) {
+      return false;
     }
+    const modifierKey = this.getEdgeDeletionModifierKey();
+    return !!event[modifierKey as keyof MouseEvent];
   }
 
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
@@ -1665,12 +1727,10 @@ export class PolygonInteractionManager {
     if (isHovering) {
       // Add event listeners to detect modifier key state in real-time
       const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
-        const isModifierPressed = this.detectModifierKey(e);
+        const isModifierPressed = this.isEdgeDeletionModifierKeyPressed(e as MouseEvent);
         if (isModifierPressed) {
-          element.style.backgroundColor =
-            this.config.dragPolygons?.modifierSubtract?.subtractColor || '#D9460F';
-          element.style.borderColor =
-            this.config.dragPolygons?.modifierSubtract?.subtractColor || '#D9460F';
+          element.style.backgroundColor = this.config.edgeDeletion.hoverColor || '#D9460F';
+          element.style.borderColor = this.config.edgeDeletion.hoverColor || '#D9460F';
           element.classList.add('edge-deletion-hover');
           // Set cursor to pointer when modifier key is held over marker
           try {

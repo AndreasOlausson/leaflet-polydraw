@@ -139,6 +139,11 @@ export interface DragPolygonConfig {
   autoHoleOnContained: boolean;
   modifierSubtract: {
     enabled: boolean;
+    keys: {
+      windows: string;
+      mac: string;
+      linux: string;
+    };
     subtractColor: string;
     hideMarkersOnDrag: boolean;
   };
@@ -149,7 +154,11 @@ export interface DragPolygonConfig {
  */
 export interface EdgeDeletionConfig {
   enabled: boolean;
-  modifierKey: 'ctrl' | 'cmd' | 'auto';
+  keys: {
+    windows: string;
+    mac: string;
+    linux: string;
+  };
   hoverColor: string;
   confirmDeletion: boolean;
   minVertices: number;
@@ -192,6 +201,32 @@ export interface PolydrawConfig {
   precision: {
     area: number;
     perimeter: number;
+  };
+  colors: {
+    p2p: {
+      closingMarker: string;
+    };
+    edgeHover: string;
+    styles: {
+      controlButton: {
+        backgroundColor: string;
+        color: string;
+      };
+      controlButtonHover: {
+        backgroundColor: string;
+      };
+      controlButtonActive: {
+        backgroundColor: string;
+        color: string;
+      };
+      indicatorActive: {
+        backgroundColor: string;
+      };
+      p2pMarker: {
+        backgroundColor: string;
+        borderColor: string;
+      };
+    };
   };
 }
 

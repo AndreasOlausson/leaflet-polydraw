@@ -201,7 +201,11 @@ const polyDrawControl = L.control
   },
   "edgeDeletion": {
     "enabled": true,
-    "modifierKey": "auto",
+    "keys": {
+      "windows": "ctrlKey",
+      "mac": "metaKey",
+      "linux": "ctrlKey"
+    },
     "hoverColor": "#D9460F",
     "confirmDeletion": false,
     "minVertices": 3
@@ -279,6 +283,11 @@ const polyDrawControl = L.control
       "position": 5,
       "styleClasses": ["polygon-marker", "delete"],
       "zIndexOffset": 10000
+    },
+    "holeMarkers": {
+      "menuMarker": false,
+      "deleteMarker": true,
+      "infoMarker": false
     },
     "visualOptimization": {
       "sharpAngleThreshold": 30,
@@ -395,7 +404,10 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;&nbsp;&nbsp;hideMarkersOnDrag                          | boolean | `true`                         | Hide markers during subtract drag                         |
 | **edgeDeletion**                                                   | object  |                                | Edge deletion configuration                               |
 | &nbsp;&nbsp;enabled                                                | boolean | `true`                         | Enable edge deletion functionality                        |
-| &nbsp;&nbsp;modifierKey                                            | string  | `"auto"`                       | Modifier key: `"ctrl"`, `"cmd"`, `"auto"`                 |
+| &nbsp;&nbsp;**keys**                                               | object  |                                | Platform-specific modifier keys                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;windows                                    | string  | `"ctrlKey"`                    | Windows modifier key                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;mac                                        | string  | `"metaKey"`                    | Mac modifier key                                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;linux                                      | string  | `"ctrlKey"`                    | Linux modifier key                                        |
 | &nbsp;&nbsp;hoverColor                                             | string  | `"#D9460F"`                    | Color when hovering over deletable edges                  |
 | &nbsp;&nbsp;confirmDeletion                                        | boolean | `false`                        | Require confirmation before deleting                      |
 | &nbsp;&nbsp;minVertices                                            | number  | `3`                            | Minimum vertices required after deletion                  |
@@ -458,6 +470,10 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `5`                            | Marker position (see MarkerPosition enum)                 |
 | &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "delete"]` | CSS classes for delete marker                             |
 | &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for delete marker                          |
+| &nbsp;&nbsp;**holeMarkers**                                        | object  |                                | Configuration for markers on holes                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;menuMarker                                 | boolean | `false`                        | Show menu marker on holes                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;deleteMarker                               | boolean | `true`                         | Show delete marker on holes                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;infoMarker                                 | boolean | `false`                        | Show info marker on holes                                 |
 | &nbsp;&nbsp;**visualOptimization**                                 | object  |                                | Visual optimization settings                              |
 | &nbsp;&nbsp;&nbsp;&nbsp;sharpAngleThreshold                        | number  | `30`                           | Angle threshold for optimization                          |
 | &nbsp;&nbsp;&nbsp;&nbsp;thresholdBoundingBox                       | number  | `0.05`                         | Bounding box threshold                                    |

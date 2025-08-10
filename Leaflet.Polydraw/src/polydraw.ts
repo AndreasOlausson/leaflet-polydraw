@@ -269,7 +269,7 @@ class Polydraw extends L.Control {
    * @param container - The main control container element.
    */
   private initializeUI(container: HTMLElement): void {
-    injectDynamicStyles();
+    injectDynamicStyles(this.config);
 
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation);

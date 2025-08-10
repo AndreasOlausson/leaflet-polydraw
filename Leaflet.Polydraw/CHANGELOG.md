@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.2] - 2025-08-10
+
+### Fixed
+
+- Fixed a bug where deleting a marker (vertex) inside a hole did not work correctly.
+- Fixed an issue where the "subtract drag" modifier key was hardcoded and did not respect the configuration file.
+
+### Changed
+
+- Updated most of the codebase to improve TypeScript typing, removing `any` where possible.
+- The configuration for the edge deletion modifier key is now consistent with the "subtract drag" modifier, using a platform-specific object.
+
 ## [0.9.1] - 2025-08-01
 
 ### Fixed

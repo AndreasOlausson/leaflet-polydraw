@@ -36,7 +36,11 @@
   },
   "edgeDeletion": {
     "enabled": true,
-    "modifierKey": "auto",
+    "keys": {
+      "windows": "ctrlKey",
+      "mac": "metaKey",
+      "linux": "ctrlKey"
+    },
     "hoverColor": "#D9460F",
     "confirmDeletion": false,
     "minVertices": 3
@@ -116,9 +120,9 @@
       "zIndexOffset": 10000
     },
     "holeMarkers": {
-      "menuMarker": true,
+      "menuMarker": false,
       "deleteMarker": true,
-      "infoMarker": true
+      "infoMarker": false
     },
     "visualOptimization": {
       "sharpAngleThreshold": 30,
@@ -194,5 +198,31 @@
   "bezier": {
     "resolution": 10000,
     "sharpness": 0.75
+  },
+  "colors": {
+    "p2p": {
+      "closingMarker": "#4CAF50"
+    },
+    "edgeHover": "#7a9441",
+    "styles": {
+      "controlButton": {
+        "backgroundColor": "#fff",
+        "color": "#000"
+      },
+      "controlButtonHover": {
+        "backgroundColor": "#f4f4f4"
+      },
+      "controlButtonActive": {
+        "backgroundColor": "rgb(128, 218, 255)",
+        "color": "#fff"
+      },
+      "indicatorActive": {
+        "backgroundColor": "#ffcc00"
+      },
+      "p2pMarker": {
+        "backgroundColor": "#fff",
+        "borderColor": "#50622b"
+      }
+    }
   }
 }
