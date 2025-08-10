@@ -246,7 +246,7 @@ describe('Add Elbow Functionality', () => {
       };
 
       const newPoint = [15.605, 58.4];
-      const result = turfHelper.injectPointToPolygon(testPolygon, newPoint);
+      const result = turfHelper.injectPointToPolygon(testPolygon, newPoint, 0);
 
       expect(result).toBeDefined();
       expect(result.geometry.coordinates[0].length).toBeGreaterThan(
@@ -380,6 +380,7 @@ describe('Add Elbow Functionality', () => {
       expect(injectSpy).toHaveBeenCalledWith(
         expect.any(Object),
         [15.605, 58.41], // lng, lat format for turf
+        0,
       );
 
       injectSpy.mockRestore();
@@ -522,6 +523,7 @@ describe('Add Elbow Functionality', () => {
       expect(injectSpy).toHaveBeenCalledWith(
         expect.any(Object),
         [15.605, 58.41], // lng, lat format for turf
+        0,
       );
 
       // The functionality works correctly - the edge click processing completes successfully

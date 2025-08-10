@@ -450,7 +450,7 @@ export class PolygonDrawManager {
     if (this.p2pMarkers.length >= 2) {
       try {
         this.tracer.setStyle({
-          color: this.config.polyLineOptions.color,
+          color: this.config.colors.polyline,
           dashArray: '5, 5',
         });
       } catch (error) {

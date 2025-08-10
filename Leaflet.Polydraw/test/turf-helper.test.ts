@@ -669,7 +669,7 @@ describe('TurfHelper', () => {
 
   describe('Edge Injection and Modification', () => {
     it('should inject point into polygon edge', () => {
-      const polygon = {
+      const polygon: Feature<Polygon> = {
         type: 'Feature',
         geometry: {
           type: 'Polygon',
@@ -688,7 +688,7 @@ describe('TurfHelper', () => {
 
       const newPoint = [1, 0]; // Point on the first edge
 
-      const result = turfHelper.injectPointToPolygon(polygon, newPoint);
+      const result = turfHelper.injectPointToPolygon(polygon, newPoint, 0);
 
       expect(result).toBeDefined();
       expect(result.geometry.coordinates[0].length).toBeGreaterThan(
@@ -697,7 +697,7 @@ describe('TurfHelper', () => {
     });
 
     it('should inject point into multipolygon', () => {
-      const multiPolygon = {
+      const multiPolygon: Feature<MultiPolygon> = {
         type: 'Feature',
         geometry: {
           type: 'MultiPolygon',
@@ -718,7 +718,7 @@ describe('TurfHelper', () => {
 
       const newPoint = [1, 0];
 
-      const result = turfHelper.injectPointToPolygon(multiPolygon, newPoint);
+      const result = turfHelper.injectPointToPolygon(multiPolygon, newPoint, 0);
 
       expect(result).toBeDefined();
       expect(result.geometry.coordinates[0][0].length).toBeGreaterThan(
