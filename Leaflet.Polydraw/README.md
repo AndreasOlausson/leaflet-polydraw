@@ -616,7 +616,7 @@ Simply click the draw button and drag your mouse/finger to create polygon shapes
 
 **Note**: The number of vertices in the final polygon is controlled by the `polygonCreation.simplification` settings in the configuration.
 
-### Point-to-Point Drawing (Desktop Only)
+### Subtract Draw Mode
 
 [![Subtract Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)
 
@@ -629,7 +629,7 @@ Create holes and complex shapes by subtracting areas from existing polygons. Ide
 
 Click the subtract button and draw over existing polygons to remove those areas, creating holes or splitting polygons into multiple parts.
 
-### Point-to-Point Drawing
+### Point-to-Point Drawing (Desktop only)
 
 [![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)
 
