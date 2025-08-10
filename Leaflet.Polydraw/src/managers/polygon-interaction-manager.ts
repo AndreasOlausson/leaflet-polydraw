@@ -310,11 +310,11 @@ export class PolygonInteractionManager {
         // console.log('marker click');
         if (this.modeManager.isInOffMode()) {
           if (this.isModifierKeyPressed(e.originalEvent)) {
-            const poly = (
-              featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
-            )?.toGeoJSON();
-            if (poly) {
-              this.elbowClicked(e, poly);
+            const polygonLayer = featureGroup
+              .getLayers()
+              .find((layer) => layer instanceof L.Polygon) as L.Polygon | undefined;
+            if (polygonLayer) {
+              this.elbowClicked(e, polygonLayer, marker.getLatLng());
             }
           } else {
             // Handle non-modifier clicks for special markers
@@ -515,39 +515,69 @@ export class PolygonInteractionManager {
       marker.on('click', (e) => {
         if (this.modeManager.isInOffMode()) {
           if (this.isModifierKeyPressed(e.originalEvent)) {
-            const poly = (
-              featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as L.Polygon
-            )?.toGeoJSON();
-            if (poly) {
-              this.elbowClicked(e, poly);
+            const polygonLayer = featureGroup
+              .getLayers()
+              .find((layer) => layer instanceof L.Polygon) as L.Polygon | undefined;
+            if (polygonLayer) {
+              this.elbowClicked(e, polygonLayer, marker.getLatLng());
             }
           } else {
             if (i === deleteMarkerIdx && holeDeleteEnabled) {
               this.map.closePopup();
-              // Logic to delete just the hole
+              // Delete the entire hole by matching against Leaflet lat/lngs
               const parentPolygon = featureGroup
                 .getLayers()
                 .find((layer) => layer instanceof L.Polygon) as L.Polygon;
               if (parentPolygon) {
-                const polyGeoJSON = parentPolygon.toGeoJSON();
-                const coords = this.turfHelper.getCoords(polyGeoJSON);
+                // Normalize Leaflet polygon latlngs to an array of rings: L.LatLng[][]
+                const rawLatLngs = parentPolygon.getLatLngs();
+                let rings: L.LatLng[][] = [];
+                if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
+                  if (Array.isArray(rawLatLngs[0])) {
+                    const first = (rawLatLngs as unknown[])[0];
+                    if (Array.isArray(first) && Array.isArray((first as unknown[])[0])) {
+                      // MultiPolygon-like structure: [ [ [LatLng] ] ] – flatten first level
+                      rings = (
+                        rawLatLngs as unknown as L.LatLng[][][]
+                      )[0] as unknown as L.LatLng[][];
+                    } else {
+                      // Polygon with holes: [ [LatLng] , [LatLng] ... ]
+                      rings = rawLatLngs as L.LatLng[][];
+                    }
+                  } else {
+                    // Single ring provided as LatLng[]
+                    rings = [rawLatLngs as unknown as L.LatLng[]];
+                  }
+                }
 
-                // Find the index of the hole to remove using the delete marker's position
-                const deleteMarkerLatLng = latlngs[i];
-                const EPSILON = 1e-9; // Tolerance for float comparison
-
-                const holeIndex = coords.findIndex((ring, index) => {
-                  if (index === 0) return false; // Don't check the outer ring
-                  return ring.some(
-                    (coord) =>
-                      Math.abs(coord[1] - deleteMarkerLatLng.lat) < EPSILON &&
-                      Math.abs(coord[0] - deleteMarkerLatLng.lng) < EPSILON,
-                  );
-                });
+                // Identify which ring is the hole containing this delete marker
+                const target = marker.getLatLng();
+                let holeIndex = -1;
+                for (let r = 1; r < rings.length; r++) {
+                  // start at 1 to skip outer ring
+                  if (rings[r].some((p) => p.lat === target.lat && p.lng === target.lng)) {
+                    holeIndex = r;
+                    break;
+                  }
+                }
 
                 if (holeIndex > 0) {
-                  // A hole was found (index > 0)
-                  coords.splice(holeIndex, 1);
+                  // Build new rings without the hole
+                  const newRings: L.LatLng[][] = rings.filter((_, idx) => idx !== holeIndex);
+
+                  // Convert to GeoJSON coordinates and ensure closure of each ring
+                  const coords = newRings.map((ring) => {
+                    const arr = ring.map((ll) => [ll.lng, ll.lat]);
+                    if (arr.length > 0) {
+                      const firstPt = arr[0];
+                      const lastPt = arr[arr.length - 1];
+                      if (firstPt[0] !== lastPt[0] || firstPt[1] !== lastPt[1]) {
+                        arr.push([firstPt[0], firstPt[1]]);
+                      }
+                    }
+                    return arr;
+                  });
+
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
                   this.eventManager.emit('polydraw:polygon:updated', {
@@ -863,63 +893,102 @@ export class PolygonInteractionManager {
     }
   }
 
-  private elbowClicked(e: L.LeafletMouseEvent, poly: Feature<Polygon | MultiPolygon>): void {
-    // console.log('elbowClicked');
-    // console.log('PolygonInteractionManager elbowClicked');
-    // Enforce the configuration setting for edge deletion.
-    if (!this.config.modes.edgeDeletion) {
-      return;
-    }
-    if (!this.isModifierKeyPressed(e.originalEvent)) {
+  private elbowClicked(
+    e: L.LeafletMouseEvent,
+    polygonLayer: L.Polygon,
+    forcedLatLng: L.LatLng,
+  ): void {
+    // Enforce settings
+    if (!this.config.modes.edgeDeletion) return;
+    if (!this.isModifierKeyPressed(e.originalEvent)) return;
+
+    const clickedLatLng = forcedLatLng ?? e.latlng;
+
+    // Normalize Leaflet polygon latlngs to an array of rings: L.LatLng[][]
+    const rawLatLngs = polygonLayer.getLatLngs();
+    let rings: L.LatLng[][] = [];
+    if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
+      if (Array.isArray(rawLatLngs[0])) {
+        const first = (rawLatLngs as unknown[])[0];
+        if (Array.isArray(first) && Array.isArray((first as unknown[])[0])) {
+          // MultiPolygon-like structure: [ [ [LatLng] ] ] – flatten first level
+          rings = (rawLatLngs as unknown as L.LatLng[][][])[0] as unknown as L.LatLng[][];
+        } else {
+          // Polygon with holes: [ [LatLng] , [LatLng] ... ]
+          rings = rawLatLngs as L.LatLng[][];
+        }
+      } else {
+        // Single ring provided as LatLng[]
+        rings = [rawLatLngs as unknown as L.LatLng[]];
+      }
+    } else {
       return;
     }
 
-    const clickedLatLng = e.latlng;
-    const allRings = this.turfHelper.getCoords(poly);
-
+    // Find exact matching vertex by equality on lat/lng
     let targetRingIndex = -1;
     let targetVertexIndex = -1;
-
-    for (let ringIndex = 0; ringIndex < allRings.length; ringIndex++) {
-      const ring = allRings[ringIndex];
-      const vertexIndex = ring.findIndex(
-        (coord) =>
-          Math.abs(coord[1] - clickedLatLng.lat) < 0.0001 &&
-          Math.abs(coord[0] - clickedLatLng.lng) < 0.0001,
-      );
-
-      if (vertexIndex !== -1) {
-        targetRingIndex = ringIndex;
-        targetVertexIndex = vertexIndex;
-        break;
+    for (let r = 0; r < rings.length; r++) {
+      const ring = rings[r];
+      for (let v = 0; v < ring.length; v++) {
+        const p = ring[v];
+        if (p.lat === clickedLatLng.lat && p.lng === clickedLatLng.lng) {
+          targetRingIndex = r;
+          targetVertexIndex = v;
+          break;
+        }
       }
+      if (targetRingIndex !== -1) break;
     }
 
     if (targetRingIndex === -1 || targetVertexIndex === -1) {
       return;
     }
 
-    const targetRing = allRings[targetRingIndex];
-    if (targetRing.length <= 4) {
+    const targetRing = rings[targetRingIndex];
+    // Require at least 4 points (3 corners + close) – in Leaflet rings are usually open, so use 4 as minimum vertices
+    if (targetRing.length <= 3) {
       return;
     }
 
-    const newAllRings = allRings.map((ring, ringIndex) => {
-      if (ringIndex === targetRingIndex) {
-        const newRing = [...ring];
-        newRing.splice(targetVertexIndex, 1);
-        return newRing;
-      } else {
-        return [...ring];
-      }
+    // Build new rings with the vertex removed
+    const newRings: L.LatLng[][] = rings.map((ring, idx) => {
+      if (idx !== targetRingIndex) return ring.slice();
+      const nr = ring.slice();
+      nr.splice(targetVertexIndex, 1);
+      return nr;
     });
 
-    const currentFeatureGroup = this.findFeatureGroupForPoly(poly);
+    // Convert to GeoJSON coordinates and ensure closure of each ring
+    const coords = newRings.map((ring) => {
+      const arr = ring.map((ll) => [ll.lng, ll.lat]);
+      if (arr.length > 0) {
+        const first = arr[0];
+        const last = arr[arr.length - 1];
+        if (first[0] !== last[0] || first[1] !== last[1]) {
+          arr.push([first[0], first[1]]);
+        }
+      }
+      return arr;
+    });
+
+    // Remove the current feature group for this polygon
+    let currentFeatureGroup: L.FeatureGroup | null = null;
+    for (const fg of this.getFeatureGroups()) {
+      let found = false;
+      fg.eachLayer((layer) => {
+        if (layer === polygonLayer) found = true;
+      });
+      if (found) {
+        currentFeatureGroup = fg;
+        break;
+      }
+    }
     if (currentFeatureGroup) {
       this.removeFeatureGroup(currentFeatureGroup);
     }
 
-    const newPolygon = this.turfHelper.getMultiPolygon([newAllRings]);
+    const newPolygon = this.turfHelper.getMultiPolygon([coords]);
     this.eventManager.emit('polydraw:polygon:updated', {
       operation: 'removeVertex',
       polygon: newPolygon,
