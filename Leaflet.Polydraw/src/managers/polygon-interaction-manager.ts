@@ -1476,11 +1476,11 @@ export class PolygonInteractionManager {
     try {
       if (enabled) {
         polygon.setStyle({
-          color: this.config.dragPolygons.modifierSubtract.subtractColor,
+          color: this.config.colors.dragPolygons.subtract,
         });
       } else {
         polygon.setStyle({
-          color: this.config.polygonOptions.color,
+          color: this.config.colors.polygon.border,
         });
       }
       this.updateMarkerColorsForSubtractMode(polygon, enabled);
@@ -1521,9 +1521,8 @@ export class PolygonInteractionManager {
                 element.style.display = 'none';
                 element.classList.add('subtract-mode-hidden');
               } else {
-                element.style.backgroundColor =
-                  this.config.dragPolygons.modifierSubtract.subtractColor;
-                element.style.borderColor = this.config.dragPolygons.modifierSubtract.subtractColor;
+                element.style.backgroundColor = this.config.colors.dragPolygons.subtract;
+                element.style.borderColor = this.config.colors.dragPolygons.subtract;
                 element.classList.add('subtract-mode');
               }
             } else {
@@ -1729,8 +1728,8 @@ export class PolygonInteractionManager {
       const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
         const isModifierPressed = this.isEdgeDeletionModifierKeyPressed(e as MouseEvent);
         if (isModifierPressed) {
-          element.style.backgroundColor = this.config.edgeDeletion.hoverColor || '#D9460F';
-          element.style.borderColor = this.config.edgeDeletion.hoverColor || '#D9460F';
+          element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
+          element.style.borderColor = this.config.colors.edgeDeletion.hover;
           element.classList.add('edge-deletion-hover');
           // Set cursor to pointer when modifier key is held over marker
           try {
@@ -1795,8 +1794,8 @@ export class PolygonInteractionManager {
 
     const element = e.target as HTMLElement;
     if (element) {
-      element.style.backgroundColor = '#D9460F';
-      element.style.borderColor = '#D9460F';
+      element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
+      element.style.borderColor = this.config.colors.edgeDeletion.hover;
       element.classList.add('edge-deletion-hover');
     }
   };

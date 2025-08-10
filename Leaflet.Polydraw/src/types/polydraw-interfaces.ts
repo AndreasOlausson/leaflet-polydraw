@@ -83,10 +83,8 @@ export interface MarkerOptions {
  * Polygon style options interface
  */
 export interface PolygonStyleOptions {
-  color: string;
   weight: number;
   opacity: number;
-  fillColor: string;
   fillOpacity: number;
   dashArray?: string;
 }
@@ -95,9 +93,9 @@ export interface PolygonStyleOptions {
  * Hole style options interface
  */
 export interface HoleStyleOptions {
-  color: string;
   weight: number;
   opacity: number;
+  fillOpacity: number;
   dashArray?: string;
 }
 
@@ -105,7 +103,6 @@ export interface HoleStyleOptions {
  * Polyline style options interface
  */
 export interface PolylineStyleOptions {
-  color: string;
   weight: number;
   opacity: number;
   dashArray?: string;
@@ -144,7 +141,6 @@ export interface DragPolygonConfig {
       mac: string;
       linux: string;
     };
-    subtractColor: string;
     hideMarkersOnDrag: boolean;
   };
 }
@@ -159,7 +155,6 @@ export interface EdgeDeletionConfig {
     mac: string;
     linux: string;
   };
-  hoverColor: string;
   confirmDeletion: boolean;
   minVertices: number;
 }
@@ -203,10 +198,26 @@ export interface PolydrawConfig {
     perimeter: number;
   };
   colors: {
+    dragPolygons: {
+      subtract: string;
+    };
     p2p: {
       closingMarker: string;
     };
     edgeHover: string;
+    edgeDeletion: {
+      hover: string;
+    };
+    polyline: string;
+    subtractLine: string;
+    polygon: {
+      border: string;
+      fill: string;
+    };
+    hole: {
+      border: string;
+      fill: string;
+    };
     styles: {
       controlButton: {
         backgroundColor: string;

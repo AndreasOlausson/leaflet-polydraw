@@ -377,7 +377,10 @@ class Polydraw extends L.Control {
    * Initializes and adds the tracer polyline to the map.
    */
   private createTracer(): void {
-    this.tracer = L.polyline([], this.config.polyLineOptions);
+    this.tracer = L.polyline([], {
+      ...this.config.polyLineOptions,
+      color: this.config.colors.polyline,
+    });
     try {
       this.tracer.addTo(this.map);
     } catch (error) {
@@ -479,19 +482,19 @@ class Polydraw extends L.Control {
           break;
         case DrawMode.Add:
           this.tracer.setStyle({
-            color: defaultConfig.polyLineOptions.color,
+            color: this.config.colors.polyline,
             dashArray: null, // Reset to solid line
           });
           break;
         case DrawMode.Subtract:
           this.tracer.setStyle({
-            color: this.config.dragPolygons.modifierSubtract.subtractColor,
+            color: this.config.colors.subtractLine,
             dashArray: null, // Reset to solid line
           });
           break;
         case DrawMode.PointToPoint:
           this.tracer.setStyle({
-            color: defaultConfig.polyLineOptions.color,
+            color: this.config.colors.polyline,
             dashArray: '5, 5',
           });
           break;
@@ -1003,8 +1006,8 @@ class Polydraw extends L.Control {
 
     const element = e.target as HTMLElement;
     if (element) {
-      element.style.backgroundColor = this.config.edgeDeletion.hoverColor;
-      element.style.borderColor = this.config.edgeDeletion.hoverColor;
+      element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
+      element.style.borderColor = this.config.colors.edgeDeletion.hover;
       element.classList.add('edge-deletion-hover');
     }
   };

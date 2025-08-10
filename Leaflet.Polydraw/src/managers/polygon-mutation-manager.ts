@@ -427,9 +427,11 @@ export class PolygonMutationManager {
               } else {
                 // Add red polyline overlay for hole rings
                 const holePolyline = L.polyline(polyElement, {
-                  color: this.config.holeOptions.color,
+                  color: this.config.colors.hole.border,
                   weight: this.config.holeOptions.weight || 2,
                   opacity: this.config.holeOptions.opacity || 1,
+                  fillColor: this.config.colors.hole.fill,
+                  fillOpacity: this.config.holeOptions.fillOpacity || 0.5,
                 });
                 featureGroup.addLayer(holePolyline);
 
