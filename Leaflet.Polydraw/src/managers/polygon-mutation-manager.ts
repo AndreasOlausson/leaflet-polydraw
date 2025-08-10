@@ -628,7 +628,11 @@ export class PolygonMutationManager {
   ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
-    polygon.setStyle(this.config.polygonOptions);
+    polygon.setStyle({
+      ...this.config.polygonOptions,
+      color: this.config.colors.polygon.border,
+      fillColor: this.config.colors.polygon.fill,
+    });
 
     // Ensure each polygon has a unique identifier to prevent cross-contamination
     polygon._polydrawUniqueId = L.Util.stamp(polygon) + '_' + Date.now();

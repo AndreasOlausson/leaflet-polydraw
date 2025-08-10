@@ -195,7 +195,6 @@ const polyDrawControl = L.control
         "mac": "metaKey",
         "linux": "ctrlKey"
       },
-      "subtractColor": "#D9460F",
       "hideMarkersOnDrag": true
     }
   },
@@ -206,7 +205,6 @@ const polyDrawControl = L.control
       "mac": "metaKey",
       "linux": "ctrlKey"
     },
-    "hoverColor": "#D9460F",
     "confirmDeletion": false,
     "minVertices": 3
   },
@@ -299,7 +297,6 @@ const polyDrawControl = L.control
     }
   },
   "polyLineOptions": {
-    "color": "#50622b",
     "opacity": 1,
     "smoothFactor": 0,
     "noClip": true,
@@ -307,7 +304,6 @@ const polyDrawControl = L.control
     "weight": 2
   },
   "subtractLineOptions": {
-    "color": "#50622b",
     "opacity": 1,
     "smoothFactor": 0,
     "noClip": true,
@@ -316,13 +312,9 @@ const polyDrawControl = L.control
   },
   "polygonOptions": {
     "smoothFactor": 0.3,
-    "color": "#50622b",
-    "fillColor": "#b4cd8a",
     "noClip": true
   },
   "holeOptions": {
-    "color": "#aa0000",
-    "fillColor": "#ffcccc",
     "weight": 2,
     "opacity": 1,
     "fillOpacity": 0.5
@@ -331,7 +323,7 @@ const polyDrawControl = L.control
     "method": "concaveman",
     "simplification": {
       "mode": "simple",
-      "tolerance": 0.0001,
+      "tolerance": 0.00001,
       "highQuality": false
     }
   },
@@ -363,6 +355,48 @@ const polyDrawControl = L.control
   "bezier": {
     "resolution": 10000,
     "sharpness": 0.75
+  },
+  "colors": {
+    "dragPolygons": {
+      "subtract": "#D9460F"
+    },
+    "p2p": {
+      "closingMarker": "#4CAF50"
+    },
+    "edgeHover": "#7a9441",
+    "edgeDeletion": {
+      "hover": "#D9460F"
+    },
+    "polyline": "#50622b",
+    "subtractLine": "#50622b",
+    "polygon": {
+      "border": "#50622b",
+      "fill": "#b4cd8a"
+    },
+    "hole": {
+      "border": "#aa0000",
+      "fill": "#ffcccc"
+    },
+    "styles": {
+      "controlButton": {
+        "backgroundColor": "#fff",
+        "color": "#000"
+      },
+      "controlButtonHover": {
+        "backgroundColor": "#f4f4f4"
+      },
+      "controlButtonActive": {
+        "backgroundColor": "rgb(128, 218, 255)",
+        "color": "#fff"
+      },
+      "indicatorActive": {
+        "backgroundColor": "#ffcc00"
+      },
+      "p2pMarker": {
+        "backgroundColor": "#fff",
+        "borderColor": "#50622b"
+      }
+    }
   }
 }
 ```
