@@ -383,7 +383,7 @@ export interface PolydrawPolygon extends L.Polygon {
   _polydrawDragData?: {
     isDragging: boolean;
     startPosition: L.LatLngLiteral | null;
-    startLatLngs?: unknown;
+    startLatLngs?: any;
   };
   /**
    * Original marker positions before drag, keyed by marker instance.
