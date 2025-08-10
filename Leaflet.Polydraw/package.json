@@ -1,6 +1,6 @@
 {
   "name": "leaflet-polydraw",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Advanced polygon drawing and editing plugin for Leaflet with drag-and-drop, smart merging, and comprehensive editing tools",
   "types": "dist/types/index.d.ts",
   "exports": {
