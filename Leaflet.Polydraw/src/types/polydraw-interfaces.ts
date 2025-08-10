@@ -266,7 +266,17 @@ export type PolydrawEvent =
   | 'polydraw:check:intersection'
   | 'polydraw:subtract';
 
-export type PolydrawEventCallback = (data?: any) => void;
+export type PolydrawEventData =
+  | undefined
+  | DrawMode
+  | MenuActionData
+  | IntersectionAnalysis
+  | PolygonUpdatedEventData
+  | GeometricOperationResult
+  | { id?: string; polygon?: Feature<Polygon | MultiPolygon> }
+  | L.LeafletEvent;
+
+export type PolydrawEventCallback = (data?: PolydrawEventData) => void;
 
 /**
  * Data interface for menu actions
@@ -373,7 +383,7 @@ export interface PolydrawPolygon extends L.Polygon {
   _polydrawDragData?: {
     isDragging: boolean;
     startPosition: L.LatLngLiteral | null;
-    startLatLngs: any;
+    startLatLngs?: unknown;
   };
   /**
    * Original marker positions before drag, keyed by marker instance.

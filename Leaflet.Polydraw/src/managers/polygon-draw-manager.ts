@@ -276,6 +276,9 @@ export class PolygonDrawManager {
    * Handle double-click to complete point-to-point polygon
    */
   handleDoubleClick(e: L.LeafletMouseEvent): void {
+    // Save the input variable but, make lint happy...
+    void e;
+
     // console.log('handleDoubleClick');
     // console.log('PolygonDrawManager handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
@@ -583,6 +586,9 @@ export class PolygonDrawManager {
 
     if (isHovering) {
       const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
+        //Save the input parameter, but make lint happy...
+        void e;
+
         if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
           element.classList.add('edge-deletion-hover');
           try {

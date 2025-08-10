@@ -40,6 +40,7 @@ export class MapStateService {
    * @param polygons Array of polygons.
    */
   updatePolygons(polygons: L.LatLngLiteral[][][]): void {
+    void polygons;
     // Additional polygon handling can be added here if needed
   }
 }

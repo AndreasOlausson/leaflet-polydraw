@@ -3,7 +3,6 @@
  * This is a small, focused module for coordinate-related operations
  */
 import * as L from 'leaflet';
-import type { LatLngLiteral } from 'leaflet';
 import { GeometryUtils } from './geometry-utils';
 import type { TurfHelper } from './turf-helper';
 

@@ -327,28 +327,18 @@ export class TurfHelper {
 
       // Method 2: Check if any vertices of one polygon are inside the other
       try {
-        const coords1 = turf.getCoords(polygon);
-        const coords2 = turf.getCoords(latlngs);
+        const points1 = turf.explode(polygon);
+        const points2 = turf.explode(latlngs);
 
-        // Check if any vertex of polygon2 is inside polygon1
-        for (const ring2 of coords2) {
-          for (const coord of ring2[0]) {
-            // First ring (outer ring)
-            const point = turf.point(coord);
-            if (turf.booleanPointInPolygon(point, polygon)) {
-              return true;
-            }
+        for (const point of points2.features) {
+          if (turf.booleanPointInPolygon(point, polygon)) {
+            return true;
           }
         }
 
-        // Check if any vertex of polygon1 is inside polygon2
-        for (const ring1 of coords1) {
-          for (const coord of ring1[0]) {
-            // First ring (outer ring)
-            const point = turf.point(coord);
-            if (turf.booleanPointInPolygon(point, latlngs)) {
-              return true;
-            }
+        for (const point of points1.features) {
+          if (turf.booleanPointInPolygon(point, latlngs)) {
+            return true;
           }
         }
       } catch (error) {
@@ -484,13 +474,62 @@ export class TurfHelper {
     }
   }
   /**
-   * Check if a point lies within a polygon
+   * Normalize various point-like inputs into a GeoJSON Feature<Point>.
+   * Supports GeoJSON Feature<Point>, Turf Position [lng, lat], and Leaflet LatLngLiteral.
    */
-  isPointInsidePolygon(point: Feature<Point>, polygon: Feature<Polygon | MultiPolygon>): boolean {
+  private toPointFeature(
+    point: Feature<Point> | Position | L.LatLngLiteral | { geometry?: { coordinates?: number[] } },
+  ): Feature<Point> {
+    // Case 1: Already a Feature<Point>
+    if (
+      (point as Feature<Point>)?.type === 'Feature' &&
+      (point as any).geometry?.type === 'Point'
+    ) {
+      return point as Feature<Point>;
+    }
+
+    // Case 2: Turf Position [lng, lat]
+    if (
+      Array.isArray(point) &&
+      point.length >= 2 &&
+      typeof point[0] === 'number' &&
+      typeof point[1] === 'number'
+    ) {
+      return turf.point(point as Position);
+    }
+
+    // Case 3: Leaflet LatLngLiteral {lat, lng}
+    if (typeof (point as any)?.lat === 'number' && typeof (point as any)?.lng === 'number') {
+      const p = point as L.LatLngLiteral;
+      return turf.point([p.lng, p.lat]);
+    }
+
+    // Case 4: Generic object with geometry.coordinates
+    if (
+      (point as any)?.geometry?.coordinates &&
+      Array.isArray((point as any).geometry.coordinates)
+    ) {
+      return turf.point((point as any).geometry.coordinates as Position);
+    }
+
+    // Fallback – throw to make caller handle gracefully
+    throw new Error('Unsupported point format provided to toPointFeature');
+  }
+
+  /**
+   * Check if a point lies within a polygon.
+   * Accepts Feature<Point>, Turf Position [lng, lat], or Leaflet LatLngLiteral.
+   * This normalization prevents noisy console warnings in tests.
+   */
+  isPointInsidePolygon(
+    point: Feature<Point> | Position | L.LatLngLiteral,
+    polygon: Feature<Polygon | MultiPolygon>,
+  ): boolean {
     try {
-      return turf.booleanPointInPolygon(point, polygon);
+      const pointFeature = this.toPointFeature(point as any);
+      return turf.booleanPointInPolygon(pointFeature, polygon);
     } catch (error) {
-      console.warn('Error in isPointInsidePolygon:', error.message);
+      // Be quiet in failure – just return false to avoid noisy test output
       return false;
     }
   }

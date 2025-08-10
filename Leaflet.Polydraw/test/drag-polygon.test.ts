@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as L from 'leaflet';
 import Polydraw from '../src/polydraw';
+import * as turf from '@turf/turf';
 
 describe('Polygon Dragging Tests', () => {
   let polydraw: Polydraw;
@@ -72,42 +73,32 @@ describe('Polygon Dragging Tests', () => {
     it('should not merge polygons that only have bounding boxes overlapping', () => {
       // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
       const polygon1 = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [15.008698, 58.163446], // lng, lat format for GeoJSON
-                [15.284729, 58.163446],
-                [15.284729, 58.586161],
-                [15.952149, 58.586161],
-                [15.952149, 58.687669],
-                [15.008698, 58.687664],
-                [15.008698, 58.163446], // Close the polygon
-              ],
+        toGeoJSON: () =>
+          turf.polygon([
+            [
+              [15.008698, 58.163446], // lng, lat format for GeoJSON
+              [15.284729, 58.163446],
+              [15.284729, 58.586161],
+              [15.952149, 58.586161],
+              [15.952149, 58.687669],
+              [15.008698, 58.687664],
+              [15.008698, 58.163446], // Close the polygon
             ],
-          },
-        }),
+          ]),
       };
 
       // Second polygon with coordinates that create bounding box overlap but no geometric intersection
       const polygon2 = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [15.630799, 58.356368],
-                [15.967255, 58.292247],
-                [15.971375, 58.421092],
-                [15.836793, 58.483546],
-                [15.630799, 58.356368], // Close the polygon
-              ],
+        toGeoJSON: () =>
+          turf.polygon([
+            [
+              [15.630799, 58.356368],
+              [15.967255, 58.292247],
+              [15.971375, 58.421092],
+              [15.836793, 58.483546],
+              [15.630799, 58.356368], // Close the polygon
             ],
-          },
-        }),
+          ]),
       };
 
       // Test the checkPolygonIntersection method directly
@@ -132,39 +123,29 @@ describe('Polygon Dragging Tests', () => {
         },
         getLatLngs: () => [],
         setLatLngs: vi.fn(),
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
+        toGeoJSON: () =>
+          turf.polygon([
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
             ],
-          },
-        }),
+          ]),
       };
 
       const targetPolygon = {
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0.5, 0.5], // This polygon intersects with the dragged polygon
-                [1.5, 0.5],
-                [1.5, 1.5],
-                [0.5, 1.5],
-                [0.5, 0.5],
-              ],
+        toGeoJSON: () =>
+          turf.polygon([
+            [
+              [0.5, 0.5], // This polygon intersects with the dragged polygon
+              [1.5, 0.5],
+              [1.5, 1.5],
+              [0.5, 1.5],
+              [0.5, 0.5],
             ],
-          },
-        }),
+          ]),
       };
 
       const draggedFeatureGroup = {
@@ -721,6 +702,7 @@ describe('Polygon Dragging Tests', () => {
             ],
           ],
         },
+        properties: {},
       };
 
       const overlappingPolygon2 = {
@@ -737,6 +719,7 @@ describe('Polygon Dragging Tests', () => {
             ],
           ],
         },
+        properties: {},
       };
 
       const nonOverlappingPolygon = {
@@ -753,6 +736,7 @@ describe('Polygon Dragging Tests', () => {
             ],
           ],
         },
+        properties: {},
       };
 
       // Test actual intersection detection - these should intersect
