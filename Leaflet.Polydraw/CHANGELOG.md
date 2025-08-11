@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.4] - 2025-08-11
+
+### Added
+
+- Implemented several visual feedback features for polygon dragging, including `opacity`, `markerBehavior` (hide/fade), and `hideMarkersOnDrag` for subtract mode.
+- Added a "Roadmap & Future Improvements" section to the README.
+
+### Changed
+
+- Refactored edge deletion logic to use the `minVertices` property from `config.json` instead of a hardcoded value.
+
+### Fixed
+
+- Fixed all failing tests that arose from the configuration cleanup.
+
+### Removed
+
+- Removed numerous unused properties from `config.json` and the `PolydrawConfig` interface to clean up the configuration.
+
 ## [0.9.2] - 2025-08-10
 
 ### Fixed

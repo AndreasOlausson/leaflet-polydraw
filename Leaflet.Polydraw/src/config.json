@@ -1,5 +1,4 @@
 {
-  "touchSupport": true,
   "mergePolygons": true,
   "kinks": false,
   "modes": {
@@ -13,18 +12,12 @@
     "edgeDeletion": true
   },
   "dragPolygons": {
-    "realTimeUpdate": false,
-    "showDragHandle": false,
     "opacity": 0.7,
     "dragCursor": "move",
     "hoverCursor": "grab",
     "markerBehavior": "hide",
     "markerAnimationDuration": 200,
-    "autoMergeOnIntersect": true,
-    "autoHoleOnContained": false,
-    "dragInteractionBehavior": "auto",
     "modifierSubtract": {
-      "enabled": true,
       "keys": {
         "windows": "ctrlKey",
         "mac": "metaKey",
@@ -34,13 +27,11 @@
     }
   },
   "edgeDeletion": {
-    "enabled": true,
     "keys": {
       "windows": "ctrlKey",
       "mac": "metaKey",
       "linux": "ctrlKey"
     },
-    "confirmDeletion": false,
     "minVertices": 3
   },
   "markers": {

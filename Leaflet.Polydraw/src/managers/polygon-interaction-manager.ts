@@ -729,6 +729,7 @@ export class PolygonInteractionManager {
       isDragging: false,
       startPosition: null,
       startLatLngs: null,
+      originalOpacity: polygon.options.fillOpacity,
     };
 
     polygon.on('mousedown', (e: L.LeafletMouseEvent) => {
@@ -754,12 +755,14 @@ export class PolygonInteractionManager {
       polygon._polydrawDragData.isDragging = true;
       polygon._polydrawDragData.startPosition = e.latlng;
       polygon._polydrawDragData.startLatLngs = polygon.getLatLngs();
+      polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
 
       if (this.map.dragging) {
         this.map.dragging.disable();
       }
 
       this.setSubtractVisualMode(polygon, isModifierPressed);
+      this.setMarkerVisibility(polygon, false);
 
       try {
         const container = this.map.getContainer();
@@ -989,7 +992,7 @@ export class PolygonInteractionManager {
 
     const targetRing = rings[targetRingIndex];
     // Require at least 4 points (3 corners + close) – in Leaflet rings are usually open, so use 4 as minimum vertices
-    if (targetRing.length <= 3) {
+    if (targetRing.length <= this.config.edgeDeletion.minVertices) {
       return;
     }
 
@@ -1270,6 +1273,13 @@ export class PolygonInteractionManager {
       this.map.dragging.enable();
     }
 
+    // Restore original opacity
+    if (polygon._polydrawDragData.originalOpacity) {
+      polygon.setStyle({ fillOpacity: polygon._polydrawDragData.originalOpacity });
+    }
+
+    this.setMarkerVisibility(polygon, true);
+
     try {
       const container = this.map.getContainer();
       container.style.cursor = '';
@@ -1456,9 +1466,6 @@ export class PolygonInteractionManager {
   }
 
   private detectDragSubtractModifierKey(event: MouseEvent | KeyboardEvent): boolean {
-    if (!this.config.dragPolygons?.modifierSubtract?.enabled) {
-      return false;
-    }
     if (isTouchDevice()) {
       return false;
     }
@@ -1507,8 +1514,7 @@ export class PolygonInteractionManager {
         return;
       }
 
-      const hideMarkersOnDrag =
-        this.config.dragPolygons?.modifierSubtract?.hideMarkersOnDrag ?? false;
+      const hideMarkersOnDrag = this.config.dragPolygons.modifierSubtract.hideMarkersOnDrag;
 
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -1943,6 +1949,29 @@ export class PolygonInteractionManager {
   private getLatLngInfoString(latlng: L.LatLngLiteral): string {
     // console.log('PolygonInteractionManager getLatLngInfoString');
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
+  }
+
+  private setMarkerVisibility(polygon: PolydrawPolygon, visible: boolean): void {
+    const featureGroup = this.getFeatureGroups().find((fg) => fg.hasLayer(polygon));
+    if (!featureGroup) return;
+
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        const marker = layer as L.Marker;
+        const element = marker.getElement();
+        if (element) {
+          const behavior = this.config.dragPolygons.markerBehavior;
+          const duration = this.config.dragPolygons.markerAnimationDuration;
+
+          if (behavior === 'hide') {
+            element.style.display = visible ? '' : 'none';
+          } else if (behavior === 'fade') {
+            element.style.transition = `opacity ${duration}ms ease`;
+            element.style.opacity = visible ? '1' : '0';
+          }
+        }
+      }
+    });
   }
 
   private generateMenuMarkerPopup(

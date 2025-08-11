@@ -124,7 +124,6 @@ const polyDrawControl = L.control
   .polydraw({
     position: 'topright',
     config: {
-      touchSupport: true,
       mergePolygons: true,
       modes: {
         dragPolygons: true,
@@ -132,8 +131,6 @@ const polyDrawControl = L.control
         dragElbow: true,
       },
       dragPolygons: {
-        autoMergeOnIntersect: true,
-        autoHoleOnContained: true,
         markerBehavior: 'hide',
       },
       markers: {
@@ -164,7 +161,6 @@ const polyDrawControl = L.control
 
 ```javascript
 {
-  "touchSupport": true,
   "mergePolygons": true,
   "kinks": false,
   "modes": {
@@ -178,18 +174,12 @@ const polyDrawControl = L.control
     "edgeDeletion": true
   },
   "dragPolygons": {
-    "realTimeUpdate": false,
-    "showDragHandle": false,
     "opacity": 0.7,
     "dragCursor": "move",
     "hoverCursor": "grab",
     "markerBehavior": "hide",
     "markerAnimationDuration": 200,
-    "autoMergeOnIntersect": true,
-    "autoHoleOnContained": false,
-    "dragInteractionBehavior": "auto",
     "modifierSubtract": {
-      "enabled": true,
       "keys": {
         "windows": "ctrlKey",
         "mac": "metaKey",
@@ -199,13 +189,11 @@ const polyDrawControl = L.control
     }
   },
   "edgeDeletion": {
-    "enabled": true,
     "keys": {
       "windows": "ctrlKey",
       "mac": "metaKey",
       "linux": "ctrlKey"
     },
-    "confirmDeletion": false,
     "minVertices": 3
   },
   "markers": {
@@ -405,7 +393,6 @@ const polyDrawControl = L.control
 
 | Key                                                                | Type    | Default                        | Description                                               |
 | ------------------------------------------------------------------ | ------- | ------------------------------ | --------------------------------------------------------- |
-| **touchSupport**                                                   | boolean | `true`                         | Enable touch support for mobile devices                   |
 | **mergePolygons**                                                  | boolean | `true`                         | Auto-merge polygons during drawing when they intersect    |
 | **kinks**                                                          | boolean | `false`                        | Allow self-intersecting polygons                          |
 | **modes**                                                          | object  |                                | Feature toggles                                           |
@@ -418,18 +405,12 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                         | Enable dragging entire polygons                           |
 | &nbsp;&nbsp;edgeDeletion                                           | boolean | `true`                         | Enable edge deletion with modifier keys                   |
 | **dragPolygons**                                                   | object  |                                | Polygon dragging configuration                            |
-| &nbsp;&nbsp;realTimeUpdate                                         | boolean | `false`                        | Update polygon position in real-time during drag          |
-| &nbsp;&nbsp;showDragHandle                                         | boolean | `false`                        | Show visual drag handle on polygons                       |
 | &nbsp;&nbsp;opacity                                                | number  | `0.7`                          | Polygon opacity during drag (0-1)                         |
 | &nbsp;&nbsp;dragCursor                                             | string  | `"move"`                       | Cursor during active dragging                             |
 | &nbsp;&nbsp;hoverCursor                                            | string  | `"grab"`                       | Cursor when hovering over draggable polygons              |
 | &nbsp;&nbsp;markerBehavior                                         | string  | `"hide"`                       | Marker behavior during drag: `"hide"`, `"show"`, `"fade"` |
 | &nbsp;&nbsp;markerAnimationDuration                                | number  | `200`                          | Duration of marker animations in milliseconds             |
-| &nbsp;&nbsp;autoMergeOnIntersect                                   | boolean | `true`                         | Auto-merge when dragging polygons together                |
-| &nbsp;&nbsp;autoHoleOnContained                                    | boolean | `false`                        | Create holes when dragging inside polygons                |
-| &nbsp;&nbsp;dragInteractionBehavior                                | string  | `"auto"`                       | How drag interactions are handled                         |
 | &nbsp;&nbsp;**modifierSubtract**                                   | object  |                                | Modifier key subtract configuration                       |
-| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable modifier key subtract mode                         |
 | &nbsp;&nbsp;&nbsp;&nbsp;**keys**                                   | object  |                                | Platform-specific modifier keys                           |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;windows                        | string  | `"ctrlKey"`                    | Windows modifier key                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mac                            | string  | `"metaKey"`                    | Mac modifier key                                          |
@@ -437,13 +418,11 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;&nbsp;&nbsp;subtractColor                              | string  | `"#D9460F"`                    | Color for subtract mode visualization                     |
 | &nbsp;&nbsp;&nbsp;&nbsp;hideMarkersOnDrag                          | boolean | `true`                         | Hide markers during subtract drag                         |
 | **edgeDeletion**                                                   | object  |                                | Edge deletion configuration                               |
-| &nbsp;&nbsp;enabled                                                | boolean | `true`                         | Enable edge deletion functionality                        |
 | &nbsp;&nbsp;**keys**                                               | object  |                                | Platform-specific modifier keys                           |
 | &nbsp;&nbsp;&nbsp;&nbsp;windows                                    | string  | `"ctrlKey"`                    | Windows modifier key                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;mac                                        | string  | `"metaKey"`                    | Mac modifier key                                          |
 | &nbsp;&nbsp;&nbsp;&nbsp;linux                                      | string  | `"ctrlKey"`                    | Linux modifier key                                        |
 | &nbsp;&nbsp;hoverColor                                             | string  | `"#D9460F"`                    | Color when hovering over deletable edges                  |
-| &nbsp;&nbsp;confirmDeletion                                        | boolean | `false`                        | Require confirmation before deleting                      |
 | &nbsp;&nbsp;minVertices                                            | number  | `3`                            | Minimum vertices required after deletion                  |
 | **markers**                                                        | object  |                                | Marker configuration                                      |
 | &nbsp;&nbsp;deleteMarker                                           | boolean | `true`                         | Show delete marker                                        |
@@ -978,6 +957,33 @@ map.on('polygon:created', (e) => {
   });
 });
 ```
+
+## Roadmap & Future Improvements
+
+This section outlines planned fixes and new features. Contributions are highly welcome!
+
+### Fixes and Core Improvements
+
+- **Bezier Curve Refinement**: Improve the bezier curve algorithm for more intuitive results.
+- **Simplification Algorithm Review**: Make simplification less aggressive and more predictable.
+- **Mobile/Touch Support**: Enhance usability on touch devices, especially for p2p drawing.
+- **Visual Optimization for Complex Polygons**: Smartly hide markers on complex polygons to reduce clutter while retaining functionality.
+
+### New Features
+
+- **Polygon Splitting Tool**: A mode to split a polygon by drawing a line across it.
+- **Undo/Redo History**: Add undo/redo capabilities for all editing actions.
+- **Measurement Tool**: A tool for measuring distances and areas without creating permanent polygons.
+- **Multi-Select and Edit**: Allow users to edit multiple polygons at once.
+- **Geo-data Format Integration**: Add helpers for importing/exporting GeoJSON, WKT, or KML.
+
+### Low Priority Ideas
+
+- **Topological Operations**: Add advanced GIS operations like intersection and buffering.
+- **Drawing with Curves**: Allow drawing curved segments in point-to-point mode.
+- **Theming and Customization**: Expand the config to allow for full theming.
+- **Extensible Menu**: Allow developers to add custom actions to the menu.
+- **Vertex Snapping**: Add snapping to a grid or other features.
 
 ## Browser Support
 

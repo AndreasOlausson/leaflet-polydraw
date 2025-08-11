@@ -126,16 +126,12 @@ export interface ModeConfig {
  * Drag polygon configuration interface
  */
 export interface DragPolygonConfig {
-  enabled: boolean;
   opacity: number;
   hoverCursor: string;
   dragCursor: string;
   markerBehavior: 'hide' | 'show' | 'fade';
   markerAnimationDuration: number;
-  autoMergeOnIntersect: boolean;
-  autoHoleOnContained: boolean;
   modifierSubtract: {
-    enabled: boolean;
     keys: {
       windows: string;
       mac: string;
@@ -149,13 +145,11 @@ export interface DragPolygonConfig {
  * Edge deletion configuration interface
  */
 export interface EdgeDeletionConfig {
-  enabled: boolean;
   keys: {
     windows: string;
     mac: string;
     linux: string;
   };
-  confirmDeletion: boolean;
   minVertices: number;
 }
 
@@ -178,6 +172,7 @@ export interface MenuOperationsConfig {
  * Complete Polydraw configuration interface
  */
 export interface PolydrawConfig {
+  touchSupport: boolean;
   kinks: boolean;
   mergePolygons: boolean;
   visualOptimizationLevel: number;
@@ -384,6 +379,7 @@ export interface PolydrawPolygon extends L.Polygon {
     isDragging: boolean;
     startPosition: L.LatLngLiteral | null;
     startLatLngs?: any;
+    originalOpacity?: number;
   };
   /**
    * Original marker positions before drag, keyed by marker instance.

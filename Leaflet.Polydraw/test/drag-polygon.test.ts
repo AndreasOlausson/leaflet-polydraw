@@ -201,6 +201,7 @@ describe('Polygon Dragging Tests', () => {
         _polydrawDragData: { isDragging: false },
         getLatLngs: () => [],
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
+        options: { fillOpacity: 0.5 },
       };
 
       (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
@@ -233,6 +234,7 @@ describe('Polygon Dragging Tests', () => {
       const mockPolygon = {
         on: vi.fn(),
         _polydrawDragData: { isDragging: false },
+        options: { fillOpacity: 0.5 },
         getLatLngs: () => [
           [
             [
@@ -330,6 +332,7 @@ describe('Polygon Dragging Tests', () => {
       const mockFeatureGroup = {
         eachLayer: vi.fn(),
         clearLayers: vi.fn(),
+        hasLayer: vi.fn(() => true),
       };
 
       const mockPolygon = {
@@ -493,6 +496,8 @@ describe('Polygon Dragging Tests', () => {
         },
         getLatLngs: () => [],
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
+        options: { fillOpacity: 0.5 },
+        setStyle: vi.fn(),
       };
 
       (polydraw as any).currentDragPolygon = mockPolygon;
@@ -523,6 +528,7 @@ describe('Polygon Dragging Tests', () => {
         _polydrawDragData: { isDragging: false },
         getLatLngs: () => [],
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
+        options: { fillOpacity: 0.5 },
       };
 
       (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
@@ -1075,6 +1081,7 @@ describe('Polygon Dragging Tests', () => {
         _polydrawDragData: { isDragging: false },
         getLatLngs: () => [],
         toGeoJSON: () => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] } }),
+        options: { fillOpacity: 0.5 },
       };
 
       expect(() => {
