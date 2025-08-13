@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
-import Polydraw from '../../src/polydraw';
-import { DrawMode } from '../../src/enums';
+import Polydraw from '../../../src/polydraw';
+import { DrawMode } from '../../../src/enums';
 
 /**
  * Shared test utilities for integration tests

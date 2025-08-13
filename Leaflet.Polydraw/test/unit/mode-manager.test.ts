@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ModeManager } from '../src/managers/mode-manager';
-import { EventManager } from '../src/managers/event-manager';
-import { DrawMode } from '../src/enums';
-import type { PolydrawConfig } from '../src/types/polydraw-interfaces';
-import defaultConfig from '../src/config.json';
+import { ModeManager } from '../../src/managers/mode-manager';
+import { EventManager } from '../../src/managers/event-manager';
+import { DrawMode } from '../../src/enums';
+import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
+import defaultConfig from '../../src/config.json';
 
 describe('ModeManager', () => {
   let modeManager: ModeManager;
@@ -57,7 +57,7 @@ describe('ModeManager', () => {
         zIndexOffset: defaultConfig.markers.holeIcon.zIndexOffset ?? undefined,
       },
     },
-  } as PolydrawConfig;
+  } as any as PolydrawConfig;
 
   beforeEach(() => {
     eventManager = {

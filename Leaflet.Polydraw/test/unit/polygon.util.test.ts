@@ -1,4 +1,4 @@
-import { PolygonUtil } from '../src/polygon.util';
+import { PolygonUtil } from '../../src/polygon.util';
 import * as L from 'leaflet';
 
 describe('PolygonUtil', () => {
@@ -8,7 +8,7 @@ describe('PolygonUtil', () => {
       L.latLng(0, 1),
       L.latLng(1, 1),
       L.latLng(1, 0),
-      L.latLng(0, 0)
+      L.latLng(0, 0),
     ];
     const area = PolygonUtil.getSqmArea(latlngs);
     expect(area).toBeGreaterThan(0);
@@ -20,7 +20,7 @@ describe('PolygonUtil', () => {
       L.latLng(0, 1),
       L.latLng(1, 1),
       L.latLng(1, 0),
-      L.latLng(0, 0)
+      L.latLng(0, 0),
     ];
     const perimeter = PolygonUtil.getPerimeter(latlngs);
     expect(perimeter).toBeGreaterThan(0);
@@ -32,7 +32,7 @@ describe('PolygonUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
     const center = PolygonUtil.getCenter(latlngs);
     expect(center.lat).toBeCloseTo(0.4);
@@ -45,7 +45,7 @@ describe('PolygonUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
     const bounds = PolygonUtil.getBounds(latlngs);
     expect(bounds.getSouth()).toBe(0);
@@ -60,21 +60,21 @@ describe('PolygonUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
-    
+
     const southWest = PolygonUtil.getSouthWest(latlngs);
     expect(southWest.lat).toBe(0);
     expect(southWest.lng).toBe(0);
-    
+
     const northEast = PolygonUtil.getNorthEast(latlngs);
     expect(northEast.lat).toBe(1);
     expect(northEast.lng).toBe(1);
-    
+
     const northWest = PolygonUtil.getNorthWest(latlngs);
     expect(northWest.lat).toBe(1);
     expect(northWest.lng).toBe(0);
-    
+
     const southEast = PolygonUtil.getSouthEast(latlngs);
     expect(southEast.lat).toBe(0);
     expect(southEast.lng).toBe(1);
@@ -86,7 +86,7 @@ describe('PolygonUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
     const checksum = PolygonUtil.getPolygonChecksum(latlngs);
     expect(checksum).toBeGreaterThan(0);

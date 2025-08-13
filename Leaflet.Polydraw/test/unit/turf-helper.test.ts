@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TurfHelper } from '../src/turf-helper';
-import defaultConfig from '../src/config.json';
+import { TurfHelper } from '../../src/turf-helper';
+import defaultConfig from '../../src/config.json';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 
 describe('TurfHelper', () => {

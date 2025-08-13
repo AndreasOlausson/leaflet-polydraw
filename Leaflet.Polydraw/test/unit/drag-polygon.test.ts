@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import Polydraw from '../src/polydraw';
+import Polydraw from '../../src/polydraw';
 import { polygon } from '@turf/helpers';
 
 describe('Polygon Dragging Tests', () => {

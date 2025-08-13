@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as L from 'leaflet';
-import Polydraw from '../src/polydraw';
+import Polydraw from '../../src/polydraw';
 import './setup';
 
 // Mock Leaflet to work in JSDOM environment

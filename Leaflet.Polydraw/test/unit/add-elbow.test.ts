@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as L from 'leaflet';
-import Polydraw from '../src/polydraw';
+import Polydraw from '../../src/polydraw';
 
 // Simple mock for Leaflet
 vi.mock('leaflet', () => {

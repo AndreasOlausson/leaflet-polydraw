@@ -1,11 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as L from 'leaflet';
-import { createButtons } from '../src/buttons';
-import { PolydrawConfig } from '../src/types/polydraw-interfaces';
-import defaultConfig from '../src/config.json';
+import { createButtons } from '../../src/buttons';
+import { PolydrawConfig } from '../../src/types/polydraw-interfaces';
+import defaultConfig from '../../src/config.json';
 
-vi.mock('../src/utils', async () => {
-  const actual = await vi.importActual('../src/utils');
+vi.mock('../../src/utils', async () => {
+  const actual = await vi.importActual('../../src/utils');
   return {
     ...actual,
     isTouchDevice: () => false,

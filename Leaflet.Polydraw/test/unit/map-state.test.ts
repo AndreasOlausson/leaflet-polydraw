@@ -1,4 +1,4 @@
-import { MapStateService } from '../src/map-state';
+import { MapStateService } from '../../src/map-state';
 import * as L from 'leaflet';
 
 describe('MapStateService', () => {
@@ -9,7 +9,7 @@ describe('MapStateService', () => {
     mapStateService = new MapStateService();
     map = L.map(document.createElement('div'), {
       center: [51.505, -0.09],
-      zoom: 13
+      zoom: 13,
     });
   });
 
@@ -23,7 +23,7 @@ describe('MapStateService', () => {
 
   it('can update map state', () => {
     mapStateService.updateMapState(map);
-    
+
     // Test that the map is stored
     expect(mapStateService).toBeDefined();
   });

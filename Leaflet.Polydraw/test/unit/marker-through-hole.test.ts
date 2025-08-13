@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TurfHelper } from '../src/turf-helper';
+import { TurfHelper } from '../../src/turf-helper';
 import type { Feature, Polygon } from 'geojson';
 
 describe('Marker Dragged Through Hole', () => {

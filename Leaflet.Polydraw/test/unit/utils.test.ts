@@ -1,6 +1,6 @@
-import { Perimeter, Area, PolyDrawUtil, Compass } from '../src/utils';
+import { Perimeter, Area, PolyDrawUtil, Compass } from '../../src/utils';
 import * as L from 'leaflet';
-import { MarkerPosition } from '../src/enums';
+import { MarkerPosition } from '../../src/enums';
 
 describe('Perimeter', () => {
   it('calculates metric length correctly', () => {
@@ -16,11 +16,21 @@ describe('Perimeter', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
     const perimeter = new Perimeter(1000, config as any);
     expect(perimeter.metricLength).toBe('1.0');
@@ -39,11 +49,21 @@ describe('Perimeter', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
 
     // Test different length values
@@ -52,7 +72,7 @@ describe('Perimeter', () => {
       { length: 500, expectedMetric: '500', expectedUnit: 'm' },
       { length: 1000, expectedMetric: '1.0', expectedUnit: 'km' },
       { length: 5000, expectedMetric: '5.0', expectedUnit: 'km' },
-      { length: 15000, expectedMetric: '15', expectedUnit: 'km' }
+      { length: 15000, expectedMetric: '15', expectedUnit: 'km' },
     ];
 
     testCases.forEach((testCase, index) => {
@@ -74,11 +94,21 @@ describe('Perimeter', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
 
     const perimeter = new Perimeter(1000, config as any);
@@ -100,11 +130,21 @@ describe('Area', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
 
     const area = new Area(10000, config as any);
@@ -124,11 +164,21 @@ describe('Area', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
 
     // Test different area values
@@ -137,7 +187,7 @@ describe('Area', () => {
       { area: 10000, expectedMetric: '10.0', expectedUnit: 'daa' },
       { area: 50000, expectedMetric: '50.0', expectedUnit: 'daa' },
       { area: 100000, expectedMetric: '100', expectedUnit: 'daa' },
-      { area: 1000000, expectedMetric: '1000', expectedUnit: 'daa' }
+      { area: 1000000, expectedMetric: '1000', expectedUnit: 'daa' },
     ];
 
     testCases.forEach((testCase, index) => {
@@ -159,11 +209,21 @@ describe('Area', () => {
           areaLabel: '',
           perimeterLabel: '',
           values: { min: { metric: '', imperial: '' }, unknown: { metric: '', imperial: '' } },
-          units: { unknownUnit: '', metric: { perimeter: { m: 'm', km: 'km' }, area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' } }, imperial: { perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' }, area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' } } },
+          units: {
+            unknownUnit: '',
+            metric: {
+              perimeter: { m: 'm', km: 'km' },
+              area: { m2: 'm²', km2: 'km²', daa: 'daa', ha: 'ha' },
+            },
+            imperial: {
+              perimeter: { feet: 'ft', yards: 'yd', miles: 'mi' },
+              area: { feet2: 'ft²', yards2: 'yd²', acres: 'ac', miles2: 'mi²' },
+            },
+          },
           styleClasses: [],
-          zIndexOffset: 0
-        }
-      }
+          zIndexOffset: 0,
+        },
+      },
     };
 
     const area = new Area(10000, config as any);
@@ -179,9 +239,9 @@ describe('PolyDrawUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
-    
+
     const bounds = PolyDrawUtil.getBounds(polygon);
     expect(bounds.getSouth()).toBe(0);
     expect(bounds.getNorth()).toBe(1);
@@ -195,9 +255,9 @@ describe('PolyDrawUtil', () => {
       { lat: 0, lng: 1 },
       { lat: 1, lng: 1 },
       { lat: 1, lng: 0 },
-      { lat: 0, lng: 0 }
+      { lat: 0, lng: 0 },
     ];
-    
+
     const bounds = PolyDrawUtil.getBounds(polygon, 0.1);
     expect(bounds.getSouth()).toBeLessThan(0);
     expect(bounds.getNorth()).toBeGreaterThan(1);
@@ -209,27 +269,27 @@ describe('PolyDrawUtil', () => {
 describe('Compass', () => {
   it('creates compass directions correctly', () => {
     const compass = new Compass(0, 0, 1, 1);
-    
+
     expect(compass.direction.North.lat).toBe(1);
     expect(compass.direction.North.lng).toBe(0.5);
-    
+
     expect(compass.direction.South.lat).toBe(0);
     expect(compass.direction.South.lng).toBe(0.5);
-    
+
     expect(compass.direction.East.lat).toBe(0.5);
     expect(compass.direction.East.lng).toBe(1);
-    
+
     expect(compass.direction.West.lat).toBe(0.5);
     expect(compass.direction.West.lng).toBe(0);
   });
 
   it('gets direction by position', () => {
     const compass = new Compass(0, 0, 1, 1);
-    
+
     const north = compass.getDirection(MarkerPosition.North);
     expect(north.lat).toBe(1);
     expect(north.lng).toBe(0.5);
-    
+
     const south = compass.getDirection(MarkerPosition.South);
     expect(south.lat).toBe(0);
     expect(south.lng).toBe(0.5);
@@ -237,7 +297,7 @@ describe('Compass', () => {
 
   it('gets positions array', () => {
     const compass = new Compass(0, 0, 1, 1);
-    
+
     const positions = compass.getPositions();
     expect(positions.length).toBe(9); // 8 directions + closing node
     expect(positions[0][0]).toBe(0); // SouthWest lng
