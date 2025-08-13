@@ -1,4 +1,38 @@
-import * as turf from '@turf/turf';
+import {
+  featureCollection,
+  multiPolygon,
+  point,
+  lineString,
+  polygon,
+  type Coord,
+} from '@turf/helpers';
+import centerOfMass from '@turf/center-of-mass';
+import lineIntersect from '@turf/line-intersect';
+import union from '@turf/union';
+import intersect from '@turf/intersect';
+import difference from '@turf/difference';
+import convex from '@turf/convex';
+import explode from '@turf/explode';
+import buffer from '@turf/buffer';
+import simplify from '@turf/simplify';
+import { getCoords } from '@turf/invariant';
+import kinks from '@turf/kinks';
+import unkinkPolygon from '@turf/unkink-polygon';
+import { featureEach } from '@turf/meta';
+import midpoint from '@turf/midpoint';
+import area from '@turf/area';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import distance from '@turf/distance';
+import booleanWithin from '@turf/boolean-within';
+import booleanEqual from '@turf/boolean-equal';
+import bbox from '@turf/bbox';
+import bboxPolygon from '@turf/bbox-polygon';
+import nearestPoint from '@turf/nearest-point';
+import polygonToLine from '@turf/polygon-to-line';
+import lineToPolygon from '@turf/line-to-polygon';
+import bezierSpline from '@turf/bezier-spline';
+import centroid from '@turf/centroid';
+import length from '@turf/length';
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
@@ -23,9 +57,9 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> {
     try {
-      const featureCollection = turf.featureCollection([poly1, poly2]);
-      const union = turf.union(featureCollection);
-      return union ? this.getTurfPolygon(union) : null;
+      const fc = featureCollection([poly1, poly2]);
+      const u = union(fc);
+      return u ? this.getTurfPolygon(u) : null;
     } catch (error) {
       console.warn('Error in union:', error.message);
       return null;
@@ -57,17 +91,17 @@ export class TurfHelper {
    * Original concaveman implementation
    */
   turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
-    const points = turf.explode(feature);
+    const points = explode(feature);
     const coordinates = points.features.map((f) => f.geometry.coordinates);
-    return turf.multiPolygon([[concaveman(coordinates)]]);
+    return multiPolygon([[concaveman(coordinates)]]);
   }
 
   /**
    * Create convex hull polygon (simplest, fewest edges)
    */
   private createConvexPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
-    const points = turf.explode(feature);
-    const convexHull = turf.convex(points);
+    const points = explode(feature);
+    const convexHull = convex(points);
 
     if (!convexHull) {
       // Fallback to direct polygon if convex hull fails
@@ -89,7 +123,7 @@ export class TurfHelper {
       coordinates = feature.geometry.coordinates[0];
     } else {
       // Fallback: extract coordinates from any geometry
-      const points = turf.explode(feature);
+      const points = explode(feature);
       coordinates = points.features.map((f) => f.geometry.coordinates);
     }
 
@@ -109,7 +143,7 @@ export class TurfHelper {
       return this.turfConcaveman(feature);
     }
 
-    return turf.multiPolygon([[coordinates]]);
+    return multiPolygon([[coordinates]]);
   }
 
   /**
@@ -124,13 +158,13 @@ export class TurfHelper {
         line = feature;
       } else {
         // Convert polygon or other geometry to line
-        const points = turf.explode(feature);
+        const points = explode(feature);
         const coordinates = points.features.map((f) => f.geometry.coordinates);
-        line = turf.lineString(coordinates);
+        line = lineString(coordinates);
       }
 
       // Apply small buffer to create polygon
-      const buffered = turf.buffer(line, 0.001, { units: 'kilometers' });
+      const buffered = buffer(line, 0.001, { units: 'kilometers' });
 
       if (!buffered) {
         return this.createDirectPolygon(feature);
@@ -157,7 +191,7 @@ export class TurfHelper {
         mutate: false,
       };
 
-      const simplified = turf.simplify(polygon, tolerance);
+      const simplified = simplify(polygon, tolerance);
       return simplified;
     } else if (simplificationMode === 'dynamic') {
       // Original dynamic simplification
@@ -165,10 +199,10 @@ export class TurfHelper {
       const tolerance = this.config.simplification.simplifyTolerance;
 
       if (!dynamicTolerance) {
-        const simplified = turf.simplify(polygon, tolerance);
+        const simplified = simplify(polygon, tolerance);
         return simplified;
       } else {
-        let simplified = turf.simplify(polygon, tolerance);
+        let simplified = simplify(polygon, tolerance);
         const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
         const multipiler = this.config.simplification.dynamicMode.multipiler;
         while (
@@ -176,7 +210,7 @@ export class TurfHelper {
           simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
         ) {
           tolerance.tolerance = tolerance.tolerance * multipiler;
-          simplified = turf.simplify(polygon, tolerance);
+          simplified = simplify(polygon, tolerance);
         }
         return simplified;
       }
@@ -192,22 +226,22 @@ export class TurfHelper {
         highQuality: false,
         mutate: false,
       };
-      return turf.simplify(polygon, tolerance);
+      return simplify(polygon, tolerance);
     }
   }
 
   getTurfPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
     let turfPolygon;
     if (polygon.geometry.type === 'Polygon') {
-      turfPolygon = turf.multiPolygon([polygon.geometry.coordinates]);
+      turfPolygon = multiPolygon([polygon.geometry.coordinates]);
     } else {
-      turfPolygon = turf.multiPolygon(polygon.geometry.coordinates);
+      turfPolygon = multiPolygon(polygon.geometry.coordinates);
     }
     return turfPolygon;
   }
 
   getMultiPolygon(polygonArray: Position[][][]): Feature<Polygon | MultiPolygon> {
-    return turf.multiPolygon(polygonArray);
+    return multiPolygon(polygonArray);
   }
 
   getKinks(feature: Feature<Polygon | MultiPolygon>) {
@@ -234,9 +268,9 @@ export class TurfHelper {
         return this.getKinksWithHolePreservation(cleanedFeature);
       } else {
         // For simple polygons, use the standard unkink approach
-        const unkink = turf.unkinkPolygon(cleanedFeature);
+        const unkink = unkinkPolygon(cleanedFeature);
         const coordinates = [];
-        turf.featureEach(unkink, (current) => {
+        featureEach(unkink, (current) => {
           coordinates.push(current);
         });
         return coordinates;
@@ -249,12 +283,12 @@ export class TurfHelper {
   }
 
   getCoords(feature: Feature<Polygon | MultiPolygon>) {
-    return turf.getCoords(feature);
+    return getCoords(feature);
   }
 
   hasKinks(feature: Feature<Polygon | MultiPolygon>) {
-    const kinks = turf.kinks(feature);
-    return kinks.features.length > 0;
+    const k = kinks(feature);
+    return k.features.length > 0;
   }
 
   /**
@@ -262,8 +296,8 @@ export class TurfHelper {
    */
   getConvexHull(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> | null {
     try {
-      const featureCollection = turf.featureCollection([polygon]);
-      return turf.convex(featureCollection);
+      const fc = featureCollection([polygon]);
+      return convex(fc);
     } catch (error) {
       console.warn('Error in getConvexHull:', error.message);
       return null;
@@ -274,14 +308,14 @@ export class TurfHelper {
    * Calculate midpoint between two LatLngLiteral points
    */
   getMidpoint(point1: L.LatLngLiteral, point2: L.LatLngLiteral): L.LatLngLiteral {
-    const p1 = turf.point([point1.lng, point1.lat]);
-    const p2 = turf.point([point2.lng, point2.lat]);
+    const p1 = point([point1.lng, point1.lat]);
+    const p2 = point([point2.lng, point2.lat]);
 
-    const midpoint = turf.midpoint(p1, p2);
+    const mp = midpoint(p1, p2);
 
     return {
-      lat: midpoint.geometry.coordinates[1],
-      lng: midpoint.geometry.coordinates[0],
+      lat: mp.geometry.coordinates[1],
+      lng: mp.geometry.coordinates[0],
     };
   }
 
@@ -303,10 +337,10 @@ export class TurfHelper {
         return false;
       }
 
-      // Method 1: Try direct intersection using turf.intersect with FeatureCollection
+      // Method 1: Try direct intersection using intersect with FeatureCollection
       try {
-        const featureCollection = turf.featureCollection([polygon, latlngs]);
-        const intersection = turf.intersect(featureCollection);
+        const fc = featureCollection([polygon, latlngs]);
+        const intersection = intersect(fc);
 
         if (
           intersection &&
@@ -315,8 +349,8 @@ export class TurfHelper {
             intersection.geometry.type === 'MultiPolygon')
         ) {
           // Check if the intersection has meaningful area
-          const area = turf.area(intersection);
-          if (area > 0.000001) {
+          const polygonArea = area(intersection);
+          if (polygonArea > 0.000001) {
             // Very small threshold for meaningful intersection
             return true;
           }
@@ -327,17 +361,17 @@ export class TurfHelper {
 
       // Method 2: Check if any vertices of one polygon are inside the other
       try {
-        const points1 = turf.explode(polygon);
-        const points2 = turf.explode(latlngs);
+        const points1 = explode(polygon);
+        const points2 = explode(latlngs);
 
         for (const point of points2.features) {
-          if (turf.booleanPointInPolygon(point, polygon)) {
+          if (booleanPointInPolygon(point, polygon)) {
             return true;
           }
         }
 
         for (const point of points1.features) {
-          if (turf.booleanPointInPolygon(point, latlngs)) {
+          if (booleanPointInPolygon(point, latlngs)) {
             return true;
           }
         }
@@ -347,21 +381,21 @@ export class TurfHelper {
 
       // Method 3: Check for edge intersections using line intersection
       try {
-        const coords1 = turf.getCoords(polygon);
-        const coords2 = turf.getCoords(latlngs);
+        const coords1 = getCoords(polygon);
+        const coords2 = getCoords(latlngs);
 
         for (const ring1 of coords1) {
           const outerRing1 = ring1[0]; // Get outer ring
           for (let i = 0; i < outerRing1.length - 1; i++) {
-            const line1 = turf.lineString([outerRing1[i], outerRing1[i + 1]]);
+            const line1 = lineString([outerRing1[i], outerRing1[i + 1]]);
 
             for (const ring2 of coords2) {
               const outerRing2 = ring2[0]; // Get outer ring
               for (let j = 0; j < outerRing2.length - 1; j++) {
-                const line2 = turf.lineString([outerRing2[j], outerRing2[j + 1]]);
+                const line2 = lineString([outerRing2[j], outerRing2[j + 1]]);
 
                 try {
-                  const intersection = turf.lineIntersect(line1, line2);
+                  const intersection = lineIntersect(line1, line2);
                   if (intersection && intersection.features && intersection.features.length > 0) {
                     return true;
                   }
@@ -401,9 +435,8 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
-      // In Turf 7.x, intersect expects a FeatureCollection with multiple features
-      const featureCollection = turf.featureCollection([poly1, poly2]);
-      const result = turf.intersect(featureCollection);
+      const fc = featureCollection([poly1, poly2]);
+      const result = intersect(fc);
 
       // Validate that the result is actually a polygon or multipolygon
       if (
@@ -423,11 +456,11 @@ export class TurfHelper {
   }
 
   getDistance(point1, point2): number {
-    return turf.distance(point1, point2);
+    return distance(point1, point2);
   }
 
   isWithin(polygon1: Position[], polygon2: Position[]): boolean {
-    return turf.booleanWithin(turf.polygon([polygon1]), turf.polygon([polygon2]));
+    return booleanWithin(polygon([polygon1]), polygon([polygon2]));
   }
 
   /**
@@ -438,24 +471,24 @@ export class TurfHelper {
     outerPolygon: Feature<Polygon | MultiPolygon>,
   ): boolean {
     try {
-      return turf.booleanWithin(innerPolygon, outerPolygon);
+      return booleanWithin(innerPolygon, outerPolygon);
     } catch (error) {
       // Fallback: check if all vertices of inner polygon are within outer polygon
-      const innerCoords = turf.getCoords(innerPolygon);
-      const outerCoords = turf.getCoords(outerPolygon);
+      const innerCoords = getCoords(innerPolygon);
+      const outerCoords = getCoords(outerPolygon);
 
       // For each ring in the inner polygon
       for (const innerRing of innerCoords) {
         for (const ring of innerRing) {
           for (const coord of ring) {
-            const point = turf.point(coord);
+            const pt = point(coord);
             let isInside = false;
 
             // Check against each ring in the outer polygon
             for (const outerRing of outerCoords) {
               for (const outerRingCoords of outerRing) {
-                const outerPoly = turf.polygon([outerRingCoords]);
-                if (turf.booleanPointInPolygon(point, outerPoly)) {
+                const outerPoly = polygon([outerRingCoords]);
+                if (booleanPointInPolygon(pt, outerPoly)) {
                   isInside = true;
                   break;
                 }
@@ -478,38 +511,32 @@ export class TurfHelper {
    * Supports GeoJSON Feature<Point>, Turf Position [lng, lat], and Leaflet LatLngLiteral.
    */
   private toPointFeature(
-    point: Feature<Point> | Position | L.LatLngLiteral | { geometry?: { coordinates?: number[] } },
+    pt: Feature<Point> | Position | L.LatLngLiteral | { geometry?: { coordinates?: number[] } },
   ): Feature<Point> {
     // Case 1: Already a Feature<Point>
-    if (
-      (point as Feature<Point>)?.type === 'Feature' &&
-      (point as any).geometry?.type === 'Point'
-    ) {
-      return point as Feature<Point>;
+    if ((pt as Feature<Point>)?.type === 'Feature' && (pt as any).geometry?.type === 'Point') {
+      return pt as Feature<Point>;
     }
 
     // Case 2: Turf Position [lng, lat]
     if (
-      Array.isArray(point) &&
-      point.length >= 2 &&
-      typeof point[0] === 'number' &&
-      typeof point[1] === 'number'
+      Array.isArray(pt) &&
+      pt.length >= 2 &&
+      typeof pt[0] === 'number' &&
+      typeof pt[1] === 'number'
     ) {
-      return turf.point(point as Position);
+      return point(pt as Position);
     }
 
     // Case 3: Leaflet LatLngLiteral {lat, lng}
-    if (typeof (point as any)?.lat === 'number' && typeof (point as any)?.lng === 'number') {
-      const p = point as L.LatLngLiteral;
-      return turf.point([p.lng, p.lat]);
+    if (typeof (pt as any)?.lat === 'number' && typeof (pt as any)?.lng === 'number') {
+      const p = pt as L.LatLngLiteral;
+      return point([p.lng, p.lat]);
     }
 
     // Case 4: Generic object with geometry.coordinates
-    if (
-      (point as any)?.geometry?.coordinates &&
-      Array.isArray((point as any).geometry.coordinates)
-    ) {
-      return turf.point((point as any).geometry.coordinates as Position);
+    if ((pt as any)?.geometry?.coordinates && Array.isArray((pt as any).geometry.coordinates)) {
+      return point((pt as any).geometry.coordinates as Position);
     }
 
     // Fallback – throw to make caller handle gracefully
@@ -522,12 +549,12 @@ export class TurfHelper {
    * This normalization prevents noisy console warnings in tests.
    */
   isPointInsidePolygon(
-    point: Feature<Point> | Position | L.LatLngLiteral,
+    pt: Feature<Point> | Position | L.LatLngLiteral,
     polygon: Feature<Polygon | MultiPolygon>,
   ): boolean {
     try {
-      const pointFeature = this.toPointFeature(point as any);
-      return turf.booleanPointInPolygon(pointFeature, polygon);
+      const pointFeature = this.toPointFeature(pt as any);
+      return booleanPointInPolygon(pointFeature, polygon);
     } catch (error) {
       // Be quiet in failure – just return false to avoid noisy test output
       return false;
@@ -542,18 +569,18 @@ export class TurfHelper {
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
-    return turf.booleanEqual(polygon1, polygon2);
+    return booleanEqual(polygon1, polygon2);
   }
 
   convertToBoundingBoxPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> {
-    const bbox = turf.bbox(polygon.geometry);
-    const bboxPolygon = turf.bboxPolygon(bbox);
+    const bboxCoords = bbox(polygon.geometry);
+    const bboxPoly = bboxPolygon(bboxCoords);
     // TODO: Add Compass logic if needed
-    return bboxPolygon;
+    return bboxPoly;
   }
 
   polygonToMultiPolygon(poly: Feature<Polygon>): Feature<MultiPolygon> {
-    const multi = turf.multiPolygon([poly.geometry.coordinates]);
+    const multi = multiPolygon([poly.geometry.coordinates]);
     return multi;
   }
 
@@ -638,8 +665,8 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
-      const featureCollection = turf.featureCollection([polygon1, polygon2]);
-      const diff = turf.difference(featureCollection);
+      const fc = featureCollection([polygon1, polygon2]);
+      const diff = difference(fc);
 
       const result = diff ? this.getTurfPolygon(diff) : null;
       return result;
@@ -654,48 +681,48 @@ export class TurfHelper {
     return null;
   }
 
-  getNearestPointIndex(targetPoint: turf.Coord, points: any): number {
-    const index = turf.nearestPoint(targetPoint, points).properties.featureIndex;
+  getNearestPointIndex(targetPoint: Coord, points: any): number {
+    const index = nearestPoint(targetPoint, points).properties.featureIndex;
     return index;
   }
 
   /**
-   * Convert LatLngLiteral object to Turf.js coordinate array format.
+   * Convert LatLngLiteral object to js coordinate array format.
    *
    * This method serves as a semantic interface for coordinate conversion,
-   * ensuring consistent lng/lat order when interfacing with Turf.js functions.
+   * ensuring consistent lng/lat order when interfacing with js functions.
    * While simple, it provides a clear contract and future-proofing for any
    * coordinate validation or transformation that might be needed later.
    *
    * @param point - LatLngLiteral object with lat/lng properties
-   * @returns Turf.js coordinate array in [lng, lat] format
+   * @returns js coordinate array in [lng, lat] format
    */
-  getCoord(point: L.LatLngLiteral): turf.Coord {
+  getCoord(point: L.LatLngLiteral): Coord {
     return [point.lng, point.lat];
   }
 
   getFeaturePointCollection(points: L.LatLngLiteral[]): any {
     const pts = [];
     points.forEach((v) => {
-      const p = turf.point([v.lng, v.lat], {});
+      const p = point([v.lng, v.lat], {});
       pts.push(p);
     });
-    const fc = turf.featureCollection(pts);
+    const fc = featureCollection(pts);
     return fc;
   }
 
   getPolygonArea(poly: Feature<Polygon | MultiPolygon>): number {
-    const area = turf.area(poly);
-    return area;
+    const polygonArea = area(poly);
+    return polygonArea;
   }
 
   getPolygonPerimeter(poly: Feature<Polygon | MultiPolygon>): number {
-    const length = turf.length(poly, { units: 'kilometers' });
-    return length;
+    const polygonLength = length(poly, { units: 'kilometers' });
+    return polygonLength;
   }
 
   getCenterOfMass(feature: Feature<Polygon | MultiPolygon>) {
-    return turf.centerOfMass(feature);
+    return centerOfMass(feature);
   }
 
   getDoubleElbowLatLngs(points: L.LatLngLiteral[]): L.LatLngLiteral[] {
@@ -712,7 +739,7 @@ export class TurfHelper {
       // Add current point
       doubleized.push(new L.LatLng(p1.lat, p1.lng));
       // Calculate and add midpoint
-      const midPoint = turf.midpoint(turf.point([p1.lng, p1.lat]), turf.point([p2.lng, p2.lat]));
+      const midPoint = midpoint(point([p1.lng, p1.lat]), point([p2.lng, p2.lat]));
       doubleized.push(
         new L.LatLng(midPoint.geometry.coordinates[1], midPoint.geometry.coordinates[0]),
       );
@@ -722,16 +749,16 @@ export class TurfHelper {
   }
 
   getBezierMultiPolygon(polygonArray: Position[][][]): Feature<Polygon | MultiPolygon> {
-    const line = turf.polygonToLine(this.getMultiPolygon(polygonArray));
+    const line = polygonToLine(this.getMultiPolygon(polygonArray));
     // Add first point to "close" the line
     (line as any).features[0].geometry.coordinates.push(
       (line as any).features[0].geometry.coordinates[0],
     );
-    const bezierLine = turf.bezierSpline((line as any).features[0], {
+    const bezierLine = bezierSpline((line as any).features[0], {
       resolution: this.config.bezier.resolution,
       sharpness: this.config.bezier.sharpness,
     });
-    const bezierPoly = turf.lineToPolygon(bezierLine);
+    const bezierPoly = lineToPolygon(bezierLine);
     return bezierPoly;
   }
 
@@ -805,10 +832,10 @@ export class TurfHelper {
           }
 
           // Split ONLY the outer ring (not the holes)
-          const unkink = turf.unkinkPolygon(outerPolygon);
+          const unkink = unkinkPolygon(outerPolygon);
           const splitPolygons: Feature<Polygon | MultiPolygon>[] = [];
 
-          turf.featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
+          featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
             // For each split polygon, subtract any intersecting holes to create proper "bites"
             const polygonWithBites = this.subtractIntersectingHoles(splitPolygon, holes);
             splitPolygons.push(polygonWithBites);
@@ -943,11 +970,11 @@ export class TurfHelper {
       const lineEnd = line[line.length - 1];
 
       // Create a polygon from the hole
-      const holePolygon = turf.polygon([hole]);
+      const holePolygon = polygon([hole]);
 
       // Check if the line endpoints are on opposite sides of the hole
-      const startInHole = turf.booleanPointInPolygon(turf.point(lineStart), holePolygon);
-      const endInHole = turf.booleanPointInPolygon(turf.point(lineEnd), holePolygon);
+      const startInHole = booleanPointInPolygon(point(lineStart), holePolygon);
+      const endInHole = booleanPointInPolygon(point(lineEnd), holePolygon);
 
       // If one endpoint is inside the hole and one is outside, it might traverse
       if (startInHole !== endInHole) {
@@ -967,35 +994,31 @@ export class TurfHelper {
   private holeIsCutByKinks(outerRing: Position[], hole: Position[]): boolean {
     try {
       // Create polygons for analysis
-      const outerPolygon = turf.polygon([outerRing]);
-      const holePolygon = turf.polygon([hole]);
+      const outerPolygon = polygon([outerRing]);
+      const holePolygon = polygon([hole]);
 
       // Get the kinks (self-intersections) in the outer ring
-      const kinks = turf.kinks(outerPolygon);
-
-      if (kinks.features.length === 0) return false;
+      const kinkFeatures = kinks(outerPolygon);
+      if (kinkFeatures.features.length === 0) return false;
 
       // Check if any kink points are related to the hole
-      for (const kink of kinks.features) {
-        const kinkPoint = kink.geometry.coordinates;
+      for (const kink of kinkFeatures.features) {
+        const kinkPt = kink.geometry.coordinates as Position;
 
-        // Check if the kink is near or intersects the hole
         try {
-          const distance = turf.distance(turf.point(kinkPoint), turf.centroid(holePolygon));
-
-          if (distance < 0.01) {
+          const d = distance(point(kinkPt), centroid(holePolygon));
+          if (d < 0.01) {
             // Close to hole center
-
             return true;
           }
 
           // Also check if kink point is inside the hole
-          if (turf.booleanPointInPolygon(turf.point(kinkPoint), holePolygon)) {
+          if (booleanPointInPolygon(point(kinkPt), holePolygon)) {
             return true;
           }
-        } catch (distanceError) {
+        } catch {
           // Fallback: just check if point is in polygon
-          if (turf.booleanPointInPolygon(turf.point(kinkPoint), holePolygon)) {
+          if (booleanPointInPolygon(point(kinkPt), holePolygon)) {
             return true;
           }
         }
@@ -1003,7 +1026,7 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn('Error checking hole cut by kinks:', error.message);
+      console.warn('Error checking hole cut by kinks:', (error as Error).message);
       return false;
     }
   }
@@ -1039,10 +1062,10 @@ export class TurfHelper {
         return false;
       }
 
-      const outerPolygon = turf.polygon([outerRing]);
+      const outerPolygon = polygon([outerRing]);
 
       for (const hole of holes) {
-        const holePolygon = turf.polygon([hole]);
+        const holePolygon = polygon([hole]);
 
         // Check if outer ring intersects with hole boundary
         const intersection = this.getIntersection(outerPolygon, holePolygon);
@@ -1053,8 +1076,8 @@ export class TurfHelper {
 
         // Also check if any part of the outer ring goes through the hole
         for (let i = 0; i < outerRing.length - 1; i++) {
-          const point = outerRing[i];
-          const pointInHole = turf.booleanPointInPolygon(turf.point(point), holePolygon);
+          const pt = outerRing[i];
+          const pointInHole = booleanPointInPolygon(point(pt), holePolygon);
 
           if (pointInHole) {
             return true;
@@ -1090,10 +1113,10 @@ export class TurfHelper {
       };
 
       // Now split this simple solid polygon
-      const unkink = turf.unkinkPolygon(solidPolygon);
+      const unkink = unkinkPolygon(solidPolygon);
       const resultPolygons: Feature<Polygon>[] = [];
 
-      turf.featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
+      featureEach(unkink, (splitPolygon: Feature<Polygon>) => {
         // For complete hole traversal, we create solid polygons
         // The hole area becomes "nothing" (like cutting cake)
         // This tells the marker manager to NOT preserve hole structure
@@ -1123,46 +1146,6 @@ export class TurfHelper {
   }
 
   /**
-   * Assign holes to a polygon based on containment and intersection analysis
-   */
-  private assignHolesToPolygon(polygon: Feature<Polygon>, holes: Position[][]): Feature<Polygon> {
-    try {
-      const assignedHoles: Position[][] = [];
-
-      for (const hole of holes) {
-        const holePolygon = turf.polygon([hole]);
-
-        // Check if the hole intersects with the polygon boundary
-        const intersectionResult = this.analyzeHolePolygonRelationship(holePolygon, polygon);
-
-        if (intersectionResult.isCompletelyContained) {
-          // Hole is completely within the polygon - assign as normal hole
-          assignedHoles.push(hole);
-        } else if (intersectionResult.hasIntersection) {
-          // Hole is intersected by the split - ignore it (let it disappear naturally)
-          // Do nothing - the hole part just disappears, resulting in solid polygons
-        } else {
-          /* empty */
-        }
-      }
-
-      // Return polygon with assigned holes (if any)
-      return {
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [polygon.geometry.coordinates[0], ...assignedHoles],
-        },
-        properties: polygon.properties || {},
-      };
-    } catch (error) {
-      console.warn('Error assigning holes to polygon:', error.message);
-      // Return polygon without holes if assignment fails
-      return polygon;
-    }
-  }
-
-  /**
    * Analyze the relationship between a hole and a polygon
    */
   private analyzeHolePolygonRelationship(
@@ -1175,7 +1158,7 @@ export class TurfHelper {
   } {
     try {
       // Check if hole is completely within polygon
-      const isCompletelyContained = turf.booleanWithin(hole, polygon);
+      const isCompletelyContained = booleanWithin(hole, polygon);
 
       if (isCompletelyContained) {
         return {
@@ -1191,8 +1174,8 @@ export class TurfHelper {
       let intersectionArea = 0;
 
       if (hasIntersection) {
-        intersectionArea = turf.area(intersection);
-        const holeArea = turf.area(hole);
+        intersectionArea = area(intersection);
+        const holeArea = area(hole);
 
         // Only consider it a meaningful intersection if the intersection area
         // is significant compared to the hole area (more than 10%)
@@ -1227,14 +1210,14 @@ export class TurfHelper {
    * Subtract intersecting holes from a polygon to create proper "bite" shapes
    */
   private subtractIntersectingHoles(
-    polygon: Feature<Polygon>,
+    basePolygon: Feature<Polygon>,
     holes: Position[][],
   ): Feature<Polygon> {
     try {
-      let resultPolygon = polygon;
+      let resultPolygon = basePolygon;
 
       for (const hole of holes) {
-        const holePolygon = turf.polygon([hole]);
+        const holePolygon = polygon([hole]);
 
         // Check if this hole intersects with the polygon
         const intersection = this.getIntersection(holePolygon, resultPolygon);
@@ -1259,9 +1242,9 @@ export class TurfHelper {
                   geometry: { type: 'Polygon', coordinates: coords },
                   properties: {},
                 };
-                const area = turf.area(poly);
-                if (area > largestArea) {
-                  largestArea = area;
+                const polygonArea = area(poly);
+                if (polygonArea > largestArea) {
+                  largestArea = polygonArea;
                   largestPolygon = poly;
                 }
               }
@@ -1281,7 +1264,7 @@ export class TurfHelper {
       return resultPolygon;
     } catch (error) {
       console.warn('Error subtracting intersecting holes:', error.message);
-      return polygon; // Return original polygon if subtraction fails
+      return basePolygon; // Return original polygon if subtraction fails
     }
   }
 

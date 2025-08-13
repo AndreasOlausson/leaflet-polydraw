@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import * as L from 'leaflet';
+
 import Polydraw from '../src/polydraw';
-import * as turf from '@turf/turf';
+import { polygon } from '@turf/helpers';
 
 describe('Polygon Dragging Tests', () => {
   let polydraw: Polydraw;
@@ -74,7 +74,7 @@ describe('Polygon Dragging Tests', () => {
       // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
       const polygon1 = {
         toGeoJSON: () =>
-          turf.polygon([
+          polygon([
             [
               [15.008698, 58.163446], // lng, lat format for GeoJSON
               [15.284729, 58.163446],
@@ -90,7 +90,7 @@ describe('Polygon Dragging Tests', () => {
       // Second polygon with coordinates that create bounding box overlap but no geometric intersection
       const polygon2 = {
         toGeoJSON: () =>
-          turf.polygon([
+          polygon([
             [
               [15.630799, 58.356368],
               [15.967255, 58.292247],
@@ -124,7 +124,7 @@ describe('Polygon Dragging Tests', () => {
         getLatLngs: () => [],
         setLatLngs: vi.fn(),
         toGeoJSON: () =>
-          turf.polygon([
+          polygon([
             [
               [0, 0],
               [1, 0],
@@ -137,7 +137,7 @@ describe('Polygon Dragging Tests', () => {
 
       const targetPolygon = {
         toGeoJSON: () =>
-          turf.polygon([
+          polygon([
             [
               [0.5, 0.5], // This polygon intersects with the dragged polygon
               [1.5, 0.5],
