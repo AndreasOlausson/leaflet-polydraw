@@ -73,6 +73,7 @@ class Polydraw extends L.Control {
    * @returns The control's container element.
    */
   public onAdd(_map: L.Map): HTMLElement {
+    void _map; // make lint happy
     const extendedMap = _map as ExtendedMap;
     const browser = L.Browser as ExtendedBrowser;
 
@@ -110,6 +111,7 @@ class Polydraw extends L.Control {
    * @param _map - The map instance, unused but required by the L.Control interface.
    */
   public onRemove(_map: L.Map) {
+    void _map; // make lint happy
     this.removeKeyboardHandlers();
     if (this.tracer) {
       this.map.removeLayer(this.tracer);
@@ -233,6 +235,7 @@ class Polydraw extends L.Control {
    * @param event - The event type to listen for.
    * @param callback - The callback function to execute when the event is triggered.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public on(event: any, callback: any): void {
     this.eventManager.on(event, callback);
   }
@@ -242,6 +245,7 @@ class Polydraw extends L.Control {
    * @param event - The event type to stop listening for.
    * @param callback - The callback function to remove.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public off(event: any, callback: any): void {
     this.eventManager.off(event, callback);
   }
@@ -601,6 +605,7 @@ class Polydraw extends L.Control {
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
     this.modeManager = new ModeManager(this.config, this.eventManager);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
+      void _k; // make lint happy
       // This is the perfect central place to keep the indicator in sync.
       this.updateActivateButtonIndicator();
     });
@@ -1072,6 +1077,7 @@ class Polydraw extends L.Control {
 }
 
 // Add the polydraw method to L.control with proper typing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (L.control as any).polydraw = function (
   options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
 ): Polydraw {

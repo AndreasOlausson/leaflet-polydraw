@@ -10,12 +10,12 @@ export class CoordinateUtils {
   /**
    * Convert coordinate arrays to proper format for polygon creation
    */
-  static convertToCoords(latlngs: L.LatLngLiteral[][], turfHelper: TurfHelper): any[] {
-    const coords = [];
+  static convertToCoords(latlngs: L.LatLngLiteral[][], turfHelper: TurfHelper): number[][][] {
+    const coords: number[][][] = [];
 
     // latlngs length
     if (latlngs.length > 1 && latlngs.length < 3) {
-      const coordinates: any[][] = [];
+      const coordinates: number[][] = [];
       // Coords of last polygon
       const within = turfHelper.isWithin(
         L.GeoJSON.latLngsToCoords(latlngs[latlngs.length - 1]),
@@ -35,7 +35,7 @@ export class CoordinateUtils {
       }
       // Within result
     } else if (latlngs.length > 2) {
-      const coordinates: any[][] = [];
+      const coordinates: number[][] = [];
       for (let index = 1; index < latlngs.length - 1; index++) {
         const within = turfHelper.isWithin(
           L.GeoJSON.latLngsToCoords(latlngs[index]),
@@ -62,7 +62,11 @@ export class CoordinateUtils {
   /**
    * Apply offset to polygon coordinates
    */
-  static offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
+  static offsetPolygonCoordinates(
+    latLngs: L.LatLngLiteral[][],
+    offsetLat: number,
+    offsetLng: number,
+  ): L.LatLngLiteral[][] {
     return GeometryUtils.offsetPolygonCoordinates(latLngs, offsetLat, offsetLng);
   }
 

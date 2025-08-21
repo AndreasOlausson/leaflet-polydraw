@@ -80,12 +80,20 @@ export class GeometryUtils {
 
   /**
    * Apply offset to polygon coordinates
+   * Note: Uses 'any' type for recursive coordinate structures that can be:
+   * - L.LatLngLiteral (single coordinate)
+   * - L.LatLngLiteral[] (array of coordinates)
+   * - L.LatLngLiteral[][] (polygon with holes)
+   * - L.LatLngLiteral[][][] (multipolygon)
+   * This is a legitimate use of 'any' for dynamic recursive data structures.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static offsetPolygonCoordinates(latLngs: any, offsetLat: number, offsetLng: number): any {
     if (!latLngs) return latLngs;
 
     if (Array.isArray(latLngs[0])) {
       // Multi-dimensional array (polygon with holes or multipolygon)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return latLngs.map((ring: any) =>
         GeometryUtils.offsetPolygonCoordinates(ring, offsetLat, offsetLng),
       );
@@ -97,6 +105,7 @@ export class GeometryUtils {
       };
     } else {
       // Array of coordinates
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return latLngs.map((coord: any) =>
         GeometryUtils.offsetPolygonCoordinates(coord, offsetLat, offsetLng),
       );

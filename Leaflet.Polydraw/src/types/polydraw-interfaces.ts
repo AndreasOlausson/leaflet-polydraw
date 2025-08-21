@@ -378,6 +378,7 @@ export interface PolydrawPolygon extends L.Polygon {
   _polydrawDragData?: {
     isDragging: boolean;
     startPosition: L.LatLngLiteral | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     startLatLngs?: any;
     originalOpacity?: number;
   };

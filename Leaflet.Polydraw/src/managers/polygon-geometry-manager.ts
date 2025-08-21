@@ -406,7 +406,10 @@ export class PolygonGeometryManager {
           // Always process the outer ring, process holes only if config allows
           if (isOuterRing || processHoles) {
             // Convert coordinates to LatLng format for the turf helper
-            const latlngs = currentRing.map((coord: any[]) => ({ lat: coord[1], lng: coord[0] }));
+            const latlngs = currentRing.map((coord: [number, number]) => ({
+              lat: coord[1],
+              lng: coord[0],
+            }));
             const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
             const doubledCoords = doubleLatLngs.map(
               (latlng) => [latlng.lng, latlng.lat] as [number, number],

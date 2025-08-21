@@ -108,14 +108,15 @@ export class PolygonInformationService {
     this.polygonInformationStorage = [];
   }
 
-  createPolygonInformationStorage(arrayOfFeatureGroups: any[]): void {
+  createPolygonInformationStorage(arrayOfFeatureGroups: L.FeatureGroup[]): void {
     // Create Info
 
     if (arrayOfFeatureGroups.length > 0) {
       arrayOfFeatureGroups.forEach((featureGroup) => {
         const layers = featureGroup.getLayers?.();
         if (layers?.[0]) {
-          const latLngs = layers[0].getLatLngs();
+          // Type assertion needed because Layer doesn't guarantee getLatLngs method
+          const latLngs = (layers[0] as L.Polygon).getLatLngs();
           const polyInfo = new PolygonInfo(latLngs);
           this.polygonInformationStorage.push(polyInfo);
         }

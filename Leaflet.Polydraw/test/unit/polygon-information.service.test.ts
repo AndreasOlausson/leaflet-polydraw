@@ -1,5 +1,6 @@
 import { PolygonInformationService } from '../../src/polygon-information.service';
 import { MapStateService } from '../../src/map-state';
+import * as L from 'leaflet';
 
 describe('PolygonInformationService', () => {
   let polygonInformationService: PolygonInformationService;
@@ -15,14 +16,17 @@ describe('PolygonInformationService', () => {
   });
 
   it('can create polygon information storage', () => {
-    const polygons = [
-      [
-        { lat: 58.402514, lng: 15.606188 },
-        { lat: 58.400691, lng: 15.607462 },
-        { lat: 58.400957, lng: 15.608783 },
-        { lat: 58.402514, lng: 15.606188 },
-      ],
+    // Create proper L.FeatureGroup with L.Polygon
+    const coordinates = [
+      { lat: 58.402514, lng: 15.606188 },
+      { lat: 58.400691, lng: 15.607462 },
+      { lat: 58.400957, lng: 15.608783 },
+      { lat: 58.402514, lng: 15.606188 },
     ];
+
+    const polygon = new L.Polygon(coordinates);
+    const featureGroup = new L.FeatureGroup([polygon]);
+    const polygons = [featureGroup];
 
     polygonInformationService.createPolygonInformationStorage(polygons);
 
