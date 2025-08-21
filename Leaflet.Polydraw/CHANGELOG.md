@@ -7,20 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.9.4] - 2025-08-11
+## [0.9.4] - 2025-08-21
 
 ### Added
 
 - Implemented several visual feedback features for polygon dragging, including `opacity`, `markerBehavior` (hide/fade), and `hideMarkersOnDrag` for subtract mode.
 - Added a "Roadmap & Future Improvements" section to the README.
+- Installed Cypress for end-to-end testing (initial setup without tests).
 
 ### Changed
 
 - Refactored edge deletion logic to use the `minVertices` property from `config.json` instead of a hardcoded value.
+- **Breaking**: Enabled TypeScript strict mode for improved type safety and code quality.
+- General code cleanup and optimization.
 
 ### Fixed
 
 - Fixed all failing tests that arose from the configuration cleanup.
+- Resolved all TypeScript `@typescript-eslint/no-explicit-any` warnings through strategic use of eslint-disable comments and proper typing.
 
 ### Removed
 
