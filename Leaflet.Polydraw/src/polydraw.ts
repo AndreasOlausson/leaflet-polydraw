@@ -9,7 +9,7 @@ import { EventManager } from './managers/event-manager';
 import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
 
@@ -28,27 +28,27 @@ type ExtendedBrowser = typeof L.Browser & {
 };
 
 class Polydraw extends L.Control {
-  private map: L.Map;
-  private tracer: L.Polyline = {} as L.Polyline;
-  private turfHelper: TurfHelper;
+  private map!: L.Map;
+  private tracer!: L.Polyline;
+  private turfHelper!: TurfHelper;
   private subContainer?: HTMLElement;
   private config: PolydrawConfig;
-  private mapStateService: MapStateService;
-  private eventManager: EventManager;
-  private polygonInformation: PolygonInformationService;
-  private modeManager: ModeManager;
-  private polygonDrawManager: PolygonDrawManager;
-  private polygonMutationManager: PolygonMutationManager;
+  private mapStateService!: MapStateService;
+  private eventManager!: EventManager;
+  private polygonInformation!: PolygonInformationService;
+  private modeManager!: ModeManager;
+  private polygonDrawManager!: PolygonDrawManager;
+  private polygonMutationManager!: PolygonMutationManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
 
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: DrawModeChangeHandler[] = [];
-  private _boundKeyDownHandler: (e: KeyboardEvent) => void;
-  private _boundKeyUpHandler: (e: KeyboardEvent) => void;
+  private _boundKeyDownHandler!: (e: KeyboardEvent) => void;
+  private _boundKeyUpHandler!: (e: KeyboardEvent) => void;
   private isModifierKeyHeld: boolean = false;
-  private _boundTouchMove: (e: TouchEvent) => void;
-  private _boundTouchEnd: (e: TouchEvent) => void;
-  private _boundTouchStart: (e: TouchEvent) => void;
+  private _boundTouchMove!: (e: TouchEvent) => void;
+  private _boundTouchEnd!: (e: TouchEvent) => void;
+  private _boundTouchStart!: (e: TouchEvent) => void;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
     super(options);
@@ -309,7 +309,7 @@ class Polydraw extends L.Control {
    */
   private setupEventListeners(): void {
     // Listen for polygon operation completion events to reset draw mode
-    this.polygonMutationManager.on('polygonOperationComplete', (data) => {
+    this.polygonMutationManager.on('polygonOperationComplete', () => {
       // Update the indicator state after any polygon operation
       this.updateActivateButtonIndicator();
       // Use the interaction state manager to reset to Off mode
@@ -483,13 +483,13 @@ class Polydraw extends L.Control {
         case DrawMode.Add:
           this.tracer.setStyle({
             color: this.config.colors.polyline,
-            dashArray: null, // Reset to solid line
+            dashArray: undefined, // Reset to solid line
           });
           break;
         case DrawMode.Subtract:
           this.tracer.setStyle({
             color: this.config.colors.subtractLine,
-            dashArray: null, // Reset to solid line
+            dashArray: undefined, // Reset to solid line
           });
           break;
         case DrawMode.PointToPoint:
@@ -605,10 +605,6 @@ class Polydraw extends L.Control {
       this.updateActivateButtonIndicator();
     });
     this._boundKeyDownHandler = this.handleKeyDown.bind(this);
-
-    // Initialize PolygonMutationManager - will be properly set up in onAdd when map is available
-    this.polygonMutationManager = null as any;
-    this.polygonDrawManager = null as any;
   }
 
   /**
@@ -798,7 +794,7 @@ class Polydraw extends L.Control {
    * Handles the mouse up event to complete a drawing operation.
    * @param event - The mouse or touch event.
    */
-  private async mouseUpLeave(event: any) {
+  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent) {
     // Prevent unintended scroll or refresh on touchend/touchup (mobile)
     if ('cancelable' in event && event.cancelable) {
       event.preventDefault();
@@ -806,7 +802,7 @@ class Polydraw extends L.Control {
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
-    const tracerGeoJSON = this.tracer.toGeoJSON() as any;
+    const tracerGeoJSON = this.tracer.toGeoJSON() as Feature<LineString>;
 
     // Check if tracer has valid coordinates before processing
     if (
@@ -943,7 +939,7 @@ class Polydraw extends L.Control {
     }
 
     // Track modifier key state for edge deletion visual feedback
-    const isModifierPressed = this.isModifierKeyPressed(e as any);
+    const isModifierPressed = this.isModifierKeyPressed(e);
     if (isModifierPressed && !this.isModifierKeyHeld) {
       this.isModifierKeyHeld = true;
       this.polygonDrawManager.setModifierKey(true);
@@ -957,7 +953,7 @@ class Polydraw extends L.Control {
    */
   private handleKeyUp(e: KeyboardEvent) {
     // Track modifier key state for edge deletion visual feedback
-    const isModifierPressed = this.isModifierKeyPressed(e as any);
+    const isModifierPressed = this.isModifierKeyPressed(e);
     if (!isModifierPressed && this.isModifierKeyHeld) {
       this.isModifierKeyHeld = false;
       this.polygonDrawManager.setModifierKey(false);
@@ -1040,7 +1036,7 @@ class Polydraw extends L.Control {
   /**
    * Detect if modifier key is pressed (Ctrl on Windows/Linux, Cmd on Mac)
    */
-  private isModifierKeyPressed(event: MouseEvent): boolean {
+  private isModifierKeyPressed(event: MouseEvent | KeyboardEvent): boolean {
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { TurfHelper } from '../../src/turf-helper';
 import type { Feature, Polygon } from 'geojson';
 
@@ -7,37 +7,6 @@ describe('Marker Dragged Through Hole', () => {
     it('should create one solid polygon when marker is dragged completely through hole', () => {
       const mockConfig = {};
       const turfHelper = new TurfHelper(mockConfig);
-
-      // Create a polygon with a hole
-      const polygonWithHole: Feature<Polygon> = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            // Outer ring
-            [
-              [0, 0], // west
-              [0, 6], // northwest
-              [4, 8], // north
-              [8, 6], // northeast
-              [10, 0], // east
-              [8, -4], // southeast
-              [4, -6], // south
-              [0, -4], // southwest
-              [0, 0], // close
-            ],
-            // Hole in the center
-            [
-              [2, 1], // hole southwest
-              [2, 3], // hole northwest
-              [6, 3], // hole northeast
-              [6, 1], // hole southeast
-              [2, 1], // close hole
-            ],
-          ],
-        },
-      };
 
       // Create a self-intersecting version by dragging north marker COMPLETELY through hole to south
       // This simulates dragging from north (4,8) through the hole to south (4,-6)

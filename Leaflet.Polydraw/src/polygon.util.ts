@@ -94,7 +94,8 @@ export class PolygonUtil {
   }
   static getPolygonChecksum(polygon: L.LatLngLiteral[]): number {
     const uniqueLatLngs = polygon.filter((v, i, a) => {
-      return a.indexOf(a.find((x) => x.lat === v.lat && x.lng === v.lng)) === i;
+      const found = a.find((x) => x.lat === v.lat && x.lng === v.lng);
+      return found ? a.indexOf(found) === i : false;
     });
 
     return (

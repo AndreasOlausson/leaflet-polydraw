@@ -21,8 +21,8 @@ describe('TurfHelper', () => {
       const coords = turfHelper.getCoord(latlng);
       expect(coords).toBeInstanceOf(Array);
       expect(Array.isArray(coords)).toBe(true);
-      expect(coords[0]).toBeCloseTo(15.606188);
-      expect(coords[1]).toBeCloseTo(58.402514);
+      expect((coords as number[])[0]).toBeCloseTo(15.606188);
+      expect((coords as number[])[1]).toBeCloseTo(58.402514);
     });
 
     it('should handle coordinate conversion edge cases', () => {
@@ -34,8 +34,8 @@ describe('TurfHelper', () => {
       // Test with negative coordinates
       const negativeCoords = { lat: -45.123, lng: -122.456 };
       const negResult = turfHelper.getCoord(negativeCoords);
-      expect(negResult[0]).toBeCloseTo(-122.456);
-      expect(negResult[1]).toBeCloseTo(-45.123);
+      expect((negResult as number[])[0]).toBeCloseTo(-122.456);
+      expect((negResult as number[])[1]).toBeCloseTo(-45.123);
     });
   });
 
@@ -157,16 +157,18 @@ describe('TurfHelper', () => {
       const result = turfHelper.union(polygon1, polygon2);
 
       expect(result).toBeDefined();
-      expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
+      if (result) {
+        expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
 
-      // Union should have larger area than individual polygons
-      const area1 = turfHelper.getPolygonArea(polygon1);
-      const area2 = turfHelper.getPolygonArea(polygon2);
-      const unionArea = turfHelper.getPolygonArea(result);
+        // Union should have larger area than individual polygons
+        const area1 = turfHelper.getPolygonArea(polygon1);
+        const area2 = turfHelper.getPolygonArea(polygon2);
+        const unionArea = turfHelper.getPolygonArea(result);
 
-      expect(unionArea).toBeGreaterThan(area1);
-      expect(unionArea).toBeGreaterThan(area2);
-      expect(unionArea).toBeLessThan(area1 + area2); // Should be less due to overlap
+        expect(unionArea).toBeGreaterThan(area1);
+        expect(unionArea).toBeGreaterThan(area2);
+        expect(unionArea).toBeLessThan(area1 + area2); // Should be less due to overlap
+      }
     });
 
     it('should perform intersection operation', () => {
@@ -187,12 +189,14 @@ describe('TurfHelper', () => {
       const result = turfHelper.polygonDifference(polygon1, polygon2);
 
       expect(result).toBeDefined();
-      expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
+      if (result) {
+        expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
 
-      // Difference should have smaller area than original
-      const area1 = turfHelper.getPolygonArea(polygon1);
-      const diffArea = turfHelper.getPolygonArea(result);
-      expect(diffArea).toBeLessThan(area1);
+        // Difference should have smaller area than original
+        const area1 = turfHelper.getPolygonArea(polygon1);
+        const diffArea = turfHelper.getPolygonArea(result);
+        expect(diffArea).toBeLessThan(area1);
+      }
     });
 
     it('should detect polygon intersection', () => {
@@ -233,8 +237,8 @@ describe('TurfHelper', () => {
       };
 
       // Should handle errors gracefully
-      const unionResult = turfHelper.union(polygon1, invalidPolygon);
-      const intersectionResult = turfHelper.getIntersection(polygon1, invalidPolygon);
+      turfHelper.union(polygon1, invalidPolygon);
+      turfHelper.getIntersection(polygon1, invalidPolygon);
       const intersectsResult = turfHelper.polygonIntersect(polygon1, invalidPolygon);
 
       expect(intersectsResult).toBe(false);

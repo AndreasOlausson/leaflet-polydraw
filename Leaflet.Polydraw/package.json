@@ -48,6 +48,8 @@
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",
+    "test:cypress": "cypress run --component --browser chrome",
+    "test:e2e": "cypress run",
     "lint": "eslint ./src --ext .ts",
     "prepare": "npm run build"
   },

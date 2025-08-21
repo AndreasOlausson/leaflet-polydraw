@@ -36,10 +36,10 @@ describe('Integration Tests - End-to-End Workflows', () => {
     });
 
     it('should create polygon with auto-add and verify integration', () => {
-      const testPolygons = TestHelpers.getTestPolygons();
+      const _testPolygons = TestHelpers.getTestPolygons();
 
       // Create polygon using auto-add
-      TestHelpers.createAutoPolygon(polydraw, [testPolygons.square]);
+      TestHelpers.createAutoPolygon(polydraw, [_testPolygons.square]);
 
       // Verify polygon was created
       expect(TestHelpers.getPolygonCount(polydraw)).toBe(1);
@@ -133,8 +133,6 @@ describe('Integration Tests - End-to-End Workflows', () => {
     });
 
     it('should handle multiple overlapping polygons creating complex shapes', async () => {
-      const testPolygons = TestHelpers.getTestPolygons();
-
       // Create overlapping rectangles
       const rect1 = [
         L.latLng(59.329, 18.068),

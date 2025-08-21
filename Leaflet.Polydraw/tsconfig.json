@@ -20,5 +20,5 @@
     }
   },
   "include": ["src", "test"],
-  "exclude": ["node_modules", "dist", "cypress"]
+  "exclude": ["node_modules", "dist", "test/cypress"]
 }

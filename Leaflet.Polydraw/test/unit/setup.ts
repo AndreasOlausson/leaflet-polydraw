@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+// @ts-expect-error - jsdom doesn't have types
 import { JSDOM } from 'jsdom';
 
 // Set up a basic JSDOM environment
@@ -57,7 +58,6 @@ if (typeof (SVGElement.prototype as any).getBBox === 'undefined') {
 // Mock Canvas and CanvasRenderingContext2D for JSDOM
 if (typeof HTMLCanvasElement !== 'undefined') {
   // Mock getContext method with proper typing
-  const originalGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation((contextType: string) => {
     if (contextType === '2d') {
       // Return a mock 2D context with essential methods that Leaflet uses

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import * as L from 'leaflet';
 import { createButtons } from '../../src/buttons';
 import { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import defaultConfig from '../../src/config.json';

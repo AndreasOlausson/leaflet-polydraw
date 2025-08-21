@@ -55,7 +55,6 @@ export class PolygonInteractionManager {
 
   // Read-only access to feature groups
   private getFeatureGroups: () => L.FeatureGroup[];
-  private addFeatureGroup: (fg: L.FeatureGroup) => void;
   private removeFeatureGroup: (fg: L.FeatureGroup) => void;
 
   constructor(
@@ -76,7 +75,6 @@ export class PolygonInteractionManager {
 
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
-    this.addFeatureGroup = featureGroupAccess.addFeatureGroup;
     this.removeFeatureGroup = featureGroupAccess.removeFeatureGroup;
   }
 
@@ -752,9 +750,9 @@ export class PolygonInteractionManager {
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
-      polygon._polydrawDragData.isDragging = true;
-      polygon._polydrawDragData.startPosition = e.latlng;
-      polygon._polydrawDragData.startLatLngs = polygon.getLatLngs();
+      polygon._polydrawDragData!.isDragging = true;
+      polygon._polydrawDragData!.startPosition = e.latlng;
+      polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
       polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
 
       if (this.map.dragging) {
@@ -778,7 +776,7 @@ export class PolygonInteractionManager {
     });
 
     polygon.on('mouseover', () => {
-      if (!polygon._polydrawDragData.isDragging) {
+      if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
           const container = this.map.getContainer();
           container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
@@ -789,7 +787,7 @@ export class PolygonInteractionManager {
     });
 
     polygon.on('mouseout', () => {
-      if (!polygon._polydrawDragData.isDragging) {
+      if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
           const container = this.map.getContainer();
           container.style.cursor = '';
@@ -1040,22 +1038,6 @@ export class PolygonInteractionManager {
     } as PolygonUpdatedEventData);
   }
 
-  private findFeatureGroupForPoly(poly: Feature<Polygon | MultiPolygon>): L.FeatureGroup | null {
-    // console.log('PolygonInteractionManager findFeatureGroupForPoly');
-    for (const featureGroup of this.getFeatureGroups()) {
-      const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
-        Polygon | MultiPolygon
-      >;
-      if (featureCollection && featureCollection.features && featureCollection.features[0]) {
-        const feature = featureCollection.features[0];
-        if (this.turfHelper.equalPolygons(feature, poly)) {
-          return featureGroup;
-        }
-      }
-    }
-    return null;
-  }
-
   private markerDrag(featureGroup: L.FeatureGroup): void {
     if (!this._activeMarker) {
       console.warn('No active marker set for dragging.');
@@ -1234,7 +1216,12 @@ export class PolygonInteractionManager {
   // Polygon dragging methods
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
     // console.log('PolygonInteractionManager onPolygonMouseMove');
-    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+    if (
+      !this.currentDragPolygon ||
+      !this.currentDragPolygon._polydrawDragData ||
+      !this.currentDragPolygon._polydrawDragData.isDragging
+    )
+      return;
 
     const polygon = this.currentDragPolygon;
     const dragData = polygon._polydrawDragData;
@@ -1245,12 +1232,12 @@ export class PolygonInteractionManager {
       this.handleModifierToggleDuringDrag(eventToCheck as MouseEvent);
     }
 
-    const startPos = dragData.startPosition;
+    const startPos = dragData!.startPosition;
     const currentPos = e.latlng;
-    const offsetLat = currentPos.lat - startPos.lat;
-    const offsetLng = currentPos.lng - startPos.lng;
+    const offsetLat = currentPos.lat - startPos!.lat;
+    const offsetLng = currentPos.lng - startPos!.lng;
 
-    const newLatLngs = this.offsetPolygonCoordinates(dragData.startLatLngs, offsetLat, offsetLng);
+    const newLatLngs = this.offsetPolygonCoordinates(dragData!.startLatLngs, offsetLat, offsetLng);
     polygon.setLatLngs(newLatLngs);
 
     this.updateMarkersAndHoleLinesDuringDrag(polygon, offsetLat, offsetLng);
@@ -1259,12 +1246,17 @@ export class PolygonInteractionManager {
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
     // console.log('PolygonInteractionManager onPolygonMouseUp');
     void e; // mark parameter as used to satisfy ESLint while keeping the name
-    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData.isDragging) return;
+    if (
+      !this.currentDragPolygon ||
+      !this.currentDragPolygon._polydrawDragData ||
+      !this.currentDragPolygon._polydrawDragData.isDragging
+    )
+      return;
 
     const polygon = this.currentDragPolygon;
     const dragData = polygon._polydrawDragData;
 
-    dragData.isDragging = false;
+    dragData!.isDragging = false;
 
     this.map.off('mousemove', this.onPolygonMouseMove, this);
     this.map.off('mouseup', this.onPolygonMouseUp, this);
@@ -1274,7 +1266,7 @@ export class PolygonInteractionManager {
     }
 
     // Restore original opacity
-    if (polygon._polydrawDragData.originalOpacity) {
+    if (polygon._polydrawDragData && polygon._polydrawDragData.originalOpacity != null) {
       polygon.setStyle({ fillOpacity: polygon._polydrawDragData.originalOpacity });
     }
 
@@ -1360,10 +1352,10 @@ export class PolygonInteractionManager {
         // Only store markers and lines that belong to THIS specific feature group
         featureGroup.eachLayer((layer) => {
           if (layer instanceof L.Marker) {
-            polygon._polydrawOriginalMarkerPositions.set(layer, layer.getLatLng());
+            polygon._polydrawOriginalMarkerPositions!.set(layer, layer.getLatLng());
           } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
             const latLngs = layer.getLatLngs() as unknown as L.LatLng[];
-            polygon._polydrawOriginalHoleLinePositions.set(layer, latLngs);
+            polygon._polydrawOriginalHoleLinePositions!.set(layer, latLngs);
           }
         });
       }
@@ -1372,7 +1364,7 @@ export class PolygonInteractionManager {
       // and that were stored in the original positions map
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
-          const originalPos = polygon._polydrawOriginalMarkerPositions.get(layer);
+          const originalPos = polygon._polydrawOriginalMarkerPositions!.get(layer);
           if (originalPos) {
             const newLatLng = {
               lat: originalPos.lat + offsetLat,
@@ -1381,7 +1373,7 @@ export class PolygonInteractionManager {
             layer.setLatLng(newLatLng);
           }
         } else if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-          const originalPositions = polygon._polydrawOriginalHoleLinePositions.get(layer) as
+          const originalPositions = polygon._polydrawOriginalHoleLinePositions!.get(layer) as
             | L.LatLng[]
             | L.LatLng[][]
             | undefined;
@@ -1471,7 +1463,12 @@ export class PolygonInteractionManager {
     }
 
     const modifierKey = this.getDragSubtractModifierKey();
-    return !!event[modifierKey as keyof MouseEvent];
+    // Type-guarded check for both MouseEvent and KeyboardEvent
+    return (
+      ((event as MouseEvent | KeyboardEvent)[
+        modifierKey as keyof (MouseEvent | KeyboardEvent)
+      ] as boolean) || false
+    );
   }
 
   private setSubtractVisualMode(polygon: L.Polygon, enabled: boolean): void {
@@ -1510,13 +1507,12 @@ export class PolygonInteractionManager {
         if (featureGroup) break;
       }
 
-      if (!featureGroup) {
-        return;
-      }
+      if (!featureGroup) return;
+      const fg: L.FeatureGroup = featureGroup;
 
       const hideMarkersOnDrag = this.config.dragPolygons.modifierSubtract.hideMarkersOnDrag;
 
-      featureGroup.eachLayer((layer) => {
+      fg.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           const marker = layer as L.Marker;
           const element = marker.getElement();
@@ -1681,28 +1677,6 @@ export class PolygonInteractionManager {
     }
   }
 
-  /**
-   * Check if two bounding boxes overlap
-   */
-  private boundingBoxesOverlap(bbox1: number[], bbox2: number[]): boolean {
-    // bbox format: [minX, minY, maxX, maxY]
-    return !(
-      bbox1[2] < bbox2[0] ||
-      bbox2[2] < bbox1[0] ||
-      bbox1[3] < bbox2[1] ||
-      bbox2[3] < bbox1[1]
-    );
-  }
-
-  private isDragSubtractModifierKeyPressed(event: MouseEvent): boolean {
-    if (isTouchDevice()) {
-      return false;
-    }
-
-    const modifierKey = this.getDragSubtractModifierKey();
-    return !!event[modifierKey as keyof MouseEvent];
-  }
-
   private getEdgeDeletionModifierKey(): string {
     const { keys } = this.config.edgeDeletion;
     const userAgent = navigator.userAgent.toLowerCase();
@@ -1731,7 +1705,7 @@ export class PolygonInteractionManager {
 
     if (isHovering) {
       // Add event listeners to detect modifier key state in real-time
-      const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
+      const checkModifierAndUpdate = (e: Event) => {
         const isModifierPressed = this.isEdgeDeletionModifierKeyPressed(e as MouseEvent);
         if (isModifierPressed) {
           element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
@@ -2130,21 +2104,17 @@ export class PolygonInteractionManager {
   ): Feature<Polygon | MultiPolygon> {
     // console.log('PolygonInteractionManager getPolygonGeoJSONFromFeatureGroup');
     try {
-      // Find the polygon layer in the feature group
-      let polygon: L.Polygon | null = null;
-      featureGroup.eachLayer((layer) => {
-        if (layer instanceof L.Polygon) {
-          polygon = layer;
-        }
-      });
+      // Find the polygon layer in the feature group (use getLayers + find for clearer typing)
+      const polygonLayer = featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as
+        | L.Polygon
+        | undefined;
 
-      if (!polygon) {
-        // Fallback: create a simple polygon from the first ring
+      if (!polygonLayer) {
         throw new Error('No polygon found in feature group');
       }
 
       // Get the complete GeoJSON including holes
-      return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+      return polygonLayer.toGeoJSON() as Feature<Polygon | MultiPolygon>;
     } catch (error) {
       if (error instanceof Error) {
         console.warn('Error getting polygon GeoJSON from feature group:', error.message);

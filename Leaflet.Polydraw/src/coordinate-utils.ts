@@ -15,7 +15,7 @@ export class CoordinateUtils {
 
     // latlngs length
     if (latlngs.length > 1 && latlngs.length < 3) {
-      const coordinates = [];
+      const coordinates: any[][] = [];
       // Coords of last polygon
       const within = turfHelper.isWithin(
         L.GeoJSON.latLngsToCoords(latlngs[latlngs.length - 1]),
@@ -35,7 +35,7 @@ export class CoordinateUtils {
       }
       // Within result
     } else if (latlngs.length > 2) {
-      const coordinates = [];
+      const coordinates: any[][] = [];
       for (let index = 1; index < latlngs.length - 1; index++) {
         const within = turfHelper.isWithin(
           L.GeoJSON.latLngsToCoords(latlngs[index]),

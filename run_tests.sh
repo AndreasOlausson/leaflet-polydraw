@@ -52,12 +52,12 @@ if [ -d "test" ]; then
 else
     # Outside Docker container – full project test
     cd Polydraw_Docker
-    npm run build
     npm test
     cd ..
 
     cd Leaflet.Polydraw
     npm test
+    npm run test:e2e
     cd ..
 fi
 

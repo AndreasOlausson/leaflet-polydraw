@@ -19,7 +19,6 @@ import {
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
-import { PolygonDrawManager } from './polygon-draw-manager';
 import { PolygonInteractionManager } from './polygon-interaction-manager';
 
 export interface MutationResult {
@@ -52,25 +51,20 @@ export interface MutationManagerDependencies {
  */
 export class PolygonMutationManager {
   private turfHelper: TurfHelper;
-  private polygonInformation: PolygonInformationService;
   private map: L.Map;
   private config: PolydrawConfig;
-  private modeManager: ModeManager;
   private eventManager: EventManager;
   private getFeatureGroups: () => L.FeatureGroup[];
 
   // Specialized managers
-  private geometryManager: PolygonGeometryManager;
-  private drawManager: PolygonDrawManager;
-  private interactionManager: PolygonInteractionManager;
+  private geometryManager!: PolygonGeometryManager;
+  private interactionManager!: PolygonInteractionManager;
 
   constructor(dependencies: MutationManagerDependencies) {
     // console.log('PolygonMutationManager constructor');
     this.turfHelper = dependencies.turfHelper;
-    this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
     this.config = dependencies.config;
-    this.modeManager = dependencies.modeManager;
     this.eventManager = dependencies.eventManager;
     this.getFeatureGroups = dependencies.getFeatureGroups;
 
@@ -90,17 +84,7 @@ export class PolygonMutationManager {
       config: dependencies.config,
     });
 
-    // Create draw manager (will be initialized when tracer is available)
-    // For now, we'll create it with a placeholder tracer
-    const placeholderTracer = L.polyline([], this.config.polyLineOptions);
-    this.drawManager = new PolygonDrawManager({
-      turfHelper: dependencies.turfHelper,
-      map: dependencies.map,
-      config: dependencies.config,
-      modeManager: dependencies.modeManager,
-      eventManager: this.eventManager,
-      tracer: placeholderTracer,
-    });
+    // Note: PolygonDrawManager is handled separately in the main polydraw.ts file
 
     // Create interaction manager with feature group access
     this.interactionManager = new PolygonInteractionManager(
@@ -251,8 +235,6 @@ export class PolygonMutationManager {
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygon');
     const { noMerge = false } = options;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { simplify = true } = options; // Keep simplify for clarity, but mark as unused
 
     try {
       if (
@@ -400,10 +382,27 @@ export class PolygonMutationManager {
       }
 
       // Safely get marker coordinates
-      let markerLatlngs;
+      let markerLatlngs: L.LatLngExpression[][];
       try {
-        markerLatlngs = polygon.getLatLngs();
-        if (!markerLatlngs || !Array.isArray(markerLatlngs)) {
+        const rawLatLngs = polygon.getLatLngs();
+
+        // Handle different polygon structures
+        if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
+          // Check the structure depth to determine how to process
+          if (Array.isArray(rawLatLngs[0])) {
+            // Could be LatLng[][] (polygon with holes) or LatLng[][][] (MultiPolygon)
+            if (Array.isArray(rawLatLngs[0][0])) {
+              // It's LatLng[][][] (MultiPolygon structure), flatten one level
+              markerLatlngs = rawLatLngs[0] as L.LatLngExpression[][];
+            } else {
+              // It's LatLng[][] (polygon with holes)
+              markerLatlngs = rawLatLngs as L.LatLngExpression[][];
+            }
+          } else {
+            // It's LatLng[] (simple polygon), wrap it in an array
+            markerLatlngs = [rawLatLngs as L.LatLngExpression[]];
+          }
+        } else {
           markerLatlngs = [];
         }
       } catch (error) {
@@ -412,35 +411,49 @@ export class PolygonMutationManager {
 
       // Add markers using interaction manager
       try {
-        markerLatlngs.forEach((polygon: unknown) => {
-          if (!polygon || !Array.isArray(polygon)) {
+        markerLatlngs.forEach((polygonRing: L.LatLngExpression[], ringIndex: number) => {
+          if (!polygonRing || !Array.isArray(polygonRing)) {
             return;
           }
-          polygon.forEach((polyElement: L.LatLngLiteral[], i: number) => {
-            if (!polyElement || !Array.isArray(polyElement) || polyElement.length === 0) {
-              return;
-            }
 
-            try {
-              if (i === 0) {
-                this.interactionManager.addMarkers(polyElement, featureGroup);
-              } else {
-                // Add red polyline overlay for hole rings
-                const holePolyline = L.polyline(polyElement, {
-                  color: this.config.colors.hole.border,
-                  weight: this.config.holeOptions.weight || 2,
-                  opacity: this.config.holeOptions.opacity || 1,
-                  fillColor: this.config.colors.hole.fill,
-                  fillOpacity: this.config.holeOptions.fillOpacity || 0.5,
-                });
-                featureGroup.addLayer(holePolyline);
-
-                this.interactionManager.addHoleMarkers(polyElement, featureGroup);
-              }
-            } catch (markerError) {
-              // Continue with other elements
+          // Convert to LatLngLiteral array for the interaction manager
+          const latLngLiterals: L.LatLngLiteral[] = [];
+          polygonRing.forEach((latlng) => {
+            if (Array.isArray(latlng) && latlng.length >= 2) {
+              latLngLiterals.push({ lat: latlng[1], lng: latlng[0] });
+            } else if (
+              typeof latlng === 'object' &&
+              latlng !== null &&
+              'lat' in latlng &&
+              'lng' in latlng
+            ) {
+              latLngLiterals.push(latlng as L.LatLngLiteral);
             }
           });
+
+          if (latLngLiterals.length === 0) {
+            return;
+          }
+
+          try {
+            if (ringIndex === 0) {
+              this.interactionManager.addMarkers(latLngLiterals, featureGroup);
+            } else {
+              // Add red polyline overlay for hole rings
+              const holePolyline = L.polyline(polygonRing, {
+                color: this.config.colors.hole.border,
+                weight: this.config.holeOptions.weight || 2,
+                opacity: this.config.holeOptions.opacity || 1,
+                fillColor: this.config.colors.hole.fill,
+                fillOpacity: this.config.holeOptions.fillOpacity || 0.5,
+              });
+              featureGroup.addLayer(holePolyline);
+
+              this.interactionManager.addHoleMarkers(latLngLiterals, featureGroup);
+            }
+          } catch (markerError) {
+            // Continue with other elements
+          }
         });
       } catch (error) {
         // Continue without markers if they fail
@@ -487,7 +500,7 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     try {
-      const polygonFeature = [];
+      const polygonFeature: Feature<Polygon | MultiPolygon>[] = [];
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
       let polyIntersection: boolean = false;
 
@@ -696,9 +709,11 @@ export class PolygonMutationManager {
       }
 
       // Get the complete GeoJSON including holes
-      return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+      return (polygon as L.Polygon).toGeoJSON() as Feature<Polygon | MultiPolygon>;
     } catch (error) {
-      console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
+      if (error instanceof Error) {
+        console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
+      }
       // Fallback: return a simple polygon
       return {
         type: 'Feature',

@@ -390,7 +390,7 @@ export class PolygonDrawManager {
     this.tracer.setLatLngs([]);
     try {
       this.tracer.setStyle({
-        dashArray: null,
+        dashArray: undefined,
       });
     } catch (error) {
       // Handle tracer style errors in test environment
@@ -463,7 +463,7 @@ export class PolygonDrawManager {
       // If less than 2 points, clear dash array
       try {
         this.tracer.setStyle({
-          dashArray: null,
+          dashArray: undefined,
         });
       } catch (error) {
         // Handle tracer style errors in test environment
@@ -585,7 +585,7 @@ export class PolygonDrawManager {
     if (!element) return;
 
     if (isHovering) {
-      const checkModifierAndUpdate = (e: KeyboardEvent | MouseEvent) => {
+      const checkModifierAndUpdate = (e: Event) => {
         //Save the input parameter, but make lint happy...
         void e;
 

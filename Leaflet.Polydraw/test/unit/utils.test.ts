@@ -1,10 +1,8 @@
 import { Perimeter, Area, PolyDrawUtil, Compass } from '../../src/utils';
-import * as L from 'leaflet';
 import { MarkerPosition } from '../../src/enums';
 
 describe('Perimeter', () => {
   it('calculates metric length correctly', () => {
-    // @ts-ignore
     const config = {
       markers: {
         markerInfoIcon: {
@@ -75,7 +73,7 @@ describe('Perimeter', () => {
       { length: 15000, expectedMetric: '15', expectedUnit: 'km' },
     ];
 
-    testCases.forEach((testCase, index) => {
+    testCases.forEach((testCase) => {
       const perimeter = new Perimeter(testCase.length, config as any);
       expect(perimeter.metricLength).toBe(testCase.expectedMetric);
       expect(perimeter.metricUnit).toBe(testCase.expectedUnit);
@@ -190,7 +188,7 @@ describe('Area', () => {
       { area: 1000000, expectedMetric: '1000', expectedUnit: 'daa' },
     ];
 
-    testCases.forEach((testCase, index) => {
+    testCases.forEach((testCase) => {
       const area = new Area(testCase.area, config as any);
       expect(area.metricArea).toBe(testCase.expectedMetric);
       expect(area.metricUnit).toBe(testCase.expectedUnit);

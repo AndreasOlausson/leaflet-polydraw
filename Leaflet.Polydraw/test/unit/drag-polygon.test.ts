@@ -207,7 +207,7 @@ describe('Polygon Dragging Tests', () => {
       (polydraw as any).polygonMutationManager.enablePolygonDragging(mockPolygon, {} as any);
 
       // Test Ctrl key on Windows/Linux
-      const isModifierKeyPressedSpy = vi.spyOn(polydraw as any, 'isModifierKeyPressed');
+      vi.spyOn(polydraw as any, 'isModifierKeyPressed');
 
       // Mock Windows/Linux user agent
       Object.defineProperty(navigator, 'userAgent', {
@@ -466,7 +466,7 @@ describe('Polygon Dragging Tests', () => {
 
       // Mock the updateMarkerColorsForSubtractMode method to simulate the expected behavior
       (polydraw as any).polygonMutationManager.updateMarkerColorsForSubtractMode = vi.fn(
-        (polygon, enabled) => {
+        (_polygon, enabled) => {
           if (enabled) {
             mockElement.style.backgroundColor = '#D9460F';
             mockElement.classList.add('subtract-mode');
@@ -1000,7 +1000,7 @@ describe('Polygon Dragging Tests', () => {
 
       // Mock the updateMarkersAndHoleLinesDuringDrag method to simulate the expected behavior
       (polydraw as any).polygonMutationManager.updateMarkersAndHoleLinesDuringDrag = vi.fn(
-        (polygon, offsetLat, offsetLng) => {
+        (_polygon, _offsetLat, _offsetLng) => {
           mockMarkers.forEach((marker) => {
             marker.setLatLng({ lat: 0.1, lng: 0.1 });
           });

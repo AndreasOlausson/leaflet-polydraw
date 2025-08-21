@@ -145,7 +145,9 @@ export class PolygonGeometryManager {
       for (const polygon of polygons) {
         // Regular union operation
         const union = this.turfHelper.union(result, polygon);
-        result = union;
+        if (union) {
+          result = union;
+        }
       }
 
       return {
@@ -404,7 +406,7 @@ export class PolygonGeometryManager {
           // Always process the outer ring, process holes only if config allows
           if (isOuterRing || processHoles) {
             // Convert coordinates to LatLng format for the turf helper
-            const latlngs = currentRing.map((coord) => ({ lat: coord[1], lng: coord[0] }));
+            const latlngs = currentRing.map((coord: any[]) => ({ lat: coord[1], lng: coord[0] }));
             const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
             const doubledCoords = doubleLatLngs.map(
               (latlng) => [latlng.lng, latlng.lat] as [number, number],
@@ -429,121 +431,6 @@ export class PolygonGeometryManager {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in doubleElbowsPolygon',
       };
-    }
-  }
-
-  /**
-   * Helper method to get polygon center
-   */
-  private getPolygonCenter(
-    polygon: Feature<Polygon | MultiPolygon>,
-  ): { lat: number; lng: number } | null {
-    // console.log('PolygonGeometryManager getPolygonCenter');
-    try {
-      if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
-        return null;
-      }
-
-      let coordinates;
-      if (polygon.geometry.type === 'Polygon') {
-        coordinates = polygon.geometry.coordinates[0]; // First ring (outer ring)
-      } else if (polygon.geometry.type === 'MultiPolygon') {
-        coordinates = polygon.geometry.coordinates[0][0]; // First polygon, first ring
-      } else {
-        return null;
-      }
-
-      if (!Array.isArray(coordinates) || coordinates.length === 0) {
-        return null;
-      }
-
-      // Calculate centroid
-      let latSum = 0;
-      let lngSum = 0;
-      let count = 0;
-
-      for (const coord of coordinates) {
-        if (Array.isArray(coord) && coord.length >= 2) {
-          const lng = coord[0];
-          const lat = coord[1];
-
-          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
-            lngSum += lng;
-            latSum += lat;
-            count++;
-          }
-        }
-      }
-
-      if (count === 0) {
-        return null;
-      }
-
-      return {
-        lat: latSum / count,
-        lng: lngSum / count,
-      };
-    } catch (error) {
-      return null;
-    }
-  }
-
-  /**
-   * Helper method to get bounding box from polygon
-   */
-  private getBoundingBox(
-    polygon: Feature<Polygon | MultiPolygon>,
-  ): { minLat: number; maxLat: number; minLng: number; maxLng: number } | null {
-    // console.log('PolygonGeometryManager getBoundingBox');
-    try {
-      if (!polygon || !polygon.geometry || !polygon.geometry.coordinates) {
-        return null;
-      }
-
-      let coordinates;
-      if (polygon.geometry.type === 'Polygon') {
-        coordinates = polygon.geometry.coordinates[0]; // First ring (outer ring)
-      } else if (polygon.geometry.type === 'MultiPolygon') {
-        coordinates = polygon.geometry.coordinates[0][0]; // First polygon, first ring
-      } else {
-        return null;
-      }
-
-      if (!Array.isArray(coordinates) || coordinates.length === 0) {
-        return null;
-      }
-
-      let minLat = Infinity;
-      let maxLat = -Infinity;
-      let minLng = Infinity;
-      let maxLng = -Infinity;
-
-      for (const coord of coordinates) {
-        if (Array.isArray(coord) && coord.length >= 2) {
-          const lng = coord[0];
-          const lat = coord[1];
-
-          if (typeof lng === 'number' && typeof lat === 'number' && !isNaN(lng) && !isNaN(lat)) {
-            minLng = Math.min(minLng, lng);
-            maxLng = Math.max(maxLng, lng);
-            minLat = Math.min(minLat, lat);
-            maxLat = Math.max(maxLat, lat);
-          }
-        }
-      }
-
-      if (
-        minLat === Infinity ||
-        maxLat === -Infinity ||
-        minLng === Infinity ||
-        maxLng === -Infinity
-      ) {
-        return null;
-      }
-
-      return { minLat, maxLat, minLng, maxLng };
-    } catch (error) {
-      return null;
     }
   }
 }

@@ -321,11 +321,11 @@ describe('Point-to-Point Drawing - Functional Tests', () => {
       const layers = featureGroup.getLayers();
 
       // Should have polygon layer and markers
-      const polygonLayer = layers.find((layer) => layer instanceof L.Polygon);
+      const polygonLayer = layers.find((layer: any) => layer instanceof L.Polygon);
       expect(polygonLayer).toBeTruthy();
 
       // Should have markers for polygon vertices
-      const markers = layers.filter((layer) => layer instanceof L.Marker);
+      const markers = layers.filter((layer: any) => layer instanceof L.Marker);
       expect(markers.length).toBeGreaterThan(0);
     });
   });

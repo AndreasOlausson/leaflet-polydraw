@@ -27,23 +27,15 @@ export class PolygonInformationService {
     this.polygonDrawStateListeners.push(callback);
   }
 
-  private emitPolygonDrawStateUpdated(state: PolygonDrawStates): void {
-    for (const cb of this.polygonDrawStateListeners) {
-      cb(state);
-    }
-  }
-
   // === Functions ===
 
   /**
    * Updates the polygons and notifies the map state service.
    */
   updatePolygons(): void {
-    let newPolygons: L.LatLngLiteral[][][] = null;
+    const newPolygons: L.LatLngLiteral[][][] = [];
 
     if (this.polygonInformationStorage.length > 0) {
-      newPolygons = [];
-
       this.polygonInformationStorage.forEach((v) => {
         const test: L.LatLngLiteral[][] = [];
 
@@ -67,8 +59,6 @@ export class PolygonInformationService {
 
       // If you want to emit any draw state later, you can do it here
       // this.emitPolygonDrawStateUpdated(...);
-    } else {
-      // this.emitPolygonDrawStateUpdated(new PolygonDrawStates()); // t.ex.
     }
 
     this.mapStateService.updatePolygons(newPolygons);

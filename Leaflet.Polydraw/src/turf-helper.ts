@@ -33,6 +33,7 @@ import lineToPolygon from '@turf/line-to-polygon';
 import bezierSpline from '@turf/bezier-spline';
 import centroid from '@turf/centroid';
 import length from '@turf/length';
+// @ts-expect-error - concaveman doesn't have types
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
@@ -46,7 +47,7 @@ interface PolydrawFeature extends Feature<Polygon | MultiPolygon> {
 }
 
 export class TurfHelper {
-  private config: typeof defaultConfig = null;
+  private config: typeof defaultConfig = defaultConfig;
 
   constructor(config: object) {
     this.config = { ...defaultConfig, ...config };
@@ -55,13 +56,13 @@ export class TurfHelper {
   union(
     poly1: Feature<Polygon | MultiPolygon>,
     poly2: Feature<Polygon | MultiPolygon>,
-  ): Feature<Polygon | MultiPolygon> {
+  ): Feature<Polygon | MultiPolygon> | null {
     try {
       const fc = featureCollection([poly1, poly2]);
       const u = union(fc);
       return u ? this.getTurfPolygon(u) : null;
     } catch (error) {
-      console.warn('Error in union:', error.message);
+      console.warn('Error in union:', error instanceof Error ? error.message : String(error));
       return null;
     }
   }
@@ -172,7 +173,10 @@ export class TurfHelper {
 
       return this.getTurfPolygon(buffered);
     } catch (error) {
-      console.warn('Buffer polygon creation failed:', error.message);
+      console.warn(
+        'Buffer polygon creation failed:',
+        error instanceof Error ? error.message : String(error),
+      );
       return this.createDirectPolygon(feature);
     }
   }
@@ -269,14 +273,17 @@ export class TurfHelper {
       } else {
         // For simple polygons, use the standard unkink approach
         const unkink = unkinkPolygon(cleanedFeature);
-        const coordinates = [];
+        const coordinates: Feature<Polygon | MultiPolygon>[] = [];
         featureEach(unkink, (current) => {
           coordinates.push(current);
         });
         return coordinates;
       }
     } catch (error) {
-      console.warn('Error processing kinks:', error.message);
+      console.warn(
+        'Error processing kinks:',
+        error instanceof Error ? error.message : String(error),
+      );
       // Return the original feature as a fallback
       return [feature];
     }
@@ -299,7 +306,10 @@ export class TurfHelper {
       const fc = featureCollection([polygon]);
       return convex(fc);
     } catch (error) {
-      console.warn('Error in getConvexHull:', error.message);
+      console.warn(
+        'Error in getConvexHull:',
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -420,12 +430,18 @@ export class TurfHelper {
         // an intersection, so we should return false rather than using a fallback
         // that might give false positives
       } catch (error) {
-        console.warn('Error in bounding box check:', error.message);
+        console.warn(
+          'Error in bounding box check:',
+          error instanceof Error ? error.message : String(error),
+        );
       }
 
       return false;
     } catch (error) {
-      console.warn('Error in polygonIntersect:', error.message);
+      console.warn(
+        'Error in polygonIntersect:',
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -450,12 +466,15 @@ export class TurfHelper {
       // Return null if intersection doesn't result in a polygon
       return null;
     } catch (error) {
-      console.warn('Error in getIntersection:', error.message);
+      console.warn(
+        'Error in getIntersection:',
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
 
-  getDistance(point1, point2): number {
+  getDistance(point1: any, point2: any): number {
     return distance(point1, point2);
   }
 
@@ -662,7 +681,7 @@ export class TurfHelper {
   polygonDifference(
     polygon1: Feature<Polygon | MultiPolygon>,
     polygon2: Feature<Polygon | MultiPolygon>,
-  ): Feature<Polygon | MultiPolygon> {
+  ): Feature<Polygon | MultiPolygon> | null {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
       const fc = featureCollection([polygon1, polygon2]);
@@ -671,12 +690,20 @@ export class TurfHelper {
       const result = diff ? this.getTurfPolygon(diff) : null;
       return result;
     } catch (error) {
-      console.warn('Error in polygonDifference:', error.message);
+      console.warn(
+        'Error in polygonDifference:',
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
 
-  getBoundingBoxCompassPosition(polygon, MarkerPosition, useOffset, offsetDirection) {
+  getBoundingBoxCompassPosition(
+    _polygon: any,
+    _MarkerPosition: any,
+    _useOffset: any,
+    _offsetDirection: any,
+  ) {
     // TODO: Implement with Compass
     return null;
   }
@@ -702,7 +729,7 @@ export class TurfHelper {
   }
 
   getFeaturePointCollection(points: L.LatLngLiteral[]): any {
-    const pts = [];
+    const pts: Feature<Point>[] = [];
     points.forEach((v) => {
       const p = point([v.lng, v.lat], {});
       pts.push(p);
@@ -776,7 +803,10 @@ export class TurfHelper {
       }
       return false;
     } catch (error) {
-      console.warn('Error checking for holes:', error.message);
+      console.warn(
+        'Error checking for holes:',
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -868,7 +898,10 @@ export class TurfHelper {
 
       return [feature];
     } catch (error) {
-      console.warn('Error in getKinksWithHolePreservation:', error.message);
+      console.warn(
+        'Error in getKinksWithHolePreservation:',
+        error instanceof Error ? error.message : String(error),
+      );
       return [feature];
     }
   }
@@ -911,7 +944,10 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn('Error checking complete hole traversal:', error.message);
+      console.warn(
+        'Error checking complete hole traversal:',
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -936,7 +972,7 @@ export class TurfHelper {
       }
 
       // Find points that appear multiple times
-      for (const [key, data] of pointCounts) {
+      for (const [, data] of pointCounts) {
         if (data.indices.length >= 2) {
           // This creates a line from the first occurrence to the second
           const startIndex = data.indices[0];
@@ -954,7 +990,10 @@ export class TurfHelper {
 
       return null;
     } catch (error) {
-      console.warn('Error finding self-intersection line:', error.message);
+      console.warn(
+        'Error finding self-intersection line:',
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -983,7 +1022,10 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn('Error checking line hole traversal:', error.message);
+      console.warn(
+        'Error checking line hole traversal:',
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -1096,7 +1138,7 @@ export class TurfHelper {
    */
   private handleCompleteHoleTraversal(
     outerPolygon: Feature<Polygon>,
-    holes: Position[][],
+    _holes: Position[][],
   ): Feature<Polygon>[] {
     try {
       // 🎯 RADICAL FIX: Instead of using union/unkink operations that might create connections,
@@ -1127,7 +1169,10 @@ export class TurfHelper {
 
       return resultPolygons;
     } catch (error) {
-      console.warn('Error handling complete hole traversal:', error.message);
+      console.warn(
+        'Error handling complete hole traversal:',
+        error instanceof Error ? error.message : String(error),
+      );
       // Fallback: create a simple solid polygon without holes
       try {
         const fallbackPolygon = {
@@ -1142,67 +1187,6 @@ export class TurfHelper {
       } catch (fallbackError) {
         return [outerPolygon];
       }
-    }
-  }
-
-  /**
-   * Analyze the relationship between a hole and a polygon
-   */
-  private analyzeHolePolygonRelationship(
-    hole: Feature<Polygon>,
-    polygon: Feature<Polygon>,
-  ): {
-    isCompletelyContained: boolean;
-    hasIntersection: boolean;
-    intersectionArea: number;
-  } {
-    try {
-      // Check if hole is completely within polygon
-      const isCompletelyContained = booleanWithin(hole, polygon);
-
-      if (isCompletelyContained) {
-        return {
-          isCompletelyContained: true,
-          hasIntersection: false,
-          intersectionArea: 0,
-        };
-      }
-
-      // Check if there's any meaningful intersection (not just touching)
-      const intersection = this.getIntersection(hole, polygon);
-      const hasIntersection = intersection !== null;
-      let intersectionArea = 0;
-
-      if (hasIntersection) {
-        intersectionArea = area(intersection);
-        const holeArea = area(hole);
-
-        // Only consider it a meaningful intersection if the intersection area
-        // is significant compared to the hole area (more than 10%)
-        const intersectionRatio = intersectionArea / holeArea;
-
-        if (intersectionRatio < 0.1) {
-          // Very small intersection - treat as no intersection
-          return {
-            isCompletelyContained: false,
-            hasIntersection: false,
-            intersectionArea: 0,
-          };
-        }
-      }
-
-      return {
-        isCompletelyContained: false,
-        hasIntersection,
-        intersectionArea,
-      };
-    } catch (error) {
-      console.warn('Error analyzing hole-polygon relationship:', error.message);
-      return {
-        isCompletelyContained: false,
-        hasIntersection: false,
-        intersectionArea: 0,
-      };
     }
   }
 
@@ -1263,24 +1247,12 @@ export class TurfHelper {
 
       return resultPolygon;
     } catch (error) {
-      console.warn('Error subtracting intersecting holes:', error.message);
+      console.warn(
+        'Error subtracting intersecting holes:',
+        error instanceof Error ? error.message : String(error),
+      );
       return basePolygon; // Return original polygon if subtraction fails
     }
-  }
-
-  /**
-   * Calculate the area of a ring using the shoelace formula
-   */
-  private calculateRingArea(ring: Position[]): number {
-    let area = 0;
-    const n = ring.length;
-
-    for (let i = 0; i < n - 1; i++) {
-      area += ring[i][0] * ring[i + 1][1];
-      area -= ring[i + 1][0] * ring[i][1];
-    }
-
-    return Math.abs(area) / 2;
   }
 
   /**
@@ -1388,42 +1360,13 @@ export class TurfHelper {
         };
       }
     } catch (error) {
-      console.warn('Error in removeDuplicateVertices:', error.message);
+      console.warn(
+        'Error in removeDuplicateVertices:',
+        error instanceof Error ? error.message : String(error),
+      );
       return feature; // Return original feature if cleaning fails
     }
 
     return feature;
-  }
-
-  // ========================================================================
-  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
-  // ========================================================================
-  /**
-   * Create a "bite" by subtracting the intersected part of the hole from the polygon
-   */
-  private createBiteFromHoleIntersection(
-    polygon: Feature<Polygon>,
-    hole: Feature<Polygon>,
-  ): Feature<Polygon> | null {
-    try {
-      // Get the intersection between the hole and the polygon
-      const intersection = this.getIntersection(hole, polygon);
-
-      if (!intersection) {
-        return polygon; // No intersection, return original polygon
-      }
-
-      // Subtract the intersection from the polygon to create the "bite"
-      const result = this.polygonDifference(polygon, intersection);
-
-      if (result && result.geometry.type === 'Polygon') {
-        return result as Feature<Polygon>;
-      }
-
-      return polygon; // Fallback to original if difference operation fails
-    } catch (error) {
-      console.warn('Error creating bite from hole intersection:', error.message);
-      return polygon;
-    }
   }
 }

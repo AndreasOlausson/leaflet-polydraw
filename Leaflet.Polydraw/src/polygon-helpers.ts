@@ -9,7 +9,7 @@ export class PolygonInfo {
   trashcanPoint: L.LatLngLiteral[] = [];
   sqmArea: number[] = [];
   perimeter: number[] = [];
-  constructor(polygon) {
+  constructor(polygon: L.LatLngLiteral[][][] | L.LatLngLiteral[] | L.LatLngLiteral[][]) {
     if (!Array.isArray(polygon)) {
       return; // Skip processing if not an array
     }
@@ -24,7 +24,7 @@ export class PolygonInfo {
     ) {
       // This is the structure: [Array(N)] where Array(N) = [LatLng, LatLng, LatLng, ...]
       // We can process polygon[0] directly as the coordinate array
-      const coordinateArray = polygon[0];
+      const coordinateArray = polygon[0] as L.LatLngLiteral[];
 
       // Process the coordinate array directly
       this.trashcanPoint[0] = this.getTrashcanPoint(coordinateArray);
@@ -39,19 +39,21 @@ export class PolygonInfo {
     if (polygon.length > 0 && polygon[0] && typeof polygon[0] === 'object' && 'lat' in polygon[0]) {
       // This is a flattened structure: [LatLng, LatLng, LatLng, ...]
       // We need to wrap it in the expected format: [[[LatLng, LatLng, LatLng, ...]]]
-      const wrappedPolygon = [[polygon]]; // Wrap in proper nesting
+      const currentPolygon = polygon as L.LatLngLiteral[];
+      const wrappedPolygon = [[currentPolygon]]; // Wrap in proper nesting
 
       // Process the wrapped polygon
-      this.trashcanPoint[0] = this.getTrashcanPoint(polygon);
-      this.sqmArea[0] = this.calculatePolygonArea(polygon);
-      this.perimeter[0] = this.calculatePolygonPerimeter(polygon);
+      this.trashcanPoint[0] = this.getTrashcanPoint(currentPolygon);
+      this.sqmArea[0] = this.calculatePolygonArea(currentPolygon);
+      this.perimeter[0] = this.calculatePolygonPerimeter(currentPolygon);
       this.polygon[0] = wrappedPolygon[0]; // Store as [[LatLng, LatLng, ...]]
 
       return; // Exit early - we've handled the flattened structure
     }
 
     // Process each polygon (normal nested structure)
-    polygon.forEach((polygons, i) => {
+    const multiPolygon = polygon as L.LatLngLiteral[][][];
+    multiPolygon.forEach((polygons, i) => {
       if (!polygons || !Array.isArray(polygons)) {
         return; // Skip this polygon
       }
@@ -138,12 +140,12 @@ export class PolygonInfo {
  * Class to manage the state of polygon drawing.
  */
 export class PolygonDrawStates {
-  isActivated: boolean;
-  isFreeDrawMode: boolean;
-  isMoveMode: boolean;
-  canRevert: boolean;
-  isAuto: boolean;
-  hasPolygons: boolean;
+  isActivated: boolean = false;
+  isFreeDrawMode: boolean = false;
+  isMoveMode: boolean = false;
+  canRevert: boolean = false;
+  isAuto: boolean = false;
+  hasPolygons: boolean = false;
   canUsePolyDraw: boolean;
 
   constructor() {
