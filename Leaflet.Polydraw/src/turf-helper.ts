@@ -213,12 +213,12 @@ export class TurfHelper {
       } else {
         let simplified = simplify(polygon, tolerance);
         const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
-        const multipiler = this.config.simplification.dynamicMode.multipiler;
+        const multiplier = this.config.simplification.dynamicMode.multiplier;
         while (
           simplified.geometry.coordinates[0][0].length > 4 &&
           simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
         ) {
-          tolerance.tolerance = tolerance.tolerance * multipiler;
+          tolerance.tolerance = tolerance.tolerance * multiplier;
           simplified = simplify(polygon, tolerance);
         }
         return simplified;
@@ -631,12 +631,12 @@ export class TurfHelper {
       targetRing = newPoly.geometry.coordinates[ringIndex];
     } else {
       // Should not happen with proper input
-      return newPoly;
+      return newPoly; // NOSONAR: Early return for invalid geometry type
     }
 
     if (!targetRing) {
       // Invalid ring index
-      return newPoly;
+      return newPoly; // NOSONAR: Early return for invalid ring index
     }
 
     // Find the closest edge and insert the point
@@ -654,8 +654,12 @@ export class TurfHelper {
       }
     }
 
+    // Modify the cloned polygon by inserting the point into the target ring
+    // This modifies newPoly by reference through targetRing
     targetRing.splice(insertIndex, 0, point);
 
+    // NOSONAR: All return paths return newPoly, but it's modified by reference above
+    // The targetRing.splice() operation modifies the newPoly object, making each return unique
     return newPoly;
   }
 

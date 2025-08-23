@@ -323,7 +323,7 @@ const polyDrawControl = L.control
     },
     "dynamicMode": {
       "fractionGuard": 0.9,
-      "multipiler": 2
+      "multiplier": 2
     }
   },
   "menuOperations": {
@@ -532,7 +532,7 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;&nbsp;&nbsp;mutate                                     | boolean | `false`                        | Allow input mutation                                      |
 | &nbsp;&nbsp;**dynamicMode**                                        | object  |                                | Dynamic simplification                                    |
 | &nbsp;&nbsp;&nbsp;&nbsp;fractionGuard                              | number  | `0.9`                          | Fraction guard value                                      |
-| &nbsp;&nbsp;&nbsp;&nbsp;multipiler                                 | number  | `2`                            | Tolerance multiplier                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;multiplier                                 | number  | `2`                            | Tolerance multiplier                                      |
 | **menuOperations**                                                 | object  |                                | Menu marker operation settings                            |
 | &nbsp;&nbsp;**simplify**                                           | object  |                                | Simplify operation configuration                          |
 | &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Whether to simplify holes along with outer ring           |

@@ -161,7 +161,7 @@
     },
     "dynamicMode": {
       "fractionGuard": 0.9,
-      "multipiler": 2
+      "multiplier": 2
     }
   },
   "menuOperations": {

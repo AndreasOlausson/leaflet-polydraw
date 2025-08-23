@@ -329,7 +329,7 @@ const polyDrawControl = L.control
     },
     "dynamicMode": {
       "fractionGuard": 0.9,
-      "multipiler": 2
+      "multiplier": 2
     }
   },
   "menuOperations": {
@@ -538,7 +538,7 @@ const polyDrawControl = L.control
 | &nbsp;&nbsp;&nbsp;&nbsp;mutate                                     | boolean | `false`                        | Allow input mutation                                      |
 | &nbsp;&nbsp;**dynamicMode**                                        | object  |                                | Dynamic simplification                                    |
 | &nbsp;&nbsp;&nbsp;&nbsp;fractionGuard                              | number  | `0.9`                          | Fraction guard value                                      |
-| &nbsp;&nbsp;&nbsp;&nbsp;multipiler                                 | number  | `2`                            | Tolerance multiplier                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;multiplier                                 | number  | `2`                            | Tolerance multiplier                                      |
 | **boundingBox**                                                    | object  |                                | Bounding box settings                                     |
 | &nbsp;&nbsp;addMidPointMarkers                                     | boolean | `true`                         | Add midpoint markers to bounding box                      |
 | **bezier**                                                         | object  |                                | Bezier curve settings                                     |

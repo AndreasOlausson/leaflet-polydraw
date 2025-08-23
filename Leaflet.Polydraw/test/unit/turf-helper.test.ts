@@ -493,7 +493,7 @@ describe('TurfHelper', () => {
         polygonCreation: { simplification: { mode: 'dynamic' } },
         simplification: {
           simplifyTolerance: { tolerance: 0.01 },
-          dynamicMode: { fractionGuard: 0.5, multipiler: 2 },
+          dynamicMode: { fractionGuard: 0.5, multiplier: 2 },
         },
       };
       const customHelper = new TurfHelper(customConfig);
