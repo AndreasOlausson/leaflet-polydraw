@@ -329,7 +329,7 @@ describe('PolygonDrawManager', () => {
     });
 
     it('should return false when not in P2P mode', () => {
-      vi.mocked(mockModeManager.getCurrentMode).mockReturnValue(DrawMode.Freehand);
+      vi.mocked(mockModeManager.getCurrentMode).mockReturnValue(DrawMode.Add);
 
       const result = manager.isInPointToPointMode();
 

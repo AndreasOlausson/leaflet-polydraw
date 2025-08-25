@@ -23,6 +23,26 @@ vi.mock('leaflet', () => ({
     addLayer: vi.fn(),
     clearLayers: vi.fn(),
     addTo: vi.fn(),
+    getLayers: vi.fn(() => [
+      {
+        toGeoJSON: vi.fn(() => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        })),
+      },
+    ]),
     toGeoJSON: vi.fn(() => ({
       type: 'FeatureCollection',
       features: [

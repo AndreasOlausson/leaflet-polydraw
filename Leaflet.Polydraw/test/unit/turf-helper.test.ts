@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TurfHelper } from '../../src/turf-helper';
 import defaultConfig from '../../src/config.json';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { Feature, Polygon, MultiPolygon, Point } from 'geojson';
 
 describe('TurfHelper', () => {
   let turfHelper: TurfHelper;
@@ -1071,6 +1071,938 @@ describe('TurfHelper', () => {
     });
   });
 
+  describe('Complex Algorithm Testing - Hole-Aware Kink Resolution', () => {
+    it('should detect complete hole traversal with duplicate points', () => {
+      // Create a polygon where drag line creates duplicate points (cake cutting scenario)
+      const polygonWithDuplicateTraversal: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [4, 0],
+              [4, 4],
+              [0, 4], // Outer boundary
+              [2, 2],
+              [2, 2], // Duplicate point indicating traversal
+              [0, 0], // Close
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(polygonWithDuplicateTraversal);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should handle hole traversal with self-intersection line', () => {
+      // Polygon with outer ring that creates a line through a hole
+      const polygonWithHoleTraversal: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 6],
+              [0, 6], // Outer ring
+              [3, 3],
+              [3, 1],
+              [3, 5],
+              [3, 3], // Self-intersecting line through middle
+              [0, 0], // Close
+            ],
+            [
+              [2, 2],
+              [4, 2],
+              [4, 4],
+              [2, 4],
+              [2, 2], // Hole in the middle
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(polygonWithHoleTraversal);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should handle complex MultiPolygon with holes', () => {
+      const multiPolygonWithHoles: Feature<MultiPolygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [4, 0],
+                [4, 4],
+                [0, 4],
+                [0, 0],
+              ], // Outer ring
+              [
+                [1, 1],
+                [3, 1],
+                [3, 3],
+                [1, 3],
+                [1, 1],
+              ], // Hole
+            ],
+            [
+              [
+                [5, 5],
+                [9, 5],
+                [9, 9],
+                [5, 9],
+                [5, 5],
+              ], // Second polygon outer ring
+              [
+                [6, 6],
+                [8, 6],
+                [8, 8],
+                [6, 8],
+                [6, 6],
+              ], // Second polygon hole
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(multiPolygonWithHoles);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThanOrEqual(2); // Should handle both polygons
+    });
+
+    it('should detect when kinks cut through holes', () => {
+      // Create a polygon where the self-intersection goes through a hole
+      const polygonWithKinkThroughHole: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 6],
+              [0, 6], // Outer boundary
+              [2, 2],
+              [4, 4],
+              [4, 2],
+              [2, 4], // Figure-8 through hole area
+              [0, 0], // Close
+            ],
+            [
+              [2.5, 2.5],
+              [3.5, 2.5],
+              [3.5, 3.5],
+              [2.5, 3.5],
+              [2.5, 2.5], // Hole in intersection area
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(polygonWithKinkThroughHole);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should handle edge case with very small holes', () => {
+      const polygonWithTinyHole: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [10, 0],
+              [10, 10],
+              [0, 10],
+              [0, 0],
+            ],
+            [
+              [5, 5],
+              [5.001, 5],
+              [5.001, 5.001],
+              [5, 5.001],
+              [5, 5], // Tiny hole
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(polygonWithTinyHole);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should handle polygon with hole that touches outer boundary', () => {
+      const polygonWithTouchingHole: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [10, 0],
+              [10, 10],
+              [0, 10],
+              [0, 0],
+            ],
+            [
+              [0, 5],
+              [2, 5],
+              [2, 7],
+              [0, 7],
+              [0, 5], // Hole touching left boundary
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = turfHelper.getKinks(polygonWithTouchingHole);
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+  });
+
+  describe('Complex Algorithm Testing - Polygon Intersection Detection', () => {
+    it('should use multiple fallback methods for intersection detection', () => {
+      // Create polygons that might fail with one method but succeed with another
+      const complexPolygon1: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const complexPolygon2: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [1, 1],
+              [3, 1],
+              [3, 3],
+              [1, 3],
+              [1, 1],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(complexPolygon1, complexPolygon2);
+      expect(intersects).toBe(true);
+    });
+
+    it('should handle edge-only intersection (no area overlap)', () => {
+      const polygon1: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const polygon2: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [2, 0],
+              [4, 0],
+              [4, 2],
+              [2, 2],
+              [2, 0], // Shares an edge
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(polygon1, polygon2);
+      expect(intersects).toBe(true);
+    });
+
+    it('should handle point-only intersection', () => {
+      const polygon1: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const polygon2: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [2, 2],
+              [4, 2],
+              [4, 4],
+              [2, 4],
+              [2, 2], // Touches at one corner
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(polygon1, polygon2);
+      expect(intersects).toBe(true);
+    });
+
+    it('should handle complex concave polygons', () => {
+      // L-shaped polygon
+      const lShape: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [3, 0],
+              [3, 1],
+              [1, 1],
+              [1, 3],
+              [0, 3],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      // Another L-shaped polygon that intersects
+      const lShape2: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [2, -1],
+              [4, -1],
+              [4, 2],
+              [3, 2],
+              [3, 0],
+              [2, 0],
+              [2, -1],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(lShape, lShape2);
+      expect(intersects).toBe(true);
+    });
+
+    it('should handle polygons with holes in intersection detection', () => {
+      const polygonWithHole: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 6],
+              [0, 6],
+              [0, 0],
+            ], // Outer ring
+            [
+              [2, 2],
+              [4, 2],
+              [4, 4],
+              [2, 4],
+              [2, 2],
+            ], // Hole
+          ],
+        },
+        properties: {},
+      };
+
+      const smallPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [3, 3],
+              [3.5, 3],
+              [3.5, 3.5],
+              [3, 3.5],
+              [3, 3],
+            ], // Inside the hole
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(polygonWithHole, smallPolygon);
+      expect(intersects).toBe(false); // Should not intersect because small polygon is in hole
+    });
+
+    it('should handle malformed polygon coordinates gracefully', () => {
+      const validPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const malformedPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [] as any,
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(validPolygon, malformedPolygon);
+      expect(intersects).toBe(false); // Should handle gracefully
+    });
+
+    it('should handle very thin polygons (almost lines)', () => {
+      const thinPolygon1: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [10, 0],
+              [10, 0.001],
+              [0, 0.001],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const thinPolygon2: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [5, -1],
+              [5.001, -1],
+              [5.001, 1],
+              [5, 1],
+              [5, -1],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const intersects = turfHelper.polygonIntersect(thinPolygon1, thinPolygon2);
+      expect(intersects).toBe(true);
+    });
+  });
+
+  describe('Complex Algorithm Testing - Point-in-Polygon with Multiple Input Types', () => {
+    const testPolygon: Feature<Polygon> = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [0, 0],
+            [4, 0],
+            [4, 4],
+            [0, 4],
+            [0, 0],
+          ],
+        ],
+      },
+      properties: {},
+    };
+
+    it('should handle Feature<Point> input', () => {
+      const pointFeature: Feature<Point> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [2, 2],
+        },
+        properties: {},
+      };
+
+      const isInside = turfHelper.isPointInsidePolygon(pointFeature, testPolygon);
+      expect(isInside).toBe(true);
+    });
+
+    it('should handle Turf Position [lng, lat] input', () => {
+      const position: [number, number] = [2, 2];
+      const isInside = turfHelper.isPointInsidePolygon(position, testPolygon);
+      expect(isInside).toBe(true);
+    });
+
+    it('should handle Leaflet LatLngLiteral input', () => {
+      const latlng = { lat: 2, lng: 2 };
+      const isInside = turfHelper.isPointInsidePolygon(latlng, testPolygon);
+      expect(isInside).toBe(true);
+    });
+
+    it('should handle generic object with geometry.coordinates', () => {
+      const genericPoint = {
+        geometry: {
+          coordinates: [2, 2],
+        },
+      };
+      const isInside = turfHelper.isPointInsidePolygon(genericPoint as any, testPolygon);
+      expect(isInside).toBe(true);
+    });
+
+    it('should handle points on polygon boundary', () => {
+      const boundaryPoint = { lat: 0, lng: 2 }; // On the bottom edge
+      const isInside = turfHelper.isPointInsidePolygon(boundaryPoint, testPolygon);
+      expect(typeof isInside).toBe('boolean'); // Should return a boolean result
+    });
+
+    it('should handle points outside polygon', () => {
+      const outsidePoint = { lat: 5, lng: 5 };
+      const isInside = turfHelper.isPointInsidePolygon(outsidePoint, testPolygon);
+      expect(isInside).toBe(false);
+    });
+
+    it('should handle invalid point formats gracefully', () => {
+      const invalidPoint = { invalid: 'data' };
+      const isInside = turfHelper.isPointInsidePolygon(invalidPoint as any, testPolygon);
+      expect(isInside).toBe(false); // Should return false for invalid input
+    });
+
+    it('should handle null/undefined points gracefully', () => {
+      const isInside1 = turfHelper.isPointInsidePolygon(null as any, testPolygon);
+      const isInside2 = turfHelper.isPointInsidePolygon(undefined as any, testPolygon);
+      expect(isInside1).toBe(false);
+      expect(isInside2).toBe(false);
+    });
+
+    it('should handle polygon with holes', () => {
+      const polygonWithHole: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [6, 0],
+              [6, 6],
+              [0, 6],
+              [0, 0],
+            ], // Outer ring
+            [
+              [2, 2],
+              [4, 2],
+              [4, 4],
+              [2, 4],
+              [2, 2],
+            ], // Hole
+          ],
+        },
+        properties: {},
+      };
+
+      const pointInHole = { lat: 3, lng: 3 };
+      const pointInPolygon = { lat: 1, lng: 1 };
+
+      const isInHole = turfHelper.isPointInsidePolygon(pointInHole, polygonWithHole);
+      const isInPolygon = turfHelper.isPointInsidePolygon(pointInPolygon, polygonWithHole);
+
+      expect(isInHole).toBe(false); // Point in hole should be outside
+      expect(isInPolygon).toBe(true); // Point in solid area should be inside
+    });
+
+    it('should handle MultiPolygon input', () => {
+      const multiPolygon: Feature<MultiPolygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+            [
+              [
+                [3, 3],
+                [5, 3],
+                [5, 5],
+                [3, 5],
+                [3, 3],
+              ],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const pointInFirst = { lat: 1, lng: 1 };
+      const pointInSecond = { lat: 4, lng: 4 };
+      const pointInNeither = { lat: 2.5, lng: 2.5 };
+
+      const isInFirst = turfHelper.isPointInsidePolygon(pointInFirst, multiPolygon);
+      const isInSecond = turfHelper.isPointInsidePolygon(pointInSecond, multiPolygon);
+      const isInNeither = turfHelper.isPointInsidePolygon(pointInNeither, multiPolygon);
+
+      expect(isInFirst).toBe(true);
+      expect(isInSecond).toBe(true);
+      expect(isInNeither).toBe(false);
+    });
+  });
+
+  describe('Complex Algorithm Testing - Coordinate Cleaning and Validation', () => {
+    it('should handle coordinates with varying precision', () => {
+      const polygonWithVaryingPrecision: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1.000000001, 0.000000001], // Very close to [1, 0]
+              [1.000000002, 0.000000002], // Very close to previous point
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(polygonWithVaryingPrecision);
+      expect(cleaned).toBeDefined();
+      expect(cleaned.geometry.coordinates[0].length).toBeLessThan(
+        polygonWithVaryingPrecision.geometry.coordinates[0].length,
+      );
+    });
+
+    it('should preserve valid polygons with sufficient point separation', () => {
+      const validPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(validPolygon);
+      expect(cleaned.geometry.coordinates[0].length).toBe(
+        validPolygon.geometry.coordinates[0].length,
+      );
+    });
+
+    it('should handle polygons with insufficient points after cleaning', () => {
+      const almostInvalidPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0.0000001, 0.0000001], // Too close to first point
+              [0.0000002, 0.0000002], // Too close to previous points
+              [0, 0], // Closing point
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(almostInvalidPolygon);
+      expect(cleaned).toBeDefined();
+      // Should return original polygon if cleaning would make it invalid
+      expect(cleaned).toEqual(almostInvalidPolygon);
+    });
+
+    it('should handle MultiPolygon coordinate cleaning', () => {
+      const multiPolygonWithDuplicates: Feature<MultiPolygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0], // Duplicates in first polygon
+              ],
+            ],
+            [
+              [
+                [2, 2],
+                [3, 2],
+                [3, 2],
+                [3, 3],
+                [2, 3],
+                [2, 2], // Duplicates in second polygon
+              ],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(multiPolygonWithDuplicates);
+      expect(cleaned).toBeDefined();
+      expect(cleaned.geometry.type).toBe('MultiPolygon');
+
+      // Should have fewer coordinates after cleaning
+      const originalFirstRing = multiPolygonWithDuplicates.geometry.coordinates[0][0].length;
+      const cleanedFirstRing = cleaned.geometry.coordinates[0][0].length;
+      expect(cleanedFirstRing).toBeLessThanOrEqual(originalFirstRing);
+    });
+
+    it('should handle coordinate arrays with invalid formats', () => {
+      const polygonWithInvalidCoords: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1], // Invalid - only one coordinate
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(polygonWithInvalidCoords);
+      expect(cleaned).toBeDefined();
+      // Should return original if cleaning encounters invalid coordinates
+      expect(cleaned).toEqual(polygonWithInvalidCoords);
+    });
+
+    it('should handle null/undefined coordinate arrays', () => {
+      const polygonWithNullCoords: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [null as any],
+        },
+        properties: {},
+      };
+
+      const cleaned = turfHelper.removeDuplicateVertices(polygonWithNullCoords);
+      expect(cleaned).toBeDefined();
+      // Should return original for invalid input
+      expect(cleaned).toEqual(polygonWithNullCoords);
+    });
+  });
+
+  describe('Complex Algorithm Testing - Distance to Line Segment', () => {
+    it('should calculate distance to line segment correctly', () => {
+      const polygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [4, 0],
+              [4, 4],
+              [0, 4],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      // Test point injection which uses distanceToLineSegment internally
+      const pointOnEdge = [2, 0]; // Point on bottom edge
+      const result = turfHelper.injectPointToPolygon(polygon, pointOnEdge, 0);
+
+      expect(result).toBeDefined();
+      expect(result.geometry.coordinates[0].length).toBeGreaterThan(
+        polygon.geometry.coordinates[0].length,
+      );
+    });
+
+    it('should handle point injection at polygon corners', () => {
+      const polygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      // Point very close to a corner
+      const cornerPoint = [0.001, 0.001];
+      const result = turfHelper.injectPointToPolygon(polygon, cornerPoint, 0);
+
+      expect(result).toBeDefined();
+      expect(result.geometry.coordinates[0].length).toBeGreaterThan(
+        polygon.geometry.coordinates[0].length,
+      );
+    });
+
+    it('should handle point injection with zero-length edges', () => {
+      const polygonWithZeroEdge: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0], // Duplicate point creates zero-length edge
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const testPoint = [1, 0];
+      const result = turfHelper.injectPointToPolygon(polygonWithZeroEdge, testPoint, 0);
+
+      expect(result).toBeDefined();
+      // Should handle zero-length edges gracefully
+    });
+
+    it('should handle point injection with invalid ring index', () => {
+      const polygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [2, 0],
+              [2, 2],
+              [0, 2],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const testPoint = [1, 0];
+      const result = turfHelper.injectPointToPolygon(polygon, testPoint, 999); // Invalid ring index
+
+      expect(result).toBeDefined();
+      // Should return original polygon for invalid ring index
+      expect(result.geometry.coordinates[0].length).toBe(polygon.geometry.coordinates[0].length);
+    });
+
+    it('should handle point injection with invalid geometry type', () => {
+      const invalidGeometry = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString', // Invalid for this function
+          coordinates: [
+            [0, 0],
+            [1, 1],
+          ],
+        },
+        properties: {},
+      } as any;
+
+      const testPoint = [0.5, 0.5];
+      const result = turfHelper.injectPointToPolygon(invalidGeometry, testPoint, 0);
+
+      expect(result).toBeDefined();
+      // Should return original for invalid geometry type
+      expect(result).toEqual(invalidGeometry);
+    });
+  });
+
   describe('Performance and Stress Tests', () => {
     it('should handle large polygon operations efficiently', () => {
       // Create a polygon with many vertices
@@ -1153,6 +2085,798 @@ describe('TurfHelper', () => {
       expect(() => {
         operations.forEach((op) => op());
       }).not.toThrow();
+    });
+  });
+
+  describe('Additional Coverage Tests - Missing Functionality', () => {
+    describe('Polygon Creation Edge Cases', () => {
+      it('should handle convex hull fallback when convex fails', () => {
+        // Create a feature that might cause convex hull to fail
+        const problematicFeature: Feature<any> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [0, 0], // Single point - convex hull might fail
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.createPolygonFromTrace(problematicFeature);
+        expect(result).toBeDefined();
+        expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
+      });
+
+      it('should handle buffer polygon creation failure', () => {
+        // Create a feature that might cause buffer to fail
+        const problematicFeature: Feature<any> = {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [[0, 0]], // Single point - insufficient for buffer
+          },
+          properties: {},
+        };
+
+        const customConfig = { ...defaultConfig, polygonCreation: { method: 'buffer' } };
+        const customHelper = new TurfHelper(customConfig);
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        const originalConsoleError = console.error;
+        console.warn = vi.fn();
+        console.error = vi.fn();
+
+        // This should handle the error gracefully and fallback to another method
+        const result = customHelper.createPolygonFromTrace(problematicFeature);
+        expect(result).toBeDefined();
+        expect(['Polygon', 'MultiPolygon']).toContain(result.geometry.type);
+
+        // Restore console functions
+        console.warn = originalConsoleWarn;
+        console.error = originalConsoleError;
+      });
+
+      it('should handle direct polygon creation with polygon input', () => {
+        const polygonFeature: Feature<any> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const customConfig = { ...defaultConfig, polygonCreation: { method: 'direct' } };
+        const customHelper = new TurfHelper(customConfig);
+
+        const result = customHelper.createPolygonFromTrace(polygonFeature);
+        expect(result).toBeDefined();
+        expect(result.geometry.type).toBe('MultiPolygon');
+      });
+
+      it('should handle direct polygon creation with other geometry types', () => {
+        const pointFeature: Feature<any> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [0, 0],
+          },
+          properties: {},
+        };
+
+        const customConfig = { ...defaultConfig, polygonCreation: { method: 'direct' } };
+        const customHelper = new TurfHelper(customConfig);
+
+        const result = customHelper.createPolygonFromTrace(pointFeature);
+        expect(result).toBeDefined();
+      });
+
+      it('should handle direct polygon creation with unclosed coordinates', () => {
+        const unclosedLineString: Feature<any> = {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1], // Not closed
+            ],
+          },
+          properties: {},
+        };
+
+        const customConfig = { ...defaultConfig, polygonCreation: { method: 'direct' } };
+        const customHelper = new TurfHelper(customConfig);
+
+        const result = customHelper.createPolygonFromTrace(unclosedLineString);
+        expect(result).toBeDefined();
+        expect(result.geometry.type).toBe('MultiPolygon');
+        // Should have added closing point
+        expect(result.geometry.coordinates[0][0].length).toBe(5);
+      });
+    });
+
+    describe('Boolean Operations Error Handling', () => {
+      it('should handle union operation errors', () => {
+        const invalidPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 1],
+              ],
+            ], // Invalid - not enough points
+          },
+          properties: {},
+        };
+
+        const validPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.union(validPolygon, invalidPolygon);
+        // Union might still work with some invalid inputs, so just check it doesn't throw
+        expect(result).toBeDefined();
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+
+      it('should handle intersection operation with no result', () => {
+        const polygon1: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const polygon2: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [5, 5],
+                [6, 5],
+                [6, 6],
+                [5, 6],
+                [5, 5],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.getIntersection(polygon1, polygon2);
+        expect(result).toBeNull(); // No intersection should return null
+      });
+
+      it('should handle difference operation errors', () => {
+        const invalidPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [],
+          },
+          properties: {},
+        };
+
+        const validPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.polygonDifference(validPolygon, invalidPolygon);
+        // Difference might still work with some invalid inputs, so just check it doesn't throw
+        expect(result).toBeDefined();
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+    });
+
+    describe('Convex Hull Error Handling', () => {
+      it('should handle convex hull operation errors', () => {
+        const invalidPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.getConvexHull(invalidPolygon);
+        expect(result).toBeNull(); // Should return null for invalid input
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+    });
+
+    describe('Polygon Within Detection Fallback', () => {
+      it('should use fallback method when booleanWithin fails', () => {
+        // Create polygons that might cause booleanWithin to fail
+        const innerPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [1, 1],
+                [2, 1],
+                [2, 2],
+                [1, 2],
+                [1, 1],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const outerPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [3, 0],
+                [3, 3],
+                [0, 3],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.isPolygonCompletelyWithin(innerPolygon, outerPolygon);
+        expect(typeof result).toBe('boolean');
+        expect(result).toBe(true);
+      });
+
+      it('should handle complex polygon within detection', () => {
+        const complexInner: Feature<MultiPolygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'MultiPolygon',
+            coordinates: [
+              [
+                [
+                  [1, 1],
+                  [2, 1],
+                  [2, 2],
+                  [1, 2],
+                  [1, 1],
+                ],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const complexOuter: Feature<MultiPolygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'MultiPolygon',
+            coordinates: [
+              [
+                [
+                  [0, 0],
+                  [3, 0],
+                  [3, 3],
+                  [0, 3],
+                  [0, 0],
+                ],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.isPolygonCompletelyWithin(complexInner, complexOuter);
+        expect(typeof result).toBe('boolean');
+      });
+    });
+
+    describe('Polygon Equality Testing', () => {
+      it('should test polygon equality', () => {
+        const polygon1: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const polygon2: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const polygon3: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const equal = turfHelper.equalPolygons(polygon1, polygon2);
+        const notEqual = turfHelper.equalPolygons(polygon1, polygon3);
+
+        expect(equal).toBe(true);
+        expect(notEqual).toBe(false);
+      });
+    });
+
+    describe('Center of Mass Calculation', () => {
+      it('should calculate center of mass', () => {
+        const polygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const centerOfMass = turfHelper.getCenterOfMass(polygon);
+        expect(centerOfMass).toBeDefined();
+        expect(centerOfMass.geometry.type).toBe('Point');
+        expect(centerOfMass.geometry.coordinates).toHaveLength(2);
+      });
+    });
+
+    describe('Bounding Box Compass Position', () => {
+      it('should handle getBoundingBoxCompassPosition', () => {
+        const polygon = { test: 'polygon' };
+        const markerPosition = { test: 'position' };
+        const useOffset = true;
+        const offsetDirection = 'north';
+
+        const result = turfHelper.getBoundingBoxCompassPosition(
+          polygon,
+          markerPosition,
+          useOffset,
+          offsetDirection,
+        );
+
+        expect(result).toBeNull(); // Currently returns null as it's not implemented
+      });
+    });
+
+    describe('isWithin Position Array Method', () => {
+      it('should test if one position array is within another', () => {
+        const innerRing: [number, number][] = [
+          [1, 1],
+          [2, 1],
+          [2, 2],
+          [1, 2],
+          [1, 1],
+        ];
+
+        const outerRing: [number, number][] = [
+          [0, 0],
+          [3, 0],
+          [3, 3],
+          [0, 3],
+          [0, 0],
+        ];
+
+        const result = turfHelper.isWithin(innerRing, outerRing);
+        expect(typeof result).toBe('boolean');
+        expect(result).toBe(true);
+      });
+
+      it('should test non-within position arrays', () => {
+        const ring1: [number, number][] = [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 1],
+          [0, 0],
+        ];
+
+        const ring2: [number, number][] = [
+          [2, 2],
+          [3, 2],
+          [3, 3],
+          [2, 3],
+          [2, 2],
+        ];
+
+        const result = turfHelper.isWithin(ring1, ring2);
+        expect(typeof result).toBe('boolean');
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('MultiPolygon Creation', () => {
+      it('should create multipolygon from polygon array', () => {
+        const polygonArray = [
+          [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+          [
+            [
+              [2, 2],
+              [3, 2],
+              [3, 3],
+              [2, 3],
+              [2, 2],
+            ],
+          ],
+        ];
+
+        const result = turfHelper.getMultiPolygon(polygonArray);
+        expect(result).toBeDefined();
+        expect(result.geometry.type).toBe('MultiPolygon');
+        expect(result.geometry.coordinates).toHaveLength(2);
+      });
+    });
+
+    describe('Complex Hole Traversal Scenarios', () => {
+      it('should handle error in hole traversal detection', () => {
+        // Create a polygon that might cause errors in hole traversal detection
+        const problematicPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [4, 0],
+                [4, 4],
+                [0, 4],
+                [0, 0],
+              ],
+              null as any, // Invalid hole
+            ],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.getKinks(problematicPolygon);
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+
+      it('should handle complex self-intersection scenarios', () => {
+        const complexSelfIntersecting: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [4, 0],
+                [4, 4],
+                [2, 2], // Creates self-intersection
+                [0, 4],
+                [2, 2], // Duplicate point
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.getKinks(complexSelfIntersecting);
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+      });
+
+      it('should handle error in subtractIntersectingHoles', () => {
+        // This tests the private method indirectly through getKinks
+        const polygonWithProblematicHole: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [6, 0],
+                [6, 6],
+                [0, 6],
+                [2, 3], // Self-intersection point
+                [4, 3], // Creates line through hole
+                [0, 0],
+              ],
+              [
+                [2, 2],
+                [4, 2],
+                [4, 4],
+                [2, 4],
+                [2, 2], // Hole that intersects with self-intersection
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.getKinks(polygonWithProblematicHole);
+        expect(result).toBeDefined();
+        expect(Array.isArray(result)).toBe(true);
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+    });
+
+    describe('Coordinate Cleaning Edge Cases', () => {
+      it('should handle polygon with all duplicate coordinates', () => {
+        const allDuplicates: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [0.0000001, 0.0000001],
+                [0.0000002, 0.0000002],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.removeDuplicateVertices(allDuplicates);
+        expect(result).toBeDefined();
+        // Should return original if cleaning would make polygon invalid
+        expect(result).toEqual(allDuplicates);
+      });
+
+      it('should handle multipolygon with invalid rings after cleaning', () => {
+        const multiWithInvalidRings: Feature<MultiPolygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'MultiPolygon',
+            coordinates: [
+              [
+                [
+                  [0, 0],
+                  [0.0000001, 0.0000001],
+                  [0, 0], // Would become invalid after cleaning
+                ],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.removeDuplicateVertices(multiWithInvalidRings);
+        expect(result).toBeDefined();
+        // Should return original if cleaning would create invalid rings
+        expect(result).toEqual(multiWithInvalidRings);
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+
+      it('should handle coordinate cleaning errors', () => {
+        const polygonWithNullCoordinates: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[0, 0], null as any, [1, 1], [0, 1], [0, 0]]],
+          },
+          properties: {},
+        };
+
+        // Suppress console warnings for this test
+        const originalConsoleWarn = console.warn;
+        console.warn = vi.fn();
+
+        const result = turfHelper.removeDuplicateVertices(polygonWithNullCoordinates);
+        expect(result).toBeDefined();
+        // Should return original for invalid coordinates
+        expect(result).toEqual(polygonWithNullCoordinates);
+
+        // Restore console.warn
+        console.warn = originalConsoleWarn;
+      });
+    });
+
+    describe('Polygon Intersection Complex Scenarios', () => {
+      it('should handle intersection with invalid coordinates in fallback methods', () => {
+        const validPolygon: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const polygonWithInvalidCoords: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [1, 1],
+                null as any, // Invalid coordinate
+                [3, 3],
+                [1, 3],
+                [1, 1],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.polygonIntersect(validPolygon, polygonWithInvalidCoords);
+        expect(result).toBe(false); // Should handle gracefully and return false
+      });
+
+      it('should handle line intersection errors in fallback method', () => {
+        // Create polygons that might cause line intersection to fail
+        const polygon1: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [2, 0],
+                [2, 2],
+                [0, 2],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const polygon2: Feature<Polygon> = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [1, 1],
+                [3, 1],
+                [3, 3],
+                [1, 3],
+                [1, 1],
+              ],
+            ],
+          },
+          properties: {},
+        };
+
+        const result = turfHelper.polygonIntersect(polygon1, polygon2);
+        expect(typeof result).toBe('boolean');
+        expect(result).toBe(true);
+      });
     });
   });
 });

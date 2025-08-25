@@ -99,4 +99,73 @@ describe('PolygonUtil', () => {
     expect(midpoint.lat).toBeCloseTo(0.5);
     expect(midpoint.lng).toBeCloseTo(0.5);
   });
+
+  it('gets individual boundary values correctly', () => {
+    const latlngs = [
+      { lat: 0, lng: 0 },
+      { lat: 0, lng: 1 },
+      { lat: 1, lng: 1 },
+      { lat: 1, lng: 0 },
+      { lat: 0, lng: 0 },
+    ];
+
+    // Test individual boundary methods (covers lines 64-66, 68-70, 72-74, 76-78)
+    expect(PolygonUtil.getNorth(latlngs)).toBe(1);
+    expect(PolygonUtil.getSouth(latlngs)).toBe(0);
+    expect(PolygonUtil.getWest(latlngs)).toBe(0);
+    expect(PolygonUtil.getEast(latlngs)).toBe(1);
+  });
+
+  it('gets center of mass correctly', () => {
+    // Create a GeoJSON polygon for testing getCenterOfMass (covers lines 138-143)
+    const geoJsonPolygon = {
+      type: 'Feature' as const,
+      properties: {},
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+        ],
+      },
+    };
+
+    const centerOfMass = PolygonUtil.getCenterOfMass(geoJsonPolygon);
+    expect(centerOfMass.lat).toBeCloseTo(0.5, 1);
+    expect(centerOfMass.lng).toBeCloseTo(0.5, 1);
+  });
+
+  it('handles empty polygon array in getBounds', () => {
+    // Test edge case with minimal polygon data (covers line 122 logic)
+    const minimalPolygon = [
+      { lat: 0, lng: 0 },
+      { lat: 1, lng: 1 },
+    ];
+
+    const bounds = PolygonUtil.getBounds(minimalPolygon);
+    expect(bounds.getSouth()).toBe(0);
+    expect(bounds.getNorth()).toBe(1);
+    expect(bounds.getWest()).toBe(0);
+    expect(bounds.getEast()).toBe(1);
+  });
+
+  it('handles polygon checksum with duplicate points', () => {
+    // Test the unique filtering logic in getPolygonChecksum
+    const latlngsWithDuplicates = [
+      { lat: 0, lng: 0 },
+      { lat: 0, lng: 1 },
+      { lat: 0, lng: 1 }, // Duplicate
+      { lat: 1, lng: 1 },
+      { lat: 1, lng: 0 },
+      { lat: 0, lng: 0 }, // Duplicate (closing point)
+    ];
+
+    const checksum = PolygonUtil.getPolygonChecksum(latlngsWithDuplicates);
+    expect(checksum).toBeGreaterThan(0);
+  });
 });
