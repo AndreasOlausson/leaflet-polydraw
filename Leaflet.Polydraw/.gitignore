@@ -14,6 +14,7 @@ dist-ssr
 
 # Editor directories and files
 coverage/
+html/
 tsconfig.tsbuildinfo
 .vscode/*
 !.vscode/extensions.json

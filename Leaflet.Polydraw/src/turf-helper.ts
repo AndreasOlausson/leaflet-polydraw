@@ -38,6 +38,7 @@ import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
+import { isTestEnvironment } from './utils';
 
 /**
  * Enhanced GeoJSON feature with polydraw-specific metadata
@@ -62,7 +63,9 @@ export class TurfHelper {
       const u = union(fc);
       return u ? this.getTurfPolygon(u) : null;
     } catch (error) {
-      console.warn('Error in union:', error instanceof Error ? error.message : String(error));
+      if (!isTestEnvironment()) {
+        console.warn('Error in union:', error instanceof Error ? error.message : String(error));
+      }
       return null;
     }
   }
@@ -84,7 +87,9 @@ export class TurfHelper {
       case 'buffer':
         return this.createBufferedPolygon(feature);
       default:
-        console.warn(`Unknown polygon creation method: ${method}, falling back to concaveman`);
+        if (!isTestEnvironment()) {
+          console.warn(`Unknown polygon creation method: ${method}, falling back to concaveman`);
+        }
         return this.turfConcaveman(feature);
     }
   }
@@ -143,7 +148,9 @@ export class TurfHelper {
 
     // Need at least 4 points for a valid polygon (3 + closing point)
     if (coordinates.length < 4) {
-      console.warn('Not enough points for direct polygon, falling back to concaveman');
+      if (!isTestEnvironment()) {
+        console.warn('Not enough points for direct polygon, falling back to concaveman');
+      }
       return this.turfConcaveman(feature);
     }
 
@@ -178,10 +185,12 @@ export class TurfHelper {
 
       return this.getTurfPolygon(buffered);
     } catch (error) {
-      console.warn(
-        'Buffer polygon creation failed:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Buffer polygon creation failed:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return this.createDirectPolygon(feature);
     }
   }
@@ -229,7 +238,9 @@ export class TurfHelper {
       return polygon;
     } else {
       // Fallback to simple mode
-      console.warn(`Unknown simplification mode: ${simplificationMode}, falling back to simple`);
+      if (!isTestEnvironment()) {
+        console.warn(`Unknown simplification mode: ${simplificationMode}, falling back to simple`);
+      }
       const tolerance = {
         tolerance: 0.0001,
         highQuality: false,
@@ -265,7 +276,9 @@ export class TurfHelper {
 
       // Additional validation after cleaning
       if (!cleanedFeature || !cleanedFeature.geometry || !cleanedFeature.geometry.coordinates) {
-        console.warn('Feature became invalid after cleaning in getKinks');
+        if (!isTestEnvironment()) {
+          console.warn('Feature became invalid after cleaning in getKinks');
+        }
         return [feature];
       }
 
@@ -285,10 +298,12 @@ export class TurfHelper {
         return coordinates;
       }
     } catch (error) {
-      console.warn(
-        'Error processing kinks:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error processing kinks:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       // Return the original feature as a fallback
       return [feature];
     }
@@ -311,10 +326,12 @@ export class TurfHelper {
       const fc = featureCollection([polygon]);
       return convex(fc);
     } catch (error) {
-      console.warn(
-        'Error in getConvexHull:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in getConvexHull:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return null;
     }
   }
@@ -348,7 +365,9 @@ export class TurfHelper {
         !latlngs.geometry ||
         !latlngs.geometry.coordinates
       ) {
-        console.warn('Invalid features passed to polygonIntersect');
+        if (!isTestEnvironment()) {
+          console.warn('Invalid features passed to polygonIntersect');
+        }
         return false;
       }
 
@@ -435,18 +454,22 @@ export class TurfHelper {
         // an intersection, so we should return false rather than using a fallback
         // that might give false positives
       } catch (error) {
-        console.warn(
-          'Error in bounding box check:',
-          error instanceof Error ? error.message : String(error),
-        );
+        if (!isTestEnvironment()) {
+          console.warn(
+            'Error in bounding box check:',
+            error instanceof Error ? error.message : String(error),
+          );
+        }
       }
 
       return false;
     } catch (error) {
-      console.warn(
-        'Error in polygonIntersect:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in polygonIntersect:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return false;
     }
   }
@@ -471,10 +494,12 @@ export class TurfHelper {
       // Return null if intersection doesn't result in a polygon
       return null;
     } catch (error) {
-      console.warn(
-        'Error in getIntersection:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in getIntersection:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return null;
     }
   }
@@ -705,10 +730,12 @@ export class TurfHelper {
       const result = diff ? this.getTurfPolygon(diff) : null;
       return result;
     } catch (error) {
-      console.warn(
-        'Error in polygonDifference:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in polygonDifference:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return null;
     }
   }
@@ -831,10 +858,12 @@ export class TurfHelper {
       }
       return false;
     } catch (error) {
-      console.warn(
-        'Error checking for holes:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error checking for holes:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return false;
     }
   }
@@ -926,10 +955,12 @@ export class TurfHelper {
 
       return [feature];
     } catch (error) {
-      console.warn(
-        'Error in getKinksWithHolePreservation:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in getKinksWithHolePreservation:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return [feature];
     }
   }
@@ -972,10 +1003,12 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn(
-        'Error checking complete hole traversal:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error checking complete hole traversal:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return false;
     }
   }
@@ -1018,10 +1051,12 @@ export class TurfHelper {
 
       return null;
     } catch (error) {
-      console.warn(
-        'Error finding self-intersection line:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error finding self-intersection line:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return null;
     }
   }
@@ -1050,10 +1085,12 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn(
-        'Error checking line hole traversal:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error checking line hole traversal:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return false;
     }
   }
@@ -1096,7 +1133,9 @@ export class TurfHelper {
 
       return false;
     } catch (error) {
-      console.warn('Error checking hole cut by kinks:', (error as Error).message);
+      if (!isTestEnvironment()) {
+        console.warn('Error checking hole cut by kinks:', (error as Error).message);
+      }
       return false;
     }
   }
@@ -1198,10 +1237,12 @@ export class TurfHelper {
 
       return resultPolygons;
     } catch (error) {
-      console.warn(
-        'Error handling complete hole traversal:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error handling complete hole traversal:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       // Fallback: create a simple solid polygon without holes
       try {
         const fallbackPolygon = {
@@ -1276,10 +1317,12 @@ export class TurfHelper {
 
       return resultPolygon;
     } catch (error) {
-      console.warn(
-        'Error subtracting intersecting holes:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error subtracting intersecting holes:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return basePolygon; // Return original polygon if subtraction fails
     }
   }
@@ -1292,13 +1335,17 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> {
     // Validate input feature
     if (!feature || !feature.geometry || !feature.geometry.coordinates) {
-      console.warn('Invalid feature passed to removeDuplicateVertices');
+      if (!isTestEnvironment()) {
+        console.warn('Invalid feature passed to removeDuplicateVertices');
+      }
       return feature;
     }
 
     const cleanCoordinates = (coords: Position[]): Position[] => {
       if (!coords || coords.length < 3) {
-        console.warn('Invalid coordinates array - need at least 3 points for a polygon');
+        if (!isTestEnvironment()) {
+          console.warn('Invalid coordinates array - need at least 3 points for a polygon');
+        }
         return coords || [];
       }
 
@@ -1332,7 +1379,9 @@ export class TurfHelper {
 
       // Ensure we have at least 3 points for a valid polygon
       if (cleaned.length < 3) {
-        console.warn('After cleaning, polygon has less than 3 points');
+        if (!isTestEnvironment()) {
+          console.warn('After cleaning, polygon has less than 3 points');
+        }
         return coords; // Return original if cleaning resulted in invalid polygon
       }
 
@@ -1358,7 +1407,9 @@ export class TurfHelper {
         // Validate that we still have valid coordinates after cleaning
         if (cleanedCoords.some((ring) => ring.length < 4)) {
           // 4 because polygon must be closed
-          console.warn('Cleaned polygon has invalid ring with less than 4 coordinates');
+          if (!isTestEnvironment()) {
+            console.warn('Cleaned polygon has invalid ring with less than 4 coordinates');
+          }
           return feature; // Return original if cleaning failed
         }
 
@@ -1376,7 +1427,9 @@ export class TurfHelper {
 
         // Validate that we still have valid coordinates after cleaning
         if (cleanedCoords.some((polygon) => polygon.some((ring) => ring.length < 4))) {
-          console.warn('Cleaned multipolygon has invalid ring with less than 4 coordinates');
+          if (!isTestEnvironment()) {
+            console.warn('Cleaned multipolygon has invalid ring with less than 4 coordinates');
+          }
           return feature; // Return original if cleaning failed
         }
 
@@ -1389,10 +1442,12 @@ export class TurfHelper {
         };
       }
     } catch (error) {
-      console.warn(
-        'Error in removeDuplicateVertices:',
-        error instanceof Error ? error.message : String(error),
-      );
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error in removeDuplicateVertices:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
       return feature; // Return original feature if cleaning fails
     }
 

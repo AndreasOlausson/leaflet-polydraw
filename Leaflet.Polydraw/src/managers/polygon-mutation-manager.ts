@@ -16,6 +16,7 @@ import {
   PolydrawEventCallback,
   PolydrawEventPayloads,
 } from './event-manager';
+import { isTestEnvironment } from '../utils';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
@@ -711,8 +712,10 @@ export class PolygonMutationManager {
       // Get the complete GeoJSON including holes
       return (polygon as L.Polygon).toGeoJSON() as Feature<Polygon | MultiPolygon>;
     } catch (error) {
-      if (error instanceof Error) {
-        console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
+      if (!isTestEnvironment()) {
+        if (error instanceof Error) {
+          console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
+        }
       }
       // Fallback: return a simple polygon
       return {

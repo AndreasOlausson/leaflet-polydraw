@@ -15,6 +15,7 @@ import type {
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
 import { isTouchDevice } from './../utils';
+import { isTestEnvironment } from '../utils';
 
 export interface InteractionResult {
   success: boolean;
@@ -1040,7 +1041,9 @@ export class PolygonInteractionManager {
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
     if (!this._activeMarker) {
-      console.warn('No active marker set for dragging.');
+      if (!isTestEnvironment()) {
+        console.warn('No active marker set for dragging.');
+      }
       return;
     }
     // console.log('PolygonInteractionManager markerDrag', featureGroup);
@@ -1048,7 +1051,15 @@ export class PolygonInteractionManager {
     let testarray: L.LatLng[] = [];
     let hole: L.LatLng[][] = [];
     const layers: L.Layer[] = featureGroup.getLayers();
-    const polygonLayer = layers.find((l) => l instanceof L.Polygon) as L.Polygon;
+    const polygonLayer = layers.find((l) => l instanceof L.Polygon) as L.Polygon | undefined;
+
+    if (!polygonLayer) {
+      if (!isTestEnvironment()) {
+        console.warn('No polygon found in feature group for marker drag.');
+      }
+      return;
+    }
+
     const posarrays = polygonLayer.getLatLngs() as L.LatLng[][][] | L.LatLng[][];
     let length = 0;
 
@@ -1657,7 +1668,9 @@ export class PolygonInteractionManager {
               }
             }
           } catch (differenceError) {
-            console.warn('Failed to perform difference operation:', differenceError);
+            if (!isTestEnvironment()) {
+              console.warn('Failed to perform difference operation:', differenceError);
+            }
             // If difference fails, try to add the original polygon back
             this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'modifierSubtractFallback',
@@ -1666,14 +1679,18 @@ export class PolygonInteractionManager {
             } as PolygonUpdatedEventData);
           }
         } catch (error) {
-          console.warn('Error in modifier subtract operation:', error);
+          if (!isTestEnvironment()) {
+            console.warn('Error in modifier subtract operation:', error);
+          }
         }
       });
 
       // Update polygon information after the operation
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
     } catch (error) {
-      console.warn('Error in performModifierSubtract:', error);
+      if (!isTestEnvironment()) {
+        console.warn('Error in performModifierSubtract:', error);
+      }
     }
   }
 
@@ -2116,10 +2133,12 @@ export class PolygonInteractionManager {
       // Get the complete GeoJSON including holes
       return polygonLayer.toGeoJSON() as Feature<Polygon | MultiPolygon>;
     } catch (error) {
-      if (error instanceof Error) {
-        console.warn('Error getting polygon GeoJSON from feature group:', error.message);
-      } else {
-        console.warn('Error getting polygon GeoJSON from feature group:', error);
+      if (!isTestEnvironment()) {
+        if (error instanceof Error) {
+          console.warn('Error getting polygon GeoJSON from feature group:', error.message);
+        } else {
+          console.warn('Error getting polygon GeoJSON from feature group:', error);
+        }
       }
       // Fallback: return a simple polygon
       return {
@@ -2192,10 +2211,12 @@ export class PolygonInteractionManager {
       // Convert from kilometers to meters to match original behavior
       return totalPerimeter * 1000;
     } catch (error) {
-      if (error instanceof Error) {
-        console.warn('Error calculating total polygon perimeter:', error.message);
-      } else {
-        console.warn('Error calculating total polygon perimeter:', error);
+      if (!isTestEnvironment()) {
+        if (error instanceof Error) {
+          console.warn('Error calculating total polygon perimeter:', error.message);
+        } else {
+          console.warn('Error calculating total polygon perimeter:', error);
+        }
       }
       // Fallback to turf helper calculation
       return this.turfHelper.getPolygonPerimeter(polygonGeoJSON) * 1000;

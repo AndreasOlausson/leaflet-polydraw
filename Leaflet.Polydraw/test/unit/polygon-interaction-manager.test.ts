@@ -383,6 +383,7 @@ vi.mock('../../src/utils', () => ({
     metricUnit: 'm²',
   })),
   isTouchDevice: vi.fn(() => false),
+  isTestEnvironment: vi.fn(() => true),
 }));
 
 describe('PolygonInteractionManager', () => {
@@ -2222,6 +2223,747 @@ describe('PolygonInteractionManager', () => {
       expect(
         (manager as any).isEdgeDeletionModifierKeyPressed({ metaKey: false, ctrlKey: true } as any),
       ).toBe(true);
+    });
+  });
+
+  describe('comprehensive coverage for uncovered lines', () => {
+    describe('markerDrag complex polygon handling', () => {
+      it('should handle complex nested polygon structures in markerDrag', () => {
+        const setLatLngsSpy = vi.fn();
+        const complexPolygon = {
+          getLatLngs: vi.fn(() => [
+            [
+              [
+                { lat: 0, lng: 0 },
+                { lat: 1, lng: 0 },
+                { lat: 1, lng: 1 },
+                { lat: 0, lng: 1 },
+              ],
+              [
+                { lat: 0.2, lng: 0.2 },
+                { lat: 0.8, lng: 0.2 },
+                { lat: 0.8, lng: 0.8 },
+                { lat: 0.2, lng: 0.8 },
+              ],
+            ],
+            [
+              [
+                { lat: 2, lng: 2 },
+                { lat: 3, lng: 2 },
+                { lat: 3, lng: 3 },
+                { lat: 2, lng: 3 },
+              ],
+            ],
+          ]),
+          setLatLngs: setLatLngsSpy,
+        };
+        Object.setPrototypeOf(complexPolygon, L.Polygon.prototype);
+
+        const markers = [
+          { getLatLng: vi.fn(() => ({ lat: 0, lng: 0 })) },
+          { getLatLng: vi.fn(() => ({ lat: 1, lng: 0 })) },
+          { getLatLng: vi.fn(() => ({ lat: 1, lng: 1 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0, lng: 1 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0.2, lng: 0.2 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0.8, lng: 0.2 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0.8, lng: 0.8 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0.2, lng: 0.8 })) },
+          { getLatLng: vi.fn(() => ({ lat: 2, lng: 2 })) },
+          { getLatLng: vi.fn(() => ({ lat: 3, lng: 2 })) },
+          { getLatLng: vi.fn(() => ({ lat: 3, lng: 3 })) },
+          { getLatLng: vi.fn(() => ({ lat: 2, lng: 3 })) },
+        ].map((m) => {
+          Object.setPrototypeOf(m, L.Marker.prototype);
+          return m;
+        });
+
+        const testFeatureGroup = {
+          getLayers: vi.fn(() => [complexPolygon, ...markers]),
+          eachLayer: vi.fn((callback) => {
+            callback(complexPolygon);
+            markers.forEach(callback);
+          }),
+        };
+
+        // Set up the drag state properly
+        (manager as any)._activeMarker = markers[0];
+
+        expect(() => {
+          (manager as any).markerDrag(testFeatureGroup);
+        }).not.toThrow();
+
+        expect(setLatLngsSpy).toHaveBeenCalled();
+      });
+
+      it('should handle single ring polygon structures in markerDrag', () => {
+        const setLatLngsSpy = vi.fn();
+        const singleRingPolygon = {
+          getLatLngs: vi.fn(() => [
+            [
+              { lat: 0, lng: 0 },
+              { lat: 1, lng: 0 },
+              { lat: 1, lng: 1 },
+              { lat: 0, lng: 1 },
+            ],
+          ]),
+          setLatLngs: setLatLngsSpy,
+        };
+        Object.setPrototypeOf(singleRingPolygon, L.Polygon.prototype);
+
+        const markers = [
+          { getLatLng: vi.fn(() => ({ lat: 0, lng: 0 })) },
+          { getLatLng: vi.fn(() => ({ lat: 1, lng: 0 })) },
+          { getLatLng: vi.fn(() => ({ lat: 1, lng: 1 })) },
+          { getLatLng: vi.fn(() => ({ lat: 0, lng: 1 })) },
+        ].map((m) => {
+          Object.setPrototypeOf(m, L.Marker.prototype);
+          return m;
+        });
+
+        const testFeatureGroup = {
+          getLayers: vi.fn(() => [singleRingPolygon, ...markers]),
+          eachLayer: vi.fn((callback) => {
+            callback(singleRingPolygon);
+            markers.forEach(callback);
+          }),
+        };
+
+        // Set up the drag state properly
+        (manager as any)._activeMarker = markers[0];
+
+        expect(() => {
+          (manager as any).markerDrag(testFeatureGroup);
+        }).not.toThrow();
+
+        expect(setLatLngsSpy).toHaveBeenCalled();
+      });
+
+      it('should handle polygon with multiple holes in markerDrag', () => {
+        const setLatLngsSpy = vi.fn();
+        const polygonWithHoles = {
+          getLatLngs: vi.fn(() => [
+            [
+              [
+                { lat: 0, lng: 0 },
+                { lat: 2, lng: 0 },
+                { lat: 2, lng: 2 },
+                { lat: 0, lng: 2 },
+              ],
+              [
+                { lat: 0.2, lng: 0.2 },
+                { lat: 0.8, lng: 0.2 },
+                { lat: 0.8, lng: 0.8 },
+                { lat: 0.2, lng: 0.8 },
+              ],
+              [
+                { lat: 1.2, lng: 1.2 },
+                { lat: 1.8, lng: 1.2 },
+                { lat: 1.8, lng: 1.8 },
+                { lat: 1.2, lng: 1.8 },
+              ],
+            ],
+          ]),
+          setLatLngs: setLatLngsSpy,
+        };
+        Object.setPrototypeOf(polygonWithHoles, L.Polygon.prototype);
+
+        const markers = Array.from({ length: 12 }, (_, i) => ({
+          getLatLng: vi.fn(() => ({ lat: i * 0.1, lng: i * 0.1 })),
+        })).map((m) => {
+          Object.setPrototypeOf(m, L.Marker.prototype);
+          return m;
+        });
+
+        const testFeatureGroup = {
+          getLayers: vi.fn(() => [polygonWithHoles, ...markers]),
+          eachLayer: vi.fn((callback) => {
+            callback(polygonWithHoles);
+            markers.forEach(callback);
+          }),
+        };
+
+        // Set up the drag state properly
+        (manager as any)._activeMarker = markers[0];
+
+        expect(() => {
+          (manager as any).markerDrag(testFeatureGroup);
+        }).not.toThrow();
+
+        expect(setLatLngsSpy).toHaveBeenCalled();
+      });
+    });
+
+    describe('edge case handling in markerDragEnd', () => {
+      it('should handle empty feature collection in markerDragEnd', async () => {
+        const emptyFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [],
+          })),
+        };
+
+        await expect((manager as any).markerDragEnd(emptyFeatureGroup)).resolves.not.toThrow();
+
+        expect(mockPolygonInformation.deletePolygonInformationStorage).toHaveBeenCalled();
+      });
+
+      it('should handle MultiPolygon with kinks in markerDragEnd', async () => {
+        const multiPolygonFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'MultiPolygon',
+                  coordinates: [
+                    [
+                      [
+                        [0, 0],
+                        [1, 0],
+                        [1, 1],
+                        [0, 1],
+                        [0, 0],
+                      ],
+                    ],
+                    [
+                      [
+                        [2, 2],
+                        [3, 2],
+                        [3, 3],
+                        [2, 3],
+                        [2, 2],
+                      ],
+                    ],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          })),
+        };
+
+        const removeSpy = vi.spyOn(manager as any, 'removeFeatureGroup');
+        (mockTurfHelper.hasKinks as any).mockReturnValue(true);
+        (mockTurfHelper.getKinks as any).mockReturnValue([
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [0, 0],
+                  [1, 0],
+                  [1, 1],
+                  [0, 1],
+                  [0, 0],
+                ],
+              ],
+            },
+            properties: {},
+          },
+        ]);
+
+        await (manager as any).markerDragEnd(multiPolygonFeatureGroup);
+
+        expect(removeSpy).toHaveBeenCalledWith(multiPolygonFeatureGroup);
+        expect(mockEventManager.emit).toHaveBeenCalledWith(
+          'polydraw:polygon:updated',
+          expect.objectContaining({
+            operation: 'markerDrag',
+            allowMerge: true,
+          }),
+        );
+      });
+
+      it('should handle regular Polygon with kinks in markerDragEnd', async () => {
+        const polygonFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0, 0],
+                      [1, 0],
+                      [1, 1],
+                      [0, 1],
+                      [0, 0],
+                    ],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          })),
+        };
+
+        const removeSpy = vi.spyOn(manager as any, 'removeFeatureGroup');
+        (mockTurfHelper.hasKinks as any).mockReturnValue(true);
+        (mockTurfHelper.getKinks as any).mockReturnValue([
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [0, 0],
+                  [1, 0],
+                  [1, 1],
+                  [0, 1],
+                  [0, 0],
+                ],
+              ],
+            },
+            properties: {},
+          },
+        ]);
+
+        await (manager as any).markerDragEnd(polygonFeatureGroup);
+
+        expect(removeSpy).toHaveBeenCalledWith(polygonFeatureGroup);
+        expect(mockEventManager.emit).toHaveBeenCalledWith(
+          'polydraw:polygon:updated',
+          expect.objectContaining({
+            operation: 'markerDrag',
+            allowMerge: true,
+          }),
+        );
+      });
+    });
+
+    describe('polygon dragging error handling', () => {
+      it('should handle errors in updateMarkersAndHoleLinesDuringDrag', () => {
+        const polygon: any = {
+          _polydrawCurrentDragSession: null,
+          _polydrawOriginalMarkerPositions: new Map(),
+          _polydrawOriginalHoleLinePositions: new Map(),
+        };
+
+        const errorThrowingFeatureGroup = {
+          eachLayer: vi.fn(() => {
+            throw new Error('Layer iteration error');
+          }),
+        };
+
+        (manager as any).getFeatureGroups = () => [errorThrowingFeatureGroup];
+
+        // Should not throw despite the error
+        expect(() => {
+          (manager as any).updateMarkersAndHoleLinesDuringDrag(polygon, 0.1, 0.1);
+        }).not.toThrow();
+      });
+
+      it('should handle errors in updatePolygonAfterDrag', async () => {
+        const errorPolygon: any = {
+          toGeoJSON: vi.fn(() => {
+            throw new Error('GeoJSON conversion error');
+          }),
+        };
+
+        const errorFeatureGroup = {
+          eachLayer: vi.fn((callback: (layer: any) => void) => {
+            callback(errorPolygon);
+          }),
+        };
+
+        (manager as any).getFeatureGroups = () => [errorFeatureGroup];
+        (manager as any).currentModifierDragMode = false;
+        (manager as any).isModifierKeyHeld = false;
+
+        // Should not throw despite the error
+        await expect((manager as any).updatePolygonAfterDrag(errorPolygon)).resolves.not.toThrow();
+      });
+    });
+
+    describe('modifier subtract operations', () => {
+      it('should handle intersection errors in performModifierSubtract', () => {
+        const draggedGeoJSON = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        } as any;
+
+        const originalFeatureGroup = mockFeatureGroup;
+
+        const intersectingFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0.5, 0.5],
+                      [1.5, 0.5],
+                      [1.5, 1.5],
+                      [0.5, 1.5],
+                      [0.5, 0.5],
+                    ],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          })),
+        };
+
+        (manager as any).getFeatureGroups = () => [originalFeatureGroup, intersectingFeatureGroup];
+
+        // Mock intersection to throw error, then fallback to polygonIntersect
+        (mockTurfHelper.getIntersection as any).mockImplementation(() => {
+          throw new Error('Intersection error');
+        });
+        (mockTurfHelper.polygonIntersect as any).mockReturnValue(true);
+
+        // Mock difference operation to throw error
+        (mockTurfHelper.polygonDifference as any).mockImplementation(() => {
+          throw new Error('Difference error');
+        });
+
+        const removeSpy = vi.spyOn(manager as any, 'removeFeatureGroup');
+
+        expect(() => {
+          (manager as any).performModifierSubtract(draggedGeoJSON, originalFeatureGroup);
+        }).not.toThrow();
+
+        expect(removeSpy).toHaveBeenCalledWith(originalFeatureGroup);
+        expect(removeSpy).toHaveBeenCalledWith(intersectingFeatureGroup);
+      });
+
+      it('should handle polygonIntersect errors in performModifierSubtract', () => {
+        const draggedGeoJSON = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        } as any;
+
+        const originalFeatureGroup = mockFeatureGroup;
+
+        const intersectingFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0.5, 0.5],
+                      [1.5, 0.5],
+                      [1.5, 1.5],
+                      [0.5, 1.5],
+                      [0.5, 0.5],
+                    ],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          })),
+        };
+
+        (manager as any).getFeatureGroups = () => [originalFeatureGroup, intersectingFeatureGroup];
+
+        // Mock both intersection methods to throw errors
+        (mockTurfHelper.getIntersection as any).mockImplementation(() => {
+          throw new Error('Intersection error');
+        });
+        (mockTurfHelper.polygonIntersect as any).mockImplementation(() => {
+          throw new Error('PolygonIntersect error');
+        });
+
+        const removeSpy = vi.spyOn(manager as any, 'removeFeatureGroup');
+
+        expect(() => {
+          (manager as any).performModifierSubtract(draggedGeoJSON, originalFeatureGroup);
+        }).not.toThrow();
+
+        expect(removeSpy).toHaveBeenCalledWith(originalFeatureGroup);
+        // Should not call remove on intersecting feature group due to error
+      });
+
+      it('should handle successful difference operation in performModifierSubtract', () => {
+        const draggedGeoJSON = {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [1, 0],
+                [1, 1],
+                [0, 1],
+                [0, 0],
+              ],
+            ],
+          },
+          properties: {},
+        } as any;
+
+        const originalFeatureGroup = mockFeatureGroup;
+
+        const intersectingFeatureGroup = {
+          toGeoJSON: vi.fn(() => ({
+            type: 'FeatureCollection',
+            features: [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Polygon',
+                  coordinates: [
+                    [
+                      [0.5, 0.5],
+                      [1.5, 0.5],
+                      [1.5, 1.5],
+                      [0.5, 1.5],
+                      [0.5, 0.5],
+                    ],
+                  ],
+                },
+                properties: {},
+              },
+            ],
+          })),
+        };
+
+        (manager as any).getFeatureGroups = () => [originalFeatureGroup, intersectingFeatureGroup];
+
+        // Mock successful intersection
+        (mockTurfHelper.getIntersection as any).mockReturnValue({
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0.5, 0.5],
+                [1, 0.5],
+                [1, 1],
+                [0.5, 1],
+                [0.5, 0.5],
+              ],
+            ],
+          },
+        });
+
+        // Mock successful difference operation
+        (mockTurfHelper.polygonDifference as any).mockReturnValue({
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [1, 0.5],
+                [1.5, 0.5],
+                [1.5, 1.5],
+                [1, 1.5],
+                [1, 0.5],
+              ],
+            ],
+          },
+        });
+
+        (mockTurfHelper.getCoords as any).mockReturnValue([
+          [
+            [1, 0.5],
+            [1.5, 0.5],
+            [1.5, 1.5],
+            [1, 1.5],
+            [1, 0.5],
+          ],
+        ]);
+
+        const removeSpy = vi.spyOn(manager as any, 'removeFeatureGroup');
+
+        (manager as any).performModifierSubtract(draggedGeoJSON, originalFeatureGroup);
+
+        expect(removeSpy).toHaveBeenCalledWith(originalFeatureGroup);
+        expect(removeSpy).toHaveBeenCalledWith(intersectingFeatureGroup);
+        expect(mockEventManager.emit).toHaveBeenCalledWith(
+          'polydraw:polygon:updated',
+          expect.objectContaining({
+            operation: 'modifierSubtract',
+            allowMerge: false,
+          }),
+        );
+      });
+    });
+
+    describe('marker hover and event handling', () => {
+      it('should handle marker hover with modifier key detection', () => {
+        const testElement = {
+          style: {},
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          classList: {
+            add: vi.fn(),
+            remove: vi.fn(),
+          },
+        };
+
+        const testMarker = {
+          getElement: vi.fn(() => testElement),
+        } as any;
+
+        const mockContainer = {
+          style: {},
+        };
+
+        (mockMap.getContainer as any).mockReturnValue(mockContainer);
+
+        // Test hover start - this should add event listeners
+        (manager as any).onMarkerHoverForEdgeDeletion(testMarker, true);
+
+        expect(testElement.addEventListener).toHaveBeenCalledWith(
+          'mousemove',
+          expect.any(Function),
+        );
+
+        // Test hover end - this should remove event listeners
+        (manager as any).onMarkerHoverForEdgeDeletion(testMarker, false);
+
+        expect(testElement.removeEventListener).toHaveBeenCalledWith(
+          'mousemove',
+          expect.any(Function),
+        );
+      });
+
+      it('should handle marker hover events with modifier key pressed', () => {
+        const mockEvent = {
+          target: {
+            style: {},
+            classList: {
+              add: vi.fn(),
+              remove: vi.fn(),
+            },
+          },
+        } as unknown as Event;
+
+        manager.setModifierKeyHeld(true);
+
+        expect(() => {
+          (manager as any).onMarkerHoverForEdgeDeletionEvent(mockEvent);
+        }).not.toThrow();
+
+        expect(() => {
+          (manager as any).onMarkerLeaveForEdgeDeletionEvent(mockEvent);
+        }).not.toThrow();
+      });
+
+      it('should handle marker hover events without modifier key', () => {
+        const mockEvent = {
+          target: {
+            style: {},
+            classList: {
+              add: vi.fn(),
+              remove: vi.fn(),
+            },
+          },
+        } as unknown as Event;
+
+        manager.setModifierKeyHeld(false);
+
+        expect(() => {
+          (manager as any).onMarkerHoverForEdgeDeletionEvent(mockEvent);
+        }).not.toThrow();
+      });
+    });
+
+    describe('hole deletion functionality', () => {
+      it('should handle hole deletion with complex polygon structure', () => {
+        const polygonWithHoles = {
+          getLatLngs: vi.fn(() => [
+            [
+              [
+                { lat: 0, lng: 0 },
+                { lat: 2, lng: 0 },
+                { lat: 2, lng: 2 },
+                { lat: 0, lng: 2 },
+              ],
+              [
+                { lat: 0.2, lng: 0.2 },
+                { lat: 0.8, lng: 0.2 },
+                { lat: 0.8, lng: 0.8 },
+                { lat: 0.2, lng: 0.8 },
+              ],
+              [
+                { lat: 1.2, lng: 1.2 },
+                { lat: 1.8, lng: 1.2 },
+                { lat: 1.8, lng: 1.8 },
+                { lat: 1.2, lng: 1.8 },
+              ],
+            ],
+          ]),
+        };
+
+        const testFeatureGroup = {
+          addLayer: vi.fn((layer) => ({
+            addTo: vi.fn().mockReturnValue(layer),
+          })),
+          getLayers: vi.fn(() => [polygonWithHoles]),
+          eachLayer: vi.fn((callback: (layer: any) => void) => {
+            callback(polygonWithHoles);
+          }),
+        };
+
+        const deleteMarker = {
+          getLatLng: vi.fn(() => ({ lat: 0.5, lng: 0.5 })),
+        };
+
+        const holeLatLngs = [
+          { lat: 0.2, lng: 0.2 },
+          { lat: 0.8, lng: 0.2 },
+          { lat: 0.8, lng: 0.8 },
+          { lat: 0.2, lng: 0.8 },
+        ];
+
+        const holeConfig = {
+          ...mockConfig,
+          markers: {
+            ...mockConfig.markers,
+            holeMarkers: {
+              menuMarker: false,
+              deleteMarker: true,
+              infoMarker: false,
+            },
+          },
+        };
+
+        const managerWithHoles = new PolygonInteractionManager(
+          { ...mockDependencies, config: holeConfig },
+          mockFeatureGroupAccess,
+        );
+
+        expect(() => {
+          managerWithHoles.addHoleMarkers(holeLatLngs, testFeatureGroup as any);
+        }).not.toThrow();
+      });
     });
   });
 

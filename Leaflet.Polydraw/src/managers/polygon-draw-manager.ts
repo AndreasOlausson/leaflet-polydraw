@@ -5,6 +5,7 @@ import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
+import { isTestEnvironment } from '../utils';
 
 export interface DrawResult {
   success: boolean;
@@ -355,7 +356,9 @@ export class PolygonDrawManager {
         isPointToPoint: true,
       });
     } catch (error) {
-      console.warn('Error completing point-to-point polygon:', error);
+      if (!isTestEnvironment()) {
+        console.warn('Error completing point-to-point polygon:', error);
+      }
       this.clearP2pMarkers();
       this.resetTracer();
     }

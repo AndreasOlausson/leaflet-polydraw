@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TurfHelper } from '../../src/turf-helper';
 import defaultConfig from '../../src/config.json';
 import type { Feature, Polygon, MultiPolygon, Point } from 'geojson';
+import * as isTestEnvModule from '../../src/utils';
 
 describe('TurfHelper', () => {
   let turfHelper: TurfHelper;
@@ -2085,6 +2086,290 @@ describe('TurfHelper', () => {
       expect(() => {
         operations.forEach((op) => op());
       }).not.toThrow();
+    });
+  });
+
+  describe('Error Handling with Console Warnings (Non-Test Environment)', () => {
+    it('should trigger console warnings for polygon creation method fallbacks in non-test environment', () => {
+      // Mock isTestEnvironment to return false
+      const mockIsTestEnvironment = vi
+        .spyOn(isTestEnvModule, 'isTestEnvironment')
+        .mockReturnValue(false);
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Test unknown polygon creation method
+      const customConfig = { ...defaultConfig, polygonCreation: { method: 'unknown' } };
+      const customHelper = new TurfHelper(customConfig);
+
+      const testLineString: Feature<any> = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+            [0, 0],
+          ],
+        },
+        properties: {},
+      };
+
+      const result = customHelper.createPolygonFromTrace(testLineString);
+      expect(result).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Unknown polygon creation method: unknown, falling back to concaveman',
+      );
+
+      // Test buffer polygon creation failure
+      const bufferConfig = { ...defaultConfig, polygonCreation: { method: 'buffer' } };
+      const bufferHelper = new TurfHelper(bufferConfig);
+
+      const problematicFeature: Feature<any> = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [[0, 0]], // Single point - insufficient for buffer
+        },
+        properties: {},
+      };
+
+      const bufferResult = bufferHelper.createPolygonFromTrace(problematicFeature);
+      expect(bufferResult).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Buffer polygon creation failed:',
+        expect.any(String),
+      );
+
+      // Test direct polygon creation with insufficient points
+      const directConfig = { ...defaultConfig, polygonCreation: { method: 'direct' } };
+      const directHelper = new TurfHelper(directConfig);
+
+      const insufficientPoints: Feature<any> = {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [
+            [0, 0],
+            [1, 1],
+          ], // Only 2 points
+        },
+        properties: {},
+      };
+
+      const directResult = directHelper.createPolygonFromTrace(insufficientPoints);
+      expect(directResult).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Not enough points for direct polygon, falling back to concaveman',
+      );
+
+      // Test unknown simplification mode
+      const simplificationConfig = {
+        ...defaultConfig,
+        polygonCreation: { simplification: { mode: 'unknown' } },
+      };
+      const simplificationHelper = new TurfHelper(simplificationConfig);
+
+      const polygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const simplificationResult = simplificationHelper.getSimplified(polygon, false);
+      expect(simplificationResult).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Unknown simplification mode: unknown, falling back to simple',
+      );
+
+      // Restore mocks
+      mockIsTestEnvironment.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should trigger console warnings for coordinate cleaning errors in non-test environment', () => {
+      // Mock isTestEnvironment to return false
+      const mockIsTestEnvironment = vi
+        .spyOn(isTestEnvModule, 'isTestEnvironment')
+        .mockReturnValue(false);
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Test invalid feature passed to removeDuplicateVertices (line 1338-1342)
+      const invalidFeature: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: null as any,
+        properties: {},
+      };
+
+      const result1 = turfHelper.removeDuplicateVertices(invalidFeature);
+      expect(result1).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Invalid feature passed to removeDuplicateVertices',
+      );
+
+      // Test invalid coordinates array (line 1347-1348)
+      const featureWithInvalidCoords: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 1],
+            ],
+          ], // Only 2 points - invalid for polygon
+        },
+        properties: {},
+      };
+
+      const result2 = turfHelper.removeDuplicateVertices(featureWithInvalidCoords);
+      expect(result2).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Invalid coordinates array - need at least 3 points for a polygon',
+      );
+
+      // Test polygon with less than 3 points after cleaning (line 1383-1384)
+      const featureWithDuplicates: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0.0000001, 0.0000001], // Very close to first point
+              [0.0000002, 0.0000002], // Very close to previous points
+              [0, 0], // Closing point
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result3 = turfHelper.removeDuplicateVertices(featureWithDuplicates);
+      expect(result3).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith('After cleaning, polygon has less than 3 points');
+
+      // Test cleaned polygon with invalid ring (line 1411-1412)
+      const polygonWithInvalidRingAfterCleaning: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [0.0000001, 0.0000001],
+              [0, 0],
+            ], // Would become invalid after cleaning
+          ],
+        },
+        properties: {},
+      };
+
+      const result4 = turfHelper.removeDuplicateVertices(polygonWithInvalidRingAfterCleaning);
+      expect(result4).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Cleaned polygon has invalid ring with less than 4 coordinates',
+      );
+
+      // Test cleaned multipolygon with invalid ring (line 1431-1432)
+      const multiPolygonWithInvalidRing: Feature<MultiPolygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [0, 0],
+                [0.0000001, 0.0000001],
+                [0, 0],
+              ], // Would become invalid after cleaning
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const result5 = turfHelper.removeDuplicateVertices(multiPolygonWithInvalidRing);
+      expect(result5).toBeDefined();
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Cleaned multipolygon has invalid ring with less than 4 coordinates',
+      );
+
+      // Note: The error handling path in removeDuplicateVertices (lines 1445-1454) is very difficult
+      // to test because the early validation checks catch most error conditions before reaching
+      // the main try-catch block. The existing tests above already cover the important validation
+      // warnings that are more likely to occur in real usage scenarios.
+
+      // Restore mocks
+      mockIsTestEnvironment.mockRestore();
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should trigger console warnings for convex hull errors in non-test environment', () => {
+      // Mock isTestEnvironment to return false
+      const mockIsTestEnvironment = vi
+        .spyOn(isTestEnvModule, 'isTestEnvironment')
+        .mockReturnValue(false);
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      // Test convex hull with valid input to trigger line 327
+      const validPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [0, 0],
+              [1, 0],
+              [1, 1],
+              [0, 1],
+              [0, 0],
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const convexHull = turfHelper.getConvexHull(validPolygon);
+      expect(convexHull).toBeDefined();
+      // This should execute line 327: return convex(fc);
+
+      // Test convex hull with malformed input to trigger error handling
+      // Create a feature that will definitely cause the convex function to throw an error
+      const malformedPolygon: Feature<Polygon> = {
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [NaN, NaN], // NaN coordinates will cause convex to throw
+              [Infinity, -Infinity], // Invalid coordinates
+              [null as any, undefined as any], // Null/undefined coordinates
+            ],
+          ],
+        },
+        properties: {},
+      };
+
+      const invalidResult = turfHelper.getConvexHull(malformedPolygon);
+      expect(invalidResult).toBeNull();
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Error in getConvexHull:', expect.any(String));
+
+      // Restore mocks
+      mockIsTestEnvironment.mockRestore();
+      consoleWarnSpy.mockRestore();
     });
   });
 

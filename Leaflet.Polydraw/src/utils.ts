@@ -4,6 +4,10 @@ import defaultConfig from './config.json';
 
 export const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+export function isTestEnvironment(): boolean {
+  return typeof vitest !== 'undefined';
+}
+
 /**
  * Utility for polygon bounds.
  */
