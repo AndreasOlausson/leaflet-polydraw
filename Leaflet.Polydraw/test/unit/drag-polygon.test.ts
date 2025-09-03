@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
 import Polydraw from '../../src/polydraw';
 import { polygon } from '@turf/helpers';
+import {
+  createMockMap,
+  createMockConfig,
+  createMockPolygon,
+  createMockFeatureGroup,
+  createMockMarker,
+} from './utils/mock-factory';
 
 describe('Polygon Dragging Tests', () => {
   let polydraw: Polydraw;
@@ -9,28 +15,7 @@ describe('Polygon Dragging Tests', () => {
   let container: HTMLElement;
 
   beforeEach(() => {
-    // Create a more realistic mock map
-    mockMap = {
-      dragging: { enable: vi.fn(), disable: vi.fn() },
-      doubleClickZoom: { enable: vi.fn(), disable: vi.fn() },
-      scrollWheelZoom: { enable: vi.fn(), disable: vi.fn() },
-      getContainer: vi.fn(() => ({
-        style: {},
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        classList: {
-          contains: vi.fn(() => false),
-          add: vi.fn(),
-          remove: vi.fn(),
-        },
-      })),
-      fire: vi.fn(),
-      removeLayer: vi.fn(),
-      addLayer: vi.fn(),
-      on: vi.fn(),
-      off: vi.fn(),
-      containerPointToLatLng: vi.fn(() => ({ lat: 0, lng: 0 })),
-    };
+    mockMap = createMockMap();
 
     // Create a real DOM container for more realistic testing
     container = document.createElement('div');
@@ -38,28 +23,24 @@ describe('Polygon Dragging Tests', () => {
     container.style.height = '400px';
     document.body.appendChild(container);
 
-    polydraw = new Polydraw({
-      config: {
-        modes: {
-          dragPolygons: true,
+    const config = createMockConfig({
+      modes: { dragPolygons: true },
+      dragPolygons: {
+        modifierSubtract: {
+          enabled: true,
+          subtractColor: '#D9460F',
         },
-        dragPolygons: {
-          modifierSubtract: {
-            enabled: true,
-            subtractColor: '#D9460F',
-          },
-          dragCursor: 'move',
-          hoverCursor: 'grab',
-        },
+        dragCursor: 'move',
+        hoverCursor: 'grab',
       },
-    } as any);
+    });
+
+    polydraw = new Polydraw({ config } as any);
 
     // Initialize the control
     (polydraw as any).onAdd(mockMap);
     (polydraw as any).map = mockMap;
-    (polydraw as any).tracer = {
-      setLatLngs: vi.fn(),
-    };
+    (polydraw as any).tracer = { setLatLngs: vi.fn() };
   });
 
   afterEach(() => {
@@ -329,33 +310,18 @@ describe('Polygon Dragging Tests', () => {
     });
 
     it('should complete drag operation on mouse up', () => {
-      const mockFeatureGroup = {
-        eachLayer: vi.fn(),
-        clearLayers: vi.fn(),
-        hasLayer: vi.fn(() => true),
-      };
+      const mockFeatureGroup = createMockFeatureGroup();
+      mockFeatureGroup.hasLayer = vi.fn(() => true);
 
-      const mockPolygon = {
-        on: vi.fn(),
-        _polydrawDragData: {
-          isDragging: true,
-          startPosition: { lat: 0, lng: 0 },
-        },
-        setLatLngs: vi.fn(),
-        toGeoJSON: () => ({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 0],
+      ]);
+      mockPolygon._polydrawDragData = {
+        isDragging: true,
+        startPosition: { lat: 0, lng: 0 },
       };
 
       (polydraw as any).polygonMutationManager.currentDragPolygon = mockPolygon;
@@ -428,26 +394,18 @@ describe('Polygon Dragging Tests', () => {
     });
 
     it('should update marker colors during modifier drag', () => {
-      const mockElement = {
-        style: {
-          backgroundColor: '',
-          borderColor: '',
-        },
-        classList: {
-          add: vi.fn(),
-          remove: vi.fn(),
-        },
-      };
+      const mockElement = document.createElement('div');
+      mockElement.style.backgroundColor = '';
+      mockElement.style.borderColor = '';
+      mockElement.classList.add = vi.fn();
+      mockElement.classList.remove = vi.fn();
 
-      const mockMarker = {
-        getElement: vi.fn(() => mockElement),
-      };
+      const mockMarker = createMockMarker({ element: mockElement });
 
-      const mockFeatureGroup = {
-        eachLayer: vi.fn((callback) => {
-          callback(mockMarker); // Simulate marker in feature group
-        }),
-      };
+      const mockFeatureGroup = createMockFeatureGroup();
+      mockFeatureGroup.eachLayer = vi.fn((callback) => {
+        callback(mockMarker); // Simulate marker in feature group
+      });
 
       const mockPolygon = {
         on: vi.fn(),
@@ -476,7 +434,10 @@ describe('Polygon Dragging Tests', () => {
 
       (polydraw as any).polygonMutationManager.updateMarkerColorsForSubtractMode(mockPolygon, true);
 
-      expect(mockElement.style.backgroundColor).toBe('#D9460F');
+      // Handle both hex and RGB color formats (browsers may convert hex to RGB)
+      const backgroundColor = mockElement.style.backgroundColor;
+      const isValidColor = backgroundColor === '#D9460F' || backgroundColor === 'rgb(217, 70, 15)';
+      expect(isValidColor).toBe(true);
       expect(mockElement.classList.add).toHaveBeenCalledWith('subtract-mode');
     });
   });
@@ -760,18 +721,18 @@ describe('Polygon Dragging Tests', () => {
       expect(intersectionResult2).toBe(false);
 
       // Test the actual workflow: when polygons intersect, they should be processed
-      const draggedFeatureGroup = {
-        eachLayer: vi.fn(),
-        clearLayers: vi.fn(),
-      };
+      const draggedFeatureGroup = createMockFeatureGroup();
+      const targetFeatureGroup = createMockFeatureGroup();
 
-      const targetFeatureGroup = {
-        eachLayer: vi.fn(),
-        toGeoJSON: () => ({
-          features: [overlappingPolygon2],
-        }),
-        clearLayers: vi.fn(),
-      };
+      // Create mock polygons for the feature groups
+      const mockDraggedPolygon = { toGeoJSON: () => overlappingPolygon1 };
+      const mockTargetPolygon = { toGeoJSON: () => overlappingPolygon2 };
+
+      draggedFeatureGroup.eachLayer = (fn: any) => fn(mockDraggedPolygon);
+      targetFeatureGroup.eachLayer = (fn: any) => fn(mockTargetPolygon);
+      targetFeatureGroup.toGeoJSON = () => ({
+        features: [overlappingPolygon2],
+      });
 
       (polydraw as any).arrayOfFeatureGroups = [draggedFeatureGroup, targetFeatureGroup];
 

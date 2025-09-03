@@ -8,75 +8,41 @@ import { EventManager } from '../../src/managers/event-manager';
 import { MarkerPosition } from '../../src/enums';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import {
+  createMockMap,
+  createMockPolygon,
+  createMockFeatureGroup,
+  createMockMarker,
+} from './utils/mock-factory';
 
-// Mock Leaflet components
-const mockMap = {
-  getContainer: vi.fn(() => ({ style: {} })),
-  fire: vi.fn(),
-  on: vi.fn(),
-  off: vi.fn(),
+// Create mock objects using the factory
+const mockMap = createMockMap({
+  getContainer: vi.fn(() => document.createElement('div')),
   closePopup: vi.fn(),
-  dragging: {
-    enable: vi.fn(),
-    disable: vi.fn(),
-  },
-} as unknown as L.Map;
+});
 
-const mockElement = {
-  style: {},
-  addEventListener: vi.fn(),
-  removeEventListener: vi.fn(),
-  classList: {
-    add: vi.fn(),
-    remove: vi.fn(),
-  },
-};
+const mockElement = document.createElement('div');
+mockElement.addEventListener = vi.fn();
+mockElement.removeEventListener = vi.fn();
+(mockElement.classList as any).add = vi.fn();
+(mockElement.classList as any).remove = vi.fn();
 
-const mockMarker = {
-  getLatLng: vi.fn(() => ({ lat: 0, lng: 0 })),
-  setLatLng: vi.fn(),
-  getElement: vi.fn(() => mockElement),
-  on: vi.fn(),
-  fire: vi.fn(),
-  options: { draggable: true },
-  dragging: {
-    enable: vi.fn(),
-    disable: vi.fn(),
-  },
-} as unknown as L.Marker & { dragging: { enable: () => void; disable: () => void } };
+const mockMarker = createMockMarker({
+  draggable: true,
+  element: mockElement,
+});
 
-const mockPolygon = {
-  getLatLngs: vi.fn(() => [
+const mockPolygon = createMockPolygon(
+  [
     [
       { lat: 0, lng: 0 },
       { lat: 1, lng: 0 },
       { lat: 1, lng: 1 },
       { lat: 0, lng: 1 },
     ],
-  ]),
-  setLatLngs: vi.fn(),
-  setStyle: vi.fn(),
-  toGeoJSON: vi.fn(() => ({
-    type: 'Feature',
-    geometry: {
-      type: 'Polygon',
-      coordinates: [
-        [
-          [0, 0],
-          [1, 0],
-          [1, 1],
-          [0, 1],
-          [0, 0],
-        ],
-      ],
-    },
-    properties: {},
-  })),
-  on: vi.fn(),
-  options: { fillOpacity: 0.5 },
-  _polydrawDragData: null,
-  _polydrawOriginalLatLngs: null,
-} as any;
+  ],
+  { fillOpacity: 0.5 },
+);
 
 const mockPolyline = {
   on: vi.fn(),
@@ -272,38 +238,12 @@ const mockConfig: PolydrawConfig = {
   },
 } as PolydrawConfig;
 
-const mockFeatureGroup = {
-  addLayer: vi.fn((layer) => ({
-    addTo: vi.fn().mockReturnValue(layer),
-  })),
-  addTo: vi.fn().mockReturnThis(),
-  getLayers: vi.fn(() => [mockPolygon]),
-  eachLayer: vi.fn((callback: (layer: any) => void) => {
+const mockFeatureGroup = createMockFeatureGroup({
+  layers: [mockPolygon],
+  eachLayerCallback: (callback: (layer: any) => void) => {
     callback(mockPolygon);
-  }),
-  toGeoJSON: vi.fn(() => ({
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [
-              [0, 0],
-              [1, 0],
-              [1, 1],
-              [0, 1],
-              [0, 0],
-            ],
-          ],
-        },
-        properties: {},
-      },
-    ],
-  })),
-  hasLayer: vi.fn(() => true),
-} as unknown as L.FeatureGroup;
+  },
+});
 
 const mockFeatureGroupAccess = {
   getFeatureGroups: vi.fn(() => [mockFeatureGroup]),
@@ -769,22 +709,6 @@ describe('PolygonInteractionManager', () => {
 
   describe('edge interaction', () => {
     it('should handle edge clicks for adding vertices', () => {
-      const mockEdgePolyline = {
-        ...mockPolyline,
-        _polydrawEdgeInfo: {
-          ringIndex: 0,
-          edgeIndex: 0,
-          startPoint: { lat: 0, lng: 0 },
-          endPoint: { lat: 1, lng: 0 },
-          parentPolygon: mockPolygon,
-          parentFeatureGroup: mockFeatureGroup,
-        },
-      };
-
-      const mockEvent = {
-        latlng: { lat: 0.5, lng: 0 },
-      } as L.LeafletMouseEvent;
-
       // Simulate edge click by calling the private method indirectly
       // We'll test this through the addEdgeClickListeners setup
       manager.addEdgeClickListeners(mockPolygon as any, mockFeatureGroup);
@@ -1656,7 +1580,6 @@ describe('PolygonInteractionManager', () => {
 
       it('should handle modifier key detection', () => {
         const mouseEventWithMeta = { metaKey: true, ctrlKey: false } as MouseEvent;
-        const mouseEventWithCtrl = { metaKey: false, ctrlKey: true } as MouseEvent;
         const mouseEventWithoutModifier = { metaKey: false, ctrlKey: false } as MouseEvent;
 
         // Test modifier key detection - on Mac, metaKey should work
@@ -1985,7 +1908,6 @@ describe('PolygonInteractionManager', () => {
     describe('modifier key handling', () => {
       it('should detect edge deletion modifier key', () => {
         const eventWithMeta = { metaKey: true } as MouseEvent;
-        const eventWithCtrl = { ctrlKey: true } as MouseEvent;
         const eventWithoutModifier = { metaKey: false, ctrlKey: false } as MouseEvent;
 
         expect((manager as any).isEdgeDeletionModifierKeyPressed(eventWithMeta)).toBe(true);
@@ -2932,9 +2854,9 @@ describe('PolygonInteractionManager', () => {
           }),
         };
 
-        const deleteMarker = {
-          getLatLng: vi.fn(() => ({ lat: 0.5, lng: 0.5 })),
-        };
+        // const deleteMarker = {
+        //   getLatLng: vi.fn(() => ({ lat: 0.5, lng: 0.5 })),
+        // };
 
         const holeLatLngs = [
           { lat: 0.2, lng: 0.2 },
@@ -3017,14 +2939,13 @@ describe('PolygonInteractionManager', () => {
       (manager as any).currentModifierDragMode = true; // subtract mode
       manager.setModifierKeyHeld(true);
 
-      const visSpy = vi.spyOn(manager as any, 'setMarkerVisibility');
+      vi.spyOn(manager as any, 'setMarkerVisibility');
       const setSubSpy = vi.spyOn(manager as any, 'setSubtractVisualMode');
 
       // Mousemove should apply subtract visuals and keep markers hidden
       (manager as any).onPolygonMouseMove({ latlng: { lat: 0.2, lng: 0.2 }, originalEvent: {} });
       expect(setSubSpy).toHaveBeenCalledWith(poly, false);
       // Note: setMarkerVisibility may not be called in this specific test scenario
-      // expect(visSpy).toHaveBeenCalledWith(poly, false);
 
       // Mouseup should finalize, re-enable map dragging and restore visuals
       (manager as any).onPolygonMouseUp({ latlng: { lat: 0.2, lng: 0.2 }, originalEvent: {} });
@@ -3076,8 +2997,8 @@ describe('PolygonInteractionManager', () => {
       (mgr as any).currentModifierDragMode = false; // normal mode
       mgr.setModifierKeyHeld(false);
 
-      const visSpy = vi.spyOn(mgr as any, 'setMarkerVisibility');
-      const setSubSpy = vi.spyOn(mgr as any, 'setSubtractVisualMode');
+      // const visSpy = vi.spyOn(mgr as any, 'setMarkerVisibility');
+      // const setSubSpy = vi.spyOn(mgr as any, 'setSubtractVisualMode');
 
       // Mousemove in normal mode
       (mgr as any).onPolygonMouseMove({ latlng: { lat: 0.4, lng: 0.4 }, originalEvent: {} });

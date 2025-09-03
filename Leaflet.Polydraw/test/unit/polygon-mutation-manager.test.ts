@@ -4,10 +4,6 @@ import {
   PolygonMutationManager,
   MutationManagerDependencies,
 } from '../../src/managers/polygon-mutation-manager';
-import { TurfHelper } from '../../src/turf-helper';
-import { PolygonInformationService } from '../../src/polygon-information.service';
-import { ModeManager } from '../../src/managers/mode-manager';
-import { EventManager } from '../../src/managers/event-manager';
 import { PolygonGeometryManager } from '../../src/managers/polygon-geometry-manager';
 import { PolygonInteractionManager } from '../../src/managers/polygon-interaction-manager';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
@@ -959,9 +955,6 @@ describe('PolygonMutationManager', () => {
     });
 
     it('should provide backward compatibility methods', () => {
-      const mockFeatureGroup = new L.FeatureGroup();
-      const mockPolygon = new L.Polygon([]);
-
       // These methods should exist for backward compatibility
       expect(typeof mutationManager.getMarkerIndex).toBe('function');
       expect(typeof mutationManager.ensureMarkerSeparation).toBe('function');

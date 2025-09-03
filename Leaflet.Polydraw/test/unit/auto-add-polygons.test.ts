@@ -1,139 +1,43 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as L from 'leaflet';
 import Polydraw from '../../src/polydraw';
+import { createMockMap, suppressConsole } from './utils/mock-factory';
 import './setup';
 
-// Mock Leaflet to work in JSDOM environment
+// Minimal Leaflet mock - only what's needed for module-level mocking
 vi.mock('leaflet', async () => {
-  const actualLeaflet = await vi.importActual('leaflet');
-
-  const MockControl = class {
-    addTo() {
-      return this;
-    }
-    onAdd() {
-      return document.createElement('div');
-    }
-    remove() {}
-  };
-
-  const MockMap = class {
-    dragging = { enable: vi.fn(), disable: vi.fn() };
-    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
-    scrollWheelZoom = { enable: vi.fn(), disable: vi.fn() };
-    _renderer = new (class {
-      _container = document.createElement('div');
-      _update() {}
-      _removePath() {}
-    })();
-    getContainer() {
-      return document.createElement('div');
-    }
-    on() {
-      return this;
-    }
-    off() {
-      return this;
-    }
-    removeLayer() {
-      return this;
-    }
-    addLayer() {
-      return this;
-    }
-    remove() {}
-    containerPointToLatLng() {
-      return { lat: 0, lng: 0 };
-    }
-    latLngToContainerPoint() {
-      return { x: 0, y: 0 };
-    }
-    getCenter() {
-      return { lat: 0, lng: 0 };
-    }
-    getZoom() {
-      return 13;
-    }
-    invalidateSize() {}
-  };
-
-  const MockFeatureGroup = class extends (actualLeaflet as any).FeatureGroup {
-    constructor() {
-      super();
-      this._layers = {};
-    }
-    addLayer(layer: any) {
-      const id = layer._leaflet_id || Math.random();
-      this._layers[id] = layer;
-      return this;
-    }
-    removeLayer(layer: any) {
-      const id = layer._leaflet_id;
-      if (id && this._layers[id]) {
-        delete this._layers[id];
+  const actual = await vi.importActual('leaflet');
+  return {
+    ...actual,
+    Control: class {
+      addTo() {
+        return this;
       }
-      return this;
-    }
-    clearLayers() {
-      this._layers = {};
-      return this;
-    }
-    getLayers() {
-      return Object.values(this._layers);
-    }
-    toGeoJSON() {
-      return {
-        type: 'FeatureCollection',
-        features: this.getLayers().map((l: any) => l.toGeoJSON()),
-      };
-    }
-  };
-
-  const MockPolygon = class extends (actualLeaflet as any).Polygon {
-    constructor(latlngs: any, options: any) {
-      super(latlngs, options);
-      this._latlngs = latlngs;
-      // Convert latlngs to proper coordinates format
-      const coordinates = Array.isArray(latlngs[0])
-        ? latlngs.map((ring: any) =>
-            ring.map((ll: any) => [ll.lng || ll[1] || 0, ll.lat || ll[0] || 0]),
-          )
-        : [latlngs.map((ll: any) => [ll.lng || ll[1] || 0, ll.lat || ll[0] || 0])];
-
-      this.feature = {
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'Polygon',
-          coordinates: coordinates,
-        },
-      };
-    }
-    toGeoJSON() {
-      return this.feature;
-    }
-    getLatLngs() {
-      return this._latlngs;
-    }
-  };
-
-  const DomEvent = {
-    ...(actualLeaflet as any).DomEvent,
-    on: vi.fn(),
-    off: vi.fn(),
-    stopPropagation: vi.fn(),
-    preventDefault: vi.fn(),
-  };
-  DomEvent.on.mockReturnValue(DomEvent);
-
-  const leafletMock = {
-    ...actualLeaflet,
-    Control: MockControl,
-    Map: MockMap,
-    FeatureGroup: MockFeatureGroup,
-    Polygon: MockPolygon,
-    geoJSON: () => new MockFeatureGroup(),
-    polyline: () => ({
+      onAdd() {
+        return document.createElement('div');
+      }
+      remove() {}
+    },
+    DomEvent: {
+      on: vi.fn(() => ({ on: vi.fn() })),
+      off: vi.fn(),
+      stopPropagation: vi.fn(),
+      preventDefault: vi.fn(),
+      disableClickPropagation: vi.fn(),
+    },
+    DomUtil: {
+      create: vi.fn((tagName: string, className?: string, container?: HTMLElement) => {
+        const el = document.createElement(tagName);
+        if (className) el.className = className;
+        if (container) container.appendChild(el);
+        return el;
+      }),
+      addClass: vi.fn(),
+      removeClass: vi.fn(),
+      hasClass: vi.fn(() => false),
+    },
+    geoJSON: vi.fn(() => ({ addTo: vi.fn(), getLayers: vi.fn(() => []) })),
+    polyline: vi.fn(() => ({
       addTo: vi.fn(),
       addLatLng: vi.fn(),
       setLatLngs: vi.fn(),
@@ -145,20 +49,9 @@ vi.mock('leaflet', async () => {
       setStyle: vi.fn(),
       on: vi.fn(),
       remove: vi.fn(),
-    }),
-    DomUtil: {
-      ...(actualLeaflet as any).DomUtil,
-      create: (tagName: string, className: string, container?: HTMLElement) => {
-        const el = document.createElement(tagName);
-        if (className) el.className = className;
-        if (container) container.appendChild(el);
-        return el;
-      },
-    },
-    DomEvent,
+    })),
+    latLng: (lat: number, lng: number) => ({ lat, lng }),
   };
-
-  return leafletMock;
 });
 
 describe('Auto-add polygons functionality', () => {
@@ -170,7 +63,7 @@ describe('Auto-add polygons functionality', () => {
     vi.clearAllMocks();
     mapContainer = document.createElement('div');
     document.body.appendChild(mapContainer);
-    map = new L.Map(mapContainer);
+    map = createMockMap();
     polydraw = new Polydraw();
     // Manually call onAdd to initialize the mutation manager
     (polydraw as any).onAdd(map);
@@ -191,11 +84,7 @@ describe('Auto-add polygons functionality', () => {
   });
 
   it('should add a simple polygon without errors', async () => {
-    // Suppress console errors for this test
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    console.error = () => {};
-    console.warn = () => {};
+    const consoleSuppressor = suppressConsole();
 
     const octagon: L.LatLng[][][] = [
       [
@@ -215,17 +104,11 @@ describe('Auto-add polygons functionality', () => {
 
     await expect(polydraw.addPredefinedPolygon(octagon)).resolves.not.toThrow();
 
-    // Restore console functions
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
+    consoleSuppressor.restore();
   });
 
   it('should add a polygon with a hole without errors', async () => {
-    // Suppress console errors for this test
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    console.error = () => {};
-    console.warn = () => {};
+    const consoleSuppressor = suppressConsole();
 
     const squareWithHole: L.LatLng[][][] = [
       [
@@ -248,9 +131,7 @@ describe('Auto-add polygons functionality', () => {
 
     await expect(polydraw.addPredefinedPolygon(squareWithHole)).resolves.not.toThrow();
 
-    // Restore console functions
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
+    consoleSuppressor.restore();
   });
 
   it('should throw an error for invalid polygon data', async () => {
@@ -259,11 +140,7 @@ describe('Auto-add polygons functionality', () => {
   });
 
   it('should call addPolygon for each polygon group', async () => {
-    // Suppress console errors for this test
-    const originalConsoleError = console.error;
-    const originalConsoleWarn = console.warn;
-    console.error = () => {};
-    console.warn = () => {};
+    const consoleSuppressor = suppressConsole();
 
     const addPolygonSpy = vi.spyOn((polydraw as any).polygonMutationManager, 'addPolygon');
     const polygons: L.LatLng[][][] = [
@@ -274,8 +151,6 @@ describe('Auto-add polygons functionality', () => {
     await polydraw.addPredefinedPolygon(polygons);
     expect(addPolygonSpy).toHaveBeenCalledTimes(2);
 
-    // Restore console functions
-    console.error = originalConsoleError;
-    console.warn = originalConsoleWarn;
+    consoleSuppressor.restore();
   });
 });

@@ -1,13 +1,19 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TurfHelper } from '../../src/turf-helper';
+import { createMockConfig } from './utils/mock-factory';
 import type { Feature, Polygon } from 'geojson';
 
 describe('Marker Dragged Through Hole', () => {
+  let mockConfig: any;
+  let turfHelper: TurfHelper;
+
+  beforeEach(() => {
+    mockConfig = createMockConfig();
+    turfHelper = new TurfHelper(mockConfig);
+  });
+
   describe('Complete Drag Through Hole', () => {
     it('should create one solid polygon when marker is dragged completely through hole', () => {
-      const mockConfig = {};
-      const turfHelper = new TurfHelper(mockConfig);
-
       // Create a self-intersecting version by dragging north marker COMPLETELY through hole to south
       // This simulates dragging from north (4,8) through the hole to south (4,-6)
       const markerDraggedThroughHole: Feature<Polygon> = {

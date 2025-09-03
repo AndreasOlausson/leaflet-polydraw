@@ -3,69 +3,30 @@ import { ModeManager } from '../../src/managers/mode-manager';
 import { EventManager } from '../../src/managers/event-manager';
 import { DrawMode } from '../../src/enums';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
-import defaultConfig from '../../src/config.json';
+import { createMockConfig } from './utils/mock-factory';
 
 describe('ModeManager', () => {
   let modeManager: ModeManager;
   let eventManager: EventManager;
-  const config: PolydrawConfig = {
-    ...defaultConfig,
-    visualOptimizationLevel: 0,
-    dragPolygons: {
-      ...defaultConfig.dragPolygons,
-      enabled: (defaultConfig.dragPolygons as any).enabled ?? true,
-    },
-    units: {
-      metric: true,
-      imperial: false,
-    },
-    precision: {
-      area: 2,
-      perimeter: 2,
-    },
-    polygonOptions: {
-      ...defaultConfig.polygonOptions,
-      weight: 3,
-      opacity: 1,
-      fillOpacity: 0.5,
-    },
-    markers: {
-      ...defaultConfig.markers,
-      markerIcon: {
-        ...defaultConfig.markers.markerIcon,
-        styleClasses: defaultConfig.markers.markerIcon.styleClasses as string[],
-        zIndexOffset: defaultConfig.markers.markerIcon.zIndexOffset ?? undefined,
-      },
-      markerMenuIcon: {
-        ...defaultConfig.markers.markerMenuIcon,
-        styleClasses: defaultConfig.markers.markerMenuIcon.styleClasses as string[],
-        zIndexOffset: defaultConfig.markers.markerMenuIcon.zIndexOffset ?? undefined,
-      },
-      markerDeleteIcon: {
-        ...defaultConfig.markers.markerDeleteIcon,
-        styleClasses: defaultConfig.markers.markerDeleteIcon.styleClasses as string[],
-        zIndexOffset: defaultConfig.markers.markerDeleteIcon.zIndexOffset ?? undefined,
-      },
-      markerInfoIcon: {
-        ...defaultConfig.markers.markerInfoIcon,
-        styleClasses: defaultConfig.markers.markerInfoIcon.styleClasses as string[],
-        zIndexOffset: defaultConfig.markers.markerInfoIcon.zIndexOffset ?? undefined,
-      },
-      holeIcon: {
-        ...defaultConfig.markers.holeIcon,
-        styleClasses: defaultConfig.markers.holeIcon.styleClasses as string[],
-        zIndexOffset: defaultConfig.markers.holeIcon.zIndexOffset ?? undefined,
-      },
-    },
-  } as any as PolydrawConfig;
+  let config: PolydrawConfig;
 
   beforeEach(() => {
+    // Create mock EventManager
     eventManager = {
       emit: vi.fn(),
       on: vi.fn(),
       off: vi.fn(),
       eventListeners: new Map(),
     } as any;
+
+    // Create mock config using factory
+    config = createMockConfig({
+      modes: {
+        dragPolygons: true,
+        dragElbow: false,
+      },
+    }) as PolydrawConfig;
+
     modeManager = new ModeManager(config, eventManager);
   });
 

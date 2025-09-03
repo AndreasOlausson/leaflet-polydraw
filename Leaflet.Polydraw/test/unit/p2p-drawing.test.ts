@@ -3,11 +3,12 @@ import * as L from 'leaflet';
 import Polydraw from '../../src/polydraw';
 import { DrawMode } from '../../src/enums';
 
+// Mock utils module - inline mock to avoid hoisting issues
 vi.mock('../../src/utils', async () => {
   const actual = await vi.importActual('../../src/utils');
   return {
     ...actual,
-    isTouchDevice: () => false,
+    isTouchDevice: vi.fn(() => false),
   };
 });
 

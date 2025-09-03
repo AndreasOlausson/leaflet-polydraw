@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createButtons } from '../../src/buttons';
-import { PolydrawConfig } from '../../src/types/polydraw-interfaces';
-import defaultConfig from '../../src/config.json';
+import { createMockConfig } from './utils/mock-factory';
 
 vi.mock('../../src/utils', async () => {
   const actual = await vi.importActual('../../src/utils');
@@ -11,25 +10,21 @@ vi.mock('../../src/utils', async () => {
   };
 });
 
-// Mock Leaflet's DomUtil to inspect what's being created
+// Minimal Leaflet mock for UI testing
 vi.mock('leaflet', async () => {
-  const actualLeaflet = await vi.importActual('leaflet');
+  const actual = await vi.importActual('leaflet');
   return {
-    ...actualLeaflet,
+    ...actual,
     DomUtil: {
       create: vi.fn((tagName, className, container) => {
         const el = document.createElement(tagName);
         el.className = className;
-        if (container) {
-          container.appendChild(el);
-        }
+        if (container) container.appendChild(el);
         return el;
       }),
     },
     DomEvent: {
-      on: vi.fn(() => ({
-        on: vi.fn(),
-      })),
+      on: vi.fn(() => ({ on: vi.fn() })),
       stop: vi.fn(),
     },
   };
@@ -47,8 +42,7 @@ describe('Configuration-driven UI', () => {
   };
 
   it('should render all buttons when all modes are enabled', () => {
-    const config = {
-      ...(defaultConfig as unknown as PolydrawConfig),
+    const config = createMockConfig({
       modes: {
         draw: true,
         subtract: true,
@@ -59,7 +53,7 @@ describe('Configuration-driven UI', () => {
         dragPolygons: true,
         edgeDeletion: true,
       },
-    };
+    });
 
     createButtons(
       container,
@@ -79,8 +73,7 @@ describe('Configuration-driven UI', () => {
   });
 
   it('should not render buttons when modes are disabled', () => {
-    const config = {
-      ...(defaultConfig as unknown as PolydrawConfig),
+    const config = createMockConfig({
       modes: {
         draw: false,
         subtract: false,
@@ -91,7 +84,7 @@ describe('Configuration-driven UI', () => {
         dragPolygons: false,
         edgeDeletion: false,
       },
-    };
+    });
 
     // Clear the subContainer before re-rendering
     subContainer.innerHTML = '';
@@ -113,8 +106,7 @@ describe('Configuration-driven UI', () => {
   });
 
   it('should render a mix of enabled and disabled buttons correctly', () => {
-    const config = {
-      ...(defaultConfig as unknown as PolydrawConfig),
+    const config = createMockConfig({
       modes: {
         draw: true,
         subtract: false,
@@ -125,7 +117,7 @@ describe('Configuration-driven UI', () => {
         dragPolygons: true,
         edgeDeletion: false,
       },
-    };
+    });
 
     // Clear the subContainer before re-rendering
     subContainer.innerHTML = '';

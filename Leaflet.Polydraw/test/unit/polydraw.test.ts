@@ -3,12 +3,15 @@ import * as L from 'leaflet';
 import Polydraw from '../../src/polydraw';
 import { DrawMode } from '../../src/enums';
 
-// Mock Leaflet components
+// Create mock objects inline to avoid hoisting issues
 const mockMap = {
   addLayer: vi.fn(),
   removeLayer: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
+  closePopup: vi.fn(),
+  containerPointToLatLng: vi.fn(),
+  getContainer: vi.fn(() => document.createElement('div')),
   dragging: {
     enable: vi.fn(),
     disable: vi.fn(),
@@ -21,23 +24,15 @@ const mockMap = {
     enable: vi.fn(),
     disable: vi.fn(),
   },
-  getContainer: vi.fn(() => ({
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    classList: {
-      add: vi.fn(),
-      remove: vi.fn(),
-    },
-  })),
-  containerPointToLatLng: vi.fn((point) => ({ lat: point[1], lng: point[0] })),
-  closePopup: vi.fn(),
-} as unknown as L.Map;
+  tap: true,
+  _onResize: vi.fn(),
+} as any as L.Map;
 
 const mockPolyline = {
-  addTo: vi.fn(),
-  setLatLngs: vi.fn(),
-  addLatLng: vi.fn(),
-  setStyle: vi.fn(),
+  addTo: vi.fn().mockReturnThis(),
+  setLatLngs: vi.fn().mockReturnThis(),
+  addLatLng: vi.fn().mockReturnThis(),
+  setStyle: vi.fn().mockReturnThis(),
   toGeoJSON: vi.fn(() => ({
     type: 'Feature',
     geometry: {
@@ -46,77 +41,108 @@ const mockPolyline = {
         [0, 0],
         [1, 1],
         [2, 2],
-        [0, 0],
       ],
     },
     properties: {},
   })),
-} as unknown as L.Polyline;
+};
 
 const mockFeatureGroup = {
-  addTo: vi.fn(),
+  addTo: vi.fn().mockReturnThis(),
+  addLayer: vi.fn(),
+  removeLayer: vi.fn(),
+  clearLayers: vi.fn(),
   eachLayer: vi.fn(),
   getLayers: vi.fn(() => []),
-} as unknown as L.FeatureGroup;
+  toGeoJSON: vi.fn(() => ({
+    type: 'FeatureCollection',
+    features: [],
+  })),
+} as any as L.FeatureGroup;
 
 const mockMarker = {
-  options: { draggable: false },
+  addTo: vi.fn().mockReturnThis(),
+  setLatLng: vi.fn().mockReturnThis(),
+  getLatLng: vi.fn(() => ({ lat: 0, lng: 0 })),
+  getElement: vi.fn(() => {
+    const element = document.createElement('div');
+    // Create spied classList methods
+    element.classList.add = vi.fn();
+    element.classList.remove = vi.fn();
+    return element;
+  }),
   dragging: {
     enable: vi.fn(),
     disable: vi.fn(),
   },
-  getElement: vi.fn(() => ({
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    style: {},
-    classList: {
-      add: vi.fn(),
-      remove: vi.fn(),
-    },
-  })),
-} as unknown as L.Marker;
+  on: vi.fn(),
+  off: vi.fn(),
+};
 
-// Mock Leaflet static methods
+// Mock Leaflet module with inline objects
 vi.mock('leaflet', async () => {
   const actual = await vi.importActual('leaflet');
   return {
     ...actual,
+    // Core Leaflet objects
+    Map: vi.fn(),
+    map: vi.fn(() => mockMap),
     polyline: vi.fn(() => mockPolyline),
     featureGroup: vi.fn(() => mockFeatureGroup),
     marker: vi.fn(() => mockMarker),
+
+    // Leaflet utilities
     DomUtil: {
-      create: vi.fn((tag, className, container) => {
-        const element = document.createElement(tag);
-        if (className) element.className = className;
-        if (container) container.appendChild(element);
-        return element;
-      }),
+      create: vi.fn((tag: string) => document.createElement(tag)),
       addClass: vi.fn(),
       removeClass: vi.fn(),
       hasClass: vi.fn(() => false),
     },
     DomEvent: {
-      disableClickPropagation: vi.fn(),
-      on: vi.fn(() => ({ on: vi.fn() })), // Chain-able for .on().on() calls
-      stopPropagation: vi.fn(),
-      stop: vi.fn(),
+      on: vi.fn().mockReturnThis(),
+      off: vi.fn().mockReturnThis(),
+      stop: vi.fn().mockReturnThis(),
+      preventDefault: vi.fn().mockReturnThis(),
+      stopPropagation: vi.fn().mockReturnThis(),
+      disableClickPropagation: vi.fn().mockReturnThis(),
     },
+
+    // Browser detection
     Browser: {
       touch: false,
       mobile: false,
     },
+
+    // Control system
     Control: class MockControl {
-      options: any;
       constructor(options?: any) {
-        this.options = options || {};
+        Object.assign(this, options);
       }
-      addTo(map: L.Map) {
-        return this;
-      }
-      getContainer() {
+
+      onAdd(): HTMLElement {
         return document.createElement('div');
       }
+
+      onRemove(): void {
+        // Mock implementation
+      }
+
+      getContainer(): HTMLElement | undefined {
+        return document.createElement('div');
+      }
+
+      static extend = vi.fn((obj: any) => {
+        function ExtendedControl(this: any, options?: any) {
+          return Object.assign(this, obj, options);
+        }
+        ExtendedControl.prototype = Object.create(MockControl.prototype);
+        Object.assign(ExtendedControl.prototype, obj);
+        return ExtendedControl;
+      });
     },
+    control: Object.assign(vi.fn(), {
+      polydraw: vi.fn((options?: any) => new Polydraw(options)),
+    }),
   };
 });
 

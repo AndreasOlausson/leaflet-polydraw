@@ -1,129 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import * as L from 'leaflet';
 import Polydraw from '../../src/polydraw';
+import { createMockMap, createMockPolygon, createMockFeatureGroup } from './utils/mock-factory';
 
-// Simple mock for Leaflet
-vi.mock('leaflet', () => {
-  const MockControl = class {
-    addTo() {
-      return this;
-    }
-    onAdd() {
-      return document.createElement('div');
-    }
-  };
-
-  const MockMap = class {
-    dragging = { enable: vi.fn(), disable: vi.fn() };
-    doubleClickZoom = { enable: vi.fn(), disable: vi.fn() };
-    scrollWheelZoom = { enable: vi.fn(), disable: vi.fn() };
-    getContainer() {
-      return document.createElement('div');
-    }
-    on() {
-      return this;
-    }
-    off() {
-      return this;
-    }
-    removeLayer() {
-      return this;
-    }
-    addLayer() {
-      return this;
-    }
-    containerPointToLatLng() {
-      return { lat: 0, lng: 0 };
-    }
-  };
-
-  const MockFeatureGroup = class {
-    layers: any[] = [];
-    addLayer(layer: any) {
-      this.layers.push(layer);
-      return this;
-    }
-    removeLayer(layer: any) {
-      this.layers = this.layers.filter((l) => l !== layer);
-      return this;
-    }
-    clearLayers() {
-      this.layers = [];
-      return this;
-    }
-    addTo() {
-      return this;
-    }
-    getLayers() {
-      return this.layers;
-    }
-    eachLayer(fn: any) {
-      this.layers.forEach(fn);
-      return this;
-    }
-    toGeoJSON() {
-      return { type: 'FeatureCollection', features: [] };
-    }
-    on() {
-      return this;
-    }
-  };
-
-  const MockPolygon = class {
-    latlngs: any;
-    options: any;
-    constructor(latlngs?: any, options?: any) {
-      this.latlngs = latlngs || [];
-      this.options = options || {};
-    }
-    getLatLngs() {
-      return this.latlngs;
-    }
-    setLatLngs(latlngs: any) {
-      this.latlngs = latlngs;
-      return this;
-    }
-    toGeoJSON() {
-      return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [] } };
-    }
-    setStyle() {
-      return this;
-    }
-    on() {
-      return this;
-    }
-  };
-
-  const DomEvent = {
-    stopPropagation: vi.fn(),
-    disableClickPropagation: vi.fn(),
-    on: vi.fn(),
-  };
-  DomEvent.on.mockReturnValue(DomEvent);
-
+// Minimal Leaflet mock - only what's needed for module-level mocking
+vi.mock('leaflet', async () => {
+  const actual = await vi.importActual('leaflet');
   return {
-    Browser: {
-      touch: false,
-      mobile: false,
+    ...actual,
+    Browser: { touch: false, mobile: false },
+    Control: class {
+      addTo() {
+        return this;
+      }
+      onAdd() {
+        return document.createElement('div');
+      }
     },
-    Control: MockControl,
-    Map: MockMap,
-    FeatureGroup: MockFeatureGroup,
-    Polygon: MockPolygon,
-    polyline: vi.fn(() => ({
-      addLatLng: vi.fn(),
-      setLatLngs: vi.fn(),
-      setStyle: vi.fn(),
-      toGeoJSON: vi.fn(() => ({
-        type: 'Feature',
-        geometry: { type: 'LineString', coordinates: [] },
-      })),
-      addTo: vi.fn(),
-      on: vi.fn(),
-    })),
-    GeoJSON: {
-      geometryToLayer: vi.fn(() => new MockPolygon()),
-      coordsToLatLngs: vi.fn((coords: any) => coords),
+    DomEvent: {
+      stopPropagation: vi.fn(),
+      disableClickPropagation: vi.fn(),
+      on: vi.fn(() => ({ on: vi.fn() })), // Make it chainable
+      stop: vi.fn(),
     },
     DomUtil: {
       create: vi.fn(() => document.createElement('div')),
@@ -131,10 +29,7 @@ vi.mock('leaflet', () => {
       removeClass: vi.fn(),
       hasClass: vi.fn(() => false),
     },
-    DomEvent,
-    control: {
-      polydraw: vi.fn(),
-    },
+    control: { polydraw: vi.fn() },
   };
 });
 
@@ -143,17 +38,7 @@ describe('Add Elbow Functionality', () => {
   let map: any;
 
   beforeEach(() => {
-    map = {
-      dragging: { enable: vi.fn(), disable: vi.fn() },
-      doubleClickZoom: { enable: vi.fn(), disable: vi.fn() },
-      scrollWheelZoom: { enable: vi.fn(), disable: vi.fn() },
-      getContainer: () => document.createElement('div'),
-      on: vi.fn(),
-      off: vi.fn(),
-      removeLayer: vi.fn(),
-      addLayer: vi.fn(),
-      containerPointToLatLng: () => ({ lat: 0, lng: 0 }),
-    };
+    map = createMockMap();
     // Create a custom config for these tests that enables attachElbow
     const testConfig = {
       modes: {
@@ -280,25 +165,15 @@ describe('Add Elbow Functionality', () => {
     });
 
     it('should process edge information and call toGeoJSON', () => {
-      const mockPolygon = {
-        toGeoJSON: vi.fn().mockReturnValue({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
-      };
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]);
 
-      const mockFeatureGroup = { id: 'test-group' };
+      const mockFeatureGroup = createMockFeatureGroup();
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,
@@ -322,25 +197,15 @@ describe('Add Elbow Functionality', () => {
     });
 
     it('should call turf helper injectPointToPolygon with correct parameters', () => {
-      const mockPolygon = {
-        toGeoJSON: vi.fn().mockReturnValue({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
-      };
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]);
 
-      const mockFeatureGroup = { id: 'test-group' };
+      const mockFeatureGroup = createMockFeatureGroup();
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,
@@ -387,25 +252,15 @@ describe('Add Elbow Functionality', () => {
     });
 
     it('should call removeFeatureGroup when polygon is modified', () => {
-      const mockPolygon = {
-        toGeoJSON: vi.fn().mockReturnValue({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
-      };
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]);
 
-      const mockFeatureGroup = { id: 'test-group' };
+      const mockFeatureGroup = createMockFeatureGroup();
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,
@@ -456,26 +311,16 @@ describe('Add Elbow Functionality', () => {
     });
 
     it('should successfully process edge click with valid polygon data', () => {
-      const mockPolygon = {
-        toGeoJSON: vi.fn().mockReturnValue({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
-        _polydrawOptimizationLevel: 0,
-      };
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]);
+      mockPolygon._polydrawOptimizationLevel = 0;
 
-      const mockFeatureGroup = { id: 'test-group' };
+      const mockFeatureGroup = createMockFeatureGroup();
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,
@@ -532,25 +377,15 @@ describe('Add Elbow Functionality', () => {
     });
 
     it('should call stopPropagation to prevent polygon click', () => {
-      const mockPolygon = {
-        toGeoJSON: vi.fn().mockReturnValue({
-          type: 'Feature',
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [0, 0],
-                [1, 0],
-                [1, 1],
-                [0, 1],
-                [0, 0],
-              ],
-            ],
-          },
-        }),
-      };
+      const mockPolygon = createMockPolygon([
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ]);
 
-      const mockFeatureGroup = { id: 'test-group' };
+      const mockFeatureGroup = createMockFeatureGroup();
       const mockEdgePolyline = {
         _polydrawEdgeInfo: {
           ringIndex: 0,

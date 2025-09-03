@@ -1,6 +1,7 @@
 import { MapStateService } from '../../src/map-state';
 import * as L from 'leaflet';
 import { vi } from 'vitest';
+import { createMockMap } from './utils/mock-factory';
 
 describe('MapStateService', () => {
   let mapStateService: MapStateService;
@@ -8,14 +9,11 @@ describe('MapStateService', () => {
 
   beforeEach(() => {
     mapStateService = new MapStateService();
-    map = L.map(document.createElement('div'), {
-      center: [51.505, -0.09],
-      zoom: 13,
-    });
+    map = createMockMap();
   });
 
   afterEach(() => {
-    map.remove();
+    // Mock map doesn't need cleanup like real map
   });
 
   it('can be instantiated', () => {

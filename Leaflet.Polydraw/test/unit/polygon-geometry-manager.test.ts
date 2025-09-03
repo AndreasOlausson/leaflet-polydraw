@@ -3,25 +3,53 @@ import { PolygonGeometryManager } from '../../src/managers/polygon-geometry-mana
 import { TurfHelper } from '../../src/turf-helper';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import { createMockConfig } from './utils/mock-factory';
 
-// Mock TurfHelper
-const mockTurfHelper = {
-  isPolygonCompletelyWithin: vi.fn(),
-  polygonIntersect: vi.fn(),
-  getIntersection: vi.fn(),
-  getPolygonArea: vi.fn(),
-  getCoords: vi.fn(),
-  isPointInsidePolygon: vi.fn(),
-  union: vi.fn(),
-  polygonDifference: vi.fn(),
-  getMultiPolygon: vi.fn(),
-  getTurfPolygon: vi.fn(),
-  convertToBoundingBoxPolygon: vi.fn(),
-  getBezierMultiPolygon: vi.fn(),
-  getDoubleElbowLatLngs: vi.fn(),
-} as unknown as TurfHelper;
+// Factory function for creating mock TurfHelper
+function createMockTurfHelper() {
+  return {
+    isPolygonCompletelyWithin: vi.fn(),
+    polygonIntersect: vi.fn(),
+    getIntersection: vi.fn(),
+    getPolygonArea: vi.fn(),
+    getCoords: vi.fn(),
+    isPointInsidePolygon: vi.fn(),
+    union: vi.fn(),
+    polygonDifference: vi.fn(),
+    getMultiPolygon: vi.fn(),
+    getTurfPolygon: vi.fn(),
+    convertToBoundingBoxPolygon: vi.fn(),
+    getBezierMultiPolygon: vi.fn(),
+    getDoubleElbowLatLngs: vi.fn(),
+  } as unknown as TurfHelper;
+}
 
-const mockConfig: PolydrawConfig = {
+// Factory function for creating test polygons
+function createTestPolygon(coordinates: number[][][]): Feature<Polygon> {
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates,
+    },
+    properties: {},
+  };
+}
+
+// Factory function for creating test MultiPolygon
+function createTestMultiPolygon(coordinates: number[][][][]): Feature<MultiPolygon> {
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'MultiPolygon',
+      coordinates,
+    },
+    properties: {},
+  };
+}
+
+const mockTurfHelper = createMockTurfHelper();
+const mockConfig = createMockConfig({
   menuOperations: {
     simplify: {
       processHoles: true,
@@ -33,7 +61,7 @@ const mockConfig: PolydrawConfig = {
       processHoles: true,
     },
   },
-} as PolydrawConfig;
+}) as PolydrawConfig;
 
 describe('PolygonGeometryManager', () => {
   let manager: PolygonGeometryManager;
@@ -53,39 +81,25 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('checkPolygonIntersection', () => {
-    const polygon1: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon1 = createTestPolygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]);
 
-    const polygon2: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0.5, 0.5],
-            [1.5, 0.5],
-            [1.5, 1.5],
-            [0.5, 1.5],
-            [0.5, 0.5],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon2 = createTestPolygon([
+      [
+        [0.5, 0.5],
+        [1.5, 0.5],
+        [1.5, 1.5],
+        [0.5, 1.5],
+        [0.5, 0.5],
+      ],
+    ]);
 
     it('should return true when one polygon is completely within another', () => {
       (mockTurfHelper.isPolygonCompletelyWithin as any).mockReturnValue(true);
@@ -191,56 +205,35 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('unionPolygons', () => {
-    const polygon1: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon1 = createTestPolygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]);
 
-    const polygon2: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0.5, 0.5],
-            [1.5, 0.5],
-            [1.5, 1.5],
-            [0.5, 1.5],
-            [0.5, 0.5],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon2 = createTestPolygon([
+      [
+        [0.5, 0.5],
+        [1.5, 0.5],
+        [1.5, 1.5],
+        [0.5, 1.5],
+        [0.5, 0.5],
+      ],
+    ]);
 
-    const unionResult: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1.5, 0],
-            [1.5, 1.5],
-            [0, 1.5],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const unionResult = createTestPolygon([
+      [
+        [0, 0],
+        [1.5, 0],
+        [1.5, 1.5],
+        [0, 1.5],
+        [0, 0],
+      ],
+    ]);
 
     it('should successfully union multiple polygons', () => {
       vi.mocked(mockTurfHelper.union).mockReturnValue(unionResult);
@@ -276,11 +269,29 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('subtractPolygon', () => {
-    const polygon1: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
+    const polygon1 = createTestPolygon([
+      [
+        [0, 0],
+        [2, 0],
+        [2, 2],
+        [0, 2],
+        [0, 0],
+      ],
+    ]);
+
+    const polygon2 = createTestPolygon([
+      [
+        [0.5, 0.5],
+        [1.5, 0.5],
+        [1.5, 1.5],
+        [0.5, 1.5],
+        [0.5, 0.5],
+      ],
+    ]);
+
+    it('should successfully subtract polygon', () => {
+      const differenceResult = createTestMultiPolygon([
+        [
           [
             [0, 0],
             [2, 0],
@@ -289,46 +300,7 @@ describe('PolygonGeometryManager', () => {
             [0, 0],
           ],
         ],
-      },
-      properties: {},
-    };
-
-    const polygon2: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0.5, 0.5],
-            [1.5, 0.5],
-            [1.5, 1.5],
-            [0.5, 1.5],
-            [0.5, 0.5],
-          ],
-        ],
-      },
-      properties: {},
-    };
-
-    it('should successfully subtract polygon', () => {
-      const differenceResult: Feature<MultiPolygon> = {
-        type: 'Feature',
-        geometry: {
-          type: 'MultiPolygon',
-          coordinates: [
-            [
-              [
-                [0, 0],
-                [2, 0],
-                [2, 2],
-                [0, 2],
-                [0, 0],
-              ],
-            ],
-          ],
-        },
-        properties: {},
-      };
+      ]);
 
       vi.mocked(mockTurfHelper.polygonDifference).mockReturnValue(differenceResult);
       vi.mocked(mockTurfHelper.getCoords).mockReturnValue([
@@ -373,26 +345,19 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('simplifyPolygon', () => {
-    const polygon: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [0.5, 0],
-            [1, 0],
-            [1, 0.5],
-            [1, 1],
-            [0.5, 1],
-            [0, 1],
-            [0, 0.5],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon = createTestPolygon([
+      [
+        [0, 0],
+        [0.5, 0],
+        [1, 0],
+        [1, 0.5],
+        [1, 1],
+        [0.5, 1],
+        [0, 1],
+        [0, 0.5],
+        [0, 0],
+      ],
+    ]);
 
     it('should successfully simplify polygon', () => {
       vi.mocked(mockTurfHelper.getCoords).mockReturnValue([
@@ -480,22 +445,15 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('convertToBoundingBox', () => {
-    const polygon: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon = createTestPolygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]);
 
     it('should successfully convert to bounding box', () => {
       vi.mocked(mockTurfHelper.getCoords).mockReturnValue([
@@ -562,22 +520,15 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('bezierifyPolygon', () => {
-    const polygon: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon = createTestPolygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]);
 
     it('should successfully apply bezier curve to polygon', () => {
       vi.mocked(mockTurfHelper.getCoords).mockReturnValue([
@@ -614,22 +565,15 @@ describe('PolygonGeometryManager', () => {
   });
 
   describe('doubleElbowsPolygon', () => {
-    const polygon: Feature<Polygon> = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [0, 0],
-            [1, 0],
-            [1, 1],
-            [0, 1],
-            [0, 0],
-          ],
-        ],
-      },
-      properties: {},
-    };
+    const polygon = createTestPolygon([
+      [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0],
+      ],
+    ]);
 
     it('should successfully double elbows of polygon', () => {
       vi.mocked(mockTurfHelper.getCoords).mockReturnValue([

@@ -1,14 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CoordinateUtils } from '../../src/coordinate-utils';
 import * as L from 'leaflet';
-import { TurfHelper } from '../../src/turf-helper';
-
-// Mock TurfHelper
-const mockTurfHelper = {
-  isWithin: vi.fn(),
-} as unknown as TurfHelper;
+import { createMockTurfHelper } from './utils/mock-factory';
 
 describe('CoordinateUtils', () => {
+  let mockTurfHelper: any;
+
+  beforeEach(() => {
+    mockTurfHelper = createMockTurfHelper();
+  });
+
   describe('convertToCoords', () => {
     it('should handle single polygon (length 1)', () => {
       const latlngs: L.LatLngLiteral[][] = [

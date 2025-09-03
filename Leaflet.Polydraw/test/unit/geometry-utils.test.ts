@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { GeometryUtils } from '../../src/geometry-utils';
 import { PolygonUtil } from '../../src/polygon.util';
 
-// Mock PolygonUtil
+// Mock PolygonUtil - inline mock to avoid hoisting issues
 vi.mock('../../src/polygon.util', () => ({
   PolygonUtil: {
     getCenter: vi.fn(),
