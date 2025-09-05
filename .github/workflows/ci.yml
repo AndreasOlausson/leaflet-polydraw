@@ -45,13 +45,3 @@ jobs:
       - name: Test package creation
         run: npm pack
         working-directory: ./Leaflet.Polydraw
-
-      # - name: SonarCloud Scan
-      #   if: matrix.node-version == '20.x' # Only run SonarCloud on one Node version
-      #   uses: SonarSource/sonarqube-scan-action@v5.0.0
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #   with:
-      #     projectBaseDir: ./Leaflet.Polydraw
-      #   continue-on-error: true # Don't fail the build if SonarCloud fails

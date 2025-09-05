@@ -58,6 +58,13 @@ export default [
         afterEach: 'readonly',
         vi: 'readonly',
         vitest: 'readonly',
+        // Canvas API globals for test setup
+        CanvasLineCap: 'readonly',
+        CanvasLineJoin: 'readonly',
+        GlobalCompositeOperation: 'readonly',
+        CanvasTextAlign: 'readonly',
+        CanvasTextBaseline: 'readonly',
+        CanvasDirection: 'readonly',
       },
     },
     plugins: {
@@ -74,6 +81,43 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/'],
+    files: ['test/cypress/**/*.ts'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.es2021,
+        cy: 'readonly',
+        Cypress: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescript,
+      prettier: prettier,
+    },
+    rules: {
+      ...typescript.configs.recommended.rules,
+      ...prettierConfig.rules,
+      'prettier/prettier': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-expressions': 'warn',
+    },
+  },
+  {
+    ignores: [
+      'dist/',
+      'node_modules/',
+      'coverage/',
+      'demo/dist/',
+      '**/*.min.js',
+      '**/*.bundle.js',
+      'cypress/screenshots/',
+      'cypress/videos/',
+    ],
   },
 ];
