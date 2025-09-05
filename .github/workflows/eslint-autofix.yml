@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write  # Krävs för att kunna pusha fixar till PR
+      contents: write # Krävs för att kunna pusha fixar till PR
 
     steps:
       - name: Checkout PR branch
@@ -20,13 +20,15 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "18"
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./Leaflet.Polydraw
 
       - name: Run ESLint with autofix
         run: npx eslint . --ext .ts,.tsx,.js --fix
+        working-directory: ./Leaflet.Polydraw
 
       - name: Commit and push fixes (if any)
         run: |
