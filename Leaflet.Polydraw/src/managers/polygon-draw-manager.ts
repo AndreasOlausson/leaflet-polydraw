@@ -57,9 +57,10 @@ export class PolygonDrawManager {
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
+      const rect = this.map.getContainer().getBoundingClientRect();
       const latlng = this.map.containerPointToLatLng([
-        event.touches[0].clientX,
-        event.touches[0].clientY,
+        event.touches[0].clientX - rect.x,
+        event.touches[0].clientY - rect.y,
       ]);
       this.tracer.addLatLng(latlng);
     }
