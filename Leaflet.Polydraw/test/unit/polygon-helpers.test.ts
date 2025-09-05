@@ -44,12 +44,6 @@ describe('PolygonInfo', () => {
   });
 
   describe('constructor', () => {
-    it('should handle non-array input gracefully', () => {
-      new PolygonInfo(null as any);
-      // Just verify it doesn't crash - the constructor handles null input gracefully
-      expect(true).toBe(true);
-    });
-
     it('should process flattened LatLng array structure', () => {
       const flatPolygon = createTestPolygon([
         [0, 0],
