@@ -172,6 +172,16 @@ const mockMap = createMockMap({
   removeLayer: vi.fn(),
   getContainer: vi.fn().mockReturnValue({
     style: { cursor: '' },
+    getBoundingClientRect: vi.fn().mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 100,
+      bottom: 100,
+      width: 100,
+      height: 100,
+    }),
   }),
 } as any);
 
@@ -481,6 +491,22 @@ describe('PolygonDrawManager', () => {
       const clickLatLng = new L.LatLng(45.0, -122.0);
 
       expect(() => manager.handlePointToPointClick(clickLatLng)).not.toThrow();
+
+      // Restore the mock to prevent interference with subsequent tests
+      vi.mocked(mockMap.getContainer).mockRestore();
+      vi.mocked(mockMap.getContainer).mockReturnValue({
+        style: { cursor: '' },
+        getBoundingClientRect: vi.fn().mockReturnValue({
+          x: 0,
+          y: 0,
+          left: 0,
+          top: 0,
+          right: 100,
+          bottom: 100,
+          width: 100,
+          height: 100,
+        }),
+      });
     });
   });
 
@@ -773,6 +799,22 @@ describe('PolygonDrawManager', () => {
       });
 
       it('should handle touch events in mouseMove', () => {
+        // Ensure the mock is properly reset for this test by clearing and re-setting
+        vi.mocked(mockMap.getContainer).mockClear();
+        vi.mocked(mockMap.getContainer).mockReturnValue({
+          style: { cursor: '' },
+          getBoundingClientRect: vi.fn().mockReturnValue({
+            x: 0,
+            y: 0,
+            left: 0,
+            top: 0,
+            right: 100,
+            bottom: 100,
+            width: 100,
+            height: 100,
+          }),
+        });
+
         const touchEvent = {
           touches: [{ clientX: 100, clientY: 200 }],
         } as unknown as TouchEvent;
