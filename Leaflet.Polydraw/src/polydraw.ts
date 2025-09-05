@@ -754,7 +754,6 @@ class Polydraw extends L.Control {
       clickLatLng = event.latlng;
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
       const rect = this.map.getContainer().getBoundingClientRect();
-      
       clickLatLng = this.map.containerPointToLatLng([
         event.touches[0].clientX - rect.x,
         event.touches[0].clientY - rect.y,
@@ -790,7 +789,6 @@ class Polydraw extends L.Control {
       this.tracer.addLatLng(event.latlng);
     } else if ('touches' in event && event.touches && event.touches.length > 0) {
       const rect = this.map.getContainer().getBoundingClientRect();
-      
       const latlng = this.map.containerPointToLatLng([
         event.touches[0].clientX - rect.x,
         event.touches[0].clientY - rect.y,
