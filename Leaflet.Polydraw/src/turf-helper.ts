@@ -5,7 +5,16 @@ import {
   lineString,
   polygon,
   type Coord,
-} from '@turf/helpers';
+  getCoords,
+  bbox,
+  bboxPolygon,
+  distance,
+  midpoint,
+  area,
+  centroid,
+} from './geojson-helpers';
+
+// Complex turf functions that we'll keep for now
 import centerOfMass from '@turf/center-of-mass';
 import lineIntersect from '@turf/line-intersect';
 import union from '@turf/union';
@@ -15,23 +24,16 @@ import convex from '@turf/convex';
 import explode from '@turf/explode';
 import buffer from '@turf/buffer';
 import simplify from '@turf/simplify';
-import { getCoords } from '@turf/invariant';
 import kinks from '@turf/kinks';
 import unkinkPolygon from '@turf/unkink-polygon';
 import { featureEach } from '@turf/meta';
-import midpoint from '@turf/midpoint';
-import area from '@turf/area';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import distance from '@turf/distance';
 import booleanWithin from '@turf/boolean-within';
 import booleanEqual from '@turf/boolean-equal';
-import bbox from '@turf/bbox';
-import bboxPolygon from '@turf/bbox-polygon';
 import nearestPoint from '@turf/nearest-point';
 import polygonToLine from '@turf/polygon-to-line';
 import lineToPolygon from '@turf/line-to-polygon';
 import bezierSpline from '@turf/bezier-spline';
-import centroid from '@turf/centroid';
 import length from '@turf/length';
 // @ts-expect-error - concaveman doesn't have types
 import concaveman from 'concaveman';
@@ -371,6 +373,31 @@ export class TurfHelper {
         return false;
       }
 
+      // Additional validation: check for null/invalid coordinates in the geometry
+      const validateCoordinates = (coords: any): boolean => {
+        if (!Array.isArray(coords)) return false;
+
+        for (const ring of coords) {
+          if (!Array.isArray(ring)) return false;
+
+          for (const coord of ring) {
+            if (!Array.isArray(coord) || coord.length < 2) return false;
+            if (coord.some((c: any) => c === null || c === undefined || !isFinite(c))) {
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+      // Validate coordinates for both polygons
+      if (
+        !validateCoordinates(polygon.geometry.coordinates) ||
+        !validateCoordinates(latlngs.geometry.coordinates)
+      ) {
+        return false;
+      }
+
       // Method 1: Try direct intersection using intersect with FeatureCollection
       try {
         const fc = featureCollection([polygon, latlngs]);
@@ -420,13 +447,51 @@ export class TurfHelper {
 
         for (const ring1 of coords1) {
           const outerRing1 = ring1[0]; // Get outer ring
+          if (!outerRing1 || outerRing1.length < 2) continue;
+
           for (let i = 0; i < outerRing1.length - 1; i++) {
-            const line1 = lineString([outerRing1[i], outerRing1[i + 1]]);
+            const coord1 = outerRing1[i];
+            const coord2 = outerRing1[i + 1];
+
+            // Validate coordinates before creating line
+            if (
+              !coord1 ||
+              !coord2 ||
+              !Array.isArray(coord1) ||
+              !Array.isArray(coord2) ||
+              coord1.length < 2 ||
+              coord2.length < 2 ||
+              coord1.some((c) => c === null || c === undefined || !isFinite(c)) ||
+              coord2.some((c) => c === null || c === undefined || !isFinite(c))
+            ) {
+              continue;
+            }
+
+            const line1 = lineString([coord1, coord2]);
 
             for (const ring2 of coords2) {
               const outerRing2 = ring2[0]; // Get outer ring
+              if (!outerRing2 || outerRing2.length < 2) continue;
+
               for (let j = 0; j < outerRing2.length - 1; j++) {
-                const line2 = lineString([outerRing2[j], outerRing2[j + 1]]);
+                const coord3 = outerRing2[j];
+                const coord4 = outerRing2[j + 1];
+
+                // Validate coordinates before creating line
+                if (
+                  !coord3 ||
+                  !coord4 ||
+                  !Array.isArray(coord3) ||
+                  !Array.isArray(coord4) ||
+                  coord3.length < 2 ||
+                  coord4.length < 2 ||
+                  coord3.some((c) => c === null || c === undefined || !isFinite(c)) ||
+                  coord4.some((c) => c === null || c === undefined || !isFinite(c))
+                ) {
+                  continue;
+                }
+
+                const line2 = lineString([coord3, coord4]);
 
                 try {
                   const intersection = lineIntersect(line1, line2);
@@ -628,7 +693,7 @@ export class TurfHelper {
   }
 
   convertToBoundingBoxPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon> {
-    const bboxCoords = bbox(polygon.geometry);
+    const bboxCoords = bbox(polygon);
     const bboxPoly = bboxPolygon(bboxCoords);
     // TODO: Add Compass logic if needed
     return bboxPoly;
@@ -777,6 +842,18 @@ export class TurfHelper {
    */
   getCoord(point: L.LatLngLiteral): Coord {
     return [point.lng, point.lat];
+  }
+
+  /**
+   * Create a GeoJSON polygon feature from coordinates.
+   * This method provides access to the turf polygon helper function
+   * while keeping all turf imports centralized in this file.
+   *
+   * @param coordinates - Array of coordinate rings (outer ring + holes)
+   * @returns GeoJSON Feature<Polygon>
+   */
+  createPolygon(coordinates: Position[][]): Feature<Polygon> {
+    return polygon(coordinates);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

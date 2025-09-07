@@ -673,9 +673,23 @@ class Polydraw extends L.Control {
     enableDoubleClickZoom: boolean,
     enableScrollWheelZoom: boolean,
   ) {
-    enableDragging ? this.map.dragging.enable() : this.map.dragging.disable();
-    enableDoubleClickZoom ? this.map.doubleClickZoom.enable() : this.map.doubleClickZoom.disable();
-    enableScrollWheelZoom ? this.map.scrollWheelZoom.enable() : this.map.scrollWheelZoom.disable();
+    if (enableDragging) {
+      this.map.dragging.enable();
+    } else {
+      this.map.dragging.disable();
+    }
+
+    if (enableDoubleClickZoom) {
+      this.map.doubleClickZoom.enable();
+    } else {
+      this.map.doubleClickZoom.disable();
+    }
+
+    if (enableScrollWheelZoom) {
+      this.map.scrollWheelZoom.enable();
+    } else {
+      this.map.scrollWheelZoom.disable();
+    }
   }
 
   /**

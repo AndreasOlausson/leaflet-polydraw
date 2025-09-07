@@ -2,6 +2,7 @@ import * as L from 'leaflet';
 import { TurfHelper } from './turf-helper';
 import defaultConfig from './config.json';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import { MATH } from './constants';
 
 /**
  * Utility class for polygon calculations.
@@ -15,7 +16,6 @@ export class PolygonUtil {
    * @returns The center LatLng.
    */
   static getCenter(polygon: L.LatLngLiteral[]) {
-    const pi = Math.PI;
     let x = 0;
     let y = 0;
     let z = 0;
@@ -23,8 +23,8 @@ export class PolygonUtil {
     polygon.forEach((v) => {
       let lat1 = v.lat;
       let lon1 = v.lng;
-      lat1 = (lat1 * pi) / 180;
-      lon1 = (lon1 * pi) / 180;
+      lat1 = lat1 * MATH.DEG_TO_RAD;
+      lon1 = lon1 * MATH.DEG_TO_RAD;
       x += Math.cos(lat1) * Math.cos(lon1);
       y += Math.cos(lat1) * Math.sin(lon1);
       z += Math.sin(lat1);
@@ -33,8 +33,8 @@ export class PolygonUtil {
     let lng = Math.atan2(y, x);
     const hyp = Math.sqrt(x * x + y * y);
     let lat = Math.atan2(z, hyp);
-    lat = (lat * 180) / pi;
-    lng = (lng * 180) / pi;
+    lat = lat * MATH.RAD_TO_DEG;
+    lng = lng * MATH.RAD_TO_DEG;
     const center: L.LatLngLiteral = { lat: lat, lng: lng };
 
     return center;

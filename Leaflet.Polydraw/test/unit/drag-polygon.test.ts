@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import Polydraw from '../../src/polydraw';
-import { polygon } from '@turf/helpers';
+import { TurfHelper } from '../../src/turf-helper';
 import {
   createMockMap,
   createMockConfig,
@@ -13,6 +13,7 @@ describe('Polygon Dragging Tests', () => {
   let polydraw: Polydraw;
   let mockMap: any;
   let container: HTMLElement;
+  let turfHelper: TurfHelper;
 
   beforeEach(() => {
     mockMap = createMockMap();
@@ -37,6 +38,9 @@ describe('Polygon Dragging Tests', () => {
 
     polydraw = new Polydraw({ config } as any);
 
+    // Initialize TurfHelper with default config
+    turfHelper = new TurfHelper({});
+
     // Initialize the control
     (polydraw as any).onAdd(mockMap);
     (polydraw as any).map = mockMap;
@@ -55,7 +59,7 @@ describe('Polygon Dragging Tests', () => {
       // Create two polygons that have overlapping bounding boxes but no actual geometric intersection
       const polygon1 = {
         toGeoJSON: () =>
-          polygon([
+          turfHelper.createPolygon([
             [
               [15.008698, 58.163446], // lng, lat format for GeoJSON
               [15.284729, 58.163446],
@@ -71,7 +75,7 @@ describe('Polygon Dragging Tests', () => {
       // Second polygon with coordinates that create bounding box overlap but no geometric intersection
       const polygon2 = {
         toGeoJSON: () =>
-          polygon([
+          turfHelper.createPolygon([
             [
               [15.630799, 58.356368],
               [15.967255, 58.292247],
@@ -105,7 +109,7 @@ describe('Polygon Dragging Tests', () => {
         getLatLngs: () => [],
         setLatLngs: vi.fn(),
         toGeoJSON: () =>
-          polygon([
+          turfHelper.createPolygon([
             [
               [0, 0],
               [1, 0],
@@ -118,7 +122,7 @@ describe('Polygon Dragging Tests', () => {
 
       const targetPolygon = {
         toGeoJSON: () =>
-          polygon([
+          turfHelper.createPolygon([
             [
               [0.5, 0.5], // This polygon intersects with the dragged polygon
               [1.5, 0.5],
