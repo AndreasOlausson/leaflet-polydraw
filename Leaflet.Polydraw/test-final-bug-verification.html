@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Final Bug Verification - Markers Inside Holes</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      #map {
+        height: 600px;
+        width: 100%;
+        border: 2px solid #333;
+      }
+      .instructions {
+        background: #f0f0f0;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+      }
+      .step {
+        margin: 10px 0;
+        padding: 8px;
+        background: white;
+        border-left: 4px solid #007cba;
+      }
+      .success {
+        background: #d4edda;
+        border-left-color: #28a745;
+      }
+      .warning {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="instructions">
+      <h2>🐛 Bug Fix Verification: Markers Inside Holes</h2>
+      <p>
+        <strong>Bug Description:</strong> When drawing a polygon inside a hole (donut), the markers
+        for the new polygon were missing.
+      </p>
+
+      <div class="step"><strong>Step 1:</strong> Draw a large polygon (outer boundary)</div>
+      <div class="step">
+        <strong>Step 2:</strong> Switch to subtract mode and draw a smaller polygon inside to create
+        a hole (donut shape)
+      </div>
+      <div class="step success">
+        <strong>Step 3:</strong> Draw a new polygon INSIDE the hole - markers should now be visible!
+        ✅
+      </div>
+      <div class="step warning">
+        <strong>Step 4:</strong> Draw another hole inside the polygon from Step 3 using subtract
+        mode
+      </div>
+      <div class="step success">
+        <strong>Step 5:</strong> Verify that markers are now visible again after creating the second
+        hole ✅
+      </div>
+
+      <p>
+        <strong>Expected Result:</strong> All polygons should have visible markers, even when drawn
+        inside holes.
+      </p>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="dist/polydraw.umd.min.js"></script>
+    <script>
+      // Initialize the map
+      const map = L.map('map').setView([59.3293, 18.0686], 13);
+
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+      }).addTo(map);
+
+      // Initialize Polydraw with intelligent merging enabled
+      const polydraw = new Polydraw(map, {
+        mergePolygons: true,
+        modes: {
+          dragElbow: true,
+          attachElbow: true,
+          edgeDeletion: true,
+          dragPolygons: true,
+        },
+        markers: {
+          menuMarker: true,
+          deleteMarker: true,
+          infoMarker: true,
+        },
+      });
+
+      // Add event listeners for debugging
+      polydraw.on('polygonAdded', (data) => {
+        console.log('Polygon added:', data);
+
+        // Count markers in the feature group
+        let markerCount = 0;
+        data.featureGroup.eachLayer((layer) => {
+          if (layer instanceof L.Marker) {
+            markerCount++;
+          }
+        });
+
+        console.log(`Markers created: ${markerCount}`);
+
+        // Show success message if markers are present
+        if (markerCount > 0) {
+          const notification = document.createElement('div');
+          notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: #28a745;
+                    color: white;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    z-index: 1000;
+                    font-weight: bold;
+                `;
+          notification.textContent = `✅ Success! ${markerCount} markers created`;
+          document.body.appendChild(notification);
+
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 3000);
+        }
+      });
+
+      polydraw.on('polygonSubtracted', (data) => {
+        console.log('Polygon subtracted:', data);
+      });
+
+      polydraw.on('polygonOperationComplete', (data) => {
+        console.log('Polygon operation complete:', data.operation);
+      });
+
+      // Start in draw mode
+      polydraw.enable();
+
+      console.log('🐛 Bug Fix Test Ready!');
+      console.log('The bug where markers were missing inside holes should now be fixed.');
+      console.log('Follow the steps above to verify the fix is working correctly.');
+    </script>
+  </body>
+</html>

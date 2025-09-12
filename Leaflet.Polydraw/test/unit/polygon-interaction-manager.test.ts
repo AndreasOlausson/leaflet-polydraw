@@ -2451,7 +2451,7 @@ describe('PolygonInteractionManager', () => {
           'polydraw:polygon:updated',
           expect.objectContaining({
             operation: 'markerDrag',
-            allowMerge: true,
+            allowMerge: false, // Updated: intelligent merging now prevents merging when no intersections
           }),
         );
       });

@@ -1181,21 +1181,23 @@ export class PolygonInteractionManager {
         if (this.turfHelper.hasKinks(feature)) {
           const unkink = this.turfHelper.getKinks(feature);
           for (const polygon of unkink) {
-            // CRITICAL FIX: Don't allow merging for marker drag operations
-            // This prevents incorrect styling when dragging vertices of polygons with holes
+            // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
+            // but prevent unwanted styling changes for non-intersecting polygons
             this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
-              allowMerge: false, // Fixed: prevent merging during vertex drag
+              allowMerge: true, // Allow intelligent merging for intersections
+              intelligentMerge: true, // Flag for smart merging logic
             } as PolygonUpdatedEventData);
           }
         } else {
-          // CRITICAL FIX: Don't allow merging for marker drag operations
-          // This prevents incorrect styling when dragging vertices of polygons with holes
+          // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
+          // but prevent unwanted styling changes for non-intersecting polygons
           this.eventManager.emit('polydraw:polygon:updated', {
             operation: 'markerDrag',
             polygon: feature,
-            allowMerge: false, // Fixed: prevent merging during vertex drag
+            allowMerge: true, // Allow intelligent merging for intersections
+            intelligentMerge: true, // Flag for smart merging logic
           } as PolygonUpdatedEventData);
         }
       }

@@ -154,9 +154,16 @@ export class PolygonMutationManager {
       data.operation !== 'markerDrag' &&
       data.operation !== 'polygonDrag';
 
+    // Handle intelligent merging for vertex drag operations
+    let allowMerge = data.allowMerge;
+    if (data.intelligentMerge && data.operation === 'markerDrag') {
+      // For intelligent merging, check if the polygon actually intersects with existing polygons
+      allowMerge = this.shouldAllowIntelligentMerge(data.polygon);
+    }
+
     const options: AddPolygonOptions = {
       simplify: shouldSimplify,
-      noMerge: !data.allowMerge,
+      noMerge: !allowMerge,
       visualOptimizationLevel: data.optimizationLevel || 0,
     };
     await this.addPolygon(data.polygon, options);
@@ -604,6 +611,46 @@ export class PolygonMutationManager {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in unionPolygons',
       };
+    }
+  }
+
+  /**
+   * Determine if intelligent merging should be allowed for a polygon
+   * This checks if the polygon actually intersects with existing polygons
+   */
+  private shouldAllowIntelligentMerge(polygon: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      // Check if the polygon intersects with any existing polygons
+      for (const featureGroup of this.getFeatureGroups()) {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
+          if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+            continue;
+          }
+
+          const existingFeature = featureCollection.features[0];
+          if (!existingFeature.geometry || !existingFeature.geometry.coordinates) {
+            continue;
+          }
+
+          const existingPolygon = this.turfHelper.getTurfPolygon(existingFeature);
+
+          // Check if there's an intersection
+          if (this.geometryManager.checkPolygonIntersection(existingPolygon, polygon)) {
+            return true; // Allow merging if there's an intersection
+          }
+        } catch (error) {
+          // Continue checking other feature groups
+          continue;
+        }
+      }
+
+      return false; // No intersections found, don't allow merging
+    } catch (error) {
+      // If there's any error, default to false (don't allow merging)
+      return false;
     }
   }
 

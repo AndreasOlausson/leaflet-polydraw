@@ -286,6 +286,7 @@ export interface PolygonUpdatedEventData {
   operation: string;
   polygon: Feature<Polygon | MultiPolygon>;
   allowMerge?: boolean;
+  intelligentMerge?: boolean;
   optimizationLevel?: number;
 }
 
