@@ -1181,19 +1181,21 @@ export class PolygonInteractionManager {
         if (this.turfHelper.hasKinks(feature)) {
           const unkink = this.turfHelper.getKinks(feature);
           for (const polygon of unkink) {
-            // Allow merging after marker drag - this enables polygon merging when dragged into each other
+            // CRITICAL FIX: Don't allow merging for marker drag operations
+            // This prevents incorrect styling when dragging vertices of polygons with holes
             this.eventManager.emit('polydraw:polygon:updated', {
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
-              allowMerge: true,
+              allowMerge: false, // Fixed: prevent merging during vertex drag
             } as PolygonUpdatedEventData);
           }
         } else {
-          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          // CRITICAL FIX: Don't allow merging for marker drag operations
+          // This prevents incorrect styling when dragging vertices of polygons with holes
           this.eventManager.emit('polydraw:polygon:updated', {
             operation: 'markerDrag',
             polygon: feature,
-            allowMerge: true,
+            allowMerge: false, // Fixed: prevent merging during vertex drag
           } as PolygonUpdatedEventData);
         }
       }
@@ -1205,19 +1207,21 @@ export class PolygonInteractionManager {
       if (this.turfHelper.hasKinks(feature)) {
         const unkink = this.turfHelper.getKinks(feature);
         for (const polygon of unkink) {
-          // Allow merging after marker drag - this enables polygon merging when dragged into each other
+          // CRITICAL FIX: Don't allow merging for marker drag operations
+          // This prevents incorrect styling when dragging vertices of polygons with holes
           this.eventManager.emit('polydraw:polygon:updated', {
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
-            allowMerge: true,
+            allowMerge: false, // Fixed: prevent merging during vertex drag
           } as PolygonUpdatedEventData);
         }
       } else {
-        // Allow merging after marker drag - this enables polygon merging when dragged into each other
+        // CRITICAL FIX: Don't allow merging for marker drag operations
+        // This prevents incorrect styling when dragging vertices of polygons with holes
         this.eventManager.emit('polydraw:polygon:updated', {
           operation: 'markerDrag',
           polygon: feature,
-          allowMerge: true,
+          allowMerge: false, // Fixed: prevent merging during vertex drag
         } as PolygonUpdatedEventData);
       }
     }
