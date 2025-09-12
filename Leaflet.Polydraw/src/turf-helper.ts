@@ -35,7 +35,7 @@ import polygonToLine from '@turf/polygon-to-line';
 import lineToPolygon from '@turf/line-to-polygon';
 import bezierSpline from '@turf/bezier-spline';
 import length from '@turf/length';
-// @ts-expect-error - concaveman doesn't have types
+// @ts-ignore - concaveman doesn't have types
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
@@ -61,7 +61,7 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
-      const fc = featureCollection([poly1, poly2]);
+      const fc = featureCollection([poly1, poly2]) as any;
       const u = union(fc);
       return u ? this.getTurfPolygon(u) : null;
     } catch (error) {
@@ -400,7 +400,7 @@ export class TurfHelper {
 
       // Method 1: Try direct intersection using intersect with FeatureCollection
       try {
-        const fc = featureCollection([polygon, latlngs]);
+        const fc = featureCollection([polygon, latlngs]) as any;
         const intersection = intersect(fc);
 
         if (
@@ -544,7 +544,7 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
-      const fc = featureCollection([poly1, poly2]);
+      const fc = featureCollection([poly1, poly2]) as any;
       const result = intersect(fc);
 
       // Validate that the result is actually a polygon or multipolygon
@@ -789,7 +789,7 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> | null {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
-      const fc = featureCollection([polygon1, polygon2]);
+      const fc = featureCollection([polygon1, polygon2]) as any;
       const diff = difference(fc);
 
       const result = diff ? this.getTurfPolygon(diff) : null;

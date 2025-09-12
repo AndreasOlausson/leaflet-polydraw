@@ -238,6 +238,15 @@ export class PolygonMutationManager {
     const { noMerge = false } = options;
 
     try {
+      // CRITICAL FIX: When drawing polygons inside holes, they should be standalone
+      // Check if this polygon is completely inside a hole of an existing polygon
+      const isInsideHole = this.isPolygonInsideExistingHole(latlngs);
+
+      if (isInsideHole) {
+        // Force standalone creation - no merging for polygons inside holes
+        return await this.addPolygonLayer(latlngs, options);
+      }
+
       if (
         this.config.mergePolygons &&
         !noMerge &&
@@ -382,30 +391,11 @@ export class PolygonMutationManager {
         return { success: false, error: 'Failed to create polygon layer' };
       }
 
-      // Safely get marker coordinates
+      // Safely get marker coordinates with improved structure detection
       let markerLatlngs: L.LatLngExpression[][];
       try {
         const rawLatLngs = polygon.getLatLngs();
-
-        // Handle different polygon structures
-        if (Array.isArray(rawLatLngs) && rawLatLngs.length > 0) {
-          // Check the structure depth to determine how to process
-          if (Array.isArray(rawLatLngs[0])) {
-            // Could be LatLng[][] (polygon with holes) or LatLng[][][] (MultiPolygon)
-            if (Array.isArray(rawLatLngs[0][0])) {
-              // It's LatLng[][][] (MultiPolygon structure), flatten one level
-              markerLatlngs = rawLatLngs[0] as L.LatLngExpression[][];
-            } else {
-              // It's LatLng[][] (polygon with holes)
-              markerLatlngs = rawLatLngs as L.LatLngExpression[][];
-            }
-          } else {
-            // It's LatLng[] (simple polygon), wrap it in an array
-            markerLatlngs = [rawLatLngs as L.LatLngExpression[]];
-          }
-        } else {
-          markerLatlngs = [];
-        }
+        markerLatlngs = this.normalizePolygonCoordinates(rawLatLngs);
       } catch (error) {
         markerLatlngs = [];
       }
@@ -437,11 +427,14 @@ export class PolygonMutationManager {
           }
 
           try {
+            // For newly created polygons, always treat the first ring as the main polygon
+            // and subsequent rings as holes. This ensures that polygons drawn inside holes
+            // are styled as regular polygons (green), not as holes (red).
             if (ringIndex === 0) {
               this.interactionManager.addMarkers(latLngLiterals, featureGroup);
             } else {
               // Add red polyline overlay for hole rings
-              const holePolyline = L.polyline(polygonRing, {
+              const holePolyline = L.polyline(latLngLiterals, {
                 color: this.config.colors.hole.border,
                 weight: this.config.holeOptions.weight || 2,
                 opacity: this.config.holeOptions.opacity || 1,
@@ -615,6 +608,132 @@ export class PolygonMutationManager {
   }
 
   /**
+   * Check if a polygon is completely inside a hole of an existing polygon
+   * This prevents incorrect merging when drawing polygons inside holes
+   */
+  private isPolygonInsideExistingHole(newPolygon: Feature<Polygon | MultiPolygon>): boolean {
+    try {
+      // Check each existing feature group to see if the new polygon is inside any holes
+      for (const featureGroup of this.getFeatureGroups()) {
+        try {
+          const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+            Polygon | MultiPolygon
+          >;
+          if (!featureCollection || !featureCollection.features || !featureCollection.features[0]) {
+            continue;
+          }
+
+          const existingFeature = featureCollection.features[0];
+          if (!existingFeature.geometry || !existingFeature.geometry.coordinates) {
+            continue;
+          }
+
+          // Check if the existing polygon has holes
+          let hasHoles = false;
+          let holes: number[][][] = [];
+
+          if (existingFeature.geometry.type === 'Polygon') {
+            hasHoles = existingFeature.geometry.coordinates.length > 1;
+            if (hasHoles) {
+              holes = existingFeature.geometry.coordinates.slice(1); // Skip outer ring, get holes
+            }
+          } else if (existingFeature.geometry.type === 'MultiPolygon') {
+            // Check each polygon in the multipolygon for holes
+            for (const polygonCoords of existingFeature.geometry.coordinates) {
+              if (polygonCoords.length > 1) {
+                hasHoles = true;
+                holes.push(...polygonCoords.slice(1)); // Add holes from this polygon
+              }
+            }
+          }
+
+          if (hasHoles && holes.length > 0) {
+            // Check if the new polygon is completely inside any of the holes
+            for (const holeCoords of holes) {
+              try {
+                const holePolygon = this.turfHelper.createPolygon([holeCoords]);
+
+                // Check if the new polygon is completely within this hole
+                if (this.turfHelper.isPolygonCompletelyWithin(newPolygon, holePolygon)) {
+                  return true;
+                }
+              } catch (error) {
+                // Continue checking other holes
+                continue;
+              }
+            }
+          }
+        } catch (error) {
+          // Continue checking other feature groups
+          continue;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      // If there's any error, default to false (allow normal processing)
+      return false;
+    }
+  }
+
+  /**
+   * Normalize polygon coordinates to handle complex nested structures
+   * This fixes the bug where markers are missing when drawing polygons inside holes
+   */
+  private normalizePolygonCoordinates(rawLatLngs: unknown): L.LatLngExpression[][] {
+    if (!Array.isArray(rawLatLngs) || rawLatLngs.length === 0) {
+      return [];
+    }
+
+    // Helper function to check if an element is a LatLng-like object
+    const isLatLngLike = (obj: unknown): obj is L.LatLng => {
+      return (
+        obj !== null &&
+        typeof obj === 'object' &&
+        'lat' in obj &&
+        'lng' in obj &&
+        typeof (obj as L.LatLng).lat === 'number' &&
+        typeof (obj as L.LatLng).lng === 'number'
+      );
+    };
+
+    // Recursive function to flatten nested coordinate structures
+    const flattenToRings = (coords: unknown): L.LatLngExpression[][] => {
+      if (!Array.isArray(coords)) {
+        return [];
+      }
+
+      // If this is an array of LatLng objects, return it as a single ring
+      if (coords.length > 0 && isLatLngLike(coords[0])) {
+        return [coords as L.LatLngExpression[]];
+      }
+
+      // If this is an array of arrays, process each sub-array
+      const result: L.LatLngExpression[][] = [];
+      for (const item of coords) {
+        if (Array.isArray(item)) {
+          // If the item is an array of LatLng objects, add it as a ring
+          if (item.length > 0 && isLatLngLike(item[0])) {
+            result.push(item as L.LatLngExpression[]);
+          } else {
+            // Otherwise, recursively flatten it
+            const flattened = flattenToRings(item);
+            result.push(...flattened);
+          }
+        }
+      }
+
+      return result;
+    };
+
+    try {
+      return flattenToRings(rawLatLngs);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /**
    * Create a polygon from GeoJSON feature
    */
   private isPositionArrayofArrays(arr: unknown): arr is Position[][][] {
@@ -642,11 +761,20 @@ export class PolygonMutationManager {
   ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
-    polygon.setStyle({
+
+    // Force the polygon to always use regular polygon styling (green)
+    // This ensures that polygons drawn inside holes are styled correctly
+    const polygonStyle = {
       ...this.config.polygonOptions,
       color: this.config.colors.polygon.border,
       fillColor: this.config.colors.polygon.fill,
-    });
+      // Force these values to ensure they override any default styling
+      weight: this.config.polygonOptions.weight || 2,
+      opacity: this.config.polygonOptions.opacity || 1,
+      fillOpacity: this.config.polygonOptions.fillOpacity || 0.2,
+    };
+
+    polygon.setStyle(polygonStyle);
 
     // Ensure each polygon has a unique identifier to prevent cross-contamination
     polygon._polydrawUniqueId = L.Util.stamp(polygon) + '_' + Date.now();

@@ -4,7 +4,7 @@
 
 > **Advanced Leaflet plugin for interactive polygon drawing with point-to-point creation, smart merging, and comprehensive editing tools**
 
-Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet maps into interactive polygon drawing and editing environments. With intelligent merging, drag-and-drop functionality, and comprehensive editing tools, it's perfect for GIS applications, mapping tools, and spatial data collection.
+Leaflet Polydraw is a powerful, feature-rich plugin that transforms your Leaflet maps into interactive polygon drawing and editing environments. With smart merging, drag-and-drop functionality, and comprehensive editing tools, it's perfect for GIS applications, mapping tools, and spatial data collection.
 
 [![npm](https://img.shields.io/npm/v/leaflet-polydraw)](https://www.npmjs.com/package/leaflet-polydraw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -54,10 +54,10 @@ You can also use Leaflet.Polydraw directly in the browser via a CDN like [jsDeli
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" />
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/styles/polydraw.css"
+  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@latest/dist/styles/polydraw.css"
 />
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/polydraw.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@latest/dist/polydraw.umd.min.js"></script>
 ```
 
 ### Example Usage

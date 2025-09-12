@@ -548,7 +548,7 @@ describe('TurfHelper', () => {
         ],
       };
 
-      const index = turfHelper.getNearestPointIndex(targetPoint, points);
+      const index = turfHelper.getNearestPointIndex(targetPoint as [number, number], points);
       expect(index).toBe(1);
     });
 

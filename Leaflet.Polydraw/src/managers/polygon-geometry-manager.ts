@@ -225,14 +225,14 @@ export class PolygonGeometryManager {
           if (isOuterRing || processHoles) {
             if (currentRing.length <= 4) {
               // Cannot simplify further
-              simplifiedRings.push(currentRing);
+              simplifiedRings.push(currentRing as [number, number][]);
               continue;
             }
 
             // Remove every other point to simplify
             const simplified: [number, number][] = [];
             for (let i = 0; i < currentRing.length; i += 2) {
-              simplified.push(currentRing[i]);
+              simplified.push(currentRing[i] as [number, number]);
             }
 
             // Ensure the simplified polygon is closed
@@ -244,13 +244,13 @@ export class PolygonGeometryManager {
 
             // Check if the simplified polygon is still valid
             if (simplified.length < 4) {
-              simplifiedRings.push(currentRing); // Return original if simplification results in invalid polygon
+              simplifiedRings.push(currentRing as [number, number][]); // Return original if simplification results in invalid polygon
             } else {
               simplifiedRings.push(simplified);
             }
           } else {
             // Keep holes unchanged if processHoles is false
-            simplifiedRings.push(currentRing);
+            simplifiedRings.push(currentRing as [number, number][]);
           }
         }
 
@@ -342,7 +342,7 @@ export class PolygonGeometryManager {
             bboxRings.push(rectangularRing);
           } else {
             // Fallback: keep original ring if bounding box calculation fails
-            bboxRings.push(currentRing);
+            bboxRings.push(currentRing as [number, number][]);
           }
         }
 
@@ -406,9 +406,9 @@ export class PolygonGeometryManager {
           // Always process the outer ring, process holes only if config allows
           if (isOuterRing || processHoles) {
             // Convert coordinates to LatLng format for the turf helper
-            const latlngs = currentRing.map((coord: [number, number]) => ({
-              lat: coord[1],
-              lng: coord[0],
+            const latlngs = currentRing.map((coord) => ({
+              lat: (coord as [number, number])[1],
+              lng: (coord as [number, number])[0],
             }));
             const doubleLatLngs = this.turfHelper.getDoubleElbowLatLngs(latlngs);
             const doubledCoords = doubleLatLngs.map(
@@ -417,7 +417,7 @@ export class PolygonGeometryManager {
             processedRings.push(doubledCoords);
           } else {
             // Keep holes unchanged if processHoles is false
-            processedRings.push(currentRing);
+            processedRings.push(currentRing as [number, number][]);
           }
         }
 

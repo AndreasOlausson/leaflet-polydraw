@@ -60,10 +60,10 @@ You can also use Leaflet.Polydraw directly in the browser via a CDN like [jsDeli
 />
 <link
   rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/styles/polydraw.css"
+  href="https://cdn.jsdelivr.net/npm/leaflet.polydraw@latest/dist/styles/polydraw.css"
 />
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@0.8.7/dist/polydraw.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet.polydraw@latest/dist/polydraw.umd.min.js"></script>
 ```
 
 ### Example Usage
