@@ -35,7 +35,7 @@ import polygonToLine from '@turf/polygon-to-line';
 import lineToPolygon from '@turf/line-to-polygon';
 import bezierSpline from '@turf/bezier-spline';
 import length from '@turf/length';
-// @ts-ignore - concaveman doesn't have types
+// @ts-expect-error - concaveman doesn't have types
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
