@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.5] - 2025-09-12
+
+### Added
+
+- **"Intelligent" Merging System**: Implemented "smart" polygon merging that only merges polygons when they actually intersect, preventing unwanted merging behavior
+- **Comprehensive Test Suite**: Added extensive unit tests (mix of manual and AI-generated) covering all major functionality with ~80% code coverage, though with varying quality
+- **Mock Factory (in progress)**: Initial implementation of centralized mock factory; work still ongoing
+- **Cypress E2E Testing**: Initial setup of Cypress end-to-end testing framework; actual tests still to be implemented
+
+### Fixed
+
+- **Critical Bug**: Fixed missing markers when drawing polygons inside holes (donut polygons) - a major usability issue
+- **Coordinate Normalization**: Implemented robust coordinate handling for complex nested polygon structures with holes
+- **Map Container Coordinates**: Fixed relative coordinate calculations for proper positioning Thanks to @hlozancic for the original fix!
+- **Polygon Inside Polygon**: Resolved complex scenarios involving multiple nested polygons
+- **Merge Conflicts**: Fixed polygon merging issues that occurred with polygons drawn inside holes
+- **Test Stability**: Resolved all failing tests and improved test reliability
+
+### Changed
+
+- **Architecture Refactor**: Major refactoring to use manager pattern for better separation of concerns
+- **TypeScript Strict Mode**: Enhanced type safety with strict TypeScript configuration
+- **Code Organization**: Moved unit tests to dedicated `test/unit` directory structure
+- **Dependency Management**: Centralized constants and removed ~10 Turf.js dependencies, reducing bundle size and improving performance
+- **ESLint Configuration**: Updated linting rules and fixed all linting issues
+
+### Enhanced
+
+- **Hole Detection**: Advanced algorithm to detect when polygons are drawn inside existing holes
+- **Coordinate Processing**: Improved handling of complex MultiPolygon and nested coordinate structures
+
+### Security
+
+- **Dependency Updates**: Updated dependencies to address security vulnerabilities
+- **Input Validation**: Enhanced validation of polygon coordinates and user inputs
+
 ## [0.9.4] - 2025-08-21
 
 ### Added

@@ -194,7 +194,7 @@
       "hover": "#D9460F"
     },
     "polyline": "#50622b",
-    "subtractLine": "#50622b",
+    "subtractLine": "#D9460F",
     "polygon": {
       "border": "#50622b",
       "fill": "#b4cd8a"

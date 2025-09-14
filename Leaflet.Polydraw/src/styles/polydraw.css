@@ -391,3 +391,61 @@ body {
 .info-popup .leaflet-popup-close-button {
   color: white !important;
 }
+
+/* Firefox Android button fix - ensure draw mode buttons remain responsive */
+.leaflet-control.leaflet-bar {
+  position: relative;
+  z-index: 1000;
+  pointer-events: auto !important;
+}
+
+.leaflet-control.leaflet-bar a {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Firefox-specific fixes for touch event handling */
+@-moz-document url-prefix() {
+  .leaflet-control.leaflet-bar {
+    position: relative !important;
+    z-index: 2000 !important;
+    pointer-events: auto !important;
+    isolation: isolate;
+  }
+
+  .leaflet-control.leaflet-bar a {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sub-buttons {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .sub-buttons a {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+/* Additional mobile-specific fixes */
+@media (max-width: 768px) {
+  .leaflet-control.leaflet-bar a {
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

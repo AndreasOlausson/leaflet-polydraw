@@ -282,10 +282,19 @@ class Polydraw extends L.Control {
     container.style.display = 'flex';
     container.style.flexDirection = 'column-reverse';
 
+    // Firefox Android fix: Ensure container has proper touch handling
+    container.style.pointerEvents = 'auto';
+    container.style.position = 'relative';
+    container.style.zIndex = '1000';
+
     this.subContainer = L.DomUtil.create('div', 'sub-buttons', container);
     this.subContainer.style.maxHeight = '0px';
     this.subContainer.style.overflow = 'hidden';
     this.subContainer.style.transition = 'max-height 0.3s ease';
+
+    // Firefox Android fix: Ensure subContainer has proper touch handling
+    this.subContainer.style.pointerEvents = 'auto';
+    this.subContainer.style.position = 'relative';
 
     createButtons(
       container,
@@ -297,6 +306,9 @@ class Polydraw extends L.Control {
       this._handleEraseClick,
       this._handlePointToPointClick,
     );
+
+    // Firefox Android fix: Ensure all buttons have proper touch handling
+    this.ensureButtonTouchResponsiveness(container);
 
     // Simple UI update listener
     const uiUpdateListener = (mode: DrawMode) => {
@@ -1066,6 +1078,34 @@ class Polydraw extends L.Control {
     } else {
       return event.ctrlKey; // Ctrl key on Windows/Linux
     }
+  }
+
+  /**
+   * Ensures all buttons have proper touch responsiveness for Firefox Android
+   * @param container - The main control container element
+   */
+  private ensureButtonTouchResponsiveness(container: HTMLElement): void {
+    // Find all button elements (both in main container and sub-container)
+    const buttons = container.querySelectorAll('a');
+
+    buttons.forEach((button) => {
+      // Ensure each button has proper touch handling properties
+      button.style.pointerEvents = 'auto';
+      button.style.touchAction = 'manipulation';
+      button.style.position = 'relative';
+      button.style.zIndex = '1';
+
+      // Add additional touch event listeners as backup for Firefox Android
+      const touchHandler = (e: Event) => {
+        e.stopPropagation();
+        // Ensure the button remains responsive
+        (e.target as HTMLElement).style.pointerEvents = 'auto';
+      };
+
+      // Add passive touch listeners to maintain responsiveness
+      button.addEventListener('touchstart', touchHandler, { passive: true });
+      button.addEventListener('touchend', touchHandler, { passive: true });
+    });
   }
 
   /**
