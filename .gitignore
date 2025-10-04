@@ -87,3 +87,12 @@ typings/
 
 # Angular development folder
 angular/
+
+# Specstory files
+.specstory
+
+# Cursor IDE files
+.cursorindexingignore
+
+# Activity logs
+activity_log.txt

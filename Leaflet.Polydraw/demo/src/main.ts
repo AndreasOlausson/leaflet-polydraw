@@ -60,6 +60,18 @@ const overlappingSquares: L.LatLng[][][] = [
   ],
 ];
 
+// Triangle for testing vertex count (should show 3 vertices)
+const triangle: L.LatLng[][][] = [
+  [
+    [
+      L.latLng(58.41, 15.59),
+      L.latLng(58.41, 15.595),
+      L.latLng(58.405, 15.592),
+      L.latLng(58.41, 15.59), // Closing point
+    ],
+  ],
+];
+
 const multipleSimplePolygons: L.LatLng[][][] = [
   [
     [
@@ -133,12 +145,917 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 const polydraw = new Polydraw();
 polydraw.addTo(map as any);
 
+// Status box update functionality
+function updateStatusBox() {
+  const featureGroups = polydraw.getFeatureGroups();
+  const countElement = document.getElementById('count-value');
+  const structureElement = document.getElementById('structure-value');
+
+  if (!structureElement) return;
+
+  // Explicitly remove the literal "Structure:" label that appears before #structure-value
+  try {
+    const structureWrapper = document.getElementById('polygon-structure');
+    if (structureWrapper) {
+      // Remove any text node children that look like the label "Structure:" (case-insensitive)
+      Array.from(structureWrapper.childNodes).forEach((node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const txt = (node.textContent || '').trim().toLowerCase();
+          if (txt === 'structure:' || txt === 'structure') {
+            node.textContent = '';
+          }
+        }
+      });
+      // Also hide any element children that render the label
+      Array.from(structureWrapper.children).forEach((el) => {
+        const t = (el.textContent || '').trim().toLowerCase();
+        if (t === 'structure:' || t === 'structure') {
+          (el as HTMLElement).style.display = 'none';
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Failed to remove inline Structure: label', e);
+  }
+
+  // Hide legacy outside labels/rows so only the new panel is visible
+  try {
+    // Hide the row that contains the old count label, if present
+    if (countElement && countElement.parentElement) {
+      (countElement.parentElement as HTMLElement).style.display = 'none';
+    }
+
+    // Find a local container to scope our cleanup (prefer a box wrapping the status rows)
+    const container: HTMLElement =
+      (structureElement.closest('#status-box') as HTMLElement) ||
+      (structureElement.parentElement as HTMLElement) ||
+      document.body;
+
+    // Hide any element whose text content looks like a leftover label such as "Structure:" (case-insensitive)
+    const hideIfStructureLabel = (el: Element) => {
+      const t = (el.textContent || '').trim().toLowerCase();
+      if (t === 'structure:' || t === 'structure') {
+        (el as HTMLElement).style.display = 'none';
+      }
+    };
+
+    // Check previous/next siblings of structureElement
+    let prev: Element | null = structureElement.previousElementSibling;
+    let guard = 0;
+    while (prev && guard++ < 10) {
+      hideIfStructureLabel(prev);
+      prev = (prev as HTMLElement).previousElementSibling;
+    }
+    let next: Element | null = structureElement.nextElementSibling;
+    guard = 0;
+    while (next && guard++ < 10) {
+      hideIfStructureLabel(next);
+      next = (next as HTMLElement).nextElementSibling;
+    }
+
+    // Also scan all *direct* children of the local container
+    Array.from(container.children).forEach((child) => {
+      if (child !== structureElement) hideIfStructureLabel(child);
+    });
+
+    // And finally, scan a few descendants near the container, but avoid our own panel by skipping #structure-value subtree
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT);
+    let node: Element | null = walker.currentNode as Element;
+    let steps = 0;
+    while (node && steps++ < 200) {
+      if (node !== structureElement && !structureElement.contains(node)) {
+        hideIfStructureLabel(node);
+      }
+      node = walker.nextNode() as Element | null;
+    }
+  } catch (e) {
+    console.warn('Hide legacy labels failed:', e);
+  }
+
+  // Build structure representation
+  const structure = featureGroups.map((featureGroup) => {
+    let polygonStructure: {
+      outer: number;
+      holes: number[];
+      coordinates: any;
+      layer?: L.Polygon;
+      metrics?: {
+        outerPerimeter: number;
+        holePerimeters: number[];
+        totalPerimeter: number;
+        outerOrientation: 'CW' | 'CCW' | 'N/A';
+        holeOrientations: ('CW' | 'CCW' | 'N/A')[];
+        bounds?: { sw: L.LatLng; ne: L.LatLng };
+      };
+      wkt?: string;
+    } = {
+      outer: 0,
+      holes: [],
+      coordinates: null,
+    };
+
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        const polygon = layer as L.Polygon;
+        const latLngs = polygon.getLatLngs();
+
+        // Store raw coordinates for tooltip
+        polygonStructure.coordinates = latLngs;
+        polygonStructure.layer = polygon;
+
+        // Debug: log the structure to understand the data
+        console.log('Polygon latLngs structure:', latLngs);
+        console.log('Type check - Array.isArray(latLngs):', Array.isArray(latLngs));
+        if (Array.isArray(latLngs) && latLngs.length > 0) {
+          console.log('First element:', latLngs[0]);
+          console.log('Type check - Array.isArray(latLngs[0]):', Array.isArray(latLngs[0]));
+          if (Array.isArray(latLngs[0]) && latLngs[0].length > 0) {
+            console.log('First element of first array:', latLngs[0][0]);
+          }
+        }
+
+        // Helper utilities to count vertices accurately whether ring is closed or not
+        const isClosedRing = (ring: L.LatLng[]): boolean => {
+          if (!Array.isArray(ring) || ring.length < 2) return false;
+          const first = ring[0] as L.LatLng;
+          const last = ring[ring.length - 1] as L.LatLng;
+          // Leaflet's LatLng has an equals method with an optional margin
+          if (first && typeof (first as any).equals === 'function') {
+            // use a tiny margin to account for floating errors
+            return (first as any).equals(last, 1e-9);
+          }
+          return Math.abs(first.lat - last.lat) < 1e-12 && Math.abs(first.lng - last.lng) < 1e-12;
+        };
+
+        const countVertices = (ring: L.LatLng[]): number => {
+          if (!Array.isArray(ring)) return 0;
+          return ring.length - (isClosedRing(ring) ? 1 : 0);
+        };
+
+        // Metric helpers
+        const ensureClosed = (ring: L.LatLng[]): L.LatLng[] => {
+          if (!ring || ring.length === 0) return ring;
+          return isClosedRing(ring) ? ring : [...ring, ring[0]];
+        };
+
+        const ringPerimeterMeters = (ring: L.LatLng[]): number => {
+          if (!ring || ring.length < 2) return 0;
+          const closed = ensureClosed(ring);
+          let sum = 0;
+          for (let i = 1; i < closed.length; i++) {
+            sum += map.distance(closed[i - 1], closed[i]);
+          }
+          return sum;
+        };
+
+        // Signed area (in projected plan units) to infer orientation
+        const ringSignedArea = (ring: L.LatLng[]): number => {
+          if (!ring || ring.length < 3) return 0;
+          const closed = ensureClosed(ring);
+          let area = 0;
+          const pts = closed.map((ll) => map.project(ll, map.getZoom()));
+          for (let i = 1; i < pts.length; i++) {
+            const x1 = pts[i - 1].x,
+              y1 = pts[i - 1].y;
+            const x2 = pts[i].x,
+              y2 = pts[i].y;
+            area += x1 * y2 - x2 * y1;
+          }
+          return area / 2;
+        };
+
+        const ringOrientation = (ring: L.LatLng[]): 'CW' | 'CCW' | 'N/A' => {
+          const a = ringSignedArea(ring);
+          if (a === 0) return 'N/A';
+          // In pixel space, positive signed area typically indicates CCW
+          return a > 0 ? 'CCW' : 'CW';
+        };
+
+        // WKT helpers (lng lat order per WKT spec)
+        const toWktCoords = (ring: L.LatLng[]): string => {
+          const closed = ensureClosed(ring);
+          return closed.map((p) => `${p.lng} ${p.lat}`).join(', ');
+        };
+
+        const toWktPolygon = (rings: L.LatLng[][]): string => {
+          const parts = rings.map((r) => `(${toWktCoords(r)})`).join(', ');
+          return `POLYGON (${parts})`;
+        };
+
+        const fmtMeters = (m: number): string => {
+          if (m < 1) return `${m.toFixed(2)} m`;
+          if (m < 1000) return `${m.toFixed(1)} m`;
+          return `${(m / 1000).toFixed(2)} km`;
+        };
+
+        // Handle different polygon structures based on actual Leaflet structure
+        if (Array.isArray(latLngs) && latLngs.length > 0) {
+          // Check if this is a nested array structure (multi-ring)
+          if (Array.isArray(latLngs[0])) {
+            // Check if it's triple nested: [[[ring1], [ring2]]] or double nested: [[ring]]
+            if (Array.isArray(latLngs[0][0])) {
+              // Triple nested structure: [[[outer], [hole1], [hole2]]]
+              const polygonGroup = latLngs[0] as L.LatLng[][];
+              console.log('Triple nested polygon with', polygonGroup.length, 'rings');
+
+              if (polygonGroup.length > 0) {
+                // First ring is outer ring
+                // count actual vertices; subtract trailing duplicate if the ring is closed
+                polygonStructure.outer = countVertices(polygonGroup[0] as L.LatLng[]);
+                console.log('Outer ring vertices:', polygonStructure.outer);
+
+                // Remaining rings are holes
+                if (polygonGroup.length > 1) {
+                  polygonStructure.holes = polygonGroup
+                    .slice(1)
+                    .map((ring) => countVertices(ring as L.LatLng[]));
+                  console.log('Hole vertices:', polygonStructure.holes);
+                }
+              }
+              // Compute metrics (perimeters, orientations), bounds and WKT
+              try {
+                // Normalize to array of rings: [[outer], [hole1], ...]
+                let rings: L.LatLng[][] = [];
+                if (Array.isArray(latLngs)) {
+                  if (Array.isArray(latLngs[0])) {
+                    if (Array.isArray((latLngs as any)[0][0])) {
+                      rings = (latLngs as any)[0] as L.LatLng[][];
+                    } else {
+                      rings = latLngs as L.LatLng[][];
+                    }
+                  } else {
+                    rings = [latLngs as L.LatLng[]];
+                  }
+                }
+
+                const outerRing = rings[0] || [];
+                const holeRings = rings.slice(1);
+
+                const outerPerimeter = ringPerimeterMeters(outerRing);
+                const holePerimeters = holeRings.map((r) => ringPerimeterMeters(r));
+                const totalPerimeter = outerPerimeter + holePerimeters.reduce((a, b) => a + b, 0);
+
+                const outerOrientation = ringOrientation(outerRing);
+                const holeOrientations = holeRings.map((r) => ringOrientation(r));
+
+                const bounds = polygon.getBounds();
+
+                polygonStructure.metrics = {
+                  outerPerimeter,
+                  holePerimeters,
+                  totalPerimeter,
+                  outerOrientation,
+                  holeOrientations,
+                  bounds: { sw: bounds.getSouthWest(), ne: bounds.getNorthEast() },
+                };
+
+                polygonStructure.wkt = toWktPolygon(rings);
+              } catch (e) {
+                console.warn('Metric/WKT computation failed:', e);
+              }
+            } else {
+              // Double nested structure: [[outer], [hole1], [hole2]]
+              const polygonRings = latLngs as L.LatLng[][];
+              console.log('Double nested polygon with', polygonRings.length, 'rings');
+
+              if (polygonRings.length > 0) {
+                // First ring is outer ring
+                // count actual vertices; subtract trailing duplicate if the ring is closed
+                polygonStructure.outer = countVertices(polygonRings[0] as L.LatLng[]);
+                console.log('Outer ring vertices:', polygonStructure.outer);
+
+                // Remaining rings are holes
+                if (polygonRings.length > 1) {
+                  polygonStructure.holes = polygonRings
+                    .slice(1)
+                    .map((ring) => countVertices(ring as L.LatLng[]));
+                  console.log('Hole vertices:', polygonStructure.holes);
+                }
+              }
+              // Compute metrics (perimeters, orientations), bounds and WKT
+              try {
+                // Normalize to array of rings: [[outer], [hole1], ...]
+                let rings: L.LatLng[][] = [];
+                if (Array.isArray(latLngs)) {
+                  if (Array.isArray(latLngs[0])) {
+                    if (Array.isArray((latLngs as any)[0][0])) {
+                      rings = (latLngs as any)[0] as L.LatLng[][];
+                    } else {
+                      rings = latLngs as L.LatLng[][];
+                    }
+                  } else {
+                    rings = [latLngs as L.LatLng[]];
+                  }
+                }
+
+                const outerRing = rings[0] || [];
+                const holeRings = rings.slice(1);
+
+                const outerPerimeter = ringPerimeterMeters(outerRing);
+                const holePerimeters = holeRings.map((r) => ringPerimeterMeters(r));
+                const totalPerimeter = outerPerimeter + holePerimeters.reduce((a, b) => a + b, 0);
+
+                const outerOrientation = ringOrientation(outerRing);
+                const holeOrientations = holeRings.map((r) => ringOrientation(r));
+
+                const bounds = polygon.getBounds();
+
+                polygonStructure.metrics = {
+                  outerPerimeter,
+                  holePerimeters,
+                  totalPerimeter,
+                  outerOrientation,
+                  holeOrientations,
+                  bounds: { sw: bounds.getSouthWest(), ne: bounds.getNorthEast() },
+                };
+
+                polygonStructure.wkt = toWktPolygon(rings);
+              } catch (e) {
+                console.warn('Metric/WKT computation failed:', e);
+              }
+            }
+          } else {
+            // Simple polygon - single ring - structure: [LatLng, LatLng, LatLng, ...]
+            const simpleRing = latLngs as L.LatLng[];
+            // count actual vertices; subtract trailing duplicate if the ring is closed
+            polygonStructure.outer = countVertices(simpleRing);
+            console.log('Simple polygon vertices:', polygonStructure.outer);
+            // Compute metrics (perimeters, orientations), bounds and WKT
+            try {
+              // Normalize to array of rings: [[outer], [hole1], ...]
+              let rings: L.LatLng[][] = [];
+              if (Array.isArray(latLngs)) {
+                if (Array.isArray(latLngs[0])) {
+                  if (Array.isArray((latLngs as any)[0][0])) {
+                    rings = (latLngs as any)[0] as L.LatLng[][];
+                  } else {
+                    rings = latLngs as L.LatLng[][];
+                  }
+                } else {
+                  rings = [latLngs as L.LatLng[]];
+                }
+              }
+
+              const outerRing = rings[0] || [];
+              const holeRings = rings.slice(1);
+
+              const outerPerimeter = ringPerimeterMeters(outerRing);
+              const holePerimeters = holeRings.map((r) => ringPerimeterMeters(r));
+              const totalPerimeter = outerPerimeter + holePerimeters.reduce((a, b) => a + b, 0);
+
+              const outerOrientation = ringOrientation(outerRing);
+              const holeOrientations = holeRings.map((r) => ringOrientation(r));
+
+              const bounds = polygon.getBounds();
+
+              polygonStructure.metrics = {
+                outerPerimeter,
+                holePerimeters,
+                totalPerimeter,
+                outerOrientation,
+                holeOrientations,
+                bounds: { sw: bounds.getSouthWest(), ne: bounds.getNorthEast() },
+              };
+
+              polygonStructure.wkt = toWktPolygon(rings);
+            } catch (e) {
+              console.warn('Metric/WKT computation failed:', e);
+            }
+          }
+        } else {
+          console.log('Unexpected polygon structure:', latLngs);
+        }
+      }
+    });
+
+    return polygonStructure;
+  });
+
+  // Format structure with nice indentation and clickable info buttons
+  structureElement.innerHTML = ''; // Clear existing content
+
+  // Helper function to format coordinates as clean JSON
+  const formatCoordinatesAsJSON = (coords: any): string => {
+    if (!coords) return 'No coordinates available';
+
+    // Convert LatLng objects to simple [lat, lng] arrays for cleaner JSON
+    const convertLatLngsToArrays = (latLngs: any): any => {
+      if (!Array.isArray(latLngs)) return latLngs;
+
+      return latLngs.map((item: any) => {
+        if (item && typeof item.lat === 'number' && typeof item.lng === 'number') {
+          // This is a LatLng object, convert to [lat, lng]
+          return [item.lat, item.lng];
+        } else if (Array.isArray(item)) {
+          // This is a nested array, recurse
+          return convertLatLngsToArrays(item);
+        }
+        return item;
+      });
+    };
+
+    const cleanCoords = convertLatLngsToArrays(coords);
+    return JSON.stringify(cleanCoords, null, 2);
+  };
+
+  // Function to show coordinates in a modal/popup
+  const showCoordinatesModal = (coordsData: string, polygonIndex: number) => {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('coords-modal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'coords-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    modal.style.zIndex = '10002';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.backgroundColor = 'white';
+    modalContent.style.padding = '20px';
+    modalContent.style.borderRadius = '8px';
+    modalContent.style.maxWidth = '80%';
+    modalContent.style.maxHeight = '80%';
+    modalContent.style.overflow = 'auto';
+    modalContent.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
+
+    // Create header
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '15px';
+    header.style.borderBottom = '1px solid #eee';
+    header.style.paddingBottom = '10px';
+
+    const title = document.createElement('h3');
+    title.textContent = `Polygon ${polygonIndex + 1} Coordinates`;
+    title.style.margin = '0';
+    title.style.color = '#333';
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '×';
+    closeButton.style.background = 'none';
+    closeButton.style.border = 'none';
+    closeButton.style.fontSize = '24px';
+    closeButton.style.cursor = 'pointer';
+    closeButton.style.color = '#666';
+    closeButton.style.padding = '0';
+    closeButton.style.width = '30px';
+    closeButton.style.height = '30px';
+
+    header.appendChild(title);
+    header.appendChild(closeButton);
+
+    // Create content area
+    const content = document.createElement('pre');
+    content.textContent = coordsData;
+    content.style.fontFamily = 'monospace';
+    content.style.fontSize = '12px';
+    content.style.backgroundColor = '#f5f5f5';
+    content.style.padding = '15px';
+    content.style.borderRadius = '4px';
+    content.style.overflow = 'auto';
+    content.style.maxHeight = '400px';
+    content.style.margin = '0';
+    content.style.whiteSpace = 'pre-wrap';
+
+    modalContent.appendChild(header);
+    modalContent.appendChild(content);
+    modal.appendChild(modalContent);
+
+    // Close modal handlers
+    const closeModal = () => {
+      modal.remove();
+    };
+
+    closeButton.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+
+    // Add to document
+    document.body.appendChild(modal);
+  };
+
+  // Create the structure display with proper formatting
+  const structureContainer = document.createElement('div');
+  structureContainer.style.fontFamily = 'monospace';
+  structureContainer.style.fontSize = '12px';
+  structureContainer.style.lineHeight = '1.4';
+  structureContainer.style.whiteSpace = 'pre';
+
+  let structureText = '[\n';
+
+  structure.forEach((polygonStructure, polygonIndex) => {
+    if (polygonIndex > 0) {
+      structureText += ',\n';
+    }
+
+    structureText += '    [\n        ';
+
+    // Create polygon description
+    let displayText;
+    const metrics = polygonStructure.metrics;
+    if (polygonStructure.holes.length === 0) {
+      displayText = `[outer: ${polygonStructure.outer} vtx, perim: ${metrics ? (metrics.outerPerimeter !== undefined ? (metrics.outerPerimeter < 1 ? metrics.outerPerimeter.toFixed(2) + ' m' : metrics.outerPerimeter < 1000 ? metrics.outerPerimeter.toFixed(1) + ' m' : (metrics.outerPerimeter / 1000).toFixed(2) + ' km') : '—') : '—'}, ${metrics ? metrics.outerOrientation : '—'}]`;
+    } else {
+      const holeText =
+        polygonStructure.holes.length === 1
+          ? `inner: ${polygonStructure.holes[0]} vtx`
+          : `inner: ${polygonStructure.holes.join(', ')} vtx`;
+      displayText = `[outer: ${polygonStructure.outer} vtx, ${holeText}, total perim: ${metrics ? (metrics.totalPerimeter !== undefined ? (metrics.totalPerimeter < 1 ? metrics.totalPerimeter.toFixed(2) + ' m' : metrics.totalPerimeter < 1000 ? metrics.totalPerimeter.toFixed(1) + ' m' : (metrics.totalPerimeter / 1000).toFixed(2) + ' km') : '—') : '—'}]`;
+    }
+
+    structureText += displayText + ' ';
+
+    // We'll add the info button after creating the text node
+    structureText += '(i)\n    ]';
+  });
+
+  const totalPolygons = structure.length;
+  const totalVertices = structure.reduce(
+    (acc, p) => acc + p.outer + p.holes.reduce((a, b) => a + b, 0),
+    0,
+  );
+  // Close the structure first, then show summary on its own line after
+  structureText += `\n]`;
+  const summaryLine = `// Summary: ${totalPolygons} polygon(s), ${totalVertices} total vertex/vertices`;
+  structureText += `\n${summaryLine}`;
+
+  // Set the base text
+  structureContainer.textContent = structureText;
+
+  // Now we need to replace the (i) markers with actual clickable buttons
+  const lines = structureText.split('\n');
+  structureContainer.innerHTML = ''; // Clear and rebuild with interactive elements
+
+  // Keep track of polygon index for info buttons
+  let currentPolygonIndex = 0;
+
+  lines.forEach((line, lineIndex) => {
+    if (line.includes('(i)')) {
+      // This line has an info button
+      const polygonIndex = currentPolygonIndex;
+
+      const beforeInfo = line.substring(0, line.indexOf('(i)'));
+      const afterInfo = line.substring(line.indexOf('(i)') + 3);
+
+      // Create line container
+      const lineDiv = document.createElement('div');
+      lineDiv.style.display = 'inline';
+
+      // Add text before (i)
+      const beforeSpan = document.createElement('span');
+      beforeSpan.textContent = beforeInfo;
+      lineDiv.appendChild(beforeSpan);
+
+      // Create clickable info button
+      const infoButton = document.createElement('span');
+      infoButton.textContent = '(i)';
+      infoButton.style.color = '#007bff';
+      infoButton.style.cursor = 'pointer';
+      infoButton.style.textDecoration = 'underline';
+      infoButton.style.fontWeight = 'bold';
+      infoButton.title = 'Click to view coordinates';
+
+      infoButton.addEventListener('click', () => {
+        if (polygonIndex < 0 || polygonIndex >= structure.length || !structure[polygonIndex]) {
+          console.error(
+            'Invalid polygon index:',
+            polygonIndex,
+            'Structure length:',
+            structure.length,
+          );
+          return;
+        }
+        const item = structure[polygonIndex];
+        const coordsData = formatCoordinatesAsJSON(item.coordinates);
+
+        // Temporary highlight
+        try {
+          const layer = item.layer as L.Polygon | undefined;
+          if (layer && typeof (layer as any).setStyle === 'function') {
+            const original = (layer as any).options && { ...(layer as any).options };
+            (layer as any).setStyle({ weight: 5 });
+            setTimeout(() => {
+              if (original) (layer as any).setStyle({ weight: original.weight ?? 3 });
+            }, 1200);
+          }
+        } catch (e) {
+          console.warn('Highlight failed:', e);
+        }
+
+        // Build a richer modal content string
+        let details = '';
+        if (item.metrics) {
+          const b = item.metrics.bounds;
+          details += `Outer perimeter: ${item.metrics.outerPerimeter < 1 ? item.metrics.outerPerimeter.toFixed(2) + ' m' : item.metrics.outerPerimeter < 1000 ? item.metrics.outerPerimeter.toFixed(1) + ' m' : (item.metrics.outerPerimeter / 1000).toFixed(2) + ' km'}\n`;
+          if (item.holes.length > 0) {
+            details += `Hole perimeters: ${item.metrics.holePerimeters.map((m) => (m < 1 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' : (m / 1000).toFixed(2) + ' km')).join(', ')}\n`;
+          }
+          details += `Total perimeter: ${item.metrics.totalPerimeter < 1 ? item.metrics.totalPerimeter.toFixed(2) + ' m' : item.metrics.totalPerimeter < 1000 ? item.metrics.totalPerimeter.toFixed(1) + ' m' : (item.metrics.totalPerimeter / 1000).toFixed(2) + ' km'}\n`;
+          details += `Outer orientation: ${item.metrics.outerOrientation}`;
+          if (item.metrics.holeOrientations.length) {
+            details += `, Hole orientations: ${item.metrics.holeOrientations.join(', ')}`;
+          }
+          details += '\n';
+          if (b) {
+            details += `Bounds SW: [${b.sw.lat.toFixed(6)}, ${b.sw.lng.toFixed(6)}], NE: [${b.ne.lat.toFixed(6)}, ${b.ne.lng.toFixed(6)}]\n`;
+          }
+        }
+
+        const wkt = item.wkt ?? '';
+
+        // Show modal with three sections
+        showCoordinatesModal(
+          `# Metrics\n${details}\n# Coordinates (JSON)\n${coordsData}\n\n# WKT\n${wkt}`,
+          polygonIndex,
+        );
+
+        // After modal is mounted, inject small copy buttons for JSON and WKT
+        setTimeout(() => {
+          const modal = document.getElementById('coords-modal');
+          if (!modal) return;
+          const pre = modal.querySelector('pre');
+          if (!pre) return;
+
+          // Add toolbar
+          const toolbar = document.createElement('div');
+          toolbar.style.display = 'flex';
+          toolbar.style.gap = '8px';
+          toolbar.style.marginBottom = '8px';
+
+          const copyJsonBtn = document.createElement('button');
+          copyJsonBtn.textContent = 'Copy JSON';
+          copyJsonBtn.onclick = () => {
+            const jsonStart = pre.textContent?.indexOf('# Coordinates (JSON)');
+            if (jsonStart != null && jsonStart >= 0) {
+              const wktStart = pre.textContent?.indexOf('# WKT');
+              const json = pre.textContent
+                ?.slice(jsonStart + '# Coordinates (JSON)'.length)
+                .split('# WKT')[0]
+                .trim();
+              if (json) navigator.clipboard.writeText(json);
+            }
+          };
+
+          const copyWktBtn = document.createElement('button');
+          copyWktBtn.textContent = 'Copy WKT';
+          copyWktBtn.onclick = () => {
+            if (wkt) navigator.clipboard.writeText(wkt);
+          };
+
+          // Insert toolbar before <pre>
+          const contentParent = pre.parentElement;
+          if (contentParent) {
+            contentParent.insertBefore(toolbar, pre);
+            toolbar.appendChild(copyJsonBtn);
+            toolbar.appendChild(copyWktBtn);
+          }
+        }, 0);
+      });
+
+      // Increment polygon index for next info button
+      currentPolygonIndex++;
+
+      lineDiv.appendChild(infoButton);
+
+      // Add text after (i)
+      const afterSpan = document.createElement('span');
+      afterSpan.textContent = afterInfo;
+      lineDiv.appendChild(afterSpan);
+
+      structureContainer.appendChild(lineDiv);
+    } else {
+      // Regular line without (i)
+      const lineDiv = document.createElement('div');
+      lineDiv.style.display = 'inline';
+      lineDiv.textContent = line;
+      structureContainer.appendChild(lineDiv);
+    }
+
+    // Add line break except for the last line
+    if (lineIndex < lines.length - 1) {
+      structureContainer.appendChild(document.createElement('br'));
+    }
+  });
+
+  // --- Expandable panel wrapper ---
+  // Preserve collapsed state across updates using a data-attribute on the container element
+  const wasCollapsed = structureElement.getAttribute('data-collapsed') === 'true';
+
+  // Clear host element and build panel
+  structureElement.innerHTML = '';
+
+  // Try to find an OUTER header that says "Polygon Status" to use as the collapsible toggle
+  const findOuterHeader = (): HTMLElement | null => {
+    const candidates: HTMLElement[] = [];
+    let node: HTMLElement | null = structureElement as HTMLElement;
+
+    // Previous siblings (up to a few steps)
+    let prev: HTMLElement | null = node.previousElementSibling as HTMLElement | null;
+    let steps = 0;
+    while (prev && steps++ < 5) {
+      candidates.push(prev);
+      prev = prev.previousElementSibling as HTMLElement | null;
+    }
+
+    // Parent's previous siblings as a fallback scope
+    if (node.parentElement) {
+      let pprev: HTMLElement | null = node.parentElement
+        .previousElementSibling as HTMLElement | null;
+      steps = 0;
+      while (pprev && steps++ < 5) {
+        candidates.push(pprev);
+        pprev = pprev.previousElementSibling as HTMLElement | null;
+      }
+    }
+
+    for (const c of candidates) {
+      const txt = (c.textContent || '').trim().toLowerCase();
+      if (txt === 'polygon status' || txt.startsWith('polygon status')) {
+        return c;
+      }
+    }
+    return null;
+  };
+
+  const outerHeader = findOuterHeader();
+
+  // Wrapper panel (no inner header by default)
+  const panel = document.createElement('div');
+  panel.style.border = '1px solid #ddd';
+  panel.style.borderRadius = '6px';
+  panel.style.overflow = 'hidden';
+  panel.style.background = '#fff';
+
+  const contentWrap = document.createElement('div');
+  contentWrap.style.padding = '8px 10px';
+  contentWrap.style.display = wasCollapsed ? 'none' : 'block';
+
+  // Count line inside the collapsible content
+  const countLine = document.createElement('div');
+  countLine.style.fontFamily = 'monospace';
+  countLine.style.fontSize = '12px';
+  countLine.style.marginBottom = '6px';
+  countLine.textContent = `Count: ${featureGroups.length}`;
+  contentWrap.appendChild(countLine);
+
+  // Structure block
+  contentWrap.appendChild(structureContainer);
+
+  const toggle = () => {
+    const becomingExpanded = contentWrap.style.display === 'none';
+    contentWrap.style.display = becomingExpanded ? 'block' : 'none';
+    structureElement.setAttribute('data-collapsed', String(!becomingExpanded));
+    if (outerHeader) outerHeader.setAttribute('aria-expanded', String(becomingExpanded));
+  };
+
+  if (outerHeader) {
+    // Use the OUTER header as the one and only toggle. Make it focusable and add/update a chevron.
+    outerHeader.setAttribute('tabindex', '0');
+    outerHeader.setAttribute('role', 'button');
+    outerHeader.setAttribute('aria-expanded', String(!wasCollapsed));
+
+    // Add a lightweight chevron span if missing
+    if (!outerHeader.querySelector('[data-chevron]')) {
+      const chev = document.createElement('span');
+      chev.setAttribute('data-chevron', '');
+      chev.textContent = wasCollapsed ? ' ►' : ' ▼';
+      chev.style.fontWeight = '600';
+      chev.style.marginLeft = '6px';
+      outerHeader.appendChild(chev);
+    } else {
+      const chev = outerHeader.querySelector('[data-chevron]') as HTMLElement;
+      chev.textContent = wasCollapsed ? ' ►' : ' ▼';
+    }
+
+    const updateChevron = () => {
+      const chev = outerHeader.querySelector('[data-chevron]') as HTMLElement | null;
+      if (chev) {
+        const isCollapsed = contentWrap.style.display === 'none';
+        chev.textContent = isCollapsed ? ' ►' : ' ▼';
+      }
+    };
+
+    const outerToggle = () => {
+      toggle();
+      updateChevron();
+    };
+
+    outerHeader.addEventListener('click', outerToggle);
+    outerHeader.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') {
+        e.preventDefault();
+        outerToggle();
+      }
+    });
+
+    // Mount panel without inner header so only the OUTER header is visible when collapsed
+    panel.appendChild(contentWrap);
+    structureElement.appendChild(panel);
+  } else {
+    // Fallback: if no outer header exists, render an internal header to allow toggling
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+    header.style.padding = '6px 10px';
+    header.style.cursor = 'pointer';
+    header.style.background = '#f7f7f7';
+    header.style.fontFamily = 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+    header.style.fontSize = '12px';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = 'Polygon status';
+    titleSpan.style.fontWeight = '600';
+
+    const chevron = document.createElement('span');
+    chevron.setAttribute('data-chevron', '');
+    chevron.textContent = wasCollapsed ? '►' : '▼';
+    chevron.style.fontWeight = '600';
+    chevron.style.marginLeft = '8px';
+
+    const rightSide = document.createElement('div');
+    rightSide.style.display = 'flex';
+    rightSide.style.alignItems = 'center';
+    rightSide.style.gap = '8px';
+    rightSide.appendChild(chevron);
+
+    header.appendChild(titleSpan);
+    header.appendChild(rightSide);
+
+    header.addEventListener('click', () => {
+      toggle();
+      const chev = header.querySelector('[data-chevron]') as HTMLElement | null;
+      if (chev) {
+        const isCollapsed = contentWrap.style.display === 'none';
+        chev.textContent = isCollapsed ? '►' : '▼';
+      }
+    });
+    header.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+    header.setAttribute('tabindex', '0');
+    header.setAttribute('role', 'button');
+    header.setAttribute('aria-expanded', String(!wasCollapsed));
+
+    panel.appendChild(header);
+    panel.appendChild(contentWrap);
+    structureElement.appendChild(panel);
+  }
+}
+
+// Subscribe to polygon changes using proper event handling
+(polydraw as any).on('polydraw:polygon:created', () => {
+  console.log('Polygon created');
+  updateStatusBox();
+});
+
+(polydraw as any).on('polydraw:mode:change', (data: any) => {
+  console.log('Mode changed to:', data.mode);
+  updateStatusBox();
+});
+
+// Listen for any polygon operations (add, subtract, delete)
+(polydraw as any).on('polygonOperationComplete', () => {
+  console.log('Polygon operation completed');
+  updateStatusBox();
+});
+
+(polydraw as any).on('polygonDeleted', () => {
+  console.log('Polygon deleted');
+  updateStatusBox();
+});
+
+// Initial status update
+updateStatusBox();
+
 document.getElementById('addDebugPoly')?.addEventListener('click', () => {
   // Example with visual optimization level 5 (moderate simplification)
   polydraw.addPredefinedPolygon(overlappingSquares, {
     visualOptimizationLevel: 0,
   });
   console.log('Polydraw:', polydraw);
+  // Update status after adding predefined polygon
+  setTimeout(updateStatusBox, 100);
 });
 
 const linkoping: L.LatLng[][][] = [

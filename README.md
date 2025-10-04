@@ -4,9 +4,9 @@
 
 **Live Demo**: [https://polydraw.ao-tech.se](https://polydraw.ao-tech.se)
 
-> **Advanced Leaflet plugin for interactive polygon drawing with point-to-point creation, smart merging, and comprehensive editing tools**
+> **Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools**
 
-**Leaflet.Polydraw** is a feature-rich plugin that enables interactive polygon drawing and editing on Leaflet maps. It includes support for intelligent shape merging, drag-and-drop manipulation, and detailed editing tools — making it well suited for GIS platforms, mapping applications, and spatial data workflows.
+**Leaflet.Polydraw** lets you draw polygons directly on Leaflet maps in a natural, freehand way — just click and drag to sketch shapes. Beyond freehand creation, it also supports point-to-point precision drawing, intelligent polygon merging, drag-and-drop repositioning, and a rich set of editing tools. This makes it an ideal choice for GIS platforms, mapping applications, and spatial data workflows.
 
 [![npm](https://img.shields.io/npm/v/leaflet-polydraw)](https://www.npmjs.com/package/leaflet-polydraw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -23,8 +23,8 @@
 - **Advanced Editing**: Drag vertices, add/remove points, and reshape polygons
 - **Smart Markers**: Intelligent marker separation prevents overlapping on small polygons
 - **Hole Support**: Create complex polygons with holes and nested shapes
+- **Modifier Key Shortcuts**: Hold down Ctrl or Meta (Cmd) while drawing or editing to switch modes (e.g., erase vertices or subtract areas) for a smooth workflow
 - **Performance Optimized**: Efficient rendering and interaction handling
-- **Well Tested**: Comprehensive test suite with 167+ passing tests
 - **TypeScript Ready**: Full TypeScript support with type definitions
 
 ## Table of Contents

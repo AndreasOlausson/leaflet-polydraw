@@ -19,5 +19,32 @@
     >
       <!-- <button id="addDebugPoly">Auto add Linköping, Sweden</button> -->
     </div>
+
+    <!-- Status Box -->
+    <div
+      id="polydraw-status"
+      style="
+        position: absolute;
+        top: 85px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.5);
+        border: 2px solid #333;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        z-index: 10000;
+        min-width: 200px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      "
+    >
+      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px">Polygon Status</h3>
+      <div id="polygon-count" style="margin-bottom: 8px; font-weight: bold">
+        Polygons: <span id="count-value">0</span>
+      </div>
+      <div id="polygon-structure" style="font-family: monospace; font-size: 12px; color: #666">
+        Structure: <span id="structure-value">[]</span>
+      </div>
+    </div>
   </body>
 </html>
