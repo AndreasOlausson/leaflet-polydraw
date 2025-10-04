@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+# ## [0.9.6] - 2025-10-04
+
+### Improved
+
+- **Demo Enhancements**: Refined demo layout and examples for clarity and visual consistency.
+- **UI Polish**: Minor improvements to styling and interactivity in demo environment.
+
 ## [0.9.5] - 2025-09-12
 
 ### Added
