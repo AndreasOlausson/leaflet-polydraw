@@ -6,6 +6,31 @@
 
 **Leaflet.Polydraw** lets you draw polygons directly on Leaflet maps in a natural, freehand way — just click and drag to sketch shapes. Beyond freehand creation, it also supports point-to-point precision drawing, intelligent polygon merging, drag-and-drop repositioning, and a rich set of editing tools. This makes it an ideal choice for GIS platforms, mapping applications, and spatial data workflows.
 
+## 🚀 Leaflet v2 Compatibility
+
+**Leaflet.Polydraw now supports both Leaflet v1.x and v2.x!** The plugin automatically detects which version of Leaflet you're using and adapts accordingly. This means:
+
+- ✅ **Backward Compatible**: Existing projects using Leaflet v1.x continue to work without changes
+- ✅ **Future Ready**: Ready for Leaflet v2.x when it becomes stable
+- ✅ **Automatic Detection**: No configuration needed - the plugin detects the version automatically
+- ✅ **Single Codebase**: One plugin supports both versions seamlessly
+
+### Migration Guide
+
+If you're upgrading from Leaflet v1.x to v2.x, **no changes are required** in your Polydraw code! The plugin handles all compatibility internally.
+
+**For Leaflet v2.x users:**
+
+```javascript
+// Both import styles work with Leaflet v2.x
+import * as L from 'leaflet'; // v1 style (still works)
+import { Map, Marker, Polyline } from 'leaflet'; // v2 style
+
+// Polydraw works the same way regardless
+const polydraw = new Polydraw();
+polydraw.addTo(map);
+```
+
 [![npm](https://img.shields.io/npm/v/leaflet-polydraw)](https://www.npmjs.com/package/leaflet-polydraw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)

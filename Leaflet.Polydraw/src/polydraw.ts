@@ -12,6 +12,9 @@ import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
+import { leafletAdapter } from './compatibility/leaflet-adapter';
+import { EventAdapter } from './compatibility/event-adapter';
+import { LeafletVersionDetector } from './compatibility/version-detector';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
@@ -49,6 +52,9 @@ class Polydraw extends L.Control {
   private _boundTouchMove!: (e: TouchEvent) => void;
   private _boundTouchEnd!: (e: TouchEvent) => void;
   private _boundTouchStart!: (e: TouchEvent) => void;
+  private _boundPointerDown!: (e: PointerEvent) => void;
+  private _boundPointerMove!: (e: PointerEvent) => void;
+  private _boundPointerUp!: (e: PointerEvent) => void;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
     super(options);
@@ -90,7 +96,7 @@ class Polydraw extends L.Control {
     this.setupKeyboardHandlers();
 
     // Initialize UI and DOM
-    const container = L.DomUtil.create('div', 'leaflet-control leaflet-bar');
+    const container = leafletAdapter.domUtil.create('div', 'leaflet-control leaflet-bar');
     this.initializeUI(container);
 
     // Create tracer polyline
@@ -287,7 +293,7 @@ class Polydraw extends L.Control {
     container.style.position = 'relative';
     container.style.zIndex = '1000';
 
-    this.subContainer = L.DomUtil.create('div', 'sub-buttons', container);
+    this.subContainer = leafletAdapter.domUtil.create('div', 'sub-buttons', container);
     this.subContainer.style.maxHeight = '0px';
     this.subContainer.style.overflow = 'hidden';
     this.subContainer.style.transition = 'max-height 0.3s ease';
@@ -344,9 +350,9 @@ class Polydraw extends L.Control {
 
       // Update cursor
       if (shouldShowCrosshair) {
-        L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+        leafletAdapter.domUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
       } else {
-        L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+        leafletAdapter.domUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
       }
 
       // Update events and map interactions
@@ -393,7 +399,7 @@ class Polydraw extends L.Control {
    * Initializes and adds the tracer polyline to the map.
    */
   private createTracer(): void {
-    this.tracer = L.polyline([], {
+    this.tracer = leafletAdapter.createPolyline([], {
       ...this.config.polyLineOptions,
       color: this.config.colors.polyline,
     });
@@ -486,9 +492,9 @@ class Polydraw extends L.Control {
   private _updateUIAfterDrawModeChange(mode: DrawMode) {
     const shouldShowCrosshair = this.modeManager.shouldShowCrosshairCursor();
     if (shouldShowCrosshair) {
-      L.DomUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      leafletAdapter.domUtil.addClass(this.map.getContainer(), 'crosshair-cursor-enabled');
     } else {
-      L.DomUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
+      leafletAdapter.domUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
     }
 
     try {
@@ -528,13 +534,13 @@ class Polydraw extends L.Control {
     if (!container) return;
 
     const activate = container.querySelector('.icon-activate') as HTMLElement;
-    if (L.DomUtil.hasClass(activate, 'active')) {
-      L.DomUtil.removeClass(activate, 'active');
+    if (leafletAdapter.domUtil.hasClass(activate, 'active')) {
+      leafletAdapter.domUtil.removeClass(activate, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '0px';
       }
     } else {
-      L.DomUtil.addClass(activate, 'active');
+      leafletAdapter.domUtil.addClass(activate, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '250px';
       }
@@ -716,14 +722,31 @@ class Polydraw extends L.Control {
    * @param onoff - A boolean indicating whether to attach or detach the events.
    */
   private drawStartedEvents(onoff: boolean) {
+    console.log('drawStartedEvents called with onoff:', onoff);
     const onoroff = onoff ? 'on' : 'off';
 
+    // Bind move and end events - use specific Leaflet event types
     this.map[onoroff]('mousemove', this.mouseMove, this);
     this.map[onoroff]('mouseup', this.mouseUpLeave, this);
 
+    // Handle touch events separately for backward compatibility
     if (onoff) {
       this._boundTouchMove = (e) => this.mouseMove(e);
       this._boundTouchEnd = (e) => this.mouseUpLeave(e);
+
+      // Add pointer events for Leaflet v2
+      if (LeafletVersionDetector.isV2()) {
+        this._boundPointerMove = (e) => this.mouseMove(e);
+        this._boundPointerUp = (e) => this.mouseUpLeave(e);
+
+        this.map
+          .getContainer()
+          .addEventListener('pointermove', this._boundPointerMove, { passive: false });
+        this.map
+          .getContainer()
+          .addEventListener('pointerup', this._boundPointerUp, { passive: false });
+      }
+
       this.map
         .getContainer()
         .addEventListener('touchmove', this._boundTouchMove, { passive: false });
@@ -735,6 +758,12 @@ class Polydraw extends L.Control {
       if (this._boundTouchEnd) {
         this.map.getContainer().removeEventListener('touchend', this._boundTouchEnd);
       }
+      if (this._boundPointerMove) {
+        this.map.getContainer().removeEventListener('pointermove', this._boundPointerMove);
+      }
+      if (this._boundPointerUp) {
+        this.map.getContainer().removeEventListener('pointerup', this._boundPointerUp);
+      }
     }
   }
 
@@ -744,13 +773,25 @@ class Polydraw extends L.Control {
    */
   private events(onoff: boolean) {
     const onoroff = onoff ? 'on' : 'off';
+
+    // Bind start events - use specific Leaflet event types
     this.map[onoroff]('mousedown', this.mouseDown, this);
 
     // Add double-click event for Point-to-Point mode
     this.map[onoroff]('dblclick', this.handleDoubleClick, this);
 
+    // Handle touch and pointer events separately for backward compatibility
     if (onoff) {
       this._boundTouchStart = (e) => this.mouseDown(e);
+
+      // Only add pointer events for Leaflet v2
+      if (LeafletVersionDetector.isV2()) {
+        this._boundPointerDown = (e) => this.mouseDown(e);
+        this.map
+          .getContainer()
+          .addEventListener('pointerdown', this._boundPointerDown, { passive: false });
+      }
+
       this.map
         .getContainer()
         .addEventListener('touchstart', this._boundTouchStart, { passive: false });
@@ -758,84 +799,97 @@ class Polydraw extends L.Control {
       if (this._boundTouchStart) {
         this.map.getContainer().removeEventListener('touchstart', this._boundTouchStart);
       }
+      if (this._boundPointerDown) {
+        this.map.getContainer().removeEventListener('pointerdown', this._boundPointerDown);
+      }
     }
   }
 
   /**
    * Handles the mouse down event to start a drawing operation.
-   * @param event - The mouse or touch event.
+   * @param event - The mouse, touch, or pointer event.
    */
-  private mouseDown(event: L.LeafletMouseEvent | TouchEvent) {
-    // Safeguard against unintended browser actions on mobile
-    if ('cancelable' in event && event.cancelable) {
-      event.preventDefault();
+  private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+    console.log('mouseDown called', event.type, event);
+
+    // Normalize event for v1/v2 compatibility
+    const normalizedEvent = EventAdapter.normalizeEvent(event);
+
+    // Safeguard against unintended browser actions
+    if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
+      normalizedEvent.preventDefault();
     }
+
     // Check if we're still in a drawing mode before processing
     if (this.modeManager.isInOffMode()) {
+      console.log('In off mode, ignoring');
       return;
     }
 
-    let clickLatLng;
-    if ('latlng' in event && event.latlng) {
-      clickLatLng = event.latlng;
-    } else if ('touches' in event && event.touches && event.touches.length > 0) {
-      const rect = this.map.getContainer().getBoundingClientRect();
-      clickLatLng = this.map.containerPointToLatLng([
-        event.touches[0].clientX - rect.x,
-        event.touches[0].clientY - rect.y,
-      ]);
-    }
+    // Extract coordinates using the event adapter
+    const clickLatLng = EventAdapter.extractCoordinates(normalizedEvent, this.map);
+    console.log('Extracted coordinates:', clickLatLng);
 
     if (!clickLatLng) {
+      console.log('No coordinates extracted');
       return;
     }
 
     // Handle Point-to-Point mode differently
     if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+      console.log('Point-to-Point mode, calling handlePointToPointClick');
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
     }
 
     // Handle normal drawing modes (Add, Subtract)
+    console.log('Normal drawing mode, setting tracer and starting draw');
     this.tracer.setLatLngs([clickLatLng]);
     this.startDraw();
   }
 
   /**
    * Handles the mouse move event to draw the tracer polyline.
-   * @param event - The mouse or touch event.
+   * @param event - The mouse, touch, or pointer event.
    */
-  private mouseMove(event: L.LeafletMouseEvent | TouchEvent) {
+  private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+    console.log('mouseMove called', event.type);
+
+    // Normalize event for v1/v2 compatibility
+    const normalizedEvent = EventAdapter.normalizeEvent(event);
+
     // Prevent scroll or pull-to-refresh on mobile
-    if ('cancelable' in event && event.cancelable) {
-      event.preventDefault();
+    if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
+      normalizedEvent.preventDefault();
     }
 
-    if ('latlng' in event && event.latlng) {
-      this.tracer.addLatLng(event.latlng);
-    } else if ('touches' in event && event.touches && event.touches.length > 0) {
-      const rect = this.map.getContainer().getBoundingClientRect();
-      const latlng = this.map.containerPointToLatLng([
-        event.touches[0].clientX - rect.x,
-        event.touches[0].clientY - rect.y,
-      ]);
+    // Extract coordinates using the event adapter
+    const latlng = EventAdapter.extractCoordinates(normalizedEvent, this.map);
+    if (latlng) {
+      console.log('Adding latlng to tracer:', latlng);
       this.tracer.addLatLng(latlng);
     }
   }
 
   /**
    * Handles the mouse up event to complete a drawing operation.
-   * @param event - The mouse or touch event.
+   * @param event - The mouse, touch, or pointer event.
    */
-  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent) {
+  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+    console.log('mouseUpLeave called', event.type);
+
+    // Normalize event for v1/v2 compatibility
+    const normalizedEvent = EventAdapter.normalizeEvent(event);
+
     // Prevent unintended scroll or refresh on touchend/touchup (mobile)
-    if ('cancelable' in event && event.cancelable) {
-      event.preventDefault();
+    if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
+      normalizedEvent.preventDefault();
     }
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
     const tracerGeoJSON = this.tracer.toGeoJSON() as Feature<LineString>;
+    console.log('Tracer GeoJSON:', tracerGeoJSON);
 
     // Check if tracer has valid coordinates before processing
     if (
@@ -940,6 +994,7 @@ class Polydraw extends L.Control {
    * Starts a drawing operation by attaching the necessary event listeners.
    */
   private startDraw() {
+    console.log('startDraw called, attaching draw events');
     this.drawStartedEvents(true);
   }
 
@@ -1122,22 +1177,25 @@ class Polydraw extends L.Control {
     if (!activateButton) return;
 
     const hasPolygons = this.arrayOfFeatureGroups.length > 0;
-    const isPanelClosed = !L.DomUtil.hasClass(activateButton, 'active');
+    const isPanelClosed = !leafletAdapter.domUtil.hasClass(activateButton, 'active');
 
     if (hasPolygons && isPanelClosed) {
-      L.DomUtil.addClass(activateButton, 'polydraw-indicator-active');
+      leafletAdapter.domUtil.addClass(activateButton, 'polydraw-indicator-active');
     } else {
-      L.DomUtil.removeClass(activateButton, 'polydraw-indicator-active');
+      leafletAdapter.domUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
   }
 }
 
-// Add the polydraw method to L.control with proper typing
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(L.control as any).polydraw = function (
-  options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
-): Polydraw {
-  return new Polydraw(options);
-};
+// Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
+if (typeof L !== 'undefined' && L.control) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (L.control as any).polydraw = function (
+    options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
+  ): Polydraw {
+    return new Polydraw(options);
+  };
+}
 
 export default Polydraw;
+export { leafletAdapter };

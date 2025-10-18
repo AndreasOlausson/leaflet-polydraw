@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
 import { DrawMode } from '../enums';
+import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
@@ -197,7 +198,7 @@ export class PolygonDrawManager {
         : 'leaflet-polydraw-p2p-marker';
 
       const pointMarker = new L.Marker(clickLatLng, {
-        icon: L.divIcon({
+        icon: leafletAdapter.createDivIcon({
           className: markerClassName,
           iconSize: isFirstMarker ? [20, 20] : [16, 16],
         }),
@@ -531,7 +532,7 @@ export class PolygonDrawManager {
     if (element) {
       element.classList.add('leaflet-polydraw-p2p-first-marker');
       firstMarker.setIcon(
-        L.divIcon({
+        leafletAdapter.createDivIcon({
           className: 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker',
           iconSize: [20, 20],
         }),

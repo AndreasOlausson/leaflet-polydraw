@@ -1,4 +1,12 @@
 /**
+ * Enum for Leaflet version compatibility.
+ */
+export enum LeafletVersion {
+  V1 = '1.x',
+  V2 = '2.x',
+}
+
+/**
  * Enum for drawing modes in Polydraw.
  */
 // TODO: We have DrawModes in different places, refactor!

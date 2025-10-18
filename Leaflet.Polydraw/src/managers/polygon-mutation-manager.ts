@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
 import { PolygonInformationService } from '../polygon-information.service';
+import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection } from 'geojson';
 import type {
   PolydrawConfig,
@@ -441,7 +442,7 @@ export class PolygonMutationManager {
               this.interactionManager.addMarkers(latLngLiterals, featureGroup);
             } else {
               // Add red polyline overlay for hole rings
-              const holePolyline = L.polyline(latLngLiterals, {
+              const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
                 color: this.config.colors.hole.border,
                 weight: this.config.holeOptions.weight || 2,
                 opacity: this.config.holeOptions.opacity || 1,
@@ -824,7 +825,7 @@ export class PolygonMutationManager {
     polygon.setStyle(polygonStyle);
 
     // Ensure each polygon has a unique identifier to prevent cross-contamination
-    polygon._polydrawUniqueId = L.Util.stamp(polygon) + '_' + Date.now();
+    polygon._polydrawUniqueId = leafletAdapter.util.stamp(polygon) + '_' + Date.now();
 
     // Clear any existing drag data to ensure clean state
     delete polygon._polydrawDragData;
@@ -1127,7 +1128,7 @@ export class PolygonMutationManager {
     // console.log('PolygonMutationManager createDivIcon');
     // This is now handled internally by the interaction manager
     // Return a simple div icon for backward compatibility
-    return L.divIcon({ className: processedClasses.join(' ') });
+    return leafletAdapter.createDivIcon({ className: processedClasses.join(' ') });
   }
 
   getLatLngInfoString(latlng: L.LatLngLiteral): string {

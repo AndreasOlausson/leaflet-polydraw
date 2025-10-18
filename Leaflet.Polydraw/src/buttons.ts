@@ -1,6 +1,7 @@
 import * as L from 'leaflet';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 import { isTouchDevice } from './utils';
+import { leafletAdapter } from './compatibility/leaflet-adapter';
 
 /**
  * Creates the button elements for the Polydraw control.
@@ -23,7 +24,11 @@ export function createButtons(
   onEraseClick: () => void,
   onPointToPointClick: () => void,
 ) {
-  const activate = L.DomUtil.create('a', 'icon-activate', container);
+  const activate = leafletAdapter.domUtil.create(
+    'a',
+    'icon-activate',
+    container,
+  ) as HTMLAnchorElement;
   activate.href = '#';
   activate.title = 'Activate';
   activate.innerHTML =
@@ -34,7 +39,7 @@ export function createButtons(
   L.DomEvent.on(activate, 'click', L.DomEvent.stop).on(activate, 'click', onActivateToggle);
 
   if (config.modes.draw) {
-    const draw = L.DomUtil.create('a', 'icon-draw', subContainer);
+    const draw = leafletAdapter.domUtil.create('a', 'icon-draw', subContainer) as HTMLAnchorElement;
     draw.href = '#';
     draw.title = 'Draw';
     draw.innerHTML =
@@ -45,7 +50,11 @@ export function createButtons(
   }
 
   if (config.modes.subtract) {
-    const subtract = L.DomUtil.create('a', 'icon-subtract', subContainer);
+    const subtract = leafletAdapter.domUtil.create(
+      'a',
+      'icon-subtract',
+      subContainer,
+    ) as HTMLAnchorElement;
     subtract.href = '#';
     subtract.title = 'Subtract';
     subtract.innerHTML =
@@ -56,7 +65,7 @@ export function createButtons(
   }
 
   if (config.modes.p2p && !isTouchDevice()) {
-    const p2p = L.DomUtil.create('a', 'icon-p2p', subContainer);
+    const p2p = leafletAdapter.domUtil.create('a', 'icon-p2p', subContainer) as HTMLAnchorElement;
     p2p.href = '#';
     p2p.title = 'Point to Point';
     p2p.innerHTML =
@@ -67,7 +76,11 @@ export function createButtons(
   }
 
   if (config.modes.deleteAll) {
-    const erase = L.DomUtil.create('a', 'icon-erase', subContainer);
+    const erase = leafletAdapter.domUtil.create(
+      'a',
+      'icon-erase',
+      subContainer,
+    ) as HTMLAnchorElement;
     erase.href = '#';
     erase.title = 'Erase All';
     erase.innerHTML = `<?xml version="1.0" encoding="utf-8"?>
