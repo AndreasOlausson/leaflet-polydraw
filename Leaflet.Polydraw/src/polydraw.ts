@@ -15,6 +15,7 @@ import { injectDynamicStyles } from './styles/dynamic-styles';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
 import { EventAdapter } from './compatibility/event-adapter';
 import { LeafletVersionDetector } from './compatibility/version-detector';
+import { CoordinateUtils } from './coordinate-utils';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
@@ -145,13 +146,16 @@ class Polydraw extends L.Control {
 
   /**
    * Adds a predefined polygon to the map.
-   * @param geographicBorders - An array of LatLng arrays representing the polygon's coordinates.
+   * @param geoborders - Flexible coordinate format: objects ({lat, lng}), arrays ([lat, lng] or [lng, lat]), strings ("lat,lng" or "N59 E10")
    * @param options - Optional parameters, including visual optimization level.
    */
   public async addPredefinedPolygon(
-    geographicBorders: L.LatLng[][][],
+    geoborders: unknown[][][],
     options?: { visualOptimizationLevel?: number },
   ): Promise<void> {
+    // Convert input to L.LatLng[][][] using smart coordinate detection
+    const geographicBorders = CoordinateUtils.convertToLatLngArray(geoborders);
+
     // Validate input
     if (!geographicBorders || geographicBorders.length === 0) {
       throw new Error('Cannot add empty polygon array');

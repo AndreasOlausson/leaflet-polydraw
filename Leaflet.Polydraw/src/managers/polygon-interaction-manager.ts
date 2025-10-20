@@ -776,6 +776,57 @@ export class PolygonInteractionManager {
 
       this.map.on('mousemove', this.onPolygonMouseMove, this);
       this.map.on('mouseup', this.onPolygonMouseUp, this);
+      // Also register pointer events (Leaflet v2)
+      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
+      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
+
+      this.currentDragPolygon = polygon;
+    });
+
+    // Support pointer events (Leaflet v2) in addition to mousedown
+    (polygon as any).on('pointerdown', (e: any) => {
+      // If not in off mode, it's a drawing click. Forward to map and stop.
+      if (!this.modeManager.isInOffMode()) {
+        L.DomEvent.stopPropagation(e);
+        (this.map as any).fire('pointerdown', e);
+        return;
+      }
+
+      if (!this.modeManager.canPerformAction('polygonDrag')) {
+        return;
+      }
+      // Normalize originalEvent presence
+      const orig = e && e.originalEvent ? e.originalEvent : e;
+      L.DomEvent.stopPropagation(orig);
+      L.DomEvent.preventDefault(orig);
+
+      const isModifierPressed = this.detectDragSubtractModifierKey(orig);
+      this.currentModifierDragMode = isModifierPressed;
+      this.isModifierKeyHeld = isModifierPressed;
+
+      polygon._polydrawDragData!.isDragging = true;
+      polygon._polydrawDragData!.startPosition = e.latlng;
+      polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
+      polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+
+      if (this.map.dragging) {
+        this.map.dragging.disable();
+      }
+
+      this.setSubtractVisualMode(polygon, isModifierPressed);
+      this.setMarkerVisibility(polygon, false);
+
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+      } catch (error) {
+        // Handle DOM errors
+      }
+
+      this.map.on('mousemove', this.onPolygonMouseMove, this);
+      this.map.on('mouseup', this.onPolygonMouseUp, this);
+      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
+      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
 
       this.currentDragPolygon = polygon;
     });
@@ -1281,6 +1332,9 @@ export class PolygonInteractionManager {
 
     this.map.off('mousemove', this.onPolygonMouseMove, this);
     this.map.off('mouseup', this.onPolygonMouseUp, this);
+    // Also remove pointer listeners (Leaflet v2)
+    (this.map as any).off('pointermove', this.onPolygonMouseMove, this);
+    (this.map as any).off('pointerup', this.onPolygonMouseUp, this);
 
     if (this.map.dragging) {
       this.map.dragging.enable();
