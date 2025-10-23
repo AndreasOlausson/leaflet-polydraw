@@ -1,7 +1,7 @@
 {
   "name": "leaflet-polydraw",
-  "version": "0.9.6",
-  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tool",
+  "version": "1.0.0",
+  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x",
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
@@ -14,6 +14,8 @@
   },
   "keywords": [
     "leaflet",
+    "leaflet-v2",
+    "leaflet-v1",
     "polygon",
     "drawing",
     "editing",
@@ -21,7 +23,9 @@
     "mapping",
     "drag-drop",
     "merge",
-    "geometry"
+    "geometry",
+    "compatibility",
+    "pointer-events"
   ],
   "homepage": "https://github.com/andreasolausson/leaflet-polydraw",
   "demo": "https://polydraw.ao-tech.se",
@@ -44,12 +48,16 @@
   "packageManager": "npm@10.2.0",
   "scripts": {
     "build": "tsc && vite build && npm run build:types",
-    "build:types": "tsc --project tsconfig.build.json && echo 'export { default } from \"./polydraw\";' > dist/types/index.d.ts",
+    "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",
-    "test:cypress": "cypress run --component --browser chrome",
-    "test:e2e": "cypress run",
+    "test:new": "vitest --config test/unit/setup/vitest.config.ts",
+    "test:coverage": "vitest --config test/unit/setup/vitest.config.ts --coverage",
+    "test:ui": "vitest --config test/unit/setup/vitest.config.ts --ui",
+    "test:legacy": "vitest --config vitest.config.ts",
+    "test:cypress": "cypress run --config test/cypress/cypress.config.ts --component --browser chrome",
+    "test:e2e": "cypress run --config test/cypress/cypress.config.ts",
     "lint": "eslint ./src --ext .ts",
     "prepare": "npm run build"
   },
@@ -74,7 +82,8 @@
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-static-copy": "^3.0.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "leaflet": "^2.0.0-alpha.1"
   },
   "dependencies": {
     "@turf/bezier-spline": "^7.2.0",
@@ -97,15 +106,20 @@
     "@turf/simplify": "^7.2.0",
     "@turf/union": "^7.2.0",
     "@turf/unkink-polygon": "^7.2.0",
-    "concaveman": "^1.1.0",
-    "leaflet": "^1.9.4"
+    "concaveman": "^1.1.0"
   },
   "peerDependencies": {
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4 || ^2.0.0-alpha"
+  },
+  "peerDependenciesMeta": {
+    "leaflet": {
+      "optional": false
+    }
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "sideEffects": false
 }

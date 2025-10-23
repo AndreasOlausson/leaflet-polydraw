@@ -1,6 +1,8 @@
 import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
+import { isTouchDevice } from '../utils';
 import { DrawMode } from '../enums';
+import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
@@ -197,7 +199,7 @@ export class PolygonDrawManager {
         : 'leaflet-polydraw-p2p-marker';
 
       const pointMarker = new L.Marker(clickLatLng, {
-        icon: L.divIcon({
+        icon: leafletAdapter.createDivIcon({
           className: markerClassName,
           iconSize: isFirstMarker ? [20, 20] : [16, 16],
         }),
@@ -284,6 +286,21 @@ export class PolygonDrawManager {
     // console.log('handleDoubleClick');
     // console.log('PolygonDrawManager handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
+    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+      return;
+    }
+
+    // Need at least 3 points to complete a polygon
+    if (this.p2pMarkers.length >= 3) {
+      this.completePointToPointPolygon();
+    }
+  }
+
+  /**
+   * Handle double-tap to complete point-to-point polygon (touch devices)
+   */
+  handleDoubleTap(_e: TouchEvent): void {
+    // Only handle double-tap in Point-to-Point mode
     if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
       return;
     }
@@ -412,7 +429,12 @@ export class PolygonDrawManager {
     const zoom = this.map.getZoom();
     // Base tolerance at zoom 10, scale down exponentially for higher zooms
     const baseTolerance = 0.0005;
-    const tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
+    let tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
+
+    // Increase tolerance for touch devices (finger precision is lower than mouse)
+    if (this.isTouchDevice()) {
+      tolerance *= 5; // 5x larger tolerance for touch devices
+    }
 
     // console.log('First point click tolerance check:', {
     //   zoom: zoom,
@@ -444,6 +466,13 @@ export class PolygonDrawManager {
     // });
 
     return isClicking;
+  }
+
+  /**
+   * Check if the current device supports touch
+   */
+  private isTouchDevice(): boolean {
+    return isTouchDevice();
   }
 
   /**
@@ -531,7 +560,7 @@ export class PolygonDrawManager {
     if (element) {
       element.classList.add('leaflet-polydraw-p2p-first-marker');
       firstMarker.setIcon(
-        L.divIcon({
+        leafletAdapter.createDivIcon({
           className: 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker',
           iconSize: [20, 20],
         }),

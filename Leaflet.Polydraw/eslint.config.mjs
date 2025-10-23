@@ -94,6 +94,7 @@ export default [
       'node_modules/',
       'coverage/',
       'demo/dist/',
+      'test-legacy/',
       '**/*.min.js',
       '**/*.bundle.js',
       'cypress/screenshots/',

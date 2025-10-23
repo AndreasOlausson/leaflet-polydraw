@@ -1,4 +1,5 @@
 import * as L from 'leaflet';
+import { leafletAdapter } from './compatibility/leaflet-adapter';
 
 /**
  * Factory for creating Leaflet DivIcons.
@@ -11,6 +12,6 @@ export class IconFactory {
    */
   static createDivIcon(classNames: string[]): L.DivIcon {
     const classes = classNames.join(' ');
-    return L.divIcon({ className: classes });
+    return leafletAdapter.createDivIcon({ className: classes });
   }
 }

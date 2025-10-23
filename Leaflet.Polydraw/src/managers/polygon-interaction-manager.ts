@@ -5,6 +5,7 @@ import { IconFactory } from '../icon-factory';
 import { PolygonUtil } from '../polygon.util';
 import { MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
+import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
@@ -683,12 +684,15 @@ export class PolygonInteractionManager {
           continue;
         }
 
-        const edgePolyline = L.polyline([edgeStart, edgeEnd], {
-          color: 'transparent',
-          weight: 10,
-          opacity: 0,
-          interactive: true,
-        });
+        const edgePolyline = leafletAdapter.createPolyline(
+          [edgeStart as L.LatLng, edgeEnd as L.LatLng],
+          {
+            color: 'transparent',
+            weight: 10,
+            opacity: 0,
+            interactive: true,
+          },
+        );
 
         (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo = {
           ringIndex,
@@ -772,6 +776,57 @@ export class PolygonInteractionManager {
 
       this.map.on('mousemove', this.onPolygonMouseMove, this);
       this.map.on('mouseup', this.onPolygonMouseUp, this);
+      // Also register pointer events (Leaflet v2)
+      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
+      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
+
+      this.currentDragPolygon = polygon;
+    });
+
+    // Support pointer events (Leaflet v2) in addition to mousedown
+    (polygon as any).on('pointerdown', (e: any) => {
+      // If not in off mode, it's a drawing click. Forward to map and stop.
+      if (!this.modeManager.isInOffMode()) {
+        L.DomEvent.stopPropagation(e);
+        (this.map as any).fire('pointerdown', e);
+        return;
+      }
+
+      if (!this.modeManager.canPerformAction('polygonDrag')) {
+        return;
+      }
+      // Normalize originalEvent presence
+      const orig = e && e.originalEvent ? e.originalEvent : e;
+      L.DomEvent.stopPropagation(orig);
+      L.DomEvent.preventDefault(orig);
+
+      const isModifierPressed = this.detectDragSubtractModifierKey(orig);
+      this.currentModifierDragMode = isModifierPressed;
+      this.isModifierKeyHeld = isModifierPressed;
+
+      polygon._polydrawDragData!.isDragging = true;
+      polygon._polydrawDragData!.startPosition = e.latlng;
+      polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
+      polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+
+      if (this.map.dragging) {
+        this.map.dragging.disable();
+      }
+
+      this.setSubtractVisualMode(polygon, isModifierPressed);
+      this.setMarkerVisibility(polygon, false);
+
+      try {
+        const container = this.map.getContainer();
+        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+      } catch (error) {
+        // Handle DOM errors
+      }
+
+      this.map.on('mousemove', this.onPolygonMouseMove, this);
+      this.map.on('mouseup', this.onPolygonMouseUp, this);
+      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
+      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
 
       this.currentDragPolygon = polygon;
     });
@@ -1277,6 +1332,9 @@ export class PolygonInteractionManager {
 
     this.map.off('mousemove', this.onPolygonMouseMove, this);
     this.map.off('mouseup', this.onPolygonMouseUp, this);
+    // Also remove pointer listeners (Leaflet v2)
+    (this.map as any).off('pointermove', this.onPolygonMouseMove, this);
+    (this.map as any).off('pointerup', this.onPolygonMouseUp, this);
 
     if (this.map.dragging) {
       this.map.dragging.enable();
@@ -1329,7 +1387,9 @@ export class PolygonInteractionManager {
     }
 
     // Base case: array of LatLng -> return array of shifted LatLng
-    return (latLngs as L.LatLng[]).map((p) => L.latLng(p.lat + offsetLat, p.lng + offsetLng));
+    return (latLngs as L.LatLng[]).map((p) =>
+      leafletAdapter.createLatLng(p.lat + offsetLat, p.lng + offsetLng),
+    );
   }
 
   private updateMarkersAndHoleLinesDuringDrag(
@@ -1360,7 +1420,8 @@ export class PolygonInteractionManager {
       }
 
       // Ensure this drag session is unique to this specific polygon
-      const dragSessionKey = '_polydrawDragSession_' + Date.now() + '_' + L.Util.stamp(polygon);
+      const dragSessionKey =
+        '_polydrawDragSession_' + Date.now() + '_' + leafletAdapter.util.stamp(polygon);
       if (!polygon._polydrawCurrentDragSession) {
         polygon._polydrawCurrentDragSession = dragSessionKey;
         polygon._polydrawOriginalMarkerPositions = new Map();
@@ -1400,12 +1461,14 @@ export class PolygonInteractionManager {
             if (Array.isArray((originalPositions as unknown as unknown[])[0])) {
               // MultiPolyline: LatLng[][]
               newLatLngs = (originalPositions as L.LatLng[][]).map((ring) =>
-                ring.map((latlng) => L.latLng(latlng.lat + offsetLat, latlng.lng + offsetLng)),
+                ring.map((latlng) =>
+                  leafletAdapter.createLatLng(latlng.lat + offsetLat, latlng.lng + offsetLng),
+                ),
               );
             } else {
               // Simple Polyline: LatLng[]
               newLatLngs = (originalPositions as L.LatLng[]).map((latlng) =>
-                L.latLng(latlng.lat + offsetLat, latlng.lng + offsetLng),
+                leafletAdapter.createLatLng(latlng.lat + offsetLat, latlng.lng + offsetLng),
               );
             }
 
@@ -2112,11 +2175,13 @@ export class PolygonInteractionManager {
     });
 
     const isMobile = window.innerWidth <= 600;
-    const popup = L.popup({
-      closeButton: true,
-      autoClose: true,
-      className: `menu-popup${isMobile ? ' mobile-popup' : ''}`,
-    }).setContent(outerWrapper);
+    const popup = leafletAdapter
+      .createPopup({
+        closeButton: true,
+        autoClose: true,
+        className: `menu-popup${isMobile ? ' mobile-popup' : ''}`,
+      })
+      .setContent(outerWrapper);
 
     this._openMenuPopup = popup;
     return popup;
@@ -2269,11 +2334,13 @@ export class PolygonInteractionManager {
     });
 
     const isMobile = window.innerWidth <= 600;
-    const popup = L.popup({
-      closeButton: true,
-      autoClose: true,
-      className: `info-popup${isMobile ? ' mobile-popup' : ''}`,
-    }).setContent(outerWrapper);
+    const popup = leafletAdapter
+      .createPopup({
+        closeButton: true,
+        autoClose: true,
+        className: `info-popup${isMobile ? ' mobile-popup' : ''}`,
+      })
+      .setContent(outerWrapper);
 
     return popup;
   }

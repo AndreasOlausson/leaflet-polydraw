@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] - 2025-10-23
+
+_(First dual-version release with Leaflet 1.x and 2.x compatibility)_
+
+### Added
+
+- **Leaflet v2 Compatibility**: Full support for both Leaflet v1.x and v2.x with automatic version detection and adapter pattern
+- **Coordinate Auto-Detection**: Smart coordinate format detection for predefined polygons supporting multiple formats (lat/lng, latitude/longitude, DMS, DDM, N/E format, UTM, MGRS, Plus Codes)
+- **Touch-Friendly P2P Drawing**: Enhanced point-to-point drawing for touch devices with increased tolerance and double-tap closing
+- **Pointer Events Support**: Full pointer events support for Leaflet v2 compatibility
+- **Comprehensive Test Suite**: Complete rewrite of test suite with feature-based organization and 200+ tests covering all major functionality
+
+### Fixed
+
+- **Touch Device P2P**: Resolved "nearly impossible to close the ring by clicking the startnode" issue on touch devices
+- **Map Dragging Conflicts**: Fixed polygon dragging interfering with map dragging in Leaflet v2
+- **Event Handling**: Improved event handling across different Leaflet versions and device types
+- **Build Warnings**: Resolved all TypeScript compilation warnings and build issues
+
+### Changed
+
+- **API Enhancement**: `addPredefinedPolygon()` now accepts flexible `unknown[][][]` input with automatic coordinate conversion
+- **Default Coordinate Format**: GeoJSON order (lng, lat) as default for ambiguous numeric coordinate pairs
+- **Test Architecture**: Complete test suite reorganization with `test/unit` and `test/cypress` structure
+- **Version Detection**: Automatic Leaflet version detection with adapter pattern for seamless compatibility
+
+### Enhanced
+
+- **P2P Touch Experience**: 5x increased tolerance for closing polygons on touch devices
+- **Double-Tap Support**: Double-tap anywhere to close P2P polygons on touch devices
+- **Coordinate Format Support**: Added support for Degrees Minutes Seconds (DMS), Degrees Decimal Minutes (DDM), and various coordinate systems
+- **Error Handling**: Improved error messages for unsupported coordinate formats with helpful guidance
+
+---
+
 # ## [0.9.6] - 2025-10-04
 
 ### Improved

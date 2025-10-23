@@ -20,6 +20,7 @@ export default defineConfig({
     rollupOptions: {
       external: ['leaflet'],
       output: {
+        exports: 'named',
         globals: {
           leaflet: 'L',
         },

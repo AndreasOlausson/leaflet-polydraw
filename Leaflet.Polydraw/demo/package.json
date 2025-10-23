@@ -18,8 +18,8 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
-    "leaflet": "^1.9.4",
+    "leaflet": "^2.0.0-alpha.1",
     "leaflet-draw": "^1.0.4",
-    "leaflet-polydraw": "^0.8.8"
+    "leaflet-polydraw": "file:../dist"
   }
 }
