@@ -57,4 +57,4 @@ Full documentation and examples are available on GitHub:
 - [Demo (Leaflet 1.x / 2.x)](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/DEMO.md)
 - [General — Browser Support, License, Acknowledgments](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/GENERAL.md)
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
-- [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CHANGELOG.md)
+- [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/Leaflet.Polydraw/CHANGELOG.md)
