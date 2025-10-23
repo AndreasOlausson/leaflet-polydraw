@@ -387,7 +387,9 @@ export class LeafletAdapter {
   /**
    * Browser detection compatibility
    */
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
   getBrowser() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     return {
       get ie(): boolean {

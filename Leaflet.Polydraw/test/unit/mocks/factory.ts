@@ -438,7 +438,7 @@ export class MockFactory {
       trim: vi.fn().mockImplementation((str: string) => str.trim()),
       splitWords: vi.fn().mockImplementation((str: string) => str.split(' ')),
       setOptions: vi.fn(),
-      bind: vi.fn().mockImplementation((fn: Function) => fn),
+      bind: vi.fn().mockImplementation((fn: (...args: any[]) => any) => fn),
       getParamString: vi.fn().mockReturnValue(''),
       template: vi.fn().mockImplementation((str: string, _data: any) => str),
       isArray: vi.fn().mockImplementation(Array.isArray),
