@@ -66,7 +66,6 @@ vi.mock('../../../src/polydraw', () => {
 });
 
 describe('Polygon Merging', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let _map: L.Map;
   let polydraw: MockedPolydraw;
 
@@ -577,7 +576,6 @@ describe('Polygon Merging', () => {
     });
 
     it('should track merge state', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const _polygons = MockFactory.createOverlappingPolygons();
 
       // Simulate merge operation

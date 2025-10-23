@@ -66,7 +66,6 @@ vi.mock('../../../src/polydraw', () => {
 });
 
 describe('Event Handling', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let _map: L.Map;
   let polydraw: MockedPolydraw;
 
