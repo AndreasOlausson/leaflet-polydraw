@@ -1,7 +1,7 @@
 {
   "name": "leaflet-polydraw",
-  "version": "0.9.6",
-  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tool. Compatible with both Leaflet v1.x and v2.x",
+  "version": "1.0.0",
+  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x",
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
@@ -82,7 +82,8 @@
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-static-copy": "^3.0.0",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "leaflet": "^2.0.0-alpha.1"
   },
   "dependencies": {
     "@turf/bezier-spline": "^7.2.0",
@@ -105,15 +106,20 @@
     "@turf/simplify": "^7.2.0",
     "@turf/union": "^7.2.0",
     "@turf/unkink-polygon": "^7.2.0",
-    "concaveman": "^1.1.0",
-    "leaflet": "^1.9.4"
+    "concaveman": "^1.1.0"
   },
   "peerDependencies": {
     "leaflet": "^1.9.4 || ^2.0.0-alpha"
+  },
+  "peerDependenciesMeta": {
+    "leaflet": {
+      "optional": false
+    }
   },
   "files": [
     "dist",
     "README.md",
     "LICENSE"
-  ]
+  ],
+  "sideEffects": false
 }

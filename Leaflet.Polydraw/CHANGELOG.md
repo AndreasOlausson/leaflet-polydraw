@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.0.0] - 2025-01-XX
+## [1.0.0] - 2025-10-23
+
+_(First dual-version release with Leaflet 1.x and 2.x compatibility)_
 
 ### Added
 
