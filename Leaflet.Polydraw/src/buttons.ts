@@ -1,6 +1,5 @@
 import * as L from 'leaflet';
 import { PolydrawConfig } from './types/polydraw-interfaces';
-import { isTouchDevice } from './utils';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
 
 /**
@@ -64,7 +63,7 @@ export function createButtons(
     L.DomEvent.on(subtract, 'click', L.DomEvent.stop).on(subtract, 'click', onSubtractClick);
   }
 
-  if (config.modes.p2p && !isTouchDevice()) {
+  if (config.modes.p2p) {
     const p2p = leafletAdapter.domUtil.create('a', 'icon-p2p', subContainer) as HTMLAnchorElement;
     p2p.href = '#';
     p2p.title = 'Point to Point';

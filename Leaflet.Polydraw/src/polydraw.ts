@@ -56,6 +56,8 @@ class Polydraw extends L.Control {
   private _boundPointerDown!: (e: PointerEvent) => void;
   private _boundPointerMove!: (e: PointerEvent) => void;
   private _boundPointerUp!: (e: PointerEvent) => void;
+  private _lastTapTime: number = 0;
+  private _tapTimeout: number | null = null;
 
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
     super(options);
@@ -786,7 +788,7 @@ class Polydraw extends L.Control {
 
     // Handle touch and pointer events separately for backward compatibility
     if (onoff) {
-      this._boundTouchStart = (e) => this.mouseDown(e);
+      this._boundTouchStart = (e) => this.handleTouchStart(e);
 
       // Only add pointer events for Leaflet v2
       if (LeafletVersionDetector.isV2()) {
@@ -807,6 +809,49 @@ class Polydraw extends L.Control {
         this.map.getContainer().removeEventListener('pointerdown', this._boundPointerDown);
       }
     }
+  }
+
+  /**
+   * Handle touch start events with double-tap detection
+   * @param event - The touch event
+   */
+  private handleTouchStart(event: TouchEvent) {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - this._lastTapTime;
+
+    // Clear any existing timeout
+    if (this._tapTimeout) {
+      clearTimeout(this._tapTimeout);
+      this._tapTimeout = null;
+    }
+
+    // Check for double-tap (within 300ms)
+    if (timeDiff < 300 && timeDiff > 0) {
+      // Double-tap detected
+      this.handleDoubleTap(event);
+      this._lastTapTime = 0; // Reset to prevent triple-tap
+    } else {
+      // Single tap - set timeout to handle as single tap if no second tap comes
+      this._lastTapTime = currentTime;
+      this._tapTimeout = window.setTimeout(() => {
+        this.mouseDown(event);
+        this._tapTimeout = null;
+      }, 300);
+    }
+  }
+
+  /**
+   * Handle double-tap for touch devices
+   * @param event - The touch event
+   */
+  private handleDoubleTap(event: TouchEvent) {
+    // Only handle double-tap in Point-to-Point mode
+    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+      return;
+    }
+
+    // Pass to polygon draw manager
+    this.polygonDrawManager.handleDoubleTap(event);
   }
 
   /**
