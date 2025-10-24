@@ -67,7 +67,7 @@ class Polydraw extends L.Control {
     const baseDefaults = structuredClone(defaultConfig) as PolydrawConfig;
 
     // Apply inline config via deep merge (partial configs supported)
-    this.config = deepMerge(baseDefaults, (options?.config || {}) as Partial<PolydrawConfig>);
+    this.config = deepMerge(baseDefaults, (options?.config || {}) as PolydrawConfig);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
