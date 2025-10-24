@@ -96,3 +96,6 @@ angular/
 
 # Activity logs
 activity_log.txt
+
+# Internal todo list
+.internal-todo.md

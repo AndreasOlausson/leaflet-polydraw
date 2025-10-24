@@ -1,5 +1,12 @@
 # Configuration
 
+> **Note:**  
+> The configuration file includes several legacy or experimental options that may not currently be used in the codebase.  
+> These have been kept intentionally to maintain backward compatibility and for future feature expansion.  
+> As of version 1.0.0, approximately **77%** of configuration properties are actively used.  
+> The remaining unused options (such as parts of `visualOptimization`, `holeMarkers`, and several polyline settings)  
+> are harmless but currently inactive. They may be deprecated or repurposed in a future release.
+
 ## Default Configuration
 
 ```javascript
