@@ -39,40 +39,20 @@ polydraw.addPredefinedPolygon(octagon);
 
 ## Advanced Configuration
 
-```javascript
+Polydraw can be fully customized using a configuration object.  
+For example:
+
+```js
 import Polydraw from "leaflet-polydraw";
 
 const polyDrawControl = L.control
   .polydraw({
     position: "topright",
     config: {
-      mergePolygons: true,
-      modes: {
-        dragPolygons: true,
-        attachElbow: true,
-        dragElbow: true,
-      },
-      dragPolygons: {
-        markerBehavior: "hide",
-      },
-      markers: {
-        deleteMarker: true,
-        infoMarker: true,
-        menuMarker: true,
-        markerDeleteIcon: {
-          position: 5, // North
-        },
-        markerInfoIcon: {
-          position: 4, // NorthEast
-          useMetrics: true,
-        },
-      },
-      polygonOptions: {
-        color: "#ff0000",
-        fillColor: "#ff0000",
-        fillOpacity: 0.3,
-      },
+      // Your custom options here
     },
   })
   .addTo(map);
 ```
+
+See the [Configuration](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CONFIGURATION.md) for a full list of available options.

@@ -1,7 +1,7 @@
 {
   "name": "leaflet-polydraw",
   "version": "1.0.0",
-  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x",
+  "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x.",
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
@@ -27,18 +27,18 @@
     "compatibility",
     "pointer-events"
   ],
-  "homepage": "https://github.com/andreasolausson/leaflet-polydraw",
+  "homepage": "https://github.com/AndreasOlausson/leaflet-polydraw#readme",   // 🆕 Länkar direkt till README
   "demo": "https://polydraw.ao-tech.se",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/andreasolausson/leaflet-polydraw.git"
+    "url": "git+https://github.com/AndreasOlausson/leaflet-polydraw.git"
   },
   "bugs": {
-    "url": "https://github.com/andreasolausson/leaflet-polydraw/issues"
+    "url": "https://github.com/AndreasOlausson/leaflet-polydraw/issues"
   },
   "author": {
     "name": "Andreas Olausson",
-    "url": "https://github.com/andreasolausson"
+    "url": "https://github.com/AndreasOlausson"
   },
   "license": "MIT",
   "engines": {
