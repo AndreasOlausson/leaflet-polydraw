@@ -4,7 +4,7 @@
  */
 
 import { LeafletVersionDetector } from './version-detector';
-import { LeafletVersion } from '../enums';
+import { leafletVersion, type LeafletVersion } from '../enums';
 
 declare const L: any;
 
@@ -19,7 +19,7 @@ export class LeafletAdapter {
    * Creates a tile layer compatible with both Leaflet versions
    */
   createTileLayer(urlTemplate: string, options?: L.TileLayerOptions): L.TileLayer {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.tileLayer(urlTemplate, options);
     } else {
       return new L.TileLayer(urlTemplate, options);
@@ -30,7 +30,7 @@ export class LeafletAdapter {
    * Creates a map compatible with both Leaflet versions
    */
   createMap(element: string | HTMLElement, options?: L.MapOptions): L.Map {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.map(element, options);
     } else {
       return new L.Map(element, options);
@@ -41,7 +41,7 @@ export class LeafletAdapter {
    * Creates a marker compatible with both Leaflet versions
    */
   createMarker(latlng: L.LatLng, options?: L.MarkerOptions): L.Marker {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.marker(latlng, options);
     } else {
       return new L.Marker(latlng, options);
@@ -52,7 +52,7 @@ export class LeafletAdapter {
    * Creates a polyline compatible with both Leaflet versions
    */
   createPolyline(latlngs: L.LatLng[], options?: L.PolylineOptions): L.Polyline {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.polyline(latlngs, options);
     } else {
       return new L.Polyline(latlngs, options);
@@ -63,7 +63,7 @@ export class LeafletAdapter {
    * Creates a polygon compatible with both Leaflet versions
    */
   createPolygon(latlngs: L.LatLng[] | L.LatLng[][], options?: L.PolylineOptions): L.Polygon {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.polygon(latlngs, options);
     } else {
       return new L.Polygon(latlngs, options);
@@ -74,7 +74,7 @@ export class LeafletAdapter {
    * Creates a div icon compatible with both Leaflet versions
    */
   createDivIcon(options?: L.DivIconOptions): L.DivIcon {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.divIcon(options);
     } else {
       return new L.DivIcon(options);
@@ -85,7 +85,7 @@ export class LeafletAdapter {
    * Creates a LatLng object compatible with both Leaflet versions
    */
   createLatLng(lat: number, lng: number, alt?: number): L.LatLng {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.latLng(lat, lng, alt);
     } else {
       return new L.LatLng(lat, lng, alt);
@@ -96,7 +96,7 @@ export class LeafletAdapter {
    * Creates a LatLngBounds object compatible with both Leaflet versions
    */
   createLatLngBounds(corner1?: L.LatLngExpression, corner2?: L.LatLngExpression): L.LatLngBounds {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.latLngBounds(corner1, corner2);
     } else {
       return new L.LatLngBounds(corner1, corner2);
@@ -107,7 +107,7 @@ export class LeafletAdapter {
    * Creates a Point object compatible with both Leaflet versions
    */
   createPoint(x: number, y: number, round?: boolean): L.Point {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.point(x, y, round);
     } else {
       return new L.Point(x, y, round);
@@ -118,7 +118,7 @@ export class LeafletAdapter {
    * Creates a popup compatible with both Leaflet versions
    */
   createPopup(options?: L.PopupOptions, source?: L.Layer): L.Popup {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.popup(options, source);
     } else {
       return new L.Popup(options, source);
@@ -129,7 +129,7 @@ export class LeafletAdapter {
    * Creates a feature group compatible with both Leaflet versions
    */
   createFeatureGroup(layers?: L.Layer[]): L.FeatureGroup {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.featureGroup(layers);
     } else {
       return new L.FeatureGroup(layers);
@@ -140,7 +140,7 @@ export class LeafletAdapter {
    * Creates a layer group compatible with both Leaflet versions
    */
   createLayerGroup(layers?: L.Layer[]): L.LayerGroup {
-    if (this.version === LeafletVersion.V1) {
+    if (this.version === leafletVersion.V1) {
       return L.layerGroup(layers);
     } else {
       return new L.LayerGroup(layers);
@@ -168,7 +168,7 @@ export class LeafletAdapter {
     },
 
     addClass: (el: HTMLElement, name: string): void => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         L.DomUtil.addClass(el, name);
       } else {
         // In v2, use native classList
@@ -177,7 +177,7 @@ export class LeafletAdapter {
     },
 
     removeClass: (el: HTMLElement, name: string): void => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         L.DomUtil.removeClass(el, name);
       } else {
         // In v2, use native classList
@@ -186,7 +186,7 @@ export class LeafletAdapter {
     },
 
     hasClass: (el: HTMLElement, name: string): boolean => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.DomUtil.hasClass(el, name);
       } else {
         // In v2, use native classList
@@ -253,7 +253,7 @@ export class LeafletAdapter {
     },
 
     getMousePosition: (e: MouseEvent, container?: HTMLElement): L.Point => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.DomEvent.getMousePosition(e, container);
       } else {
         // In v2, this might be renamed to getPointerPosition
@@ -269,7 +269,7 @@ export class LeafletAdapter {
    */
   util = {
     extend: (dest: any, ...sources: any[]): any => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.extend(dest, ...sources);
       } else {
         // In v2, use native Object.assign
@@ -278,7 +278,7 @@ export class LeafletAdapter {
     },
 
     bind: (fn: (...args: any[]) => any, obj: any): ((...args: any[]) => any) => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.bind(fn, obj);
       } else {
         // In v2, use native bind
@@ -311,7 +311,7 @@ export class LeafletAdapter {
     },
 
     trim: (str: string): string => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.trim(str);
       } else {
         // In v2, use native trim
@@ -328,7 +328,7 @@ export class LeafletAdapter {
     },
 
     getParamString: (obj: any, existingUrl?: string, uppercase?: boolean): string => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.getParamString(obj, existingUrl, uppercase);
       } else {
         // In v2, use URLSearchParams
@@ -353,7 +353,7 @@ export class LeafletAdapter {
     },
 
     isArray: (obj: any): boolean => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.isArray(obj);
       } else {
         // In v2, use native Array.isArray
@@ -366,7 +366,7 @@ export class LeafletAdapter {
     },
 
     requestAnimFrame: (fn: (...args: any[]) => any, context?: any, immediate?: boolean): number => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         return L.Util.requestAnimFrame(fn, context, immediate);
       } else {
         // In v2, use native requestAnimationFrame
@@ -375,7 +375,7 @@ export class LeafletAdapter {
     },
 
     cancelAnimFrame: (id: number): void => {
-      if (this.version === LeafletVersion.V1) {
+      if (this.version === leafletVersion.V1) {
         L.Util.cancelAnimFrame(id);
       } else {
         // In v2, use native cancelAnimationFrame
@@ -393,81 +393,81 @@ export class LeafletAdapter {
     const self = this;
     return {
       get ie(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ie : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.ie : false; // Removed in v2
       },
 
       get ielt9(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ielt9 : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.ielt9 : false; // Removed in v2
       },
 
       get edge(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.edge : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.edge : false; // Removed in v2
       },
 
       get webkit(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.webkit : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.webkit : false; // Removed in v2
       },
 
       get android(): boolean {
-        return self.version === LeafletVersion.V1
+        return self.version === leafletVersion.V1
           ? L.Browser.android
           : /Android/.test(navigator.userAgent);
       },
 
       get android23(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.android23 : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.android23 : false; // Removed in v2
       },
 
       get androidStock(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.androidStock : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.androidStock : false; // Removed in v2
       },
 
       get opera(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.opera : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.opera : false; // Removed in v2
       },
 
       get chrome(): boolean {
-        return self.version === LeafletVersion.V1
+        return self.version === leafletVersion.V1
           ? L.Browser.chrome
           : /Chrome/.test(navigator.userAgent);
       },
 
       get gecko(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.gecko : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.gecko : false; // Removed in v2
       },
 
       get safari(): boolean {
-        return self.version === LeafletVersion.V1
+        return self.version === leafletVersion.V1
           ? L.Browser.safari
           : /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
       },
 
       get phantom(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.phantom : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.phantom : false; // Removed in v2
       },
 
       get opera12(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.opera12 : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.opera12 : false; // Removed in v2
       },
 
       get win(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.win : /Win/.test(navigator.platform);
+        return self.version === leafletVersion.V1 ? L.Browser.win : /Win/.test(navigator.platform);
       },
 
       get ie3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ie3d : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.ie3d : false; // Removed in v2
       },
 
       get webkit3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.webkit3d : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.webkit3d : false; // Removed in v2
       },
 
       get gecko3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.gecko3d : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.gecko3d : false; // Removed in v2
       },
 
       get any3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.any3d : true; // Assume true in v2
+        return self.version === leafletVersion.V1 ? L.Browser.any3d : true; // Assume true in v2
       },
 
       get mobile(): boolean {
@@ -475,15 +475,15 @@ export class LeafletAdapter {
       },
 
       get mobileWebkit(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileWebkit : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.mobileWebkit : false; // Removed in v2
       },
 
       get mobileWebkit3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileWebkit3d : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.mobileWebkit3d : false; // Removed in v2
       },
 
       get msPointer(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.msPointer : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.msPointer : false; // Removed in v2
       },
 
       get pointer(): boolean {
@@ -495,15 +495,15 @@ export class LeafletAdapter {
       },
 
       get touchNative(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.touchNative : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.touchNative : false; // Removed in v2
       },
 
       get mobileOpera(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileOpera : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.mobileOpera : false; // Removed in v2
       },
 
       get mobileGecko(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileGecko : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.mobileGecko : false; // Removed in v2
       },
 
       get retina(): boolean {
@@ -511,23 +511,23 @@ export class LeafletAdapter {
       },
 
       get passiveEvents(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.passiveEvents : true; // Assume true in v2
+        return self.version === leafletVersion.V1 ? L.Browser.passiveEvents : true; // Assume true in v2
       },
 
       get canvas(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.canvas : true; // Assume true in v2
+        return self.version === leafletVersion.V1 ? L.Browser.canvas : true; // Assume true in v2
       },
 
       get svg(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.svg : true; // Assume true in v2
+        return self.version === leafletVersion.V1 ? L.Browser.svg : true; // Assume true in v2
       },
 
       get vml(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.vml : false; // Removed in v2
+        return self.version === leafletVersion.V1 ? L.Browser.vml : false; // Removed in v2
       },
 
       get inlineSvg(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.inlineSvg : true; // Assume true in v2
+        return self.version === leafletVersion.V1 ? L.Browser.inlineSvg : true; // Assume true in v2
       },
     };
   }
@@ -543,14 +543,14 @@ export class LeafletAdapter {
    * Checks if we're running Leaflet v1.x
    */
   isV1(): boolean {
-    return this.version === LeafletVersion.V1;
+    return this.version === leafletVersion.V1;
   }
 
   /**
    * Checks if we're running Leaflet v2.x
    */
   isV2(): boolean {
-    return this.version === LeafletVersion.V2;
+    return this.version === leafletVersion.V2;
   }
 }
 

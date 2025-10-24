@@ -46,9 +46,21 @@ const polygons = polydraw.getAllPolygons();
 Programmatically control drawing modes (the buttons do this automatically).
 
 ```javascript
-import { DrawMode } from "leaflet-polydraw";
-polydraw.setDrawMode(DrawMode.Add); // Same as clicking the draw button
+import { drawMode } from "leaflet-polydraw";
+polydraw.setDrawMode(drawMode.Add); // Same as clicking the draw button
 ```
+
+**Available modes:**
+
+- `drawMode.Off` - Disable drawing (default)
+- `drawMode.Add` - Draw new polygons
+- `drawMode.Subtract` - Create holes in polygons
+- `drawMode.PointToPoint` - Point-to-point drawing mode
+- `drawMode.Edit` - Edit existing polygons
+- `drawMode.AppendMarker` - Add markers
+- `drawMode.LoadPredefined` - Load predefined shapes
+
+**Note:** For JavaScript compatibility, use the `drawMode` const object instead of the deprecated `DrawMode` enum.
 
 ### `configurate(config: any)`
 

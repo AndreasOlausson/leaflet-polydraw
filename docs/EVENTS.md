@@ -7,18 +7,20 @@ Polydraw emits various events that allow you to respond to user interactions and
 Listen for drawing mode changes to update your UI or trigger specific behaviors:
 
 ```javascript
+import { drawMode } from "leaflet-polydraw";
+
 polydraw.onDrawModeChanged((mode) => {
   console.log("Draw mode changed to:", mode);
 
   // Update UI based on current mode
   switch (mode) {
-    case DrawMode.Add:
+    case drawMode.Add:
       updateStatusBar("Drawing mode: Add polygons");
       break;
-    case DrawMode.Subtract:
+    case drawMode.Subtract:
       updateStatusBar("Drawing mode: Create holes");
       break;
-    case DrawMode.Off:
+    case drawMode.Off:
       updateStatusBar("Drag mode: Move polygons");
       break;
   }

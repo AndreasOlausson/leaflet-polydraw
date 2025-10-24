@@ -1,4 +1,4 @@
-import { MarkerPosition } from './enums';
+import { markerPosition, type MarkerPosition } from './enums';
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
 
@@ -74,28 +74,28 @@ export class Compass {
   }
   getDirection(direction: MarkerPosition) {
     switch (direction) {
-      case MarkerPosition.SouthWest:
+      case markerPosition.SouthWest:
         return this.direction.SouthWest;
-      case MarkerPosition.West:
+      case markerPosition.West:
         return this.direction.West;
-      case MarkerPosition.NorthWest:
+      case markerPosition.NorthWest:
         return this.direction.NorthWest;
-      case MarkerPosition.North:
+      case markerPosition.North:
         return this.direction.North;
-      case MarkerPosition.NorthEast:
+      case markerPosition.NorthEast:
         return this.direction.NorthEast;
-      case MarkerPosition.East:
+      case markerPosition.East:
         return this.direction.East;
-      case MarkerPosition.SouthEast:
+      case markerPosition.SouthEast:
         return this.direction.SouthEast;
-      case MarkerPosition.South:
+      case markerPosition.South:
         return this.direction.South;
       default:
         throw new Error();
     }
   }
   getPositions(
-    startPosition: MarkerPosition = MarkerPosition.SouthWest,
+    startPosition: MarkerPosition = markerPosition.SouthWest,
     clockwise: boolean = false,
     addClosingNode: boolean = true,
   ): number[][] {
@@ -110,7 +110,7 @@ export class Compass {
     return positions;
   }
   private getPositionAsArray(
-    startPosition: MarkerPosition = MarkerPosition.NorthEast,
+    startPosition: MarkerPosition = markerPosition.NorthEast,
     clockwise: boolean = false,
   ): L.LatLngLiteral[] {
     const positions: L.LatLngLiteral[] = [];
@@ -133,7 +133,7 @@ export class Compass {
       positions.push(this.direction.NorthWest);
       positions.push(this.direction.West);
     }
-    if (startPosition !== MarkerPosition.SouthWest) {
+    if (startPosition !== markerPosition.SouthWest) {
       const chunk = positions.splice(0, startPosition);
       chunk.forEach((v, i) => {
         positions.splice(startPosition + i, 0, v);

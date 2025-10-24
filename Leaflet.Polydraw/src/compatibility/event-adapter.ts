@@ -4,7 +4,7 @@
  */
 
 import { LeafletVersionDetector } from './version-detector';
-import { LeafletVersion } from '../enums';
+import { leafletVersion } from '../enums';
 
 export class EventAdapter {
   /**
@@ -15,7 +15,7 @@ export class EventAdapter {
   static normalizeEvent(event: any): any {
     const version = LeafletVersionDetector.getVersion();
 
-    if (version === LeafletVersion.V2) {
+    if (version === leafletVersion.V2) {
       // In v2, 'layer' property was renamed to 'propagatedFrom'
       if (event.layer && !event.propagatedFrom) {
         event.propagatedFrom = event.layer;
@@ -39,7 +39,7 @@ export class EventAdapter {
   static getEventName(eventName: string): string {
     const version = LeafletVersionDetector.getVersion();
 
-    if (version === LeafletVersion.V2) {
+    if (version === leafletVersion.V2) {
       // Map v1 event names to v2 equivalents if needed
       switch (eventName) {
         case 'mousedown':
@@ -68,7 +68,7 @@ export class EventAdapter {
    */
   static shouldUsePointerEvents(): boolean {
     const version = LeafletVersionDetector.getVersion();
-    return version === LeafletVersion.V2 && 'PointerEvent' in window;
+    return version === leafletVersion.V2 && 'PointerEvent' in window;
   }
 
   /**
@@ -142,7 +142,7 @@ export class EventAdapter {
   } {
     const version = LeafletVersionDetector.getVersion();
 
-    if (version === LeafletVersion.V2 && this.shouldUsePointerEvents()) {
+    if (version === leafletVersion.V2 && this.shouldUsePointerEvents()) {
       return {
         start: ['pointerdown'],
         move: ['pointermove'],

@@ -48,7 +48,7 @@
   "packageManager": "npm@10.2.0",
   "scripts": {
     "build": "tsc && vite build && npm run build:types",
-    "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter } from \"./polydraw\";' > dist/types/index.d.ts",
+    "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, drawMode, markerPosition, leafletVersion } from \"./polydraw\"; export type { DrawMode, MarkerPosition, LeafletVersion } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",

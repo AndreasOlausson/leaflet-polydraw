@@ -1,16 +1,57 @@
 /**
- * Enum for Leaflet version compatibility.
+ * Type helper to extract values from const objects
  */
-export enum LeafletVersion {
-  V1 = '1.x',
-  V2 = '2.x',
-}
+type ValueOf<T> = T[keyof T];
 
 /**
- * Enum for drawing modes in Polydraw.
+ * Leaflet version compatibility constants
  */
-// TODO: We have DrawModes in different places, refactor!
-export enum DrawMode {
+export const leafletVersion = {
+  V1: '1.x',
+  V2: '2.x',
+} as const;
+
+export type LeafletVersion = ValueOf<typeof leafletVersion>;
+
+/**
+ * Drawing modes in Polydraw - JavaScript compatible const object
+ */
+export const drawMode = {
+  Off: 0,
+  Add: 1,
+  Edit: 2,
+  Subtract: 4,
+  AppendMarker: 8,
+  LoadPredefined: 16,
+  PointToPoint: 32,
+} as const;
+
+export type DrawMode = ValueOf<typeof drawMode>;
+
+/**
+ * Marker positions - JavaScript compatible const object
+ */
+export const markerPosition = {
+  SouthWest: 0,
+  South: 1,
+  SouthEast: 2,
+  East: 3,
+  NorthEast: 4,
+  North: 5,
+  NorthWest: 6,
+  West: 7,
+  Hole: 8,
+  // CenterOfMass: 9,
+  // BoundingBoxCenter: 10
+} as const;
+
+export type MarkerPosition = ValueOf<typeof markerPosition>;
+
+// Legacy enum exports for backward compatibility (deprecated)
+/**
+ * @deprecated Use `drawMode` const object instead. This enum will be removed in v2.0.0
+ */
+export enum DrawModeEnum {
   Off = 0,
   Add = 1,
   Edit = 2,
@@ -19,12 +60,11 @@ export enum DrawMode {
   LoadPredefined = 16,
   PointToPoint = 32,
 }
+
 /**
- * Enum for marker positions.
+ * @deprecated Use `markerPosition` const object instead. This enum will be removed in v2.0.0
  */
-// TODO: Add centerOfMass and BoundingBoxCenter
-// Issue: For the above, we can't use the polygon edges, we have to add stand alone divIcons
-export enum MarkerPosition {
+export enum MarkerPositionEnum {
   SouthWest = 0,
   South = 1,
   SouthEast = 2,
@@ -36,4 +76,12 @@ export enum MarkerPosition {
   Hole = 8,
   // CenterOfMass = 9,
   // BoundingBoxCenter = 10
+}
+
+/**
+ * @deprecated Use `leafletVersion` const object instead. This enum will be removed in v2.0.0
+ */
+export enum LeafletVersionEnum {
+  V1 = '1.x',
+  V2 = '2.x',
 }

@@ -3,7 +3,7 @@
  * Detects whether we're running with Leaflet v1.x or v2.x
  */
 
-import { LeafletVersion } from '../enums';
+import { leafletVersion, type LeafletVersion } from '../enums';
 
 declare const L: any;
 
@@ -31,22 +31,22 @@ export class LeafletVersionDetector {
     // Check if L is available
     if (typeof L === 'undefined') {
       // If L is not available, assume v2 (ESM import scenario)
-      return LeafletVersion.V2;
+      return leafletVersion.V2;
     }
 
     // Check for explicit version string (most reliable)
     if (L.version) {
       if (L.version.startsWith('2.')) {
-        return LeafletVersion.V2;
+        return leafletVersion.V2;
       }
       if (L.version.startsWith('1.')) {
-        return LeafletVersion.V1;
+        return leafletVersion.V1;
       }
     }
 
     // Check for v2 indicators - factory methods should not exist
     if (typeof L.marker !== 'function') {
-      return LeafletVersion.V2;
+      return leafletVersion.V2;
     }
 
     // Check for v1 indicators - factory methods should exist
@@ -55,7 +55,7 @@ export class LeafletVersionDetector {
       typeof L.polyline === 'function' &&
       typeof L.polygon === 'function'
     ) {
-      return LeafletVersion.V1;
+      return leafletVersion.V1;
     }
 
     // Check for v2 class constructors
@@ -65,11 +65,11 @@ export class LeafletVersionDetector {
       L.Polyline &&
       typeof L.Polyline === 'function'
     ) {
-      return LeafletVersion.V2;
+      return leafletVersion.V2;
     }
 
     // Default fallback to v1 for backward compatibility
-    return LeafletVersion.V1;
+    return leafletVersion.V1;
   }
 
   /**
@@ -77,7 +77,7 @@ export class LeafletVersionDetector {
    * @returns true if running v1.x
    */
   static isV1(): boolean {
-    return this.getVersion() === LeafletVersion.V1;
+    return this.getVersion() === leafletVersion.V1;
   }
 
   /**
@@ -85,7 +85,7 @@ export class LeafletVersionDetector {
    * @returns true if running v2.x
    */
   static isV2(): boolean {
-    return this.getVersion() === LeafletVersion.V2;
+    return this.getVersion() === leafletVersion.V2;
   }
 
   /**

@@ -1,4 +1,4 @@
-import { DrawMode } from '../enums';
+import { drawMode, type DrawMode } from '../enums';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
 import { EventManager } from './event-manager';
 
@@ -67,7 +67,7 @@ export class ModeManager {
       mapDoubleClickZoom: true,
 
       // Mode-specific states
-      currentMode: DrawMode.Off,
+      currentMode: drawMode.Off,
       isDrawingActive: false,
       isModifierKeyHeld: false,
 
@@ -84,22 +84,22 @@ export class ModeManager {
     this.state.currentMode = mode;
 
     switch (mode) {
-      case DrawMode.Off:
+      case drawMode.Off:
         this.setOffModeState();
         break;
-      case DrawMode.Add:
+      case drawMode.Add:
         this.setDrawingModeState();
         break;
-      case DrawMode.Subtract:
+      case drawMode.Subtract:
         this.setDrawingModeState();
         break;
-      case DrawMode.PointToPoint:
+      case drawMode.PointToPoint:
         this.setPointToPointModeState();
         break;
     }
 
     // Update drawing active state
-    this.state.isDrawingActive = mode !== DrawMode.Off;
+    this.state.isDrawingActive = mode !== drawMode.Off;
 
     this.eventManager.emit('polydraw:mode:change', { mode });
   }
@@ -183,7 +183,7 @@ export class ModeManager {
     this.state.isModifierKeyHeld = isHeld;
 
     // Modifier key can affect certain interactions even in Off mode
-    if (this.state.currentMode === DrawMode.Off && isHeld) {
+    if (this.state.currentMode === drawMode.Off && isHeld) {
       // When modifier is held, we might want to change interaction behavior
       // For example, edge deletion mode
     }
@@ -228,7 +228,7 @@ export class ModeManager {
    * Check if currently in Off mode (normal editing)
    */
   isInOffMode(): boolean {
-    return this.state.currentMode === DrawMode.Off;
+    return this.state.currentMode === drawMode.Off;
   }
 
   /**

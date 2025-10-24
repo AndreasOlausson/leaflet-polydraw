@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
 import defaultConfig from './config.json';
-import { DrawMode } from './enums';
+import { drawMode, type DrawMode } from './enums';
 import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
 import { PolygonInformationService } from './polygon-information.service';
@@ -45,7 +45,7 @@ class Polydraw extends L.Control {
   private polygonMutationManager!: PolygonMutationManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
 
-  private drawMode: DrawMode = DrawMode.Off;
+  private drawMode: DrawMode = drawMode.Off;
   private drawModeListeners: DrawModeChangeHandler[] = [];
   private _boundKeyDownHandler!: (e: KeyboardEvent) => void;
   private _boundKeyUpHandler!: (e: KeyboardEvent) => void;
@@ -218,13 +218,13 @@ class Polydraw extends L.Control {
 
     // Only stop draw if we're switching away from PointToPoint mode or going to Off mode
     // Don't reset tracer when entering PointToPoint mode
-    if (previousMode === DrawMode.PointToPoint && mode !== DrawMode.PointToPoint) {
+    if (previousMode === drawMode.PointToPoint && mode !== drawMode.PointToPoint) {
       // Clear P2P markers when leaving PointToPoint mode
       this.polygonDrawManager.clearP2pMarkers();
       this.stopDraw();
-    } else if (mode === DrawMode.Off) {
+    } else if (mode === drawMode.Off) {
       this.stopDraw();
-    } else if (mode !== DrawMode.PointToPoint) {
+    } else if (mode !== drawMode.PointToPoint) {
       this.stopDraw();
     }
 
@@ -236,7 +236,7 @@ class Polydraw extends L.Control {
 
   /**
    * Returns the current drawing mode.
-   * @returns The current DrawMode.
+   * @returns The current drawMode.
    */
   public getDrawMode(): DrawMode {
     return this.modeManager.getCurrentMode();
@@ -326,8 +326,8 @@ class Polydraw extends L.Control {
     const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
-      if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
-      if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
+      if (drawButton) drawButton.classList.toggle('active', mode === drawMode.Add);
+      if (subtractButton) subtractButton.classList.toggle('active', mode === drawMode.Subtract);
     };
     this.drawModeListeners.push(uiUpdateListener);
   }
@@ -341,8 +341,8 @@ class Polydraw extends L.Control {
       // Update the indicator state after any polygon operation
       this.updateActivateButtonIndicator();
       // Use the interaction state manager to reset to Off mode
-      this.modeManager.updateStateForMode(DrawMode.Off);
-      this.drawMode = DrawMode.Off;
+      this.modeManager.updateStateForMode(drawMode.Off);
+      this.drawMode = drawMode.Off;
       this.emitDrawModeChanged();
 
       // Update UI state
@@ -397,7 +397,7 @@ class Polydraw extends L.Control {
     // Listen for drawing cancellation events
     this.eventManager.on('polydraw:draw:cancel', () => {
       this.stopDraw();
-      this.setDrawMode(DrawMode.Off);
+      this.setDrawMode(drawMode.Off);
     });
   }
 
@@ -505,22 +505,22 @@ class Polydraw extends L.Control {
 
     try {
       switch (mode) {
-        case DrawMode.Off:
+        case drawMode.Off:
           this.tracer.setStyle({ color: '' });
           break;
-        case DrawMode.Add:
+        case drawMode.Add:
           this.tracer.setStyle({
             color: this.config.colors.polyline,
             dashArray: undefined, // Reset to solid line
           });
           break;
-        case DrawMode.Subtract:
+        case drawMode.Subtract:
           this.tracer.setStyle({
             color: this.config.colors.subtractLine,
             dashArray: undefined, // Reset to solid line
           });
           break;
-        case DrawMode.PointToPoint:
+        case drawMode.PointToPoint:
           this.tracer.setStyle({
             color: this.config.colors.polyline,
             dashArray: '5, 5',
@@ -561,11 +561,11 @@ class Polydraw extends L.Control {
       e.stopPropagation();
     }
     // If already in Add mode, turn it off instead of ignoring
-    if (this.modeManager.getCurrentMode() === DrawMode.Add) {
-      this.setDrawMode(DrawMode.Off);
+    if (this.modeManager.getCurrentMode() === drawMode.Add) {
+      this.setDrawMode(drawMode.Off);
       return;
     }
-    this.setDrawMode(DrawMode.Add);
+    this.setDrawMode(drawMode.Add);
     this.polygonInformation.saveCurrentState();
   };
 
@@ -576,11 +576,11 @@ class Polydraw extends L.Control {
       e.stopPropagation();
     }
     // If already in Subtract mode, turn it off instead of ignoring
-    if (this.modeManager.getCurrentMode() === DrawMode.Subtract) {
-      this.setDrawMode(DrawMode.Off);
+    if (this.modeManager.getCurrentMode() === drawMode.Subtract) {
+      this.setDrawMode(drawMode.Off);
       return;
     }
-    this.setDrawMode(DrawMode.Subtract);
+    this.setDrawMode(drawMode.Subtract);
     this.polygonInformation.saveCurrentState();
   };
 
@@ -605,11 +605,11 @@ class Polydraw extends L.Control {
       e.stopPropagation();
     }
     // If already in PointToPoint mode, turn it off instead of ignoring
-    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
-      this.setDrawMode(DrawMode.Off);
+    if (this.modeManager.getCurrentMode() === drawMode.PointToPoint) {
+      this.setDrawMode(drawMode.Off);
       return;
     }
-    this.setDrawMode(DrawMode.PointToPoint);
+    this.setDrawMode(drawMode.PointToPoint);
     this.polygonInformation.saveCurrentState();
   };
 
@@ -618,7 +618,7 @@ class Polydraw extends L.Control {
     const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
     const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
 
-    this.events(this.drawMode !== DrawMode.Off);
+    this.events(this.drawMode !== drawMode.Off);
     this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
   }
 
@@ -846,7 +846,7 @@ class Polydraw extends L.Control {
    */
   private handleDoubleTap(event: TouchEvent) {
     // Only handle double-tap in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() !== drawMode.PointToPoint) {
       return;
     }
 
@@ -885,7 +885,7 @@ class Polydraw extends L.Control {
     }
 
     // Handle Point-to-Point mode differently
-    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() === drawMode.PointToPoint) {
       console.log('Point-to-Point mode, calling handlePointToPointClick');
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
@@ -976,7 +976,7 @@ class Polydraw extends L.Control {
 
     try {
       switch (this.modeManager.getCurrentMode()) {
-        case DrawMode.Add: {
+        case drawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
@@ -987,7 +987,7 @@ class Polydraw extends L.Control {
           }
           break;
         }
-        case DrawMode.Subtract: {
+        case drawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
           const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
           if (!subtractResult.success) {
@@ -1012,7 +1012,7 @@ class Polydraw extends L.Control {
   private async handleFreehandDrawCompletion(geoPos: Feature<Polygon | MultiPolygon>) {
     try {
       switch (this.modeManager.getCurrentMode()) {
-        case DrawMode.Add: {
+        case drawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
@@ -1023,7 +1023,7 @@ class Polydraw extends L.Control {
           }
           break;
         }
-        case DrawMode.Subtract: {
+        case drawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
           const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
           if (!subtractResult.success) {
@@ -1070,7 +1070,7 @@ class Polydraw extends L.Control {
    */
   private handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+      if (this.modeManager.getCurrentMode() === drawMode.PointToPoint) {
         this.polygonDrawManager.cancelPointToPointDrawing();
       }
     }
@@ -1163,7 +1163,7 @@ class Polydraw extends L.Control {
    */
   private handleDoubleClick(e: L.LeafletMouseEvent) {
     // Only handle double-click in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() !== drawMode.PointToPoint) {
       return;
     }
 
@@ -1246,5 +1246,10 @@ if (typeof L !== 'undefined' && L.control) {
   };
 }
 
+// Export the main Polydraw class
 export default Polydraw;
+
+// Export const objects for JavaScript compatibility
+export { drawMode, markerPosition, leafletVersion } from './enums';
+export type { DrawMode, MarkerPosition, LeafletVersion } from './enums';
 export { leafletAdapter };

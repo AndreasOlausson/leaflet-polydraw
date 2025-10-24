@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 import { TurfHelper } from '../turf-helper';
 import { isTouchDevice } from '../utils';
-import { DrawMode } from '../enums';
+import { drawMode } from '../enums';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { PolydrawConfig } from '../types/polydraw-interfaces';
@@ -286,7 +286,7 @@ export class PolygonDrawManager {
     // console.log('handleDoubleClick');
     // console.log('PolygonDrawManager handleDoubleClick');
     // Only handle double-click in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() !== drawMode.PointToPoint) {
       return;
     }
 
@@ -301,7 +301,7 @@ export class PolygonDrawManager {
    */
   handleDoubleTap(_e: TouchEvent): void {
     // Only handle double-tap in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    if (this.modeManager.getCurrentMode() !== drawMode.PointToPoint) {
       return;
     }
 
@@ -370,7 +370,7 @@ export class PolygonDrawManager {
 
       this.eventManager.emit('polydraw:polygon:created', {
         polygon: geoPos,
-        mode: DrawMode.PointToPoint,
+        mode: drawMode.PointToPoint,
         isPointToPoint: true,
       });
     } catch (error) {
@@ -390,7 +390,7 @@ export class PolygonDrawManager {
     this.clearP2pMarkers();
     this.resetTracer();
     this.eventManager.emit('polydraw:draw:cancel', {
-      mode: DrawMode.PointToPoint,
+      mode: drawMode.PointToPoint,
     });
   }
 
@@ -537,7 +537,7 @@ export class PolygonDrawManager {
    */
   isInPointToPointMode(): boolean {
     // console.log('PolygonDrawManager isInPointToPointMode');
-    return this.modeManager.getCurrentMode() === DrawMode.PointToPoint;
+    return this.modeManager.getCurrentMode() === drawMode.PointToPoint;
   }
 
   /**

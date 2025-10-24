@@ -1,5 +1,5 @@
 import { Feature, Polygon, MultiPolygon } from 'geojson';
-import { DrawMode } from '../enums';
+import { type DrawMode } from '../enums';
 import { FeatureGroup, LatLngExpression } from 'leaflet';
 
 export type PolydrawEventPayloads = {
