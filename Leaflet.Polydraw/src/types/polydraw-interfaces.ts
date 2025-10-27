@@ -225,6 +225,7 @@ export interface PolydrawConfig {
   kinks: boolean;
   mergePolygons: boolean;
   modes: ModeConfig;
+  defaultMode: DrawMode;
   dragPolygons: DragPolygonConfig;
   edgeDeletion: EdgeDeletionConfig;
   markers: MarkerOptions;

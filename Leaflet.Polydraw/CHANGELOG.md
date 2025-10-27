@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Config deepmerging** Use deep merge to allow partial config settings
 - **Expose default config** Change config from json file to TS object to enforce typing and expose default config to users
+- **Default drawMode** User can configure the default draw mode
 
 ## [1.0.0] - 2025-10-23
 

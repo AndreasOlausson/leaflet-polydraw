@@ -1,3 +1,4 @@
+import { DrawMode } from './enums';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 
 export const defaultConfig: PolydrawConfig = {
@@ -13,6 +14,7 @@ export const defaultConfig: PolydrawConfig = {
     dragPolygons: true,
     edgeDeletion: true,
   },
+  defaultMode: DrawMode.Off,
   dragPolygons: {
     opacity: 0.7,
     dragCursor: 'move',
