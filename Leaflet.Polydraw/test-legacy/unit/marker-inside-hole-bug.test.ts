@@ -7,7 +7,7 @@ import { EventManager } from '../../src/managers/event-manager';
 import * as L from 'leaflet';
 import type { Feature, Polygon } from 'geojson';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
-import defaultConfig from '../../src/config.json';
+import { defaultConfig } from '../../src/config';
 
 describe('Marker Inside Hole Bug Fix', () => {
   let mutationManager: PolygonMutationManager;

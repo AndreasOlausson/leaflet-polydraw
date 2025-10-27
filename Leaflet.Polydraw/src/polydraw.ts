@@ -1,5 +1,5 @@
 import * as L from 'leaflet';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 import { DrawMode } from './enums';
 import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
