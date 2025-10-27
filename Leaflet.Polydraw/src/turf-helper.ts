@@ -39,7 +39,7 @@ import length from '@turf/length';
 import concaveman from 'concaveman';
 import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
 import * as L from 'leaflet';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 import { isTestEnvironment } from './utils';
 
 /**

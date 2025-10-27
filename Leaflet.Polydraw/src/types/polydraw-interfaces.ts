@@ -41,41 +41,91 @@ export interface MarkerConfig {
  * Marker options for different marker types
  */
 export interface MarkerOptions {
+  deleteMarker: boolean;
+  infoMarker: boolean;
+  menuMarker: boolean;
+  coordsTitle: boolean;
+  zIndexOffset: number;
   markerIcon: {
     styleClasses: string | string[];
-    zIndexOffset?: number;
-  };
-  markerMenuIcon: {
-    styleClasses: string | string[];
-    position: MarkerPosition;
-    zIndexOffset?: number;
-  };
-  markerDeleteIcon: {
-    styleClasses: string | string[];
-    position: MarkerPosition;
-    zIndexOffset?: number;
-  };
-  markerInfoIcon: {
-    styleClasses: string | string[];
-    position: MarkerPosition;
-    zIndexOffset?: number;
-    useMetrics: boolean;
-    areaLabel: string;
-    perimeterLabel: string;
+    zIndexOffset: number | null;
   };
   holeIcon: {
     styleClasses: string | string[];
-    zIndexOffset?: number;
+    zIndexOffset: number | null;
   };
-  zIndexOffset: number;
-  coordsTitle: boolean;
-  menuMarker: boolean;
-  deleteMarker: boolean;
-  infoMarker: boolean;
-  holeMarkers?: {
-    menuMarker?: boolean;
-    deleteMarker?: boolean;
-    infoMarker?: boolean;
+  markerInfoIcon: {
+    position: MarkerPosition;
+    showArea: boolean;
+    showPerimeter: boolean;
+    useMetrics: boolean;
+    usePerimeterMinValue: boolean;
+    areaLabel: string;
+    perimeterLabel: string;
+    values: {
+      min: {
+        metric: string;
+        imperial: string;
+      };
+      unknown: {
+        metric: string;
+        imperial: string;
+      };
+    };
+    units: {
+      unknownUnit: string;
+      metric: {
+        onlyMetrics: boolean;
+        perimeter: {
+          m: string;
+          km: string;
+        };
+        area: {
+          m2: string;
+          km2: string;
+          daa: string;
+          ha: string;
+        };
+      };
+      imperial: {
+        perimeter: {
+          feet: string;
+          yards: string;
+          miles: string;
+        };
+        area: {
+          feet2: string;
+          yards2: string;
+          acres: string;
+          miles2: string;
+        };
+      };
+    };
+    styleClasses: string | string[];
+    zIndexOffset: number;
+  };
+  markerMenuIcon: {
+    position: MarkerPosition;
+    styleClasses: string | string[];
+    zIndexOffset: number;
+  };
+  markerDeleteIcon: {
+    position: MarkerPosition;
+    styleClasses: string | string[];
+    zIndexOffset: number;
+  };
+  holeMarkers: {
+    menuMarker: boolean;
+    deleteMarker: boolean;
+    infoMarker: boolean;
+  };
+  visualOptimization: {
+    sharpAngleThreshold: number;
+    thresholdBoundingBox: number;
+    thresholdDistance: number;
+    useDistance: boolean;
+    useBoundingBox: boolean;
+    useAngles: boolean;
   };
 }
 
@@ -172,25 +222,48 @@ export interface MenuOperationsConfig {
  * Complete Polydraw configuration interface
  */
 export interface PolydrawConfig {
-  touchSupport: boolean;
   kinks: boolean;
   mergePolygons: boolean;
-  visualOptimizationLevel: number;
-  polygonOptions: PolygonStyleOptions;
-  holeOptions: HoleStyleOptions;
-  polyLineOptions: PolylineStyleOptions;
-  markers: MarkerOptions;
   modes: ModeConfig;
   dragPolygons: DragPolygonConfig;
   edgeDeletion: EdgeDeletionConfig;
-  menuOperations: MenuOperationsConfig;
-  units: {
-    metric: boolean;
-    imperial: boolean;
+  markers: MarkerOptions;
+  polyLineOptions: PolylineStyleOptions;
+  subtractLineOptions: PolylineStyleOptions;
+  polygonOptions: {
+    weight: number;
+    opacity: number;
+    fillOpacity: number;
+    smoothFactor: number;
+    noClip: boolean;
   };
-  precision: {
-    area: number;
-    perimeter: number;
+  holeOptions: HoleStyleOptions;
+  polygonCreation: {
+    method: string;
+    simplification: {
+      mode: string;
+      tolerance: number;
+      highQuality: boolean;
+    };
+  };
+  simplification: {
+    simplifyTolerance: {
+      tolerance: number;
+      highQuality: boolean;
+      mutate: boolean;
+    };
+    dynamicMode: {
+      fractionGuard: number;
+      multiplier: number;
+    };
+  };
+  menuOperations: MenuOperationsConfig;
+  boundingBox: {
+    addMidPointMarkers: boolean;
+  };
+  bezier: {
+    resolution: number;
+    sharpness: number;
   };
   colors: {
     dragPolygons: {

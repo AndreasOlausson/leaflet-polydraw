@@ -1,5 +1,5 @@
 import * as L from 'leaflet';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 import { DrawMode } from './enums';
 import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
@@ -16,6 +16,7 @@ import { leafletAdapter } from './compatibility/leaflet-adapter';
 import { EventAdapter } from './compatibility/event-adapter';
 import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
+import { deepMerge } from './utils/config-merge.util';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
@@ -62,15 +63,17 @@ class Polydraw extends L.Control {
   constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
     super(options);
 
-    // Initialize with default config first
-    this.config = defaultConfig as unknown as PolydrawConfig;
+    // Start from a clean clone of the defaults
+    const baseDefaults = structuredClone(defaultConfig) as PolydrawConfig;
 
-    // If configPath is provided, load external config
+    // Apply inline config via deep merge (partial configs supported)
+    this.config = deepMerge(baseDefaults, (options?.config || {}) as PolydrawConfig);
+
+    // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
       this.loadExternalConfig(options.configPath, options?.config);
     } else {
-      // Apply inline config if no external config path
-      this.config = { ...defaultConfig, ...(options?.config || {}) } as unknown as PolydrawConfig;
+      // Initialize components immediately when no external config is used
       this.initializeComponents();
     }
   }

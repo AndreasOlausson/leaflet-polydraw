@@ -1,6 +1,6 @@
 import * as L from 'leaflet';
 import { TurfHelper } from './turf-helper';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import { MATH } from './constants';
 
