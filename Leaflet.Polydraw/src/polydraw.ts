@@ -224,15 +224,19 @@ class Polydraw extends L.Control {
     const previousMode = this.drawMode;
     this._updateDrawModeState(mode);
 
-    // Only stop draw if we're switching away from PointToPoint mode or going to Off mode
-    // Don't reset tracer when entering PointToPoint mode
-    if (previousMode === DrawMode.PointToPoint && mode !== DrawMode.PointToPoint) {
-      // Clear P2P markers when leaving PointToPoint mode
+    // Only stop draw if we're switching away from PointToPoint modes or going to Off mode
+    // Don't reset tracer when entering PointToPoint modes
+    if (
+      (previousMode === DrawMode.PointToPoint || previousMode === DrawMode.PointToPointSubtract) &&
+      mode !== DrawMode.PointToPoint &&
+      mode !== DrawMode.PointToPointSubtract
+    ) {
+      // Clear P2P markers when leaving PointToPoint modes
       this.polygonDrawManager.clearP2pMarkers();
       this.stopDraw();
     } else if (mode === DrawMode.Off) {
       this.stopDraw();
-    } else if (mode !== DrawMode.PointToPoint) {
+    } else if (mode !== DrawMode.PointToPoint && mode !== DrawMode.PointToPointSubtract) {
       this.stopDraw();
     }
 
@@ -325,6 +329,7 @@ class Polydraw extends L.Control {
       this._handleSubtractClick,
       this._handleEraseClick,
       this._handlePointToPointClick,
+      this._handlePointToPointSubtractClick,
     );
 
     // Firefox Android fix: Ensure all buttons have proper touch handling
@@ -390,11 +395,17 @@ class Polydraw extends L.Control {
     this.eventManager.on('polydraw:polygon:created', async (data) => {
       this.stopDraw();
       if (data.isPointToPoint) {
-        // For P2P, add the polygon directly
-        await this.polygonMutationManager.addPolygon(data.polygon, {
-          simplify: false,
-          noMerge: false,
-        });
+        // For P2P, handle based on the mode
+        if (data.mode === DrawMode.PointToPointSubtract) {
+          // Use subtraction for P2P subtract mode
+          await this.polygonMutationManager.subtractPolygon(data.polygon);
+        } else {
+          // Use addition for regular P2P mode
+          await this.polygonMutationManager.addPolygon(data.polygon, {
+            simplify: false,
+            noMerge: false,
+          });
+        }
       } else {
         // For freehand, handle based on mode
         await this.handleFreehandDrawCompletion(data.polygon);
@@ -535,6 +546,12 @@ class Polydraw extends L.Control {
             dashArray: '5, 5',
           });
           break;
+        case DrawMode.PointToPointSubtract:
+          this.tracer.setStyle({
+            color: this.config.colors.subtractLine,
+            dashArray: '5, 5',
+          });
+          break;
       }
     } catch (error) {
       // Handle case where tracer renderer is not initialized
@@ -619,6 +636,20 @@ class Polydraw extends L.Control {
       return;
     }
     this.setDrawMode(DrawMode.PointToPoint);
+    this.polygonInformation.saveCurrentState();
+  };
+
+  private _handlePointToPointSubtractClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // If already in PointToPointSubtract mode, turn it off instead of ignoring
+    if (this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.PointToPointSubtract);
     this.polygonInformation.saveCurrentState();
   };
 
@@ -854,8 +885,11 @@ class Polydraw extends L.Control {
    * @param event - The touch event
    */
   private handleDoubleTap(event: TouchEvent) {
-    // Only handle double-tap in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-tap in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 
@@ -893,8 +927,11 @@ class Polydraw extends L.Control {
       return;
     }
 
-    // Handle Point-to-Point mode differently
-    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+    // Handle Point-to-Point modes differently
+    if (
+      this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
+      this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+    ) {
       console.log('Point-to-Point mode, calling handlePointToPointClick');
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
@@ -1079,7 +1116,10 @@ class Polydraw extends L.Control {
    */
   private handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+      if (
+        this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
+        this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+      ) {
         this.polygonDrawManager.cancelPointToPointDrawing();
       }
     }
@@ -1171,8 +1211,11 @@ class Polydraw extends L.Control {
    * @param e - The mouse event.
    */
   private handleDoubleClick(e: L.LeafletMouseEvent) {
-    // Only handle double-click in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-click in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 

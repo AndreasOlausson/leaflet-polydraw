@@ -11,17 +11,17 @@ export function deepMerge<T>(target: T, ...sources: Partial<T>[]): T {
       const targetValue: any = (target as any)[key];
 
       if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
-        // Se till att målfacket är ett objekt innan rekursion
+        // Make sure target is an object before recursion
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const base: any =
           targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue)
             ? targetValue
             : {};
-        // Rekursiv merge
+        // Recursive merge
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (target as any)[key] = deepMerge(base, sourceValue);
       } else if (sourceValue !== undefined) {
-        // Primitiv eller array: skriv över direkt
+        // Primitive or array: overwrite directly
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (target as any)[key] = sourceValue;
       }

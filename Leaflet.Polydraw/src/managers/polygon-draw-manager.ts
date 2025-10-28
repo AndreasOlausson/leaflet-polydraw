@@ -285,8 +285,11 @@ export class PolygonDrawManager {
 
     // console.log('handleDoubleClick');
     // console.log('PolygonDrawManager handleDoubleClick');
-    // Only handle double-click in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-click in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 
@@ -300,8 +303,11 @@ export class PolygonDrawManager {
    * Handle double-tap to complete point-to-point polygon (touch devices)
    */
   handleDoubleTap(_e: TouchEvent): void {
-    // Only handle double-tap in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-tap in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 
@@ -370,7 +376,7 @@ export class PolygonDrawManager {
 
       this.eventManager.emit('polydraw:polygon:created', {
         polygon: geoPos,
-        mode: DrawMode.PointToPoint,
+        mode: this.modeManager.getCurrentMode(),
         isPointToPoint: true,
       });
     } catch (error) {
@@ -436,6 +442,9 @@ export class PolygonDrawManager {
       tolerance *= 5; // 5x larger tolerance for touch devices
     }
 
+    // Additional tolerance multiplier for easier closing
+    tolerance *= 3; // 3x larger tolerance to make closing easier
+
     // console.log('First point click tolerance check:', {
     //   zoom: zoom,
     //   baseTolerance: baseTolerance,
@@ -485,8 +494,13 @@ export class PolygonDrawManager {
     // Update visual style to show dashed line
     if (this.p2pMarkers.length >= 2) {
       try {
+        const currentMode = this.modeManager.getCurrentMode();
+        const lineColor =
+          currentMode === DrawMode.PointToPointSubtract
+            ? this.config.colors.subtractLine
+            : this.config.colors.polyline;
         this.tracer.setStyle({
-          color: this.config.colors.polyline,
+          color: lineColor,
           dashArray: '5, 5',
         });
       } catch (error) {
@@ -537,7 +551,8 @@ export class PolygonDrawManager {
    */
   isInPointToPointMode(): boolean {
     // console.log('PolygonDrawManager isInPointToPointMode');
-    return this.modeManager.getCurrentMode() === DrawMode.PointToPoint;
+    const mode = this.modeManager.getCurrentMode();
+    return mode === DrawMode.PointToPoint || mode === DrawMode.PointToPointSubtract;
   }
 
   /**

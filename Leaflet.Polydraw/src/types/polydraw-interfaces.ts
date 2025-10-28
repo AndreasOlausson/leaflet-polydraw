@@ -166,6 +166,7 @@ export interface ModeConfig {
   subtract: boolean;
   deleteAll: boolean;
   p2p: boolean;
+  p2pSubtract: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
