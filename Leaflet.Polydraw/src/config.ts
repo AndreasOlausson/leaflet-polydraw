@@ -8,6 +8,7 @@ export const defaultConfig: PolydrawConfig = {
     subtract: true,
     deleteAll: true,
     p2p: true,
+    p2pSubtract: true,
     attachElbow: true,
     dragElbow: true,
     dragPolygons: true,
