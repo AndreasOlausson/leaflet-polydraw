@@ -32,6 +32,11 @@ type ExtendedBrowser = typeof L.Browser & {
   mobile: boolean;
 };
 
+type PolydrawOptions = L.ControlOptions & {
+  config?: Partial<PolydrawConfig>;
+  configPath?: string;
+};
+
 class Polydraw extends L.Control {
   private map!: L.Map;
   private tracer!: L.Polyline;
@@ -60,14 +65,14 @@ class Polydraw extends L.Control {
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
 
-  constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
+  constructor(options?: PolydrawOptions) {
     super(options);
 
     // Start from a clean clone of the defaults
-    const baseDefaults = structuredClone(defaultConfig) as PolydrawConfig;
+    const baseDefaults: PolydrawConfig = structuredClone(defaultConfig);
 
     // Apply inline config via deep merge (partial configs supported)
-    this.config = deepMerge(baseDefaults, (options?.config || {}) as PolydrawConfig);
+    this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
@@ -450,7 +455,7 @@ class Polydraw extends L.Control {
    * @param configPath - The path to the external configuration file.
    * @param inlineConfig - An optional inline configuration object.
    */
-  private async loadExternalConfig(configPath: string, inlineConfig?: PolydrawConfig) {
+  private async loadExternalConfig(configPath: string, inlineConfig?: Partial<PolydrawConfig>) {
     try {
       const response = await fetch(configPath);
       if (!response.ok) {
@@ -459,14 +464,15 @@ class Polydraw extends L.Control {
         );
       }
 
-      const externalConfig = await response.json();
+      // Expect external to be a partial config
+      const externalConfig: Partial<PolydrawConfig> = await response.json();
 
-      // Merge configs: default < external < inline (inline has highest priority)
-      this.config = {
-        ...defaultConfig,
-        ...externalConfig,
-        ...(inlineConfig || {}),
-      } as unknown as PolydrawConfig;
+      // Merge precedence: defaults < external < inline
+      this.config = deepMerge<PolydrawConfig>(
+        structuredClone(defaultConfig),
+        externalConfig ?? {},
+        inlineConfig ?? {},
+      );
 
       this.initializeComponents();
     } catch (error) {
@@ -474,8 +480,8 @@ class Polydraw extends L.Control {
         'Failed to load external config, falling back to default + inline config:',
         error,
       );
-      // Fallback to default + inline config if external loading fails
-      this.config = { ...defaultConfig, ...(inlineConfig || {}) } as unknown as PolydrawConfig;
+      // Fallback to defaults < inline
+      this.config = deepMerge<PolydrawConfig>(structuredClone(defaultConfig), inlineConfig ?? {});
       this.initializeComponents();
     }
   }
@@ -1242,9 +1248,7 @@ class Polydraw extends L.Control {
 // Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
 if (typeof L !== 'undefined' && L.control) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (L.control as any).polydraw = function (
-    options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
-  ): Polydraw {
+  (L.control as any).polydraw = function (options?: PolydrawOptions): Polydraw {
     return new Polydraw(options);
   };
 }
