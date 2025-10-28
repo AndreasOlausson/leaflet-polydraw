@@ -1,16 +1,32 @@
-export function deepMerge<T>(target: T, source: Partial<T>): T {
-  // Loop keys in source
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = (target as any)[key];
+export function deepMerge<T>(target: T, ...sources: Partial<T>[]): T {
+  if (!sources.length) return target;
 
-    if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
-      // Merge object recursively
-      (target as any)[key] = deepMerge(targetValue || ({} as typeof sourceValue), sourceValue);
-    } else if (sourceValue !== undefined) {
-      // Copy primitive values or arrays directly
-      (target as any)[key] = sourceValue;
+  for (const source of sources) {
+    if (!source) continue;
+
+    for (const key in source) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sourceValue: any = (source as any)[key];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const targetValue: any = (target as any)[key];
+
+      if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+        // Se till att målfacket är ett objekt innan rekursion
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const base: any =
+          targetValue && typeof targetValue === 'object' && !Array.isArray(targetValue)
+            ? targetValue
+            : {};
+        // Rekursiv merge
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (target as any)[key] = deepMerge(base, sourceValue);
+      } else if (sourceValue !== undefined) {
+        // Primitiv eller array: skriv över direkt
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (target as any)[key] = sourceValue;
+      }
     }
   }
+
   return target;
 }
