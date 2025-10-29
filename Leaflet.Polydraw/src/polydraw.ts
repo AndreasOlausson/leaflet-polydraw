@@ -74,6 +74,8 @@ class Polydraw extends L.Control {
     // Apply inline config via deep merge (partial configs supported)
     this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
 
+    this.setDrawMode(this.config.defaultMode);
+
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
       this.loadExternalConfig(options.configPath, options?.config);
@@ -416,7 +418,7 @@ class Polydraw extends L.Control {
     // Listen for drawing cancellation events
     this.eventManager.on('polydraw:draw:cancel', () => {
       this.stopDraw();
-      this.setDrawMode(DrawMode.Off);
+      this.setDrawMode(this.config.defaultMode);
     });
   }
 
