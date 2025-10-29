@@ -46,3 +46,30 @@ polydraw.addPredefinedPolygon([
 - **GeoJSON Default**: If a numeric pair is ambiguous (both values could represent valid latitudes, e.g. 59, 10), Polydraw assumes GeoJSON order (`[lng, lat]`)
 - **Error Handling**: Provides helpful error messages for unsupported formats (UTM, MGRS, Plus Codes)
 - **Format Priority**: DMS/DDM formats take precedence over comma-separated strings
+
+## GeoJSON Format Support
+
+For working with standard GeoJSON data (from APIs, files, or GIS systems), use `addPredefinedGeoJSONs()` instead:
+
+```javascript
+// GeoJSON uses [lng, lat] order (standard)
+const geojsonFeature = {
+  type: "Feature",
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [10.724, 59.903], // [lng, lat] - GeoJSON standard
+        [10.728, 59.908],
+        [10.72, 59.91],
+        [10.724, 59.903],
+      ],
+    ],
+  },
+  properties: {},
+};
+
+await polydraw.addPredefinedGeoJSONs([geojsonFeature]);
+```
+
+**Note:** `addPredefinedGeoJSONs()` automatically converts GeoJSON's `[lng, lat]` format to Leaflet's `[lat, lng]` format internally, so you can work with standard GeoJSON data without manual conversion.
