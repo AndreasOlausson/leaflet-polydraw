@@ -723,10 +723,7 @@ describe('Predefined GeoJSON', () => {
     });
 
     it('should await each polygon addition', async () => {
-      const features = [
-        GeoJSONTestData.squarePolygon(),
-        GeoJSONTestData.trianglePolygon(),
-      ];
+      const features = [GeoJSONTestData.squarePolygon(), GeoJSONTestData.trianglePolygon()];
 
       await polydraw.addPredefinedGeoJSONs(features);
 
