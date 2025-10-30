@@ -37,6 +37,10 @@ type PolydrawOptions = L.ControlOptions & {
   configPath?: string;
 };
 
+type PredefinedOptions = {
+  visualOptimizationLevel?: number;
+};
+
 class Polydraw extends L.Control {
   private map!: L.Map;
   private tracer!: L.Polyline;
@@ -163,7 +167,7 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedPolygon(
     geoborders: unknown[][][],
-    options?: { visualOptimizationLevel?: number },
+    options?: PredefinedOptions,
   ): Promise<void> {
     // Convert input to L.LatLng[][][] using smart coordinate detection
     const geographicBorders = CoordinateUtils.convertToLatLngArray(geoborders);
@@ -214,6 +218,36 @@ class Polydraw extends L.Control {
       } catch (error) {
         console.error('Error adding auto polygon:', error);
         throw error;
+      }
+    }
+  }
+
+  /**
+   * Adds predefined polygons from GeoJSON to the map.
+   * @param geojsonFeatures - An array of GeoJSON Polygon or MultiPolygon features.
+   * @param options - Optional parameters, including visual optimization level.
+   */
+  public async addPredefinedGeoJSONs(
+    geojsonFeatures: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>[],
+    options?: PredefinedOptions,
+  ): Promise<void> {
+    for (const geojsonFeature of geojsonFeatures) {
+      const { type, coordinates } = geojsonFeature.geometry;
+
+      if (type === 'MultiPolygon') {
+        // MultiPolygon: coordinates[polygon][ring][point]
+        for (const polygonCoords of coordinates) {
+          const latLngs = polygonCoords.map((ring) =>
+            ring.map((point) => L.latLng(point[1], point[0])),
+          );
+          await this.addPredefinedPolygon([latLngs], options);
+        }
+      } else if (type === 'Polygon') {
+        // Polygon: coordinates[ring][point]
+        const latLngs = coordinates.map((ring) =>
+          ring.map((point) => L.latLng(point[1], point[0])),
+        );
+        await this.addPredefinedPolygon([latLngs], options);
       }
     }
   }

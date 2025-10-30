@@ -35,6 +35,30 @@ const octagon = [
 ];
 
 polydraw.addPredefinedPolygon(octagon);
+
+// Or load from GeoJSON format (useful for API data)
+const geojsonPolygon = {
+  type: "Feature",
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [15.6, 58.404493],
+        [15.602928, 58.402928],
+        [15.604493, 58.4],
+        [15.602928, 58.397072],
+        [15.6, 58.395507],
+        [15.597072, 58.397072],
+        [15.595507, 58.4],
+        [15.597072, 58.402928],
+        [15.6, 58.404493],
+      ],
+    ],
+  },
+  properties: {},
+};
+
+await polydraw.addPredefinedGeoJSONs([geojsonPolygon]);
 ```
 
 ## Advanced Configuration
