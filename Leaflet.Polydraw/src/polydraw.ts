@@ -78,8 +78,6 @@ class Polydraw extends L.Control {
     // Apply inline config via deep merge (partial configs supported)
     this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
 
-    this.setDrawMode(this.config.defaultMode);
-
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
       this.loadExternalConfig(options.configPath, options?.config);
@@ -121,6 +119,9 @@ class Polydraw extends L.Control {
 
     // Initialize managers now that map is available
     this.initializeManagers();
+
+    // Apply initial draw mode now that all managers and tracer are ready
+    this.setDrawMode(this.config.defaultMode);
 
     // Attach event listeners
     this.setupEventListeners();
