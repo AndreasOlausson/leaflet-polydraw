@@ -138,7 +138,13 @@ body {
 
 .marker-menu-content {
   display: flex;
-  justify-content: space-between;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  /* Max width for 3 buttons per row: 38px (button) * 3 + 5px (separator) * 2 = 124px, add some padding */
+  max-width: 132px;
 }
 
 .marker-menu-button {
@@ -191,7 +197,7 @@ body {
 
 .alter-marker-wrapper,
 .info-marker-wrapper {
-  height: 40px;
+  min-height: 40px;
   border: 2px solid transparent;
   background-color: #80be50;
   color: #fff;
@@ -201,9 +207,11 @@ body {
   text-align: center;
 }
 .content {
-  width: 100%;
+  width: auto;
   min-height: 40px;
   margin-right: 12px;
+  display: flex;
+  align-items: center;
 }
 .marker-menu-content {
   .marker-menu-button {
@@ -232,7 +240,25 @@ body {
       position: relative;
       overflow: hidden;
     }
+    &.transform-scale {
+      background-image: url('../icons/icon-resize.svg');
+    }
+    &.transform-rotate {
+      background-image: url('../icons/icon-rotate.svg');
+    }
   }
+}
+
+.polydraw-transform-cancel,
+.polydraw-transform-confirm {
+  width: 24px;
+  height: 24px;
+  border-radius: 3px;
+  pointer-events: auto;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Alpha banner for bezier button */

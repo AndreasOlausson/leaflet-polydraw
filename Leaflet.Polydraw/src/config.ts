@@ -40,8 +40,8 @@ export const defaultConfig: PolydrawConfig = {
     minVertices: 3,
   },
   markers: {
-    deleteMarker: true,
-    infoMarker: true,
+    deleteMarker: false,
+    infoMarker: false,
     menuMarker: true,
     coordsTitle: true,
     zIndexOffset: 0,
@@ -104,7 +104,7 @@ export const defaultConfig: PolydrawConfig = {
       zIndexOffset: 10000,
     },
     markerMenuIcon: {
-      position: 7,
+      position: 4,
       styleClasses: ['polygon-marker', 'menu'],
       zIndexOffset: 10000,
     },
@@ -168,13 +168,25 @@ export const defaultConfig: PolydrawConfig = {
   },
   menuOperations: {
     simplify: {
+      enabled: true,
       processHoles: true,
     },
     doubleElbows: {
+      enabled: true,
       processHoles: true,
     },
     bbox: {
+      enabled: true,
       processHoles: true,
+    },
+    bezier: {
+      enabled: true,
+    },
+    scale: {
+      enabled: true,
+    },
+    rotate: {
+      enabled: true,
     },
   },
   boundingBox: {

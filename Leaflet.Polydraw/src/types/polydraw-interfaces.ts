@@ -209,13 +209,25 @@ export interface EdgeDeletionConfig {
  */
 export interface MenuOperationsConfig {
   simplify: {
+    enabled: boolean;
     processHoles: boolean;
   };
   doubleElbows: {
+    enabled: boolean;
     processHoles: boolean;
   };
   bbox: {
+    enabled: boolean;
     processHoles: boolean;
+  };
+  bezier: {
+    enabled: boolean;
+  };
+  scale: {
+    enabled: boolean;
+  };
+  rotate: {
+    enabled: boolean;
   };
 }
 
