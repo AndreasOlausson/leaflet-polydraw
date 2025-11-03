@@ -27,6 +27,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 - **Smart Polygon Merging**: Automatically detects and merges overlapping polygons (including smooth C-to-O shape completion).
 - **Drag & Drop Editing**: Intuitive polygon repositioning with intelligent spatial interactions.
 - **Advanced Vertex Editing**: Drag vertices, add or remove points, and reshape polygons seamlessly.
+- **Scaling & Rotation Handles**: Transform polygons visually using interactive bounding boxes — scale, rotate, or stretch with precision.
 - **Point-to-Point Mode**: Optional precise vertex-by-vertex drawing for detailed or structured geometry.
 - **Hole Support**: Create complex polygons with holes and nested structures effortlessly.
 - **Smart Markers**: Adaptive marker placement prevents overlaps and maintains visual clarity.
