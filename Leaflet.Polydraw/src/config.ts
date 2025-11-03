@@ -40,8 +40,8 @@ export const defaultConfig: PolydrawConfig = {
     minVertices: 3,
   },
   markers: {
-    deleteMarker: false,
-    infoMarker: false,
+    deleteMarker: true,
+    infoMarker: true,
     menuMarker: true,
     coordsTitle: true,
     zIndexOffset: 0,

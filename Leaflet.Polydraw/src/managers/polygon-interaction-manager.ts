@@ -216,7 +216,10 @@ export class PolygonInteractionManager {
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
-          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
+          const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
+            polygonGeoJSON,
+            menuMarkerIdx,
+          );
           const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
           menuPopup.setLatLng(centerOfMass).openOn(this.map);
         });
