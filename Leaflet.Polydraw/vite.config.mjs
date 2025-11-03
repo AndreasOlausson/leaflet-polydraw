@@ -35,7 +35,7 @@ export default defineConfig({
           dest: 'styles', // hamnar som dist/styles/polydraw.css
         },
         {
-          src: path.resolve(__dirname, 'public/icons/*'),
+          src: path.resolve(__dirname, 'src/icons/*'),
           dest: 'icons',
         },
       ],

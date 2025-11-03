@@ -27,11 +27,13 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 - **Smart Polygon Merging**: Automatically detects and merges overlapping polygons (including smooth C-to-O shape completion).
 - **Drag & Drop Editing**: Intuitive polygon repositioning with intelligent spatial interactions.
 - **Advanced Vertex Editing**: Drag vertices, add or remove points, and reshape polygons seamlessly.
+- **Scaling & Rotation Handles**: Transform polygons visually using interactive bounding boxes — scale, rotate, or stretch with precision.
 - **Point-to-Point Mode**: Optional precise vertex-by-vertex drawing for detailed or structured geometry.
 - **Hole Support**: Create complex polygons with holes and nested structures effortlessly.
 - **Smart Markers**: Adaptive marker placement prevents overlaps and maintains visual clarity.
 - **Modifier Shortcuts**: Hold Ctrl or Cmd to toggle erase, subtract, or advanced edit modes for a smooth workflow.
 - **Performance Optimized**: Efficient rendering and event handling even for large datasets.
+- **GeoJSON Import**: Add Polygon and MultiPolygon features directly from RFC 7946 GeoJSON
 - **Coordinate Auto-Detection**: Accepts multiple coordinate formats automatically (lat/lng, DMS, DDM, N/E, etc.).
 - **Leaflet 1.x & 2.x Compatible**: Fully compatible with both generations of the Leaflet API.
 - **TypeScript Ready**: Includes complete type definitions for modern development workflows.
