@@ -229,7 +229,7 @@ body {
       background-image: url('../icons/icon-simplify2.svg');
     }
     &.double-elbows {
-      background-image: url('../icons/icon-add-elbow.svg');
+      background-image: url('../icons/icon-double-elbows.svg');
     }
     &.bbox {
       background-image: url('../icons/icon-bbox.svg');

@@ -602,14 +602,14 @@ class Polydraw extends L.Control {
     const container = this.getContainer();
     if (!container) return;
 
-    const activate = container.querySelector('.icon-activate') as HTMLElement;
-    if (leafletAdapter.domUtil.hasClass(activate, 'active')) {
-      leafletAdapter.domUtil.removeClass(activate, 'active');
+    const activateButton = container.querySelector('.icon-activate') as HTMLElement;
+    if (leafletAdapter.domUtil.hasClass(activateButton, 'active')) {
+      leafletAdapter.domUtil.removeClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '0px';
       }
     } else {
-      leafletAdapter.domUtil.addClass(activate, 'active');
+      leafletAdapter.domUtil.addClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '250px';
       }
@@ -1316,12 +1316,40 @@ class Polydraw extends L.Control {
 
     const hasPolygons = this.arrayOfFeatureGroups.length > 0;
     const isPanelClosed = !leafletAdapter.domUtil.hasClass(activateButton, 'active');
+    const iconMarkup = leafletAdapter.domUtil.hasClass(activateButton, 'active')
+      ? activateButton.dataset.collapsedIcon
+      : activateButton.dataset.activeIcon;
 
-    if (hasPolygons && isPanelClosed) {
+    if (iconMarkup) {
+      this.applyActivateButtonIcon(activateButton, iconMarkup);
+    }
+
+    const hasIndicator = hasPolygons && isPanelClosed;
+    if (hasIndicator) {
       leafletAdapter.domUtil.addClass(activateButton, 'polydraw-indicator-active');
     } else {
       leafletAdapter.domUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
+
+    const baseBackground = this.config.colors.styles.controlButton.backgroundColor;
+    const baseColor = this.config.colors.styles.controlButton.color;
+    const indicatorBackground = this.config.colors.styles.indicatorActive.backgroundColor;
+
+    activateButton.style.backgroundColor = hasIndicator ? indicatorBackground : baseBackground;
+    activateButton.style.color = baseColor;
+  }
+
+  private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {
+    button.innerHTML = svgMarkup;
+    const svgElement = button.querySelector('svg');
+    if (!svgElement) return;
+
+    svgElement.setAttribute('width', '24');
+    svgElement.setAttribute('height', '24');
+    (svgElement as unknown as HTMLElement).style.pointerEvents = 'none';
+    svgElement.querySelectorAll('*').forEach((el) => {
+      (el as HTMLElement).style.pointerEvents = 'none';
+    });
   }
 }
 

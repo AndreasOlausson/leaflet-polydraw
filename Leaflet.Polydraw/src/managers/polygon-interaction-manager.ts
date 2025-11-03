@@ -58,6 +58,12 @@ export class PolygonInteractionManager {
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
+  /**
+   * Strongly typed helper to emit polygon updated events without casts.
+   */
+  private emitPolygonUpdated(data: PolygonUpdatedEventData): void {
+    this.eventManager.emit('polydraw:polygon:updated', data);
+  }
 
   // Read-only access to feature groups
   private getFeatureGroups: () => L.FeatureGroup[];
@@ -644,10 +650,10 @@ export class PolygonInteractionManager {
 
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
-                  this.eventManager.emit('polydraw:polygon:updated', {
+                  this.emitPolygonUpdated({
                     operation: 'removeHole',
                     polygon: newPolygon,
-                  } as PolygonUpdatedEventData);
+                  });
                 }
               }
             }
@@ -986,11 +992,11 @@ export class PolygonInteractionManager {
             const polydrawPolygon = parentPolygon as PolydrawPolygon;
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             this.removeFeatureGroup(parentFeatureGroup);
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'addVertex',
               polygon: newPolygon,
               optimizationLevel,
-            } as PolygonUpdatedEventData);
+            });
           }
         }
       } catch (error) {
@@ -1113,10 +1119,10 @@ export class PolygonInteractionManager {
     }
 
     const newPolygon = this.turfHelper.getMultiPolygon([coords]);
-    this.eventManager.emit('polydraw:polygon:updated', {
+    this.emitPolygonUpdated({
       operation: 'removeVertex',
       polygon: newPolygon,
-    } as PolygonUpdatedEventData);
+    });
   }
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
@@ -1263,22 +1269,22 @@ export class PolygonInteractionManager {
           for (const polygon of unkink) {
             // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
             // but prevent unwanted styling changes for non-intersecting polygons
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true, // Allow intelligent merging for intersections
               intelligentMerge: true, // Flag for smart merging logic
-            } as PolygonUpdatedEventData);
+            });
           }
         } else {
           // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
           // but prevent unwanted styling changes for non-intersecting polygons
-          this.eventManager.emit('polydraw:polygon:updated', {
+          this.emitPolygonUpdated({
             operation: 'markerDrag',
             polygon: feature,
             allowMerge: true, // Allow intelligent merging for intersections
             intelligentMerge: true, // Flag for smart merging logic
-          } as PolygonUpdatedEventData);
+          });
         }
       }
     } else {
@@ -1291,20 +1297,20 @@ export class PolygonInteractionManager {
         for (const polygon of unkink) {
           // CRITICAL FIX: Don't allow merging for marker drag operations
           // This prevents incorrect styling when dragging vertices of polygons with holes
-          this.eventManager.emit('polydraw:polygon:updated', {
+          this.emitPolygonUpdated({
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: false, // Fixed: prevent merging during vertex drag
-          } as PolygonUpdatedEventData);
+          });
         }
       } else {
         // CRITICAL FIX: Don't allow merging for marker drag operations
         // This prevents incorrect styling when dragging vertices of polygons with holes
-        this.eventManager.emit('polydraw:polygon:updated', {
+        this.emitPolygonUpdated({
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: false, // Fixed: prevent merging during vertex drag
-        } as PolygonUpdatedEventData);
+        });
       }
     }
     this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -1537,11 +1543,11 @@ export class PolygonInteractionManager {
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
-      this.eventManager.emit('polydraw:polygon:updated', {
+      this.emitPolygonUpdated({
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
-      } as PolygonUpdatedEventData);
+      });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
     } catch (error) {
@@ -1754,11 +1760,11 @@ export class PolygonInteractionManager {
                 const individualPolygon = this.turfHelper.getMultiPolygon([coordSet]);
 
                 // Emit each result polygon separately to ensure they get separate feature groups
-                this.eventManager.emit('polydraw:polygon:updated', {
+                this.emitPolygonUpdated({
                   operation: 'modifierSubtract',
                   polygon: this.turfHelper.getTurfPolygon(individualPolygon),
                   allowMerge: false, // Don't merge the result of subtract operations
-                } as PolygonUpdatedEventData);
+                });
               }
             }
           } catch (differenceError) {
@@ -1766,11 +1772,11 @@ export class PolygonInteractionManager {
               console.warn('Failed to perform difference operation:', differenceError);
             }
             // If difference fails, try to add the original polygon back
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'modifierSubtractFallback',
               polygon: existingPolygon,
               allowMerge: false,
-            } as PolygonUpdatedEventData);
+            });
           }
         } catch (error) {
           if (!isTestEnvironment()) {
@@ -2154,11 +2160,11 @@ export class PolygonInteractionManager {
             if (!polygonLayer) return;
             const newGeoJSON = polygonLayer.toGeoJSON();
             this.removeFeatureGroup(featureGroup);
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'transform',
               polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
               allowMerge: true,
-            } as PolygonUpdatedEventData);
+            });
           } finally {
             controller.destroy();
             this.transformControllers.delete(featureGroup);

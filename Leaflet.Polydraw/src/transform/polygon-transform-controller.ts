@@ -4,7 +4,12 @@
  */
 import * as L from 'leaflet';
 import { TransformOverlay } from './transform-overlay';
-import { TransformState, TransformHandleType, type PixelPoint } from './transform-types';
+import {
+  TransformState,
+  TransformHandleType,
+  type PixelPoint,
+  type PixelBBox,
+} from './transform-types';
 import {
   applyTransform,
   getPixelBBox,
@@ -148,77 +153,111 @@ export class PolygonTransformController {
 
   private onDrag(type: TransformHandleType, current: PixelPoint, _evt: MouseEvent): void {
     const origBBox = getPixelBBox(this.state.originalPixelRings);
-    const center = this.state.scaleFromPivot ? this.state.pivot : getPixelCentroid(origBBox);
 
-    if (type === TransformHandleType.Rotate) {
-      if (this.mode !== 'rotate') return;
-      const angle = Math.atan2(current.y - center.y, current.x - center.x);
-      let theta: number;
-      if (this.rotateStartAngle != null) {
-        const delta = angle - this.rotateStartAngle;
-        theta = this.rotateBaseRotation + delta;
-      } else {
-        theta = angle;
+    switch (type) {
+      case TransformHandleType.Rotate: {
+        const rotationCenter = this.state.scaleFromPivot
+          ? this.state.pivot
+          : getPixelCentroid(origBBox);
+        this.handleRotateDrag(current, rotationCenter);
+        break;
       }
-      if (this.state.snapRotation) theta = snapAngleRadians(theta, 15);
-      this.state.rotation = theta;
-    } else if (type === TransformHandleType.Pivot) {
-      this.state.pivot = current;
+      case TransformHandleType.Pivot:
+        this.handlePivotDrag(current);
+        break;
+      default: {
+        const scaleCenter = this.state.scaleFromPivot
+          ? this.state.pivot
+          : getPixelCentroid(origBBox);
+        this.handleScaleDrag(type, current, origBBox, scaleCenter);
+        break;
+      }
+    }
+    this.preview();
+  }
+
+  private handleRotateDrag(current: PixelPoint, center: PixelPoint): void {
+    if (this.mode !== 'rotate') return;
+
+    const angle = Math.atan2(current.y - center.y, current.x - center.x);
+    let theta: number;
+    if (this.rotateStartAngle != null) {
+      const delta = angle - this.rotateStartAngle;
+      theta = this.rotateBaseRotation + delta;
     } else {
-      if (this.mode !== 'scale') return;
-      const width = origBBox.maxX - origBBox.minX;
-      const height = origBBox.maxY - origBBox.minY;
-      let scaleX = this.state.scaleX;
-      let scaleY = this.state.scaleY;
+      theta = angle;
+    }
+    this.state.rotation = this.state.snapRotation ? snapAngleRadians(theta, 15) : theta;
+  }
 
-      switch (type) {
-        case TransformHandleType.Left:
-        case TransformHandleType.TopLeft:
-        case TransformHandleType.BottomLeft:
-          scaleX = (center.x - current.x) / (center.x - origBBox.minX || 1);
-          break;
-        case TransformHandleType.Right:
-        case TransformHandleType.TopRight:
-        case TransformHandleType.BottomRight:
-          scaleX = (current.x - center.x) / (origBBox.maxX - center.x || 1);
-          break;
-      }
-      switch (type) {
-        case TransformHandleType.Top:
-        case TransformHandleType.TopLeft:
-        case TransformHandleType.TopRight:
-          scaleY = (center.y - current.y) / (center.y - origBBox.minY || 1);
-          break;
-        case TransformHandleType.Bottom:
-        case TransformHandleType.BottomLeft:
-        case TransformHandleType.BottomRight:
-          scaleY = (current.y - center.y) / (origBBox.maxY - center.y || 1);
-          break;
-      }
+  private handlePivotDrag(current: PixelPoint): void {
+    this.state.pivot = current;
+  }
 
-      if (type === TransformHandleType.Left || type === TransformHandleType.Right) {
-        scaleY = this.state.scaleY;
-      }
-      if (type === TransformHandleType.Top || type === TransformHandleType.Bottom) {
-        scaleX = this.state.scaleX;
-      }
+  private handleScaleDrag(
+    type: TransformHandleType,
+    current: PixelPoint,
+    origBBox: PixelBBox,
+    center: PixelPoint,
+  ): void {
+    if (this.mode !== 'scale') return;
 
-      if (this.state.uniformScale) {
-        const uniform =
-          Math.abs(width) > Math.abs(height)
-            ? Math.sign(scaleX) * Math.abs(scaleX)
-            : Math.sign(scaleY) * Math.abs(scaleY);
-        scaleX = uniform;
-        scaleY = uniform;
-      }
+    const width = origBBox.maxX - origBBox.minX;
+    const height = origBBox.maxY - origBBox.minY;
+    let scaleX = this.state.scaleX;
+    let scaleY = this.state.scaleY;
 
-      this.state.scaleX =
-        Number.isFinite(scaleX) && Math.abs(scaleX) > 0.001 ? scaleX : this.state.scaleX;
-      this.state.scaleY =
-        Number.isFinite(scaleY) && Math.abs(scaleY) > 0.001 ? scaleY : this.state.scaleY;
+    switch (type) {
+      case TransformHandleType.Left:
+      case TransformHandleType.TopLeft:
+      case TransformHandleType.BottomLeft:
+        scaleX = (center.x - current.x) / (center.x - origBBox.minX || 1);
+        break;
+      case TransformHandleType.Right:
+      case TransformHandleType.TopRight:
+      case TransformHandleType.BottomRight:
+        scaleX = (current.x - center.x) / (origBBox.maxX - center.x || 1);
+        break;
     }
 
-    this.preview();
+    switch (type) {
+      case TransformHandleType.Top:
+      case TransformHandleType.TopLeft:
+      case TransformHandleType.TopRight:
+        scaleY = (center.y - current.y) / (center.y - origBBox.minY || 1);
+        break;
+      case TransformHandleType.Bottom:
+      case TransformHandleType.BottomLeft:
+      case TransformHandleType.BottomRight:
+        scaleY = (current.y - center.y) / (origBBox.maxY - center.y || 1);
+        break;
+    }
+
+    if (type === TransformHandleType.Left || type === TransformHandleType.Right) {
+      scaleY = this.state.scaleY;
+    }
+    if (type === TransformHandleType.Top || type === TransformHandleType.Bottom) {
+      scaleX = this.state.scaleX;
+    }
+
+    if (this.state.uniformScale) {
+      const uniform =
+        Math.abs(width) > Math.abs(height)
+          ? Math.sign(scaleX) * Math.abs(scaleX)
+          : Math.sign(scaleY) * Math.abs(scaleY);
+      scaleX = uniform;
+      scaleY = uniform;
+    }
+
+    const hasValidScaleX = Number.isFinite(scaleX) && Math.abs(scaleX) > 0.001;
+    const hasValidScaleY = Number.isFinite(scaleY) && Math.abs(scaleY) > 0.001;
+
+    if (hasValidScaleX) {
+      this.state.scaleX = scaleX;
+    }
+    if (hasValidScaleY) {
+      this.state.scaleY = scaleY;
+    }
   }
 
   private preview(): void {

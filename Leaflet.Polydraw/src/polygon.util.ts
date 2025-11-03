@@ -151,8 +151,7 @@ export class PolygonUtil {
       lng: centerOfMass.geometry.coordinates[0],
     };
 
-    const centerOfPolygonMarker =
-      this.getPolygonLatLngAtIndex(polygon, index) ?? centerLatLng;
+    const centerOfPolygonMarker = this.getPolygonLatLngAtIndex(polygon, index) ?? centerLatLng;
 
     const offset = {
       lat: centerOfPolygonMarker.lat - centerLatLng.lat,

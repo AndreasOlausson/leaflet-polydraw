@@ -7,9 +7,13 @@ import iconDrawSvg from './icons/icon-draw.svg?raw';
 import iconSubtractSvg from './icons/icon-subtract.svg?raw';
 import iconP2PDrawSvg from './icons/icon-p2p-draw.svg?raw';
 import iconEraseSvg from './icons/icon-erase.svg?raw';
+import iconCollapseSvg from './icons/icon-collapse.svg?raw';
 
 const sanitizeSvg = (svg: string): string =>
-  svg.replace(/<\?xml[^>]*\?>\s*/g, '').replace(/<!--[\s\S]*?-->/g, '').trim();
+  svg
+    .replace(/<\?xml[^>]*\?>\s*/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .trim();
 
 const icons = {
   activate: sanitizeSvg(iconPolydraw2Svg),
@@ -18,6 +22,7 @@ const icons = {
   p2p: sanitizeSvg(iconP2PDrawSvg),
   p2pSubtract: sanitizeSvg(iconP2PSubtractSvg),
   erase: sanitizeSvg(iconEraseSvg),
+  collapse: sanitizeSvg(iconCollapseSvg),
 };
 
 const setButtonIcon = (button: HTMLAnchorElement, svgMarkup: string): void => {
@@ -64,6 +69,8 @@ export function createButtons(
   activate.href = '#';
   activate.title = 'Activate';
   setButtonIcon(activate, icons.activate);
+  activate.dataset.activeIcon = icons.activate;
+  activate.dataset.collapsedIcon = icons.collapse;
 
   L.DomEvent.on(activate, 'mousedown', L.DomEvent.stopPropagation);
   L.DomEvent.on(activate, 'touchstart', L.DomEvent.stopPropagation);
