@@ -191,7 +191,6 @@ body {
   overflow: hidden;
   background-color: #80be50;
   border-radius: 12px;
-  padding-right: 16px;
   box-shadow: 3px 4px 20px #00000080;
 }
 
@@ -400,6 +399,14 @@ body {
   border-color: #d9460f !important;
   transform: scale(1.5);
   transition: all 0.2s ease;
+}
+
+.menu-popup {
+  margin-bottom: -60px;
+}
+
+.info-popup {
+  margin-bottom: -18px;
 }
 
 .menu-popup .leaflet-popup-tip-container,

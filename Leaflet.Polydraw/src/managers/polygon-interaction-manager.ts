@@ -278,7 +278,10 @@ export class PolygonInteractionManager {
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
-          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
+          const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
+            polygonGeoJSON,
+            infoMarkerIdx,
+          );
           infoPopup.setLatLng(centerOfMass).openOn(this.map);
         });
         // Patch: Adjust touchAction for map container on popup open/close

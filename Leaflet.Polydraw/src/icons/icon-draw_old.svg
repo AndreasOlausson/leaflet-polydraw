@@ -1,1 +1,36 @@
-<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M15 7.49996L17.5 9.99996M7.5 20L19.25 8.24996C19.9404 7.5596 19.9404 6.44032 19.25 5.74996V5.74996C18.5596 5.0596 17.4404 5.05961 16.75 5.74996L5 17.5V20H7.5ZM7.5 20H15.8787C17.0503 20 18 19.0502 18 17.8786V17.8786C18 17.316 17.7765 16.7765 17.3787 16.3786L17 16M4.5 4.99996C6.5 2.99996 10 3.99996 10 5.99996C10 8.5 4 8.5 4 11C4 11.8759 4.53314 12.5256 5.22583 13" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+<svg width="128" height="128" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Point-to-point polygon</title>
+  <desc id="desc">Icon illustrating point-to-point polygon creation with vertices, edges, and a pending segment.</desc>
+
+  <style>
+    .edge { stroke: currentColor; stroke-width: 1.75; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .closing { stroke: currentColor; stroke-width: 1.25; fill: none; stroke-linecap: round; stroke-linejoin: round; opacity: .45; stroke-dasharray: 2 2; }
+    .guide { stroke: currentColor; stroke-width: 1.25; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 2 2; }
+    .node { fill: #fff; stroke: currentColor; stroke-width: 1.25; }
+    .cursor { stroke: currentColor; stroke-width: 1; opacity: .85; }
+  </style>
+
+  <!-- Fixed edges drawn so far -->
+  <path class="edge" d="M4 18 L8 6 L16 4 L20 12" />
+
+  <!-- Pending segment (from last fixed point to current mouse position) -->
+  <path class="guide" d="M20 12 L22 6" />
+
+  <!-- Faint closing edge back to the first point -->
+  <path class="closing" d="M12 20 L4 18" />
+
+  <!-- Vertices (fixed points) -->
+  <circle class="node" cx="4" cy="18" r="1.25"/>
+  <circle class="node" cx="8" cy="6" r="1.25"/>
+  <circle class="node" cx="16" cy="4" r="1.25"/>
+  <circle class="node" cx="20" cy="12" r="1.25"/>
+
+  <!-- Latest placed point (not yet confirmed) -->
+  <circle class="node" cx="12" cy="20" r="1.25"/>
+
+  <!-- Cursor/crosshair at the prospective next point -->
+  <g class="cursor" transform="translate(22 6)">
+    <circle cx="0" cy="0" r="0.9" fill="none"/>
+    <path d="M-1.8 0 H1.8 M0 -1.8 V1.8" />
+  </g>
+</svg>

@@ -104,7 +104,7 @@ export const defaultConfig: PolydrawConfig = {
       zIndexOffset: 10000,
     },
     markerMenuIcon: {
-      position: 4,
+      position: 1,
       styleClasses: ['polygon-marker', 'menu'],
       zIndexOffset: 10000,
     },
