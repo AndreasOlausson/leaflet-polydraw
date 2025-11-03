@@ -33,6 +33,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 - **Smart Markers**: Adaptive marker placement prevents overlaps and maintains visual clarity.
 - **Modifier Shortcuts**: Hold Ctrl or Cmd to toggle erase, subtract, or advanced edit modes for a smooth workflow.
 - **Performance Optimized**: Efficient rendering and event handling even for large datasets.
+- **GeoJSON Import**: Add Polygon and MultiPolygon features directly from RFC 7946 GeoJSON
 - **Coordinate Auto-Detection**: Accepts multiple coordinate formats automatically (lat/lng, DMS, DDM, N/E, etc.).
 - **Leaflet 1.x & 2.x Compatible**: Fully compatible with both generations of the Leaflet API.
 - **TypeScript Ready**: Includes complete type definitions for modern development workflows.
