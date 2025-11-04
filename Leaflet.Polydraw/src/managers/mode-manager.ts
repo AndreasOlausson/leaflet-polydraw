@@ -94,6 +94,7 @@ export class ModeManager {
         this.setDrawingModeState();
         break;
       case DrawMode.PointToPoint:
+      case DrawMode.PointToPointSubtract:
         this.setPointToPointModeState();
         break;
     }

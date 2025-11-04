@@ -20,8 +20,6 @@ Contributions, ideas, and discussions are always welcome.
 - **Polygon Splitting Tool**: Enable splitting polygons by drawing a cross-cutting line.
 - **Measurement Tool**: Add an optional measuring tool for temporary distance and area visualization.
 - **Multi-Select Editing**: Enable batch selection and transformation of multiple polygons.
-- **Partial Config / Deep Merge Support**: Allow overriding only parts of the config object, using deep-merge logic instead of shallow merge.
-- **Default Draw Mode Option**: Allow choosing the default draw mode at initialization, with optional non-collapsible menu.
 
 ## Experimental & Long-Term Ideas
 

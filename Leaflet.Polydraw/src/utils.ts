@@ -1,6 +1,6 @@
 import { MarkerPosition } from './enums';
 import * as L from 'leaflet';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 
 export const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 

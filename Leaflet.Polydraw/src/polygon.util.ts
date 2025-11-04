@@ -1,7 +1,7 @@
 import * as L from 'leaflet';
 import { TurfHelper } from './turf-helper';
-import defaultConfig from './config.json';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import { defaultConfig } from './config';
+import type { Feature, Polygon, MultiPolygon, Point } from 'geojson';
 import { MATH } from './constants';
 
 /**
@@ -140,5 +140,82 @@ export class PolygonUtil {
       lat: centerOfMass.geometry.coordinates[1],
       lng: centerOfMass.geometry.coordinates[0],
     };
+  }
+  static getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
+    polygon: Feature<Polygon | MultiPolygon>,
+    index: number,
+  ): L.LatLngLiteral {
+    const centerOfMass = this.turfHelper.getCenterOfMass(polygon);
+    const centerLatLng: L.LatLngLiteral = {
+      lat: centerOfMass.geometry.coordinates[1],
+      lng: centerOfMass.geometry.coordinates[0],
+    };
+
+    const centerOfPolygonMarker = this.getPolygonLatLngAtIndex(polygon, index) ?? centerLatLng;
+
+    const offset = {
+      lat: centerOfPolygonMarker.lat - centerLatLng.lat,
+      lng: centerOfPolygonMarker.lng - centerLatLng.lng,
+    };
+
+    const offsetFraction = 0.5;
+    const adjustedLat = centerLatLng.lat + offset.lat * offsetFraction;
+    const adjustedLng = centerLatLng.lng + offset.lng * offsetFraction;
+
+    const newCenterOfMass: Feature<Point> = {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [adjustedLng, adjustedLat],
+      },
+      properties: {},
+    };
+
+    return {
+      lat: newCenterOfMass.geometry.coordinates[1],
+      lng: newCenterOfMass.geometry.coordinates[0],
+    };
+  }
+
+  private static getPolygonLatLngAtIndex(
+    polygon: Feature<Polygon | MultiPolygon>,
+    index: number,
+  ): L.LatLngLiteral | null {
+    const geometry = polygon.geometry;
+    if (!geometry) {
+      return null;
+    }
+
+    let coordinates: [number, number][];
+    if (geometry.type === 'Polygon') {
+      coordinates = geometry.coordinates[0] as [number, number][];
+    } else if (geometry.type === 'MultiPolygon') {
+      coordinates = geometry.coordinates[0][0] as [number, number][];
+    } else {
+      return null;
+    }
+
+    if (!coordinates || coordinates.length === 0) {
+      return null;
+    }
+
+    // Remove duplicated closing coordinate if present
+    if (coordinates.length > 1) {
+      const first = coordinates[0];
+      const last = coordinates[coordinates.length - 1];
+      if (first[0] === last[0] && first[1] === last[1]) {
+        coordinates = coordinates.slice(0, coordinates.length - 1);
+      }
+    }
+
+    if (coordinates.length === 0) {
+      return null;
+    }
+
+    const normalizedIndex =
+      ((index % coordinates.length) + coordinates.length) % coordinates.length;
+    const selected = coordinates[normalizedIndex];
+
+    return { lat: selected[1], lng: selected[0] };
   }
 }

@@ -1,5 +1,5 @@
 import * as L from 'leaflet';
-import defaultConfig from './config.json';
+import { defaultConfig } from './config';
 import { DrawMode } from './enums';
 import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
@@ -16,6 +16,7 @@ import { leafletAdapter } from './compatibility/leaflet-adapter';
 import { EventAdapter } from './compatibility/event-adapter';
 import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
+import { deepMerge } from './utils/config-merge.util';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
@@ -29,6 +30,15 @@ interface ExtendedMap extends L.Map {
 type ExtendedBrowser = typeof L.Browser & {
   touch: boolean;
   mobile: boolean;
+};
+
+type PolydrawOptions = L.ControlOptions & {
+  config?: Partial<PolydrawConfig>;
+  configPath?: string;
+};
+
+type PredefinedOptions = {
+  visualOptimizationLevel?: number;
 };
 
 class Polydraw extends L.Control {
@@ -59,18 +69,20 @@ class Polydraw extends L.Control {
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
 
-  constructor(options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string }) {
+  constructor(options?: PolydrawOptions) {
     super(options);
 
-    // Initialize with default config first
-    this.config = defaultConfig as unknown as PolydrawConfig;
+    // Start from a clean clone of the defaults
+    const baseDefaults: PolydrawConfig = structuredClone(defaultConfig);
 
-    // If configPath is provided, load external config
+    // Apply inline config via deep merge (partial configs supported)
+    this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
+
+    // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
       this.loadExternalConfig(options.configPath, options?.config);
     } else {
-      // Apply inline config if no external config path
-      this.config = { ...defaultConfig, ...(options?.config || {}) } as unknown as PolydrawConfig;
+      // Initialize components immediately when no external config is used
       this.initializeComponents();
     }
   }
@@ -107,6 +119,9 @@ class Polydraw extends L.Control {
 
     // Initialize managers now that map is available
     this.initializeManagers();
+
+    // Apply initial draw mode now that all managers and tracer are ready
+    this.setDrawMode(this.config.defaultMode);
 
     // Attach event listeners
     this.setupEventListeners();
@@ -153,7 +168,7 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedPolygon(
     geoborders: unknown[][][],
-    options?: { visualOptimizationLevel?: number },
+    options?: PredefinedOptions,
   ): Promise<void> {
     // Convert input to L.LatLng[][][] using smart coordinate detection
     const geographicBorders = CoordinateUtils.convertToLatLngArray(geoborders);
@@ -209,6 +224,36 @@ class Polydraw extends L.Control {
   }
 
   /**
+   * Adds predefined polygons from GeoJSON to the map.
+   * @param geojsonFeatures - An array of GeoJSON Polygon or MultiPolygon features.
+   * @param options - Optional parameters, including visual optimization level.
+   */
+  public async addPredefinedGeoJSONs(
+    geojsonFeatures: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>[],
+    options?: PredefinedOptions,
+  ): Promise<void> {
+    for (const geojsonFeature of geojsonFeatures) {
+      const { type, coordinates } = geojsonFeature.geometry;
+
+      if (type === 'MultiPolygon') {
+        // MultiPolygon: coordinates[polygon][ring][point]
+        for (const polygonCoords of coordinates) {
+          const latLngs = polygonCoords.map((ring) =>
+            ring.map((point) => L.latLng(point[1], point[0])),
+          );
+          await this.addPredefinedPolygon([latLngs], options);
+        }
+      } else if (type === 'Polygon') {
+        // Polygon: coordinates[ring][point]
+        const latLngs = coordinates.map((ring) =>
+          ring.map((point) => L.latLng(point[1], point[0])),
+        );
+        await this.addPredefinedPolygon([latLngs], options);
+      }
+    }
+  }
+
+  /**
    * Sets the current drawing mode.
    * @param mode - The drawing mode to set.
    */
@@ -216,15 +261,19 @@ class Polydraw extends L.Control {
     const previousMode = this.drawMode;
     this._updateDrawModeState(mode);
 
-    // Only stop draw if we're switching away from PointToPoint mode or going to Off mode
-    // Don't reset tracer when entering PointToPoint mode
-    if (previousMode === DrawMode.PointToPoint && mode !== DrawMode.PointToPoint) {
-      // Clear P2P markers when leaving PointToPoint mode
+    // Only stop draw if we're switching away from PointToPoint modes or going to Off mode
+    // Don't reset tracer when entering PointToPoint modes
+    if (
+      (previousMode === DrawMode.PointToPoint || previousMode === DrawMode.PointToPointSubtract) &&
+      mode !== DrawMode.PointToPoint &&
+      mode !== DrawMode.PointToPointSubtract
+    ) {
+      // Clear P2P markers when leaving PointToPoint modes
       this.polygonDrawManager.clearP2pMarkers();
       this.stopDraw();
     } else if (mode === DrawMode.Off) {
       this.stopDraw();
-    } else if (mode !== DrawMode.PointToPoint) {
+    } else if (mode !== DrawMode.PointToPoint && mode !== DrawMode.PointToPointSubtract) {
       this.stopDraw();
     }
 
@@ -317,6 +366,7 @@ class Polydraw extends L.Control {
       this._handleSubtractClick,
       this._handleEraseClick,
       this._handlePointToPointClick,
+      this._handlePointToPointSubtractClick,
     );
 
     // Firefox Android fix: Ensure all buttons have proper touch handling
@@ -382,11 +432,17 @@ class Polydraw extends L.Control {
     this.eventManager.on('polydraw:polygon:created', async (data) => {
       this.stopDraw();
       if (data.isPointToPoint) {
-        // For P2P, add the polygon directly
-        await this.polygonMutationManager.addPolygon(data.polygon, {
-          simplify: false,
-          noMerge: false,
-        });
+        // For P2P, handle based on the mode
+        if (data.mode === DrawMode.PointToPointSubtract) {
+          // Use subtraction for P2P subtract mode
+          await this.polygonMutationManager.subtractPolygon(data.polygon);
+        } else {
+          // Use addition for regular P2P mode
+          await this.polygonMutationManager.addPolygon(data.polygon, {
+            simplify: false,
+            noMerge: false,
+          });
+        }
       } else {
         // For freehand, handle based on mode
         await this.handleFreehandDrawCompletion(data.polygon);
@@ -397,7 +453,7 @@ class Polydraw extends L.Control {
     // Listen for drawing cancellation events
     this.eventManager.on('polydraw:draw:cancel', () => {
       this.stopDraw();
-      this.setDrawMode(DrawMode.Off);
+      this.setDrawMode(this.config.defaultMode);
     });
   }
 
@@ -447,7 +503,7 @@ class Polydraw extends L.Control {
    * @param configPath - The path to the external configuration file.
    * @param inlineConfig - An optional inline configuration object.
    */
-  private async loadExternalConfig(configPath: string, inlineConfig?: PolydrawConfig) {
+  private async loadExternalConfig(configPath: string, inlineConfig?: Partial<PolydrawConfig>) {
     try {
       const response = await fetch(configPath);
       if (!response.ok) {
@@ -456,14 +512,15 @@ class Polydraw extends L.Control {
         );
       }
 
-      const externalConfig = await response.json();
+      // Expect external to be a partial config
+      const externalConfig: Partial<PolydrawConfig> = await response.json();
 
-      // Merge configs: default < external < inline (inline has highest priority)
-      this.config = {
-        ...defaultConfig,
-        ...externalConfig,
-        ...(inlineConfig || {}),
-      } as unknown as PolydrawConfig;
+      // Merge precedence: defaults < external < inline
+      this.config = deepMerge<PolydrawConfig>(
+        structuredClone(defaultConfig),
+        externalConfig ?? {},
+        inlineConfig ?? {},
+      );
 
       this.initializeComponents();
     } catch (error) {
@@ -471,8 +528,8 @@ class Polydraw extends L.Control {
         'Failed to load external config, falling back to default + inline config:',
         error,
       );
-      // Fallback to default + inline config if external loading fails
-      this.config = { ...defaultConfig, ...(inlineConfig || {}) } as unknown as PolydrawConfig;
+      // Fallback to defaults < inline
+      this.config = deepMerge<PolydrawConfig>(structuredClone(defaultConfig), inlineConfig ?? {});
       this.initializeComponents();
     }
   }
@@ -526,6 +583,12 @@ class Polydraw extends L.Control {
             dashArray: '5, 5',
           });
           break;
+        case DrawMode.PointToPointSubtract:
+          this.tracer.setStyle({
+            color: this.config.colors.subtractLine,
+            dashArray: '5, 5',
+          });
+          break;
       }
     } catch (error) {
       // Handle case where tracer renderer is not initialized
@@ -539,14 +602,14 @@ class Polydraw extends L.Control {
     const container = this.getContainer();
     if (!container) return;
 
-    const activate = container.querySelector('.icon-activate') as HTMLElement;
-    if (leafletAdapter.domUtil.hasClass(activate, 'active')) {
-      leafletAdapter.domUtil.removeClass(activate, 'active');
+    const activateButton = container.querySelector('.icon-activate') as HTMLElement;
+    if (leafletAdapter.domUtil.hasClass(activateButton, 'active')) {
+      leafletAdapter.domUtil.removeClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '0px';
       }
     } else {
-      leafletAdapter.domUtil.addClass(activate, 'active');
+      leafletAdapter.domUtil.addClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '250px';
       }
@@ -610,6 +673,20 @@ class Polydraw extends L.Control {
       return;
     }
     this.setDrawMode(DrawMode.PointToPoint);
+    this.polygonInformation.saveCurrentState();
+  };
+
+  private _handlePointToPointSubtractClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    // If already in PointToPointSubtract mode, turn it off instead of ignoring
+    if (this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.PointToPointSubtract);
     this.polygonInformation.saveCurrentState();
   };
 
@@ -845,8 +922,11 @@ class Polydraw extends L.Control {
    * @param event - The touch event
    */
   private handleDoubleTap(event: TouchEvent) {
-    // Only handle double-tap in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-tap in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 
@@ -884,8 +964,11 @@ class Polydraw extends L.Control {
       return;
     }
 
-    // Handle Point-to-Point mode differently
-    if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+    // Handle Point-to-Point modes differently
+    if (
+      this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
+      this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+    ) {
       console.log('Point-to-Point mode, calling handlePointToPointClick');
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
@@ -1070,7 +1153,10 @@ class Polydraw extends L.Control {
    */
   private handleKeyDown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
-      if (this.modeManager.getCurrentMode() === DrawMode.PointToPoint) {
+      if (
+        this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
+        this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+      ) {
         this.polygonDrawManager.cancelPointToPointDrawing();
       }
     }
@@ -1162,8 +1248,11 @@ class Polydraw extends L.Control {
    * @param e - The mouse event.
    */
   private handleDoubleClick(e: L.LeafletMouseEvent) {
-    // Only handle double-click in Point-to-Point mode
-    if (this.modeManager.getCurrentMode() !== DrawMode.PointToPoint) {
+    // Only handle double-click in Point-to-Point modes
+    if (
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
+      this.modeManager.getCurrentMode() !== DrawMode.PointToPointSubtract
+    ) {
       return;
     }
 
@@ -1227,21 +1316,47 @@ class Polydraw extends L.Control {
 
     const hasPolygons = this.arrayOfFeatureGroups.length > 0;
     const isPanelClosed = !leafletAdapter.domUtil.hasClass(activateButton, 'active');
+    const iconMarkup = leafletAdapter.domUtil.hasClass(activateButton, 'active')
+      ? activateButton.dataset.collapsedIcon
+      : activateButton.dataset.activeIcon;
 
-    if (hasPolygons && isPanelClosed) {
+    if (iconMarkup) {
+      this.applyActivateButtonIcon(activateButton, iconMarkup);
+    }
+
+    const hasIndicator = hasPolygons && isPanelClosed;
+    if (hasIndicator) {
       leafletAdapter.domUtil.addClass(activateButton, 'polydraw-indicator-active');
     } else {
       leafletAdapter.domUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
+
+    const baseBackground = this.config.colors.styles.controlButton.backgroundColor;
+    const baseColor = this.config.colors.styles.controlButton.color;
+    const indicatorBackground = this.config.colors.styles.indicatorActive.backgroundColor;
+
+    activateButton.style.backgroundColor = hasIndicator ? indicatorBackground : baseBackground;
+    activateButton.style.color = baseColor;
+  }
+
+  private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {
+    button.innerHTML = svgMarkup;
+    const svgElement = button.querySelector('svg');
+    if (!svgElement) return;
+
+    svgElement.setAttribute('width', '24');
+    svgElement.setAttribute('height', '24');
+    (svgElement as unknown as HTMLElement).style.pointerEvents = 'none';
+    svgElement.querySelectorAll('*').forEach((el) => {
+      (el as HTMLElement).style.pointerEvents = 'none';
+    });
   }
 }
 
 // Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
 if (typeof L !== 'undefined' && L.control) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (L.control as any).polydraw = function (
-    options?: L.ControlOptions & { config?: PolydrawConfig; configPath?: string },
-  ): Polydraw {
+  (L.control as any).polydraw = function (options?: PolydrawOptions): Polydraw {
     return new Polydraw(options);
   };
 }

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Config deepmerging** Use deep merge to allow partial config settings
+- **Expose default config** Change config from json file to TS object to enforce typing and expose default config to users
+- **Default drawMode** User can configure the default draw mode
+- **GeoJSON Support**: New `addPredefinedGeoJSONs()` method for loading polygons from standard GeoJSON format
+  - Supports `Feature<Polygon>` and `Feature<MultiPolygon>` types
+  - Automatically converts GeoJSON `[lng, lat]` to Leaflet `[lat, lng]` format
+  - Preserves polygon holes (inner rings)
+  - Includes comprehensive test coverage (50+ tests)
+- **Scale and Rotate**: New transform actions accessible from the polygon menu (separate buttons for scaling and rotating)
+
+### Changed
+
+- **Icon placement**: Minor adjustments to the placement/alignment of toolbar and menu icons
+
 ## [1.0.0] - 2025-10-23
 
 _(First dual-version release with Leaflet 1.x and 2.x compatibility)_

@@ -1,5 +1,12 @@
 # Configuration
 
+> **Note:**  
+> The configuration file includes several legacy or experimental options that may not currently be used in the codebase.  
+> These have been kept intentionally to maintain backward compatibility and for future feature expansion.  
+> As of version 1.0.0, approximately **77%** of configuration properties are actively used.  
+> The remaining unused options (such as parts of `visualOptimization`, `holeMarkers`, and several polyline settings)  
+> are harmless but currently inactive. They may be deprecated or repurposed in a future release.
+
 ## Default Configuration
 
 ```javascript
@@ -142,6 +149,9 @@
     "weight": 2
   },
   "polygonOptions": {
+    "weight": 2,
+    "opacity": 1,
+    "fillOpacity": 0.2,
     "smoothFactor": 0.3,
     "noClip": true
   },
@@ -231,6 +241,33 @@
   }
 }
 ```
+
+## Deep Merge Configuration
+
+The configuration system uses deep merging, which means you only need to specify the properties you want to change. All other properties will use their default values from the base configuration.
+
+**Example:**
+
+```javascript
+// Only override specific colors - everything else uses defaults
+const polydraw = L.control.polydraw({
+  config: {
+    colors: {
+      polygon: {
+        border: "#ff0000",
+        fill: "#ffcccc",
+      },
+    },
+  },
+});
+```
+
+**Benefits:**
+
+- **Type Safety**: All configuration properties are validated at compile time
+- **Partial Updates**: Override only what you need to change
+- **No Runtime Errors**: All properties are guaranteed to exist
+- **Better IDE Support**: Full autocomplete and validation
 
 ## Configuration Options
 
@@ -352,13 +389,12 @@
 | &nbsp;&nbsp;clickable                                              | boolean | `false`                        | Make subtract polyline clickable                          |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                            | Subtract polyline weight                                  |
 | **polygonOptions**                                                 | object  |                                | Polygon styling options                                   |
+| &nbsp;&nbsp;weight                                                 | number  | `2`                            | Polygon border weight in pixels                           |
+| &nbsp;&nbsp;opacity                                                | number  | `1`                            | Polygon border opacity (0-1)                              |
+| &nbsp;&nbsp;fillOpacity                                            | number  | `0.2`                          | Polygon fill opacity (0-1)                                |
 | &nbsp;&nbsp;smoothFactor                                           | number  | `0.3`                          | Polygon smoothing factor                                  |
-| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Polygon border color                                      |
-| &nbsp;&nbsp;fillColor                                              | string  | `"#b4cd8a"`                    | Polygon fill color                                        |
 | &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable polygon clipping                                  |
 | **holeOptions**                                                    | object  |                                | Hole styling options                                      |
-| &nbsp;&nbsp;color                                                  | string  | `"#aa0000"`                    | Hole border color                                         |
-| &nbsp;&nbsp;fillColor                                              | string  | `"#ffcccc"`                    | Hole fill color                                           |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                            | Hole border weight                                        |
 | &nbsp;&nbsp;opacity                                                | number  | `1`                            | Hole border opacity                                       |
 | &nbsp;&nbsp;fillOpacity                                            | number  | `0.5`                          | Hole fill opacity                                         |

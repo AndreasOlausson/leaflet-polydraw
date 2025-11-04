@@ -17,6 +17,8 @@ import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
 import { isTouchDevice } from './../utils';
 import { isTestEnvironment } from '../utils';
+import { PolygonTransformController } from '../transform/polygon-transform-controller';
+import { PopupFactory } from '../popup-factory';
 
 export interface InteractionResult {
   success: boolean;
@@ -54,6 +56,14 @@ export class PolygonInteractionManager {
   private currentModifierDragMode: boolean = false;
   private isModifierKeyHeld: boolean = false;
   private _openMenuPopup: L.Popup | null = null;
+  private transformModeActive: boolean = false;
+  private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
+  /**
+   * Strongly typed helper to emit polygon updated events without casts.
+   */
+  private emitPolygonUpdated(data: PolygonUpdatedEventData): void {
+    this.eventManager.emit('polydraw:polygon:updated', data);
+  }
 
   // Read-only access to feature groups
   private getFeatureGroups: () => L.FeatureGroup[];
@@ -212,9 +222,11 @@ export class PolygonInteractionManager {
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
-          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
+          const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
+            polygonGeoJSON,
+            menuMarkerIdx,
+          );
           const menuPopup = this.generateMenuMarkerPopup(latlngs, featureGroup);
-
           menuPopup.setLatLng(centerOfMass).openOn(this.map);
         });
         // Patch: Adjust touchAction for map container on popup open/close
@@ -226,14 +238,27 @@ export class PolygonInteractionManager {
           // Use a timeout to allow the popup to be fully rendered and positioned
           setTimeout(() => {
             const mapContainer = this.map.getContainer();
-            const mapBounds = mapContainer.getBoundingClientRect();
             const popupBounds = popupContent.getBoundingClientRect();
 
-            // Check if popup is out of bounds and adjust
+            // Re-measure bounds after repositioning and check if popup is out of bounds
+            const mapBounds = mapContainer.getBoundingClientRect();
+            let adjustX = 0;
+            let adjustY = 0;
+
             if (popupBounds.left < mapBounds.left) {
-              popupContent.style.transform = `translateX(${mapBounds.left - popupBounds.left}px)`;
+              adjustX = mapBounds.left - popupBounds.left;
             } else if (popupBounds.right > mapBounds.right) {
-              popupContent.style.transform = `translateX(${mapBounds.right - popupBounds.right}px)`;
+              adjustX = mapBounds.right - popupBounds.right;
+            }
+
+            if (popupBounds.top < mapBounds.top) {
+              adjustY = mapBounds.top - popupBounds.top;
+            } else if (popupBounds.bottom > mapBounds.bottom) {
+              adjustY = mapBounds.bottom - popupBounds.bottom;
+            }
+
+            if (adjustX !== 0 || adjustY !== 0) {
+              popupContent.style.transform = `translate(${adjustX}px, ${adjustY}px)`;
             }
           }, 0);
 
@@ -259,7 +284,10 @@ export class PolygonInteractionManager {
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
           const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
-          const centerOfMass = PolygonUtil.getCenterOfMass(polygonGeoJSON);
+          const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
+            polygonGeoJSON,
+            infoMarkerIdx,
+          );
           infoPopup.setLatLng(centerOfMass).openOn(this.map);
         });
         // Patch: Adjust touchAction for map container on popup open/close
@@ -622,10 +650,10 @@ export class PolygonInteractionManager {
 
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
-                  this.eventManager.emit('polydraw:polygon:updated', {
+                  this.emitPolygonUpdated({
                     operation: 'removeHole',
                     polygon: newPolygon,
-                  } as PolygonUpdatedEventData);
+                  });
                 }
               }
             }
@@ -785,6 +813,9 @@ export class PolygonInteractionManager {
 
     // Support pointer events (Leaflet v2) in addition to mousedown
     (polygon as any).on('pointerdown', (e: any) => {
+      if (this.transformModeActive) {
+        return;
+      }
       // If not in off mode, it's a drawing click. Forward to map and stop.
       if (!this.modeManager.isInOffMode()) {
         L.DomEvent.stopPropagation(e);
@@ -961,11 +992,11 @@ export class PolygonInteractionManager {
             const polydrawPolygon = parentPolygon as PolydrawPolygon;
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             this.removeFeatureGroup(parentFeatureGroup);
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'addVertex',
               polygon: newPolygon,
               optimizationLevel,
-            } as PolygonUpdatedEventData);
+            });
           }
         }
       } catch (error) {
@@ -1088,10 +1119,10 @@ export class PolygonInteractionManager {
     }
 
     const newPolygon = this.turfHelper.getMultiPolygon([coords]);
-    this.eventManager.emit('polydraw:polygon:updated', {
+    this.emitPolygonUpdated({
       operation: 'removeVertex',
       polygon: newPolygon,
-    } as PolygonUpdatedEventData);
+    });
   }
 
   private markerDrag(featureGroup: L.FeatureGroup): void {
@@ -1238,22 +1269,22 @@ export class PolygonInteractionManager {
           for (const polygon of unkink) {
             // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
             // but prevent unwanted styling changes for non-intersecting polygons
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'markerDrag',
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true, // Allow intelligent merging for intersections
               intelligentMerge: true, // Flag for smart merging logic
-            } as PolygonUpdatedEventData);
+            });
           }
         } else {
           // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
           // but prevent unwanted styling changes for non-intersecting polygons
-          this.eventManager.emit('polydraw:polygon:updated', {
+          this.emitPolygonUpdated({
             operation: 'markerDrag',
             polygon: feature,
             allowMerge: true, // Allow intelligent merging for intersections
             intelligentMerge: true, // Flag for smart merging logic
-          } as PolygonUpdatedEventData);
+          });
         }
       }
     } else {
@@ -1266,20 +1297,20 @@ export class PolygonInteractionManager {
         for (const polygon of unkink) {
           // CRITICAL FIX: Don't allow merging for marker drag operations
           // This prevents incorrect styling when dragging vertices of polygons with holes
-          this.eventManager.emit('polydraw:polygon:updated', {
+          this.emitPolygonUpdated({
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: false, // Fixed: prevent merging during vertex drag
-          } as PolygonUpdatedEventData);
+          });
         }
       } else {
         // CRITICAL FIX: Don't allow merging for marker drag operations
         // This prevents incorrect styling when dragging vertices of polygons with holes
-        this.eventManager.emit('polydraw:polygon:updated', {
+        this.emitPolygonUpdated({
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: false, // Fixed: prevent merging during vertex drag
-        } as PolygonUpdatedEventData);
+        });
       }
     }
     this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -1512,11 +1543,11 @@ export class PolygonInteractionManager {
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
-      this.eventManager.emit('polydraw:polygon:updated', {
+      this.emitPolygonUpdated({
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
-      } as PolygonUpdatedEventData);
+      });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
     } catch (error) {
@@ -1729,11 +1760,11 @@ export class PolygonInteractionManager {
                 const individualPolygon = this.turfHelper.getMultiPolygon([coordSet]);
 
                 // Emit each result polygon separately to ensure they get separate feature groups
-                this.eventManager.emit('polydraw:polygon:updated', {
+                this.emitPolygonUpdated({
                   operation: 'modifierSubtract',
                   polygon: this.turfHelper.getTurfPolygon(individualPolygon),
                   allowMerge: false, // Don't merge the result of subtract operations
-                } as PolygonUpdatedEventData);
+                });
               }
             }
           } catch (differenceError) {
@@ -1741,11 +1772,11 @@ export class PolygonInteractionManager {
               console.warn('Failed to perform difference operation:', differenceError);
             }
             // If difference fails, try to add the original polygon back
-            this.eventManager.emit('polydraw:polygon:updated', {
+            this.emitPolygonUpdated({
               operation: 'modifierSubtractFallback',
               polygon: existingPolygon,
               allowMerge: false,
-            } as PolygonUpdatedEventData);
+            });
           }
         } catch (error) {
           if (!isTestEnvironment()) {
@@ -2038,50 +2069,48 @@ export class PolygonInteractionManager {
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
   ): L.Popup {
-    const outerWrapper: HTMLDivElement = document.createElement('div');
-    outerWrapper.classList.add('alter-marker-outer-wrapper');
-    const wrapper: HTMLDivElement = document.createElement('div');
-    wrapper.classList.add('alter-marker-wrapper');
-    const markerContent: HTMLDivElement = document.createElement('div');
-    markerContent.classList.add('content');
-    const markerContentWrapper: HTMLDivElement = document.createElement('div');
-    markerContentWrapper.classList.add('marker-menu-content');
+    // Build buttons based on config
+    const buttons: HTMLDivElement[] = [];
+    const menuOps = this.config.menuOperations;
 
-    const simplify: HTMLDivElement = document.createElement('div');
-    simplify.classList.add('marker-menu-button', 'simplify');
-    simplify.title = 'Simplify';
+    // Simplify button
+    if (menuOps.simplify.enabled) {
+      buttons.push(PopupFactory.createMenuButton('simplify', 'Simplify', ['simplify']));
+    }
 
-    const doubleElbows: HTMLDivElement = document.createElement('div');
-    doubleElbows.classList.add('marker-menu-button', 'double-elbows');
-    doubleElbows.title = 'DoubleElbows';
+    // Double Elbows button
+    if (menuOps.doubleElbows.enabled) {
+      buttons.push(
+        PopupFactory.createMenuButton('doubleElbows', 'DoubleElbows', ['double-elbows']),
+      );
+    }
 
-    const bbox: HTMLDivElement = document.createElement('div');
-    bbox.classList.add('marker-menu-button', 'bbox');
-    bbox.title = 'Bounding box';
+    // Bounding Box button
+    if (menuOps.bbox.enabled) {
+      buttons.push(PopupFactory.createMenuButton('bbox', 'Bounding box', ['bbox']));
+    }
 
-    const bezier: HTMLDivElement = document.createElement('div');
-    bezier.classList.add('marker-menu-button', 'bezier');
-    bezier.title = 'Curve';
+    // Bezier button
+    if (menuOps.bezier.enabled) {
+      buttons.push(
+        PopupFactory.createMenuButton('bezier', 'Curve', ['bezier'], {
+          alphaBanner: true,
+        }),
+      );
+    }
 
-    // Add alpha banner for bezier button
-    const alphaBanner: HTMLSpanElement = document.createElement('span');
-    alphaBanner.classList.add('alpha-banner');
-    alphaBanner.textContent = 'ALPHA';
-    bezier.appendChild(alphaBanner);
+    // Scale button
+    if (menuOps.scale.enabled) {
+      buttons.push(PopupFactory.createMenuButton('scale', 'Scale', ['transform-scale']));
+    }
 
-    const separator: HTMLDivElement = document.createElement('div');
-    separator.classList.add('separator');
+    // Rotate button
+    if (menuOps.rotate.enabled) {
+      buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
+    }
 
-    outerWrapper.appendChild(wrapper);
-    wrapper.appendChild(markerContent);
-    markerContent.appendChild(markerContentWrapper);
-    markerContentWrapper.appendChild(simplify);
-    markerContentWrapper.appendChild(separator.cloneNode());
-    markerContentWrapper.appendChild(doubleElbows);
-    markerContentWrapper.appendChild(separator.cloneNode());
-    markerContentWrapper.appendChild(bbox);
-    markerContentWrapper.appendChild(separator.cloneNode());
-    markerContentWrapper.appendChild(bezier);
+    // Build popup structure using factory
+    const outerWrapper = PopupFactory.buildMenuPopup(buttons);
 
     const closePopupIfOpen = () => {
       if (this._openMenuPopup) {
@@ -2090,81 +2119,106 @@ export class PolygonInteractionManager {
       }
     };
 
-    simplify.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'simplify',
-        latLngs,
-        featureGroup,
+    // Wire up event handlers for all buttons
+    const attachMenuActionHandler = (
+      button: HTMLDivElement,
+      action: 'simplify' | 'doubleElbows' | 'bbox' | 'bezier',
+    ) => {
+      button.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.eventManager.emit('polydraw:menu:action', {
+          action,
+          latLngs,
+          featureGroup,
+        });
+        closePopupIfOpen();
       });
-      closePopupIfOpen();
-    });
-    simplify.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'simplify',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
+      button.onclick = () => {
+        this.eventManager.emit('polydraw:menu:action', {
+          action,
+          latLngs,
+          featureGroup,
+        });
+        closePopupIfOpen();
+      };
     };
 
-    bbox.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'bbox',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
-    });
-    bbox.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'bbox',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
+    const startTransform = (mode: 'scale' | 'rotate') => {
+      const existing = this.transformControllers.get(featureGroup);
+      if (existing) {
+        existing.cancel();
+        existing.destroy();
+        this.transformControllers.delete(featureGroup);
+      }
+      try {
+        const controller = new PolygonTransformController(this.map, featureGroup, mode, () => {
+          try {
+            const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+              | L.Polygon
+              | undefined;
+            if (!polygonLayer) return;
+            const newGeoJSON = polygonLayer.toGeoJSON();
+            this.removeFeatureGroup(featureGroup);
+            this.emitPolygonUpdated({
+              operation: 'transform',
+              polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
+              allowMerge: true,
+            });
+          } finally {
+            controller.destroy();
+            this.transformControllers.delete(featureGroup);
+            this.transformModeActive = false;
+          }
+        });
+        this.transformControllers.set(featureGroup, controller);
+        const polyLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+          | L.Polygon
+          | undefined;
+        if (polyLayer) this.setMarkerVisibility(polyLayer as unknown as PolydrawPolygon, false);
+        this.transformModeActive = true;
+      } catch {
+        // ignore
+      }
     };
 
-    doubleElbows.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'doubleElbows',
-        latLngs,
-        featureGroup,
+    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate') => {
+      button.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startTransform(mode);
+        closePopupIfOpen();
       });
-      closePopupIfOpen();
-    });
-    doubleElbows.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'doubleElbows',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
+      button.onclick = () => {
+        startTransform(mode);
+        closePopupIfOpen();
+      };
     };
 
-    bezier.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'bezier',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
+    // Attach handlers based on button IDs
+    buttons.forEach((button) => {
+      const actionId = button.getAttribute('data-action-id');
+      switch (actionId) {
+        case 'simplify':
+          attachMenuActionHandler(button, 'simplify');
+          break;
+        case 'doubleElbows':
+          attachMenuActionHandler(button, 'doubleElbows');
+          break;
+        case 'bbox':
+          attachMenuActionHandler(button, 'bbox');
+          break;
+        case 'bezier':
+          attachMenuActionHandler(button, 'bezier');
+          break;
+        case 'scale':
+          attachTransformHandler(button, 'scale');
+          break;
+        case 'rotate':
+          attachTransformHandler(button, 'rotate');
+          break;
+      }
     });
-    bezier.onclick = () => {
-      this.eventManager.emit('polydraw:menu:action', {
-        action: 'bezier',
-        latLngs,
-        featureGroup,
-      });
-      closePopupIfOpen();
-    };
 
     L.DomEvent.disableClickPropagation(outerWrapper);
     outerWrapper.style.pointerEvents = 'auto';

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TurfHelper } from '../../src/turf-helper';
-import defaultConfig from '../../src/config.json';
+import { defaultConfig } from '../../src/config';
 import type { Feature, Polygon, MultiPolygon, Point } from 'geojson';
 import * as isTestEnvModule from '../../src/utils';
 

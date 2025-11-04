@@ -35,6 +35,7 @@ export default [
         ...globals.browser,
         ...globals.es2021,
         L: 'readonly',
+        GeoJSON: 'readonly',
       },
     },
     plugins: basePlugins,

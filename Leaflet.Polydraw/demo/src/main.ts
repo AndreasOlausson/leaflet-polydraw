@@ -237,7 +237,7 @@ function updateStatusBox() {
   }
 
   // Build structure representation
-  const structure = featureGroups.map((featureGroup) => {
+  const structure = featureGroups.map((featureGroup: L.FeatureGroup) => {
     let polygonStructure: {
       outer: number;
       holes: number[];
@@ -258,7 +258,7 @@ function updateStatusBox() {
       coordinates: null,
     };
 
-    featureGroup.eachLayer((layer) => {
+    featureGroup.eachLayer((layer: L.Layer) => {
       if (layer instanceof L.Polygon) {
         const polygon = layer as L.Polygon;
         const latLngs = polygon.getLatLngs();
@@ -664,7 +664,7 @@ function updateStatusBox() {
 
   let structureText = '[\n';
 
-  structure.forEach((polygonStructure, polygonIndex) => {
+  structure.forEach((polygonStructure: (typeof structure)[0], polygonIndex: number) => {
     if (polygonIndex > 0) {
       structureText += ',\n';
     }
@@ -692,7 +692,8 @@ function updateStatusBox() {
 
   const totalPolygons = structure.length;
   const totalVertices = structure.reduce(
-    (acc, p) => acc + p.outer + p.holes.reduce((a, b) => a + b, 0),
+    (acc: number, p: (typeof structure)[0]) =>
+      acc + p.outer + p.holes.reduce((a: number, b: number) => a + b, 0),
     0,
   );
   // Close the structure first, then show summary on its own line after
@@ -769,7 +770,7 @@ function updateStatusBox() {
           const b = item.metrics.bounds;
           details += `Outer perimeter: ${item.metrics.outerPerimeter < 1 ? item.metrics.outerPerimeter.toFixed(2) + ' m' : item.metrics.outerPerimeter < 1000 ? item.metrics.outerPerimeter.toFixed(1) + ' m' : (item.metrics.outerPerimeter / 1000).toFixed(2) + ' km'}\n`;
           if (item.holes.length > 0) {
-            details += `Hole perimeters: ${item.metrics.holePerimeters.map((m) => (m < 1 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' : (m / 1000).toFixed(2) + ' km')).join(', ')}\n`;
+            details += `Hole perimeters: ${item.metrics.holePerimeters.map((m: number) => (m < 1 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' : (m / 1000).toFixed(2) + ' km')).join(', ')}\n`;
           }
           details += `Total perimeter: ${item.metrics.totalPerimeter < 1 ? item.metrics.totalPerimeter.toFixed(2) + ' m' : item.metrics.totalPerimeter < 1000 ? item.metrics.totalPerimeter.toFixed(1) + ' m' : (item.metrics.totalPerimeter / 1000).toFixed(2) + ' km'}\n`;
           details += `Outer orientation: ${item.metrics.outerOrientation}`;
