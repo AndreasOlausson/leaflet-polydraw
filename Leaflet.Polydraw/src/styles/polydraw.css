@@ -147,6 +147,45 @@ body {
   max-width: 132px;
 }
 
+.marker-menu-content .marker-menu-button {
+  width: 22px;
+  height: 22px;
+  background-repeat: no-repeat;
+  background-size: 22px, 22px;
+  background-position: center;
+  padding: 4px;
+  border: 1px solid #fff;
+  margin: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.marker-menu-content .marker-menu-button.simplify {
+  background-image: url('../icons/icon-simplify2.svg');
+}
+
+.marker-menu-content .marker-menu-button.double-elbows {
+  background-image: url('../icons/icon-double-elbows.svg');
+}
+
+.marker-menu-content .marker-menu-button.bbox {
+  background-image: url('../icons/icon-bbox.svg');
+}
+
+.marker-menu-content .marker-menu-button.bezier {
+  background-image: url('../icons/icon-bezier.svg');
+  position: relative;
+  overflow: hidden;
+}
+
+.marker-menu-content .marker-menu-button.transform-scale {
+  background-image: url('../icons/icon-resize.svg');
+}
+
+.marker-menu-content .marker-menu-button.transform-rotate {
+  background-image: url('../icons/icon-rotate.svg');
+}
+
 .marker-menu-button {
   padding: 4px;
   border: 1px solid #aaaaaa;
@@ -211,41 +250,6 @@ body {
   margin-right: 12px;
   display: flex;
   align-items: center;
-}
-.marker-menu-content {
-  .marker-menu-button {
-    width: 22px;
-    height: 22px;
-    background-repeat: no-repeat;
-    background-size: 22px, 22px;
-    background-position: center;
-    padding: 4px;
-    border: 1px solid #fff;
-    margin: 4px;
-    border-radius: 4px;
-    cursor: pointer;
-
-    &.simplify {
-      background-image: url('../icons/icon-simplify2.svg');
-    }
-    &.double-elbows {
-      background-image: url('../icons/icon-double-elbows.svg');
-    }
-    &.bbox {
-      background-image: url('../icons/icon-bbox.svg');
-    }
-    &.bezier {
-      background-image: url('../icons/icon-bezier.svg');
-      position: relative;
-      overflow: hidden;
-    }
-    &.transform-scale {
-      background-image: url('../icons/icon-resize.svg');
-    }
-    &.transform-rotate {
-      background-image: url('../icons/icon-rotate.svg');
-    }
-  }
 }
 
 .polydraw-transform-cancel,
