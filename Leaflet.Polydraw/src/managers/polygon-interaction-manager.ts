@@ -2112,6 +2112,22 @@ export class PolygonInteractionManager {
     // Build popup structure using factory
     const outerWrapper = PopupFactory.buildMenuPopup(buttons);
 
+    const closeBtn = outerWrapper.querySelector('.marker-menu-close');
+    if (closeBtn) {
+      const handleClose = (event: Event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        if (this._openMenuPopup) {
+          this.map.closePopup(this._openMenuPopup);
+          this._openMenuPopup = null;
+        } else {
+          this.map.closePopup();
+        }
+      };
+      closeBtn.addEventListener('click', handleClose);
+      closeBtn.addEventListener('touchend', handleClose, { passive: false });
+    }
+
     const closePopupIfOpen = () => {
       if (this._openMenuPopup) {
         this.map.closePopup(this._openMenuPopup);
@@ -2231,7 +2247,7 @@ export class PolygonInteractionManager {
     const isMobile = window.innerWidth <= 600;
     const popup = leafletAdapter
       .createPopup({
-        closeButton: true,
+        closeButton: false,
         autoClose: true,
         className: `menu-popup${isMobile ? ' mobile-popup' : ''}`,
       })

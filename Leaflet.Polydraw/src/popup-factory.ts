@@ -46,6 +46,13 @@ export class PopupFactory {
     const wrapper = document.createElement('div');
     wrapper.classList.add('alter-marker-wrapper');
 
+    const closeButton = document.createElement('button');
+    closeButton.type = 'button';
+    closeButton.className = 'marker-menu-close';
+    closeButton.setAttribute('aria-label', 'Close menu');
+    closeButton.innerHTML = '&times;';
+    wrapper.appendChild(closeButton);
+
     const markerContent = document.createElement('div');
     markerContent.classList.add('content');
 

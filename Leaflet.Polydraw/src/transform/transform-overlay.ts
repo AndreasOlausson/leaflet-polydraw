@@ -18,6 +18,10 @@ export class TransformOverlay {
   private pane: HTMLElement;
   private root: HTMLDivElement;
   private draggingHandle: TransformHandleType | null = null;
+  private documentMoveHandler: ((e: Event) => void) | null = null;
+  private documentUpHandler: ((e: Event) => void) | null = null;
+  private pointerCaptureTarget: HTMLElement | null = null;
+  private activePointerId: number | null = null;
   private callbacks: TransformOverlayCallbacks;
   private rafId: number | null = null;
   private mode: 'scale' | 'rotate';
@@ -27,6 +31,9 @@ export class TransformOverlay {
   private confirmBtn: HTMLDivElement | null = null;
   private currentBBox: PixelBBox | null = null;
   private currentRotation: number = 0;
+  private buttonsHidden: boolean = false;
+  private readonly supportsPointerEvents: boolean =
+    typeof window !== 'undefined' && 'PointerEvent' in window;
 
   constructor(
     map: L.Map,
@@ -44,7 +51,7 @@ export class TransformOverlay {
     let pane = (this.map as any).getPane ? (this.map as any).getPane(paneName) : undefined;
     if (!pane) pane = this.map.createPane(paneName);
     pane.style.zIndex = '650';
-    pane.style.pointerEvents = 'none';
+    pane.style.pointerEvents = 'auto';
     this.pane = pane;
 
     this.root = document.createElement('div');
@@ -52,6 +59,7 @@ export class TransformOverlay {
     this.root.style.position = 'absolute';
     this.root.style.left = '0px';
     this.root.style.top = '0px';
+    this.root.style.pointerEvents = 'none';
     this.pane.appendChild(this.root);
   }
 
@@ -68,7 +76,7 @@ export class TransformOverlay {
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
       this.render(bbox, pivot, rotation);
-      // Update button positions if buttons exist (they'll be hidden during rotation drag)
+      // Update button positions if buttons exist (they'll stay hidden while dragging)
       if (this.cancelBtn || this.confirmBtn) {
         const isRotateDrag =
           this.draggingHandle === TransformHandleType.Rotate && this.mode === 'rotate';
@@ -137,8 +145,12 @@ export class TransformOverlay {
         cursor: this.cursorForHandle(type),
         pointerEvents: 'auto',
       } as Partial<CSSStyleDeclaration>);
-      L.DomEvent.on(h, 'mousedown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e));
-      L.DomEvent.on(h, 'touchstart', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e));
+      if (this.supportsPointerEvents) {
+        L.DomEvent.on(h, 'pointerdown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
+      } else {
+        L.DomEvent.on(h, 'mousedown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
+        L.DomEvent.on(h, 'touchstart', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
+      }
       this.root.appendChild(h);
     };
 
@@ -199,52 +211,108 @@ export class TransformOverlay {
   }
 
   private startDrag(type: TransformHandleType, start: PixelPoint, evt: Event): void {
-    (evt as any).stopPropagation?.();
-    (evt as any).preventDefault?.();
+    L.DomEvent.stop(evt as any);
     this.draggingHandle = type;
 
-    // Hide buttons while dragging rotation handles
-    if (type === TransformHandleType.Rotate && this.mode === 'rotate') {
-      this.hideButtons();
-    }
+    // Hide buttons while dragging to avoid inadvertent taps
+    this.hideButtons();
 
-    const onMove = (e: Event) => this.onDrag(e as any);
-    const onUp = (e: Event) => this.endDrag(e as any);
-    L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', onMove as any);
-    L.DomEvent.on(document as unknown as HTMLElement, 'mouseup', onUp as any);
-    L.DomEvent.on(document as unknown as HTMLElement, 'touchmove', onMove as any);
-    L.DomEvent.on(document as unknown as HTMLElement, 'touchend', onUp as any);
+    this.documentMoveHandler = (e: Event) => this.onDrag(e);
+    this.documentUpHandler = (e: Event) => this.endDrag(e);
+    if (this.supportsPointerEvents && evt instanceof PointerEvent) {
+      this.activePointerId = evt.pointerId;
+      this.pointerCaptureTarget = evt.target as HTMLElement | null;
+      this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
+      L.DomEvent.on(document as unknown as HTMLElement, 'pointermove', this.documentMoveHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'pointercancel', this.documentUpHandler as any);
+    } else {
+      L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', this.documentMoveHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'mouseup', this.documentUpHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'touchmove', this.documentMoveHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'touchend', this.documentUpHandler as any);
+      L.DomEvent.on(document as unknown as HTMLElement, 'touchcancel', this.documentUpHandler as any);
+    }
     this.callbacks.onStartHandleDrag(type, start, evt as unknown as MouseEvent);
   }
 
   private onDrag(evt: Event): void {
     if (this.draggingHandle == null) return;
-    const pos = this.getMouseLayerPoint(evt as unknown as MouseEvent);
+    const pos = this.getMouseLayerPoint(evt);
     this.callbacks.onDragHandle(this.draggingHandle, pos, evt as unknown as MouseEvent);
   }
 
   private endDrag(evt: Event): void {
     if (this.draggingHandle == null) return;
     const type = this.draggingHandle;
-    const wasRotateDrag = type === TransformHandleType.Rotate && this.mode === 'rotate';
     this.draggingHandle = null;
-    const pos = this.getMouseLayerPoint(evt as unknown as MouseEvent);
+    const pos = this.getMouseLayerPoint(evt);
     this.callbacks.onEndHandleDrag(type, pos, evt as unknown as MouseEvent);
 
-    // Show buttons and reposition near top-right handle after rotation drag
-    if (wasRotateDrag && this.currentBBox) {
+    // Restore buttons near top-right handle when drag completes
+    if (this.currentBBox) {
       this.updateButtonPositions(this.currentBBox, this.currentRotation);
-      this.showButtons();
     }
+    this.showButtons();
 
-    L.DomEvent.off(document as unknown as HTMLElement, 'mousemove', this.onDrag as any);
-    L.DomEvent.off(document as unknown as HTMLElement, 'touchmove', this.onDrag as any);
+    if (this.documentMoveHandler || this.documentUpHandler) {
+      if (this.supportsPointerEvents && this.pointerCaptureTarget) {
+        if (this.activePointerId != null) {
+          this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
+        }
+        if (this.documentMoveHandler) {
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointermove', this.documentMoveHandler as any);
+        }
+        if (this.documentUpHandler) {
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointercancel', this.documentUpHandler as any);
+        }
+        this.pointerCaptureTarget = null;
+        this.activePointerId = null;
+      } else {
+        if (this.documentMoveHandler) {
+          L.DomEvent.off(document as unknown as HTMLElement, 'mousemove', this.documentMoveHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchmove', this.documentMoveHandler as any);
+        }
+        if (this.documentUpHandler) {
+          L.DomEvent.off(document as unknown as HTMLElement, 'mouseup', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchend', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchcancel', this.documentUpHandler as any);
+        }
+      }
+      this.documentMoveHandler = null;
+      this.documentUpHandler = null;
+    }
   }
 
-  private getMouseLayerPoint(evt: MouseEvent): PixelPoint {
-    const containerPoint = (this.map as any).mouseEventToContainerPoint
-      ? (this.map as any).mouseEventToContainerPoint(evt)
-      : leafletAdapter.domEvent.getMousePosition(evt, this.map.getContainer());
+  private getMouseLayerPoint(evt: Event): PixelPoint {
+    const container = this.map.getContainer();
+    let clientX: number | null = null;
+    let clientY: number | null = null;
+
+    if ((evt as TouchEvent).touches && (evt as TouchEvent).touches.length > 0) {
+      const touch = (evt as TouchEvent).touches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else if ((evt as TouchEvent).changedTouches && (evt as TouchEvent).changedTouches.length > 0) {
+      const touch = (evt as TouchEvent).changedTouches[0];
+      clientX = touch.clientX;
+      clientY = touch.clientY;
+    } else if ((evt as MouseEvent).clientX != null) {
+      clientX = (evt as MouseEvent).clientX;
+      clientY = (evt as MouseEvent).clientY;
+    }
+
+    if (clientX == null || clientY == null) {
+      clientX = 0;
+      clientY = 0;
+    }
+
+    const rect = container.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const containerPoint = leafletAdapter.createPoint(x, y);
     const layerPoint = this.map.containerPointToLayerPoint(containerPoint);
     return { x: layerPoint.x, y: layerPoint.y };
   }
@@ -339,7 +407,18 @@ export class TransformOverlay {
         position: 'absolute',
         left: `${cancelX}px`,
         top: `${buttonY}px`,
+        display: 'grid',
+        placeItems: 'center',
+        pointerEvents: 'auto',
+        width: '28px',
+        height: '28px',
       } as Partial<CSSStyleDeclaration>);
+      const svg = this.cancelBtn.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+      }
+      this.cancelBtn.style.display = this.buttonsHidden ? 'none' : 'grid';
     }
 
     if (this.confirmBtn) {
@@ -347,17 +426,30 @@ export class TransformOverlay {
         position: 'absolute',
         left: `${confirmX}px`,
         top: `${buttonY}px`,
+        display: 'grid',
+        placeItems: 'center',
+        pointerEvents: 'auto',
+        width: '28px',
+        height: '28px',
       } as Partial<CSSStyleDeclaration>);
+      const svg = this.confirmBtn.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('width', '24');
+        svg.setAttribute('height', '24');
+      }
+      this.confirmBtn.style.display = this.buttonsHidden ? 'none' : 'grid';
     }
   }
 
   private hideButtons(): void {
+    this.buttonsHidden = true;
     if (this.cancelBtn) this.cancelBtn.style.display = 'none';
     if (this.confirmBtn) this.confirmBtn.style.display = 'none';
   }
 
   private showButtons(): void {
-    if (this.cancelBtn) this.cancelBtn.style.display = '';
-    if (this.confirmBtn) this.confirmBtn.style.display = '';
+    this.buttonsHidden = false;
+    if (this.cancelBtn) this.cancelBtn.style.display = 'grid';
+    if (this.confirmBtn) this.confirmBtn.style.display = 'grid';
   }
 }

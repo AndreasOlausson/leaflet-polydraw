@@ -243,6 +243,7 @@ body {
   text-align: center;
   border-radius: 12px;
   text-align: center;
+  position: relative;
 }
 .content {
   width: auto;
@@ -250,6 +251,31 @@ body {
   margin-right: 12px;
   display: flex;
   align-items: center;
+}
+
+.marker-menu-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.marker-menu-close:focus {
+  outline: 2px solid #fff8;
+  outline-offset: 2px;
 }
 
 .polydraw-transform-cancel,
