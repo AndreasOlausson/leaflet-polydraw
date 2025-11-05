@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.2] - 2025-11-06
 
+### Added
+
+- Playwright end-to-end harness under `test/playwright`, replacing the legacy Cypress setup.
+
 ### Fixed
 
 - Polygons now rotate/scale reliably on touch (Leaflet 1.9 & 2.x); buttons stay responsive.
-- General clean up.
+- Removed noisy console output from the demo and plugin.
 
 ## [1.1.1] - 2025-11-06
 

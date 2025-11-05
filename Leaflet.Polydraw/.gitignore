@@ -29,3 +29,5 @@ tsconfig.tsbuildinfo
 # demo
 demo/dist
 demo/node_modules
+playwright-report
+test-results
