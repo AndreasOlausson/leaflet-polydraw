@@ -1260,6 +1260,8 @@ class Polydraw extends L.Control {
       return;
     }
 
+    L.DomEvent.stop(e);
+
     this.polygonDrawManager.handleDoubleClick(e);
   }
 
