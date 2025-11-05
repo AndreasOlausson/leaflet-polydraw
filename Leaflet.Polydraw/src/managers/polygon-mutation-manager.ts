@@ -395,6 +395,7 @@ export class PolygonMutationManager {
         }
         polygon._polydrawOptimizationLevel = visualOptimizationLevel;
         featureGroup.addLayer(polygon);
+        this.interactionManager.suppressDeleteMarkerClicks(250);
       } catch (error) {
         return { success: false, error: 'Failed to create polygon layer' };
       }

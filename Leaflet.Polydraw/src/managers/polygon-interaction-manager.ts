@@ -58,6 +58,7 @@ export class PolygonInteractionManager {
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
+  private deleteMarkerSuppressUntil = 0;
   /**
    * Strongly typed helper to emit polygon updated events without casts.
    */
@@ -88,6 +89,21 @@ export class PolygonInteractionManager {
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
     this.removeFeatureGroup = featureGroupAccess.removeFeatureGroup;
+  }
+
+  private getTimestamp(): number {
+    if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+      return performance.now();
+    }
+    return Date.now();
+  }
+
+  private shouldSuppressDeleteMarkerClick(): boolean {
+    return this.getTimestamp() < this.deleteMarkerSuppressUntil;
+  }
+
+  public suppressDeleteMarkerClicks(durationMs: number): void {
+    this.deleteMarkerSuppressUntil = this.getTimestamp() + Math.max(0, durationMs);
   }
 
   /**
@@ -347,6 +363,12 @@ export class PolygonInteractionManager {
           } else {
             // Handle non-modifier clicks for special markers
             if (i === deleteMarkerIdx && this.config.markers.deleteMarker) {
+              if (this.shouldSuppressDeleteMarkerClick()) {
+                const original = e.originalEvent as Event | undefined;
+                original?.preventDefault?.();
+                original?.stopPropagation?.();
+                return;
+              }
               this.map.closePopup();
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());

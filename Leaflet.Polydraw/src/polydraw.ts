@@ -68,6 +68,8 @@ class Polydraw extends L.Control {
   private _boundPointerUp!: (e: PointerEvent) => void;
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
+  private supportsPointerEvents: boolean =
+    typeof window !== 'undefined' && 'PointerEvent' in window;
 
   constructor(options?: PolydrawOptions) {
     super(options);
@@ -910,10 +912,12 @@ class Polydraw extends L.Control {
     } else {
       // Single tap - set timeout to handle as single tap if no second tap comes
       this._lastTapTime = currentTime;
-      this._tapTimeout = window.setTimeout(() => {
-        this.mouseDown(event);
-        this._tapTimeout = null;
-      }, 300);
+      if (!this.supportsPointerEvents) {
+        this._tapTimeout = window.setTimeout(() => {
+          this.mouseDown(event);
+          this._tapTimeout = null;
+        }, 300);
+      }
     }
   }
 
