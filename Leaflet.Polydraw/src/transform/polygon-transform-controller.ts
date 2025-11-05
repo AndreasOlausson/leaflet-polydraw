@@ -32,6 +32,7 @@ export class PolygonTransformController {
   private onExit?: () => void;
   private rotateStartAngle: number | null = null;
   private rotateBaseRotation: number = 0;
+  private originalTouchAction: string | null = null;
 
   constructor(
     map: L.Map,
@@ -95,6 +96,9 @@ export class PolygonTransformController {
       }
       dragging.disable();
     }
+    const container = this.map.getContainer();
+    this.originalTouchAction = container.style.touchAction || null;
+    container.style.touchAction = 'none';
 
     // ESC to exit
     document.addEventListener('keydown', this.onKeyDown);
@@ -111,6 +115,12 @@ export class PolygonTransformController {
       if (this.wasMapDraggingEnabled && typeof dragging.enable === 'function') {
         dragging.enable();
       }
+    }
+    const container = this.map.getContainer();
+    if (this.originalTouchAction !== null) {
+      container.style.touchAction = this.originalTouchAction;
+    } else {
+      container.style.touchAction = '';
     }
   }
 

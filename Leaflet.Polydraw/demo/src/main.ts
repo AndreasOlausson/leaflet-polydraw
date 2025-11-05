@@ -268,13 +268,8 @@ function updateStatusBox() {
         polygonStructure.layer = polygon;
 
         // Debug: log the structure to understand the data
-        console.log('Polygon latLngs structure:', latLngs);
-        console.log('Type check - Array.isArray(latLngs):', Array.isArray(latLngs));
         if (Array.isArray(latLngs) && latLngs.length > 0) {
-          console.log('First element:', latLngs[0]);
-          console.log('Type check - Array.isArray(latLngs[0]):', Array.isArray(latLngs[0]));
           if (Array.isArray(latLngs[0]) && latLngs[0].length > 0) {
-            console.log('First element of first array:', latLngs[0][0]);
           }
         }
 
@@ -360,20 +355,17 @@ function updateStatusBox() {
             if (Array.isArray(latLngs[0][0])) {
               // Triple nested structure: [[[outer], [hole1], [hole2]]]
               const polygonGroup = latLngs[0] as L.LatLng[][];
-              console.log('Triple nested polygon with', polygonGroup.length, 'rings');
 
               if (polygonGroup.length > 0) {
                 // First ring is outer ring
                 // count actual vertices; subtract trailing duplicate if the ring is closed
                 polygonStructure.outer = countVertices(polygonGroup[0] as L.LatLng[]);
-                console.log('Outer ring vertices:', polygonStructure.outer);
 
                 // Remaining rings are holes
                 if (polygonGroup.length > 1) {
                   polygonStructure.holes = polygonGroup
                     .slice(1)
                     .map((ring) => countVertices(ring as L.LatLng[]));
-                  console.log('Hole vertices:', polygonStructure.holes);
                 }
               }
               // Compute metrics (perimeters, orientations), bounds and WKT
@@ -420,20 +412,17 @@ function updateStatusBox() {
             } else {
               // Double nested structure: [[outer], [hole1], [hole2]]
               const polygonRings = latLngs as L.LatLng[][];
-              console.log('Double nested polygon with', polygonRings.length, 'rings');
 
               if (polygonRings.length > 0) {
                 // First ring is outer ring
                 // count actual vertices; subtract trailing duplicate if the ring is closed
                 polygonStructure.outer = countVertices(polygonRings[0] as L.LatLng[]);
-                console.log('Outer ring vertices:', polygonStructure.outer);
 
                 // Remaining rings are holes
                 if (polygonRings.length > 1) {
                   polygonStructure.holes = polygonRings
                     .slice(1)
                     .map((ring) => countVertices(ring as L.LatLng[]));
-                  console.log('Hole vertices:', polygonStructure.holes);
                 }
               }
               // Compute metrics (perimeters, orientations), bounds and WKT
@@ -483,7 +472,6 @@ function updateStatusBox() {
             const simpleRing = latLngs as L.LatLng[];
             // count actual vertices; subtract trailing duplicate if the ring is closed
             polygonStructure.outer = countVertices(simpleRing);
-            console.log('Simple polygon vertices:', polygonStructure.outer);
             // Compute metrics (perimeters, orientations), bounds and WKT
             try {
               // Normalize to array of rings: [[outer], [hole1], ...]
@@ -527,7 +515,6 @@ function updateStatusBox() {
             }
           }
         } else {
-          console.log('Unexpected polygon structure:', latLngs);
         }
       }
     });
@@ -1030,23 +1017,19 @@ function updateStatusBox() {
 
 // Subscribe to polygon changes using proper event handling
 (polydraw as any).on('polydraw:polygon:created', () => {
-  console.log('Polygon created');
   updateStatusBox();
 });
 
 (polydraw as any).on('polydraw:mode:change', (data: any) => {
-  console.log('Mode changed to:', data.mode);
   updateStatusBox();
 });
 
 // Listen for any polygon operations (add, subtract, delete)
 (polydraw as any).on('polygonOperationComplete', () => {
-  console.log('Polygon operation completed');
   updateStatusBox();
 });
 
 (polydraw as any).on('polygonDeleted', () => {
-  console.log('Polygon deleted');
   updateStatusBox();
 });
 
@@ -1058,7 +1041,6 @@ document.getElementById('addDebugPoly')?.addEventListener('click', () => {
   polydraw.addPredefinedPolygon(overlappingSquares, {
     visualOptimizationLevel: 0,
   });
-  console.log('Polydraw:', polydraw);
   // Update status after adding predefined polygon
   setTimeout(updateStatusBox, 100);
 });

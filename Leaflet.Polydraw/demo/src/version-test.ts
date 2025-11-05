@@ -4,23 +4,11 @@
  */
 
 import { LeafletVersionDetector } from '../../src/compatibility/version-detector';
-import { LeafletVersion } from '../../src/enums';
+import polydrawPackage from '../package.json' assert { type: 'json' };
 
-// Test version detection
-console.log('=== Leaflet Version Detection Test ===');
 const versionInfo = LeafletVersionDetector.getVersionInfo();
-console.log('Version Info:', versionInfo);
 
 const detectedVersion = LeafletVersionDetector.getVersion();
-console.log('Detected Version:', detectedVersion);
-
-// Test enum usage
-console.log('LeafletVersion.V1:', LeafletVersion.V1);
-console.log('LeafletVersion.V2:', LeafletVersion.V2);
-
-// Test helper methods
-console.log('Is V1:', LeafletVersionDetector.isV1());
-console.log('Is V2:', LeafletVersionDetector.isV2());
 
 // Display results in the page with expand/collapse functionality
 const target = document.getElementById('leaflet-version-detection');
@@ -44,8 +32,8 @@ if (target && versionHeader) {
   // Create version info content
   const versionInfoDiv = document.createElement('div');
   versionInfoDiv.innerHTML = `
-    <div><strong>Version:</strong> ${detectedVersion}</div>
-    <div><strong>Leaflet Version:</strong> ${versionInfo.leafletVersion || 'Unknown'}</div>
+    <div><strong>Polydraw Version:</strong> ${polydrawPackage.version}</div>
+    <div><strong>Leaflet Version:</strong> ${versionInfo.leafletVersion || 'Unknown'} (${detectedVersion})</div>
     <div><strong>Has Factory Methods:</strong> ${versionInfo.hasFactoryMethods}</div>
     <div><strong>Has Constructors:</strong> ${versionInfo.hasConstructors}</div>
     <div><strong>Global L Available:</strong> ${versionInfo.globalLAvailable}</div>
@@ -125,8 +113,8 @@ if (target && versionHeader) {
 
   statusDiv.innerHTML = `
     <h4 style="margin: 0 0 8px 0;">Leaflet Version Detection</h4>
-    <div><strong>Version:</strong> ${detectedVersion}</div>
-    <div><strong>Leaflet Version:</strong> ${versionInfo.leafletVersion || 'Unknown'}</div>
+    <div><strong>Polydraw Version:</strong> ${polydrawPackage.version}</div>
+    <div><strong>Leaflet Version:</strong> ${versionInfo.leafletVersion || 'Unknown'} (${detectedVersion})</div>
     <div><strong>Has Factory Methods:</strong> ${versionInfo.hasFactoryMethods}</div>
     <div><strong>Has Constructors:</strong> ${versionInfo.hasConstructors}</div>
     <div><strong>Global L Available:</strong> ${versionInfo.globalLAvailable}</div>

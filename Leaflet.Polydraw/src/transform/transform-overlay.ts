@@ -144,6 +144,7 @@ export class TransformOverlay {
         boxShadow: '0 0 0 1px #fff',
         cursor: this.cursorForHandle(type),
         pointerEvents: 'auto',
+        touchAction: 'none',
       } as Partial<CSSStyleDeclaration>);
       if (this.supportsPointerEvents) {
         L.DomEvent.on(h, 'pointerdown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
@@ -221,7 +222,7 @@ export class TransformOverlay {
     this.documentUpHandler = (e: Event) => this.endDrag(e);
     if (this.supportsPointerEvents && evt instanceof PointerEvent) {
       this.activePointerId = evt.pointerId;
-      this.pointerCaptureTarget = evt.target as HTMLElement | null;
+      this.pointerCaptureTarget = this.map.getContainer();
       this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
       L.DomEvent.on(document as unknown as HTMLElement, 'pointermove', this.documentMoveHandler as any);
       L.DomEvent.on(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
@@ -382,6 +383,11 @@ export class TransformOverlay {
         (e as any).preventDefault?.();
         this.onCancel && this.onCancel();
       });
+      L.DomEvent.on(this.cancelBtn, 'pointerdown', (e: Event) => {
+        (e as any).stopPropagation?.();
+        (e as any).preventDefault?.();
+        this.onCancel && this.onCancel();
+      });
       this.root.appendChild(this.cancelBtn);
     }
 
@@ -395,6 +401,11 @@ export class TransformOverlay {
         this.onConfirm && this.onConfirm();
       });
       L.DomEvent.on(this.confirmBtn, 'touchstart', (e: Event) => {
+        (e as any).stopPropagation?.();
+        (e as any).preventDefault?.();
+        this.onConfirm && this.onConfirm();
+      });
+      L.DomEvent.on(this.confirmBtn, 'pointerdown', (e: Event) => {
         (e as any).stopPropagation?.();
         (e as any).preventDefault?.();
         this.onConfirm && this.onConfirm();

@@ -143,8 +143,18 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0;
-  /* Max width for 3 buttons per row: 38px (button) * 3 + 5px (separator) * 2 = 124px, add some padding */
   max-width: 132px;
+}
+
+@supports (display: grid) {
+  .marker-menu-content {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(22px, 1fr));
+    justify-items: center;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 6px;
+  }
 }
 
 .marker-menu-content .marker-menu-button {

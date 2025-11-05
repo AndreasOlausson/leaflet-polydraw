@@ -68,8 +68,10 @@ class Polydraw extends L.Control {
   private _boundPointerUp!: (e: PointerEvent) => void;
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
-  private supportsPointerEvents: boolean =
-    typeof window !== 'undefined' && 'PointerEvent' in window;
+  private pointerEventsHandled: boolean =
+    typeof window !== 'undefined' &&
+    'PointerEvent' in window &&
+    LeafletVersionDetector.isV2();
 
   constructor(options?: PolydrawOptions) {
     super(options);
@@ -807,7 +809,6 @@ class Polydraw extends L.Control {
    * @param onoff - A boolean indicating whether to attach or detach the events.
    */
   private drawStartedEvents(onoff: boolean) {
-    console.log('drawStartedEvents called with onoff:', onoff);
     const onoroff = onoff ? 'on' : 'off';
 
     // Bind move and end events - use specific Leaflet event types
@@ -912,7 +913,7 @@ class Polydraw extends L.Control {
     } else {
       // Single tap - set timeout to handle as single tap if no second tap comes
       this._lastTapTime = currentTime;
-      if (!this.supportsPointerEvents) {
+      if (!this.pointerEventsHandled) {
         this._tapTimeout = window.setTimeout(() => {
           this.mouseDown(event);
           this._tapTimeout = null;
@@ -943,7 +944,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-    console.log('mouseDown called', event.type, event);
 
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
@@ -955,16 +955,13 @@ class Polydraw extends L.Control {
 
     // Check if we're still in a drawing mode before processing
     if (this.modeManager.isInOffMode()) {
-      console.log('In off mode, ignoring');
       return;
     }
 
     // Extract coordinates using the event adapter
     const clickLatLng = EventAdapter.extractCoordinates(normalizedEvent, this.map);
-    console.log('Extracted coordinates:', clickLatLng);
 
     if (!clickLatLng) {
-      console.log('No coordinates extracted');
       return;
     }
 
@@ -973,13 +970,11 @@ class Polydraw extends L.Control {
       this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
       this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
     ) {
-      console.log('Point-to-Point mode, calling handlePointToPointClick');
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
     }
 
     // Handle normal drawing modes (Add, Subtract)
-    console.log('Normal drawing mode, setting tracer and starting draw');
     this.tracer.setLatLngs([clickLatLng]);
     this.startDraw();
   }
@@ -989,7 +984,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-    console.log('mouseMove called', event.type);
 
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
@@ -1002,7 +996,6 @@ class Polydraw extends L.Control {
     // Extract coordinates using the event adapter
     const latlng = EventAdapter.extractCoordinates(normalizedEvent, this.map);
     if (latlng) {
-      console.log('Adding latlng to tracer:', latlng);
       this.tracer.addLatLng(latlng);
     }
   }
@@ -1012,7 +1005,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-    console.log('mouseUpLeave called', event.type);
 
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
@@ -1025,7 +1017,6 @@ class Polydraw extends L.Control {
 
     // Get tracer coordinates and validate before processing
     const tracerGeoJSON = this.tracer.toGeoJSON() as Feature<LineString>;
-    console.log('Tracer GeoJSON:', tracerGeoJSON);
 
     // Check if tracer has valid coordinates before processing
     if (
@@ -1130,7 +1121,6 @@ class Polydraw extends L.Control {
    * Starts a drawing operation by attaching the necessary event listeners.
    */
   private startDraw() {
-    console.log('startDraw called, attaching draw events');
     this.drawStartedEvents(true);
   }
 
