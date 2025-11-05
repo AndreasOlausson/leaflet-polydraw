@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2025-11-06
+
+### Fixed
+
+- **P2P touch input**: Prevented duplicate vertices by ignoring simulated pointer+touch double delivery when drawing on touch devices.
+- **Immediate undo tap**: Added a brief post-creation guard so the delete marker no longer removes a polygon right after it is closed.
+- **General touch handling**: Smoothed pointer/touch interplay so double-taps no longer leave stray first taps behind.
+
+### Changed
+
+- **P2P closing gesture**: Double-clicks (or double-taps) that finish a point-to-point polygon now stop propagating, so the map no longer zooms while closing the ring.
+
 ## [1.1.0] - 2025-11-04
 
 ### Added

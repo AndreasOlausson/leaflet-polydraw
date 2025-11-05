@@ -1,6 +1,6 @@
 {
   "name": "leaflet-polydraw",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x.",
   "types": "dist/types/index.d.ts",
   "exports": {
