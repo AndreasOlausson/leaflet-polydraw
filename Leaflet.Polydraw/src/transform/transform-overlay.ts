@@ -146,25 +146,10 @@ export class TransformOverlay {
         pointerEvents: 'auto',
       } as Partial<CSSStyleDeclaration>);
       if (this.supportsPointerEvents) {
-        L.DomEvent.on(
-          h,
-          'pointerdown',
-          (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e),
-          this,
-        );
+        L.DomEvent.on(h, 'pointerdown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
       } else {
-        L.DomEvent.on(
-          h,
-          'mousedown',
-          (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e),
-          this,
-        );
-        L.DomEvent.on(
-          h,
-          'touchstart',
-          (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e),
-          this,
-        );
+        L.DomEvent.on(h, 'mousedown', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
+        L.DomEvent.on(h, 'touchstart', (e: Event) => this.startDrag(type, { x: rotX, y: rotY }, e), this);
       }
       this.root.appendChild(h);
     };
@@ -238,35 +223,15 @@ export class TransformOverlay {
       this.activePointerId = evt.pointerId;
       this.pointerCaptureTarget = evt.target as HTMLElement | null;
       this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'pointermove',
-        this.documentMoveHandler as any,
-      );
+      L.DomEvent.on(document as unknown as HTMLElement, 'pointermove', this.documentMoveHandler as any);
       L.DomEvent.on(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'pointercancel',
-        this.documentUpHandler as any,
-      );
+      L.DomEvent.on(document as unknown as HTMLElement, 'pointercancel', this.documentUpHandler as any);
     } else {
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'mousemove',
-        this.documentMoveHandler as any,
-      );
+      L.DomEvent.on(document as unknown as HTMLElement, 'mousemove', this.documentMoveHandler as any);
       L.DomEvent.on(document as unknown as HTMLElement, 'mouseup', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'touchmove',
-        this.documentMoveHandler as any,
-      );
+      L.DomEvent.on(document as unknown as HTMLElement, 'touchmove', this.documentMoveHandler as any);
       L.DomEvent.on(document as unknown as HTMLElement, 'touchend', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'touchcancel',
-        this.documentUpHandler as any,
-      );
+      L.DomEvent.on(document as unknown as HTMLElement, 'touchcancel', this.documentUpHandler as any);
     }
     this.callbacks.onStartHandleDrag(type, start, evt as unknown as MouseEvent);
   }
@@ -296,55 +261,23 @@ export class TransformOverlay {
           this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
         }
         if (this.documentMoveHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointermove',
-            this.documentMoveHandler as any,
-          );
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointermove', this.documentMoveHandler as any);
         }
         if (this.documentUpHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointerup',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointercancel',
-            this.documentUpHandler as any,
-          );
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'pointercancel', this.documentUpHandler as any);
         }
         this.pointerCaptureTarget = null;
         this.activePointerId = null;
       } else {
         if (this.documentMoveHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'mousemove',
-            this.documentMoveHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchmove',
-            this.documentMoveHandler as any,
-          );
+          L.DomEvent.off(document as unknown as HTMLElement, 'mousemove', this.documentMoveHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchmove', this.documentMoveHandler as any);
         }
         if (this.documentUpHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'mouseup',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchend',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchcancel',
-            this.documentUpHandler as any,
-          );
+          L.DomEvent.off(document as unknown as HTMLElement, 'mouseup', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchend', this.documentUpHandler as any);
+          L.DomEvent.off(document as unknown as HTMLElement, 'touchcancel', this.documentUpHandler as any);
         }
       }
       this.documentMoveHandler = null;
@@ -361,10 +294,7 @@ export class TransformOverlay {
       const touch = (evt as TouchEvent).touches[0];
       clientX = touch.clientX;
       clientY = touch.clientY;
-    } else if (
-      (evt as TouchEvent).changedTouches &&
-      (evt as TouchEvent).changedTouches.length > 0
-    ) {
+    } else if ((evt as TouchEvent).changedTouches && (evt as TouchEvent).changedTouches.length > 0) {
       const touch = (evt as TouchEvent).changedTouches[0];
       clientX = touch.clientX;
       clientY = touch.clientY;
