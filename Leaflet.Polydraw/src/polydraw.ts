@@ -69,9 +69,7 @@ class Polydraw extends L.Control {
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
   private pointerEventsHandled: boolean =
-    typeof window !== 'undefined' &&
-    'PointerEvent' in window &&
-    LeafletVersionDetector.isV2();
+    typeof window !== 'undefined' && 'PointerEvent' in window && LeafletVersionDetector.isV2();
 
   constructor(options?: PolydrawOptions) {
     super(options);
@@ -944,7 +942,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
@@ -984,7 +981,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
@@ -1005,7 +1001,6 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
-
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
