@@ -349,10 +349,19 @@ export class PolygonGeometryManager {
         return bboxRings;
       });
 
-      const result = this.turfHelper.getMultiPolygon(bboxCoords);
+      const multiPolygon = this.turfHelper.getMultiPolygon(bboxCoords);
+      let result = this.turfHelper.getTurfPolygon(multiPolygon);
+
+      if (this.config.boundingBox?.addMidPointMarkers) {
+        const doubled = this.doubleElbowsPolygon(result);
+        if (doubled.success && doubled.result) {
+          result = doubled.result;
+        }
+      }
+
       return {
         success: true,
-        result: this.turfHelper.getTurfPolygon(result),
+        result,
       };
     } catch (error) {
       return {

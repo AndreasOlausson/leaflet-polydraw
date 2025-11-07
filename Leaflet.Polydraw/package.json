@@ -47,7 +47,7 @@
   },
   "packageManager": "npm@10.2.0",
   "scripts": {
-    "build": "tsc && vite build && npm run build:types",
+    "build": "npm run lint:fix && tsc && vite build && npm run build:types",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, defaultConfig } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
@@ -59,6 +59,7 @@
     "test:playwright": "npm run build && npm --prefix demo run build && playwright test",
     "test:e2e": "npm run test:playwright",
     "lint": "eslint ./src --ext .ts",
+    "lint:fix": "eslint ./src --ext .ts --fix",
     "prepare": "npm run build"
   },
   "devDependencies": {
