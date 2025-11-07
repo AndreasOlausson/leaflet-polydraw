@@ -418,11 +418,7 @@ class Polydraw extends L.Control {
       this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
 
       // Reset tracer style
-      try {
-        this.tracer.setStyle({ color: '' });
-      } catch (error) {
-        // Handle case where tracer renderer is not initialized
-      }
+      this.applyTracerStyle(DrawMode.Off);
     });
 
     // Listen for polygon deletion events to update the activate button indicator
@@ -472,6 +468,64 @@ class Polydraw extends L.Control {
     } catch (error) {
       // Silently handle tracer initialization in test environment
     }
+  }
+
+  /**
+   * Applies the correct weight/opacity/color/dash style to the tracer for the given mode.
+   */
+  private applyTracerStyle(mode: DrawMode): void {
+    if (!this.tracer) return;
+
+    try {
+      const isSubtractMode = mode === DrawMode.Subtract || mode === DrawMode.PointToPointSubtract;
+      const baseStyle = this.getTracerBaseStyle(isSubtractMode);
+
+      let dashArray: string | undefined;
+      let color = '';
+
+      switch (mode) {
+        case DrawMode.Add:
+          color = this.config.colors.polyline;
+          dashArray = undefined;
+          break;
+        case DrawMode.Subtract:
+          color = this.config.colors.subtractLine;
+          dashArray = undefined;
+          break;
+        case DrawMode.PointToPoint:
+          color = this.config.colors.polyline;
+          dashArray = '5, 5';
+          break;
+        case DrawMode.PointToPointSubtract:
+          color = this.config.colors.subtractLine;
+          dashArray = '5, 5';
+          break;
+        case DrawMode.Off:
+        default:
+          color = '';
+          dashArray = undefined;
+          break;
+      }
+
+      this.tracer.setStyle({
+        ...baseStyle,
+        color,
+        dashArray,
+      });
+    } catch (error) {
+      // Handle case where tracer renderer is not initialized
+    }
+  }
+
+  /**
+   * Returns base tracer styles depending on whether we're in subtract mode.
+   */
+  private getTracerBaseStyle(isSubtractMode: boolean): Pick<L.PathOptions, 'weight' | 'opacity'> {
+    const options = isSubtractMode ? this.config.subtractLineOptions : this.config.polyLineOptions;
+    return {
+      weight: options.weight,
+      opacity: options.opacity,
+    };
   }
 
   /**
@@ -562,39 +616,7 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
     }
 
-    try {
-      switch (mode) {
-        case DrawMode.Off:
-          this.tracer.setStyle({ color: '' });
-          break;
-        case DrawMode.Add:
-          this.tracer.setStyle({
-            color: this.config.colors.polyline,
-            dashArray: undefined, // Reset to solid line
-          });
-          break;
-        case DrawMode.Subtract:
-          this.tracer.setStyle({
-            color: this.config.colors.subtractLine,
-            dashArray: undefined, // Reset to solid line
-          });
-          break;
-        case DrawMode.PointToPoint:
-          this.tracer.setStyle({
-            color: this.config.colors.polyline,
-            dashArray: '5, 5',
-          });
-          break;
-        case DrawMode.PointToPointSubtract:
-          this.tracer.setStyle({
-            color: this.config.colors.subtractLine,
-            dashArray: '5, 5',
-          });
-          break;
-      }
-    } catch (error) {
-      // Handle case where tracer renderer is not initialized
-    }
+    this.applyTracerStyle(mode);
   }
 
   /**
