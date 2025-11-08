@@ -44,6 +44,7 @@ export interface MutationManagerDependencies {
   modeManager: ModeManager;
   eventManager: EventManager;
   getFeatureGroups: () => L.FeatureGroup[];
+  saveHistoryState?: () => void;
 }
 
 /**
@@ -97,6 +98,7 @@ export class PolygonMutationManager {
         config: dependencies.config,
         modeManager: dependencies.modeManager,
         eventManager: this.eventManager,
+        saveHistoryState: dependencies.saveHistoryState,
       },
       {
         getFeatureGroups: this.getFeatureGroups,

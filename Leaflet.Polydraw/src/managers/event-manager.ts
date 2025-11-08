@@ -58,6 +58,20 @@ export type PolydrawEventPayloads = {
     polygon2: Feature<Polygon | MultiPolygon>;
     callback: (intersects: boolean) => void;
   };
+  'polydraw:history:undo': {
+    canUndo: boolean;
+    canRedo: boolean;
+    action?: string;
+  };
+  'polydraw:history:redo': {
+    canUndo: boolean;
+    canRedo: boolean;
+    action?: string;
+  };
+  'polydraw:history:changed': {
+    canUndo: boolean;
+    canRedo: boolean;
+  };
 };
 
 export type PolydrawEvent = keyof PolydrawEventPayloads;

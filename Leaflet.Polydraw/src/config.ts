@@ -238,4 +238,5 @@ export const defaultConfig: PolydrawConfig = {
       },
     },
   },
+  maxHistorySize: 50,
 };

@@ -33,6 +33,7 @@ export interface PolygonInteractionManagerDependencies {
   config: PolydrawConfig;
   modeManager: ModeManager;
   eventManager: EventManager;
+  saveHistoryState?: () => void;
 }
 
 /**
@@ -50,6 +51,7 @@ export class PolygonInteractionManager {
   private config: PolydrawConfig;
   private modeManager: ModeManager;
   private eventManager: EventManager;
+  private saveHistoryState?: () => void;
 
   // Polygon drag state
   private currentDragPolygon: PolydrawPolygon | null = null;
@@ -61,8 +63,14 @@ export class PolygonInteractionManager {
   private deleteMarkerSuppressUntil = 0;
   /**
    * Strongly typed helper to emit polygon updated events without casts.
+   * Also saves history state before emitting (except for drag operations which save on dragstart).
    */
   private emitPolygonUpdated(data: PolygonUpdatedEventData): void {
+    // Save history state before modification for all operations except drag operations
+    // (markerDrag and polygonDrag already save state on dragstart)
+    if (data.operation !== 'markerDrag' && data.operation !== 'polygonDrag' && this.saveHistoryState) {
+      this.saveHistoryState();
+    }
     this.eventManager.emit('polydraw:polygon:updated', data);
   }
 
@@ -85,6 +93,7 @@ export class PolygonInteractionManager {
     this.config = dependencies.config;
     this.modeManager = dependencies.modeManager;
     this.eventManager = dependencies.eventManager;
+    this.saveHistoryState = dependencies.saveHistoryState;
 
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
@@ -174,6 +183,10 @@ export class PolygonInteractionManager {
       });
       // Replace dragend binding to use _polydrawFeatureGroup and allow correct logic
       marker.on('dragstart', () => {
+        // Save history state before dragging
+        if (this.saveHistoryState) {
+          this.saveHistoryState();
+        }
         this.isDraggingMarker = true;
         this._activeMarker = marker;
       });
@@ -370,6 +383,10 @@ export class PolygonInteractionManager {
                 return;
               }
               this.map.closePopup();
+              // Save state before deleting polygon
+              if (this.saveHistoryState) {
+                this.saveHistoryState();
+              }
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
               this.eventManager.emit('polydraw:polygon:deleted', undefined);
@@ -805,6 +822,11 @@ export class PolygonInteractionManager {
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
+      // Save state before polygon drag
+      if (this.saveHistoryState) {
+        this.saveHistoryState();
+      }
+
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
@@ -856,6 +878,11 @@ export class PolygonInteractionManager {
       const isModifierPressed = this.detectDragSubtractModifierKey(orig);
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
+
+      // Save state before polygon drag
+      if (this.saveHistoryState) {
+        this.saveHistoryState();
+      }
 
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
