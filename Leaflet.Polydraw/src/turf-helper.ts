@@ -201,55 +201,105 @@ export class TurfHelper {
     polygon: Feature<Polygon | MultiPolygon>,
     dynamicTolerance: boolean = false,
   ): Feature<Polygon | MultiPolygon> {
-    const simplificationMode = this.config.polygonCreation?.simplification?.mode || 'simple';
+    const simplification = this.resolveSimplificationConfig();
 
-    if (simplificationMode === 'simple') {
-      // Simple single-pass simplification (like the original Angular version)
-      const tolerance = {
-        tolerance: this.config.polygonCreation?.simplification?.tolerance || 0.0001,
-        highQuality: this.config.polygonCreation?.simplification?.highQuality || false,
-        mutate: false,
-      };
-
-      const simplified = simplify(polygon, tolerance);
-      return simplified;
-    } else if (simplificationMode === 'dynamic') {
-      // Original dynamic simplification
-      const numOfEdges = polygon.geometry.coordinates[0][0].length;
-      const tolerance = this.config.simplification.simplifyTolerance;
-
-      if (!dynamicTolerance) {
-        const simplified = simplify(polygon, tolerance);
-        return simplified;
-      } else {
-        let simplified = simplify(polygon, tolerance);
-        const fractionGuard = this.config.simplification.dynamicMode.fractionGuard;
-        const multiplier = this.config.simplification.dynamicMode.multiplier;
-        while (
-          simplified.geometry.coordinates[0][0].length > 4 &&
-          simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
-        ) {
-          tolerance.tolerance = tolerance.tolerance * multiplier;
-          simplified = simplify(polygon, tolerance);
-        }
-        return simplified;
-      }
-    } else if (simplificationMode === 'none') {
-      // No simplification
-
+    if (simplification.mode === 'none') {
       return polygon;
-    } else {
-      // Fallback to simple mode
-      if (!isTestEnvironment()) {
-        console.warn(`Unknown simplification mode: ${simplificationMode}, falling back to simple`);
-      }
-      const tolerance = {
-        tolerance: 0.0001,
-        highQuality: false,
-        mutate: false,
-      };
-      return simplify(polygon, tolerance);
     }
+
+    if (simplification.mode === 'simple') {
+      return simplify(polygon, {
+        tolerance: simplification.simple.tolerance,
+        highQuality: simplification.simple.highQuality,
+        mutate: false,
+      });
+    }
+
+    // Dynamic mode
+    const numOfEdges = polygon.geometry.coordinates[0][0].length;
+    const fractionGuard = simplification.dynamic.fractionGuard;
+    const multiplier = simplification.dynamic.multiplier;
+    const baseArgs = {
+      highQuality: simplification.dynamic.highQuality,
+      mutate: false,
+    };
+
+    const runSimplify = (toleranceValue: number) =>
+      simplify(polygon, { ...baseArgs, tolerance: toleranceValue });
+
+    if (!dynamicTolerance) {
+      return runSimplify(simplification.dynamic.baseTolerance);
+    }
+
+    let currentTolerance = simplification.dynamic.baseTolerance;
+    let simplified = runSimplify(currentTolerance);
+
+    while (
+      simplified.geometry.coordinates[0][0].length > 4 &&
+      simplified.geometry.coordinates[0][0].length / (numOfEdges + 2) > fractionGuard
+    ) {
+      currentTolerance *= multiplier;
+      simplified = runSimplify(currentTolerance);
+    }
+
+    return simplified;
+  }
+
+  private resolveSimplificationConfig(): {
+    mode: 'simple' | 'dynamic' | 'none';
+    simple: { tolerance: number; highQuality: boolean };
+    dynamic: {
+      baseTolerance: number;
+      highQuality: boolean;
+      fractionGuard: number;
+      multiplier: number;
+    };
+  } {
+    const legacy = this.config.polygonCreation?.simplification;
+    const raw = this.config.simplification as
+      | (typeof this.config.simplification & {
+          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
+          dynamicMode?: { fractionGuard?: number; multiplier?: number };
+        })
+      | undefined;
+
+    const fallbackSimpleTolerance = legacy?.tolerance ?? 0.00001;
+    const fallbackSimpleHighQuality = legacy?.highQuality ?? false;
+
+    const legacyMode = legacy?.mode;
+    const inferredLegacyDynamicTolerance = legacy?.tolerance ?? 0.0001;
+
+    const mode =
+      (raw?.mode as 'simple' | 'dynamic' | 'none' | undefined) ??
+      (legacyMode === 'none' ? 'none' : legacyMode === 'dynamic' ? 'dynamic' : 'simple');
+
+    const simple = {
+      tolerance:
+        raw?.simple?.tolerance ?? raw?.simplifyTolerance?.tolerance ?? fallbackSimpleTolerance,
+      highQuality:
+        raw?.simple?.highQuality ??
+        raw?.simplifyTolerance?.highQuality ??
+        fallbackSimpleHighQuality,
+    };
+
+    const dynamic = {
+      baseTolerance:
+        raw?.dynamic?.baseTolerance ??
+        raw?.simplifyTolerance?.tolerance ??
+        inferredLegacyDynamicTolerance,
+      highQuality:
+        raw?.dynamic?.highQuality ??
+        raw?.simplifyTolerance?.highQuality ??
+        fallbackSimpleHighQuality,
+      fractionGuard: raw?.dynamic?.fractionGuard ?? raw?.dynamicMode?.fractionGuard ?? 0.9,
+      multiplier: raw?.dynamic?.multiplier ?? raw?.dynamicMode?.multiplier ?? 2,
+    };
+
+    return {
+      mode,
+      simple,
+      dynamic,
+    };
   }
 
   getTurfPolygon(polygon: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {

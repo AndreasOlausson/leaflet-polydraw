@@ -149,6 +149,32 @@ export interface HoleStyleOptions {
   dashArray?: string;
 }
 
+export type SimplificationMode = 'simple' | 'dynamic' | 'none';
+
+export interface LegacySimplificationOptions {
+  mode?: string;
+  tolerance?: number;
+  highQuality?: boolean;
+}
+
+export interface SimplificationSimpleOptions {
+  tolerance: number;
+  highQuality: boolean;
+}
+
+export interface SimplificationDynamicOptions {
+  baseTolerance: number;
+  highQuality: boolean;
+  fractionGuard: number;
+  multiplier: number;
+}
+
+export interface SimplificationConfig {
+  mode: SimplificationMode;
+  simple: SimplificationSimpleOptions;
+  dynamic: SimplificationDynamicOptions;
+}
+
 /**
  * Polyline style options interface
  */
@@ -254,23 +280,9 @@ export interface PolydrawConfig {
   holeOptions: HoleStyleOptions;
   polygonCreation: {
     method: string;
-    simplification: {
-      mode: string;
-      tolerance: number;
-      highQuality: boolean;
-    };
+    simplification?: LegacySimplificationOptions;
   };
-  simplification: {
-    simplifyTolerance: {
-      tolerance: number;
-      highQuality: boolean;
-      mutate: boolean;
-    };
-    dynamicMode: {
-      fractionGuard: number;
-      multiplier: number;
-    };
-  };
+  simplification: SimplificationConfig;
   menuOperations: MenuOperationsConfig;
   boundingBox: {
     addMidPointMarkers: boolean;

@@ -79,6 +79,7 @@ class Polydraw extends L.Control {
 
     // Apply inline config via deep merge (partial configs supported)
     this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
+    this.warnIfUsingDeprecatedConfiguration(options?.config);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
@@ -570,6 +571,11 @@ class Polydraw extends L.Control {
 
       // Expect external to be a partial config
       const externalConfig: Partial<PolydrawConfig> = await response.json();
+
+      this.warnIfUsingDeprecatedConfiguration(externalConfig);
+      if (inlineConfig) {
+        this.warnIfUsingDeprecatedConfiguration(inlineConfig);
+      }
 
       // Merge precedence: defaults < external < inline
       this.config = deepMerge<PolydrawConfig>(
@@ -1363,6 +1369,31 @@ class Polydraw extends L.Control {
     svgElement.querySelectorAll('*').forEach((el) => {
       (el as HTMLElement).style.pointerEvents = 'none';
     });
+  }
+
+  private warnIfUsingDeprecatedConfiguration(config?: Partial<PolydrawConfig>) {
+    if (!config) {
+      return;
+    }
+
+    const legacyPolygon = config.polygonCreation?.simplification;
+    const simplification = config.simplification as
+      | {
+          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
+          dynamicMode?: { fractionGuard?: number; multiplier?: number };
+        }
+      | undefined;
+
+    const hasLegacySimplifyTolerance =
+      !!simplification &&
+      (Object.prototype.hasOwnProperty.call(simplification, 'simplifyTolerance') ||
+        Object.prototype.hasOwnProperty.call(simplification, 'dynamicMode'));
+
+    if (legacyPolygon || hasLegacySimplifyTolerance) {
+      console.warn(
+        '[Leaflet.Polydraw] Legacy simplification settings detected. Please migrate to `config.simplification` with `mode`, `simple`, and `dynamic` blocks.',
+      );
+    }
   }
 }
 

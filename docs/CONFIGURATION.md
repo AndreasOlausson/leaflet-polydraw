@@ -11,234 +11,244 @@
 
 ```javascript
 {
-  "mergePolygons": true,
-  "kinks": false,
-  "modes": {
-    "draw": true,
-    "subtract": true,
-    "deleteAll": true,
-    "p2p": true,
-    "attachElbow": true,
-    "dragElbow": true,
-    "dragPolygons": true,
-    "edgeDeletion": true
+  mergePolygons: true,
+  kinks: false,
+  modes: {
+    draw: true,
+    subtract: true,
+    deleteAll: true,
+    p2p: true,
+    p2pSubtract: true,
+    attachElbow: true,
+    dragElbow: true,
+    dragPolygons: true,
+    edgeDeletion: true,
   },
-  "dragPolygons": {
-    "opacity": 0.7,
-    "dragCursor": "move",
-    "hoverCursor": "grab",
-    "markerBehavior": "hide",
-    "markerAnimationDuration": 200,
-    "modifierSubtract": {
-      "keys": {
-        "windows": "ctrlKey",
-        "mac": "metaKey",
-        "linux": "ctrlKey"
+  defaultMode: DrawMode.Off,
+  dragPolygons: {
+    opacity: 0.7,
+    dragCursor: 'move',
+    hoverCursor: 'grab',
+    markerBehavior: 'hide',
+    markerAnimationDuration: 200,
+    modifierSubtract: {
+      keys: {
+        windows: 'ctrlKey',
+        mac: 'metaKey',
+        linux: 'ctrlKey',
       },
-      "hideMarkersOnDrag": true
-    }
+      hideMarkersOnDrag: true,
+    },
   },
-  "edgeDeletion": {
-    "keys": {
-      "windows": "ctrlKey",
-      "mac": "metaKey",
-      "linux": "ctrlKey"
+  edgeDeletion: {
+    keys: {
+      windows: 'ctrlKey',
+      mac: 'metaKey',
+      linux: 'ctrlKey',
     },
-    "minVertices": 3
+    minVertices: 3,
   },
-  "markers": {
-    "deleteMarker": true,
-    "infoMarker": true,
-    "menuMarker": true,
-    "coordsTitle": true,
-    "zIndexOffset": 0,
-    "markerIcon": {
-      "styleClasses": ["polygon-marker"],
-      "zIndexOffset": null
+  markers: {
+    deleteMarker: true,
+    infoMarker: true,
+    menuMarker: true,
+    coordsTitle: true,
+    zIndexOffset: 0,
+    markerIcon: {
+      styleClasses: ['polygon-marker'],
+      zIndexOffset: null,
     },
-    "holeIcon": {
-      "styleClasses": ["polygon-marker", "hole"],
-      "zIndexOffset": null
+    holeIcon: {
+      styleClasses: ['polygon-marker', 'hole'],
+      zIndexOffset: null,
     },
-    "markerInfoIcon": {
-      "position": 3,
-      "showArea": true,
-      "showPerimeter": true,
-      "useMetrics": true,
-      "usePerimeterMinValue": false,
-      "areaLabel": "Area",
-      "perimeterLabel": "Perimeter",
-      "values": {
-        "min": {
-          "metric": "50",
-          "imperial": "100"
+    markerInfoIcon: {
+      position: 3,
+      showArea: true,
+      showPerimeter: true,
+      useMetrics: true,
+      usePerimeterMinValue: false,
+      areaLabel: 'Area',
+      perimeterLabel: 'Perimeter',
+      values: {
+        min: {
+          metric: '50',
+          imperial: '100',
         },
-        "unknown": {
-          "metric": "-",
-          "imperial": "-"
-        }
-      },
-      "units": {
-        "unknownUnit": "",
-        "metric": {
-          "onlyMetrics": true,
-          "perimeter": {
-            "m": "m",
-            "km": "km"
-          },
-          "area": {
-            "m2": "m²",
-            "km2": "km²",
-            "daa": "daa",
-            "ha": "ha"
-          }
+        unknown: {
+          metric: '-',
+          imperial: '-',
         },
-        "imperial": {
-          "perimeter": {
-            "feet": "ft",
-            "yards": "yd",
-            "miles": "mi"
+      },
+      units: {
+        unknownUnit: '',
+        metric: {
+          onlyMetrics: true,
+          perimeter: {
+            m: 'm',
+            km: 'km',
           },
-          "area": {
-            "feet2": "ft²",
-            "yards2": "yd²",
-            "acres": "ac",
-            "miles2": "mi²"
-          }
-        }
+          area: {
+            m2: 'm²',
+            km2: 'km²',
+            daa: 'daa',
+            ha: 'ha',
+          },
+        },
+        imperial: {
+          perimeter: {
+            feet: 'ft',
+            yards: 'yd',
+            miles: 'mi',
+          },
+          area: {
+            feet2: 'ft²',
+            yards2: 'yd²',
+            acres: 'ac',
+            miles2: 'mi²',
+          },
+        },
       },
-      "styleClasses": ["polygon-marker", "info"],
-      "zIndexOffset": 10000
+      styleClasses: ['polygon-marker', 'info'],
+      zIndexOffset: 10000,
     },
-    "markerMenuIcon": {
-      "position": 7,
-      "styleClasses": ["polygon-marker", "menu"],
-      "zIndexOffset": 10000
+    markerMenuIcon: {
+      position: 1,
+      styleClasses: ['polygon-marker', 'menu'],
+      zIndexOffset: 10000,
     },
-    "markerDeleteIcon": {
-      "position": 5,
-      "styleClasses": ["polygon-marker", "delete"],
-      "zIndexOffset": 10000
+    markerDeleteIcon: {
+      position: 5,
+      styleClasses: ['polygon-marker', 'delete'],
+      zIndexOffset: 10000,
     },
-    "holeMarkers": {
-      "menuMarker": false,
-      "deleteMarker": true,
-      "infoMarker": false
+    holeMarkers: {
+      menuMarker: false,
+      deleteMarker: true,
+      infoMarker: false,
     },
-    "visualOptimization": {
-      "sharpAngleThreshold": 30,
-      "thresholdBoundingBox": 0.05,
-      "thresholdDistance": 0.05,
-      "useDistance": true,
-      "useBoundingBox": false,
-      "useAngles": false
-    }
+    visualOptimization: {
+      sharpAngleThreshold: 30,
+      thresholdBoundingBox: 0.05,
+      thresholdDistance: 0.05,
+      useDistance: true,
+      useBoundingBox: false,
+      useAngles: false,
+    },
   },
-  "polyLineOptions": {
-    "opacity": 1,
-    "smoothFactor": 0,
-    "noClip": true,
-    "clickable": false,
-    "weight": 2
+  polyLineOptions: {
+    opacity: 1,
+    weight: 2,
   },
-  "subtractLineOptions": {
-    "opacity": 1,
-    "smoothFactor": 0,
-    "noClip": true,
-    "clickable": false,
-    "weight": 2
+  subtractLineOptions: {
+    opacity: 1,
+    weight: 2,
   },
-  "polygonOptions": {
-    "weight": 2,
-    "opacity": 1,
-    "fillOpacity": 0.2,
-    "smoothFactor": 0.3,
-    "noClip": true
+  polygonOptions: {
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.2,
+    smoothFactor: 0.3,
+    noClip: true,
   },
-  "holeOptions": {
-    "weight": 2,
-    "opacity": 1,
-    "fillOpacity": 0.5
+  holeOptions: {
+    weight: 2,
+    opacity: 1,
+    fillOpacity: 0.5,
   },
-  "polygonCreation": {
-    "method": "concaveman",
-    "simplification": {
-      "mode": "simple",
-      "tolerance": 0.00001,
-      "highQuality": false
-    }
-  },
-  "simplification": {
-    "simplifyTolerance": {
-      "tolerance": 0.0001,
-      "highQuality": false,
-      "mutate": false
+  polygonCreation: {
+    method: 'concaveman',
+    simplification: {
+      mode: 'simple',
+      tolerance: 0.00001,
+      highQuality: false,
     },
-    "dynamicMode": {
-      "fractionGuard": 0.9,
-      "multiplier": 2
-    }
   },
-  "menuOperations": {
-    "simplify": {
-      "processHoles": true
+  simplification: {
+    mode: 'simple',
+    simple: {
+      tolerance: 0.001,
+      highQuality: false,
     },
-    "doubleElbows": {
-      "processHoles": true
+    dynamic: {
+      baseTolerance: 0.0001,
+      highQuality: false,
+      fractionGuard: 0.9,
+      multiplier: 2,
     },
-    "bbox": {
-      "processHoles": true
-    }
   },
-  "boundingBox": {
-    "addMidPointMarkers": true
+  menuOperations: {
+    simplify: {
+      enabled: true,
+      processHoles: true,
+    },
+    doubleElbows: {
+      enabled: true,
+      processHoles: true,
+    },
+    bbox: {
+      enabled: true,
+      processHoles: true,
+    },
+    bezier: {
+      enabled: true,
+    },
+    scale: {
+      enabled: true,
+    },
+    rotate: {
+      enabled: true,
+    },
   },
-  "bezier": {
-    "resolution": 10000,
-    "sharpness": 0.75
+  boundingBox: {
+    addMidPointMarkers: true,
   },
-  "colors": {
-    "dragPolygons": {
-      "subtract": "#D9460F"
+  bezier: {
+    resolution: 10000,
+    sharpness: 0.75,
+  },
+  colors: {
+    dragPolygons: {
+      subtract: '#D9460F',
     },
-    "p2p": {
-      "closingMarker": "#4CAF50"
+    p2p: {
+      closingMarker: '#4CAF50',
     },
-    "edgeHover": "#7a9441",
-    "edgeDeletion": {
-      "hover": "#D9460F"
+    edgeHover: '#7a9441',
+    edgeDeletion: {
+      hover: '#D9460F',
     },
-    "polyline": "#50622b",
-    "subtractLine": "#50622b",
-    "polygon": {
-      "border": "#50622b",
-      "fill": "#b4cd8a"
+    polyline: '#50622b',
+    subtractLine: '#D9460F',
+    polygon: {
+      border: '#50622b',
+      fill: '#b4cd8a',
     },
-    "hole": {
-      "border": "#aa0000",
-      "fill": "#ffcccc"
+    hole: {
+      border: '#aa0000',
+      fill: '#ffcccc',
     },
-    "styles": {
-      "controlButton": {
-        "backgroundColor": "#fff",
-        "color": "#000"
+    styles: {
+      controlButton: {
+        backgroundColor: '#fff',
+        color: '#000',
       },
-      "controlButtonHover": {
-        "backgroundColor": "#f4f4f4"
+      controlButtonHover: {
+        backgroundColor: '#f4f4f4',
       },
-      "controlButtonActive": {
-        "backgroundColor": "rgb(128, 218, 255)",
-        "color": "#fff"
+      controlButtonActive: {
+        backgroundColor: 'rgb(128, 218, 255)',
+        color: '#fff',
       },
-      "indicatorActive": {
-        "backgroundColor": "#ffcc00"
+      indicatorActive: {
+        backgroundColor: '#ffcc00',
       },
-      "p2pMarker": {
-        "backgroundColor": "#fff",
-        "borderColor": "#50622b"
-      }
-    }
-  }
+      p2pMarker: {
+        backgroundColor: '#fff',
+        borderColor: '#50622b',
+      },
+    },
+  },
 }
 ```
 
@@ -280,10 +290,12 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;subtract                                               | boolean | `true`                         | Enable subtract mode button                               |
 | &nbsp;&nbsp;deleteAll                                              | boolean | `true`                         | Enable delete all button                                  |
 | &nbsp;&nbsp;p2p                                                    | boolean | `true`                         | Enable point-to-point drawing mode                        |
+| &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                         | Enable point-to-point subtract mode                       |
 | &nbsp;&nbsp;attachElbow                                            | boolean | `true`                         | Enable clicking on edges to add vertices                  |
 | &nbsp;&nbsp;dragElbow                                              | boolean | `true`                         | Enable dragging vertices                                  |
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                         | Enable dragging entire polygons                           |
 | &nbsp;&nbsp;edgeDeletion                                           | boolean | `true`                         | Enable edge deletion with modifier keys                   |
+| **defaultMode**                                                    | number  | `DrawMode.Off`                 | Default drawing mode when control is initialized          |
 | **dragPolygons**                                                   | object  |                                | Polygon dragging configuration                            |
 | &nbsp;&nbsp;opacity                                                | number  | `0.7`                          | Polygon opacity during drag (0-1)                         |
 | &nbsp;&nbsp;dragCursor                                             | string  | `"move"`                       | Cursor during active dragging                             |
@@ -295,14 +307,12 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;windows                        | string  | `"ctrlKey"`                    | Windows modifier key                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mac                            | string  | `"metaKey"`                    | Mac modifier key                                          |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;linux                          | string  | `"ctrlKey"`                    | Linux modifier key                                        |
-| &nbsp;&nbsp;&nbsp;&nbsp;subtractColor                              | string  | `"#D9460F"`                    | Color for subtract mode visualization                     |
 | &nbsp;&nbsp;&nbsp;&nbsp;hideMarkersOnDrag                          | boolean | `true`                         | Hide markers during subtract drag                         |
 | **edgeDeletion**                                                   | object  |                                | Edge deletion configuration                               |
 | &nbsp;&nbsp;**keys**                                               | object  |                                | Platform-specific modifier keys                           |
 | &nbsp;&nbsp;&nbsp;&nbsp;windows                                    | string  | `"ctrlKey"`                    | Windows modifier key                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;mac                                        | string  | `"metaKey"`                    | Mac modifier key                                          |
 | &nbsp;&nbsp;&nbsp;&nbsp;linux                                      | string  | `"ctrlKey"`                    | Linux modifier key                                        |
-| &nbsp;&nbsp;hoverColor                                             | string  | `"#D9460F"`                    | Color when hovering over deletable edges                  |
 | &nbsp;&nbsp;minVertices                                            | number  | `3`                            | Minimum vertices required after deletion                  |
 | **markers**                                                        | object  |                                | Marker configuration                                      |
 | &nbsp;&nbsp;deleteMarker                                           | boolean | `true`                         | Show delete marker                                        |
@@ -356,7 +366,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "info"]`   | CSS classes for info marker                               |
 | &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for info marker                            |
 | &nbsp;&nbsp;**markerMenuIcon**                                     | object  |                                | Menu marker configuration                                 |
-| &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `7`                            | Marker position (see MarkerPosition enum)                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;position                                   | number  | `1`                            | Marker position (see MarkerPosition enum)                 |
 | &nbsp;&nbsp;&nbsp;&nbsp;styleClasses                               | array   | `["polygon-marker", "menu"]`   | CSS classes for menu marker                               |
 | &nbsp;&nbsp;&nbsp;&nbsp;zIndexOffset                               | number  | `10000`                        | Z-index offset for menu marker                            |
 | &nbsp;&nbsp;**markerDeleteIcon**                                   | object  |                                | Delete marker configuration                               |
@@ -375,18 +385,10 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;useBoundingBox                             | boolean | `false`                        | Use bounding box optimization                             |
 | &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `false`                        | Use angle-based optimization                              |
 | **polyLineOptions**                                                | object  |                                | Polyline styling options                                  |
-| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Polyline color                                            |
 | &nbsp;&nbsp;opacity                                                | number  | `1`                            | Polyline opacity                                          |
-| &nbsp;&nbsp;smoothFactor                                           | number  | `0`                            | Polyline smoothing factor                                 |
-| &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable polyline clipping                                 |
-| &nbsp;&nbsp;clickable                                              | boolean | `false`                        | Make polyline clickable                                   |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                            | Polyline weight in pixels                                 |
 | **subtractLineOptions**                                            | object  |                                | Subtract mode polyline styling                            |
-| &nbsp;&nbsp;color                                                  | string  | `"#50622b"`                    | Subtract polyline color                                   |
 | &nbsp;&nbsp;opacity                                                | number  | `1`                            | Subtract polyline opacity                                 |
-| &nbsp;&nbsp;smoothFactor                                           | number  | `0`                            | Subtract polyline smoothing                               |
-| &nbsp;&nbsp;noClip                                                 | boolean | `true`                         | Disable subtract polyline clipping                        |
-| &nbsp;&nbsp;clickable                                              | boolean | `false`                        | Make subtract polyline clickable                          |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                            | Subtract polyline weight                                  |
 | **polygonOptions**                                                 | object  |                                | Polygon styling options                                   |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                            | Polygon border weight in pixels                           |
@@ -402,14 +404,16 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;method                                                 | string  | `"concaveman"`                 | Creation method                                           |
 | &nbsp;&nbsp;**simplification**                                     | object  |                                | Creation simplification                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;mode                                       | string  | `"simple"`                     | Simplification mode                                       |
-| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.0001`                       | Simplification tolerance                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.00001`                      | Simplification tolerance                                  |
 | &nbsp;&nbsp;&nbsp;&nbsp;highQuality                                | boolean | `false`                        | High quality simplification                               |
 | **simplification**                                                 | object  |                                | General simplification settings                           |
-| &nbsp;&nbsp;**simplifyTolerance**                                  | object  |                                | Tolerance settings                                        |
-| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.0001`                       | Simplification tolerance                                  |
+| &nbsp;&nbsp;mode                                                   | string  | `"simple"`                     | Simplification mode: `"simple"` or `"dynamic"`            |
+| &nbsp;&nbsp;**simple**                                             | object  |                                | Simple simplification settings                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.001`                        | Simplification tolerance                                  |
 | &nbsp;&nbsp;&nbsp;&nbsp;highQuality                                | boolean | `false`                        | High quality mode                                         |
-| &nbsp;&nbsp;&nbsp;&nbsp;mutate                                     | boolean | `false`                        | Allow input mutation                                      |
-| &nbsp;&nbsp;**dynamicMode**                                        | object  |                                | Dynamic simplification                                    |
+| &nbsp;&nbsp;**dynamic**                                            | object  |                                | Dynamic simplification settings                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;baseTolerance                              | number  | `0.0001`                       | Base tolerance for dynamic mode                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;highQuality                                | boolean | `false`                        | High quality mode                                         |
 | &nbsp;&nbsp;&nbsp;&nbsp;fractionGuard                              | number  | `0.9`                          | Fraction guard value                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;multiplier                                 | number  | `2`                            | Tolerance multiplier                                      |
 | **boundingBox**                                                    | object  |                                | Bounding box settings                                     |
@@ -417,6 +421,50 @@ const polydraw = L.control.polydraw({
 | **bezier**                                                         | object  |                                | Bezier curve settings                                     |
 | &nbsp;&nbsp;resolution                                             | number  | `10000`                        | Bezier curve resolution                                   |
 | &nbsp;&nbsp;sharpness                                              | number  | `0.75`                         | Bezier curve sharpness                                    |
+| **menuOperations**                                                 | object  |                                | Menu operation toggles                                    |
+| &nbsp;&nbsp;**simplify**                                           | object  |                                | Simplify operation configuration                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable simplify operation                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Process holes during simplify                             |
+| &nbsp;&nbsp;**doubleElbows**                                       | object  |                                | Double elbows operation configuration                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable double elbows operation                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Process holes during double elbows                        |
+| &nbsp;&nbsp;**bbox**                                               | object  |                                | Bounding box operation configuration                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable bounding box operation                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                         | Process holes during bounding box                         |
+| &nbsp;&nbsp;**bezier**                                             | object  |                                | Bezier operation configuration                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable bezier operation                                   |
+| &nbsp;&nbsp;**scale**                                              | object  |                                | Scale operation configuration                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable scale operation                                    |
+| &nbsp;&nbsp;**rotate**                                             | object  |                                | Rotate operation configuration                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                         | Enable rotate operation                                   |
+| **colors**                                                         | object  |                                | Color configuration                                       |
+| &nbsp;&nbsp;**dragPolygons**                                       | object  |                                | Drag polygon colors                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;subtract                                   | string  | `"#D9460F"`                    | Color for subtract mode during drag                       |
+| &nbsp;&nbsp;**p2p**                                                | object  |                                | Point-to-point colors                                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;closingMarker                              | string  | `"#4CAF50"`                    | Color for closing marker in p2p mode                      |
+| &nbsp;&nbsp;edgeHover                                              | string  | `"#7a9441"`                    | Color when hovering over edges                            |
+| &nbsp;&nbsp;**edgeDeletion**                                       | object  |                                | Edge deletion colors                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;hover                                      | string  | `"#D9460F"`                    | Color when hovering over deletable edges                  |
+| &nbsp;&nbsp;polyline                                               | string  | `"#50622b"`                    | Polyline color                                            |
+| &nbsp;&nbsp;subtractLine                                           | string  | `"#D9460F"`                    | Subtract line color                                       |
+| &nbsp;&nbsp;**polygon**                                            | object  |                                | Polygon colors                                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;border                                     | string  | `"#50622b"`                    | Polygon border color                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;fill                                       | string  | `"#b4cd8a"`                    | Polygon fill color                                        |
+| &nbsp;&nbsp;**hole**                                               | object  |                                | Hole colors                                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;border                                     | string  | `"#aa0000"`                    | Hole border color                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;fill                                       | string  | `"#ffcccc"`                    | Hole fill color                                           |
+| &nbsp;&nbsp;**styles**                                             | object  |                                | UI style colors                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;**controlButton**                          | object  |                                | Control button colors                                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor                | string  | `"#fff"`                       | Control button background color                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color                          | string  | `"#000"`                       | Control button text color                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;controlButtonHover                         | string  | `"#f4f4f4"`                    | Control button hover background color                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;**controlButtonActive**                    | object  |                                | Active control button colors                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor                | string  | `"rgb(128, 218, 255)"`         | Active control button background color                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color                          | string  | `"#fff"`                       | Active control button text color                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;indicatorActive                            | string  | `"#ffcc00"`                    | Active indicator background color                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;**p2pMarker**                              | object  |                                | P2P marker colors                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;backgroundColor                | string  | `"#fff"`                       | P2P marker background color                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;borderColor                    | string  | `"#50622b"`                    | P2P marker border color                                   |
 
 ## External Configuration
 
@@ -449,3 +497,21 @@ const polyDrawControl = L.control.polydraw({
 3. Default configuration
 
 If the external configuration file fails to load, the plugin will fall back to using the default configuration plus any inline configuration provided.
+
+**Simplification migration**: Polydraw logs a console warning when it detects the legacy structure. Prefer the unified bloc
+
+```ts
+  mode: 'dynamic',
+  simple: { tolerance: 0.00005, highQuality: true },
+  dynamic: { baseTolerance: 0.0001, highQuality: false, fractionGuard: 0.9, multiplier: 2 },
+}
+```
+
+```ts
+// Legacy (still supported but deprecated)
+},
+simplification: {
+  simplifyTolerance: { tolerance: 0.0001, highQuality: false },
+  dynamicMode: { fractionGuard: 0.9, multiplier: 2 },
+}
+```

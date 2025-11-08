@@ -156,12 +156,14 @@ export const defaultConfig: PolydrawConfig = {
     },
   },
   simplification: {
-    simplifyTolerance: {
-      tolerance: 0.0001,
+    mode: 'simple',
+    simple: {
+      tolerance: 0.001,
       highQuality: false,
-      mutate: false,
     },
-    dynamicMode: {
+    dynamic: {
+      baseTolerance: 0.0001,
+      highQuality: false,
       fractionGuard: 0.9,
       multiplier: 2,
     },
