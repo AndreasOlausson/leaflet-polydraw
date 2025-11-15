@@ -243,6 +243,31 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygon');
+    const { polygons, skipMerge } = this.preparePolygonsForAddition(latlngs);
+    const aggregatedFeatureGroups: L.FeatureGroup[] = [];
+
+    for (const polygon of polygons) {
+      const result = await this.addPolygonWithMergeHandling(polygon, options, skipMerge);
+      if (!result.success) {
+        return result;
+      }
+
+      if (result.featureGroups && result.featureGroups.length > 0) {
+        aggregatedFeatureGroups.push(...result.featureGroups);
+      }
+    }
+
+    return {
+      success: true,
+      featureGroups: aggregatedFeatureGroups.length > 0 ? aggregatedFeatureGroups : undefined,
+    };
+  }
+
+  private async addPolygonWithMergeHandling(
+    latlngs: Feature<Polygon | MultiPolygon>,
+    options: AddPolygonOptions,
+    skipMerge: boolean,
+  ): Promise<MutationResult> {
     const { noMerge = false } = options;
 
     try {
@@ -259,7 +284,7 @@ export class PolygonMutationManager {
         this.config.mergePolygons &&
         !noMerge &&
         this.getFeatureGroups().length > 0 &&
-        !this.config.kinks
+        !skipMerge
       ) {
         return await this.mergePolygon(latlngs, options);
       } else {
@@ -271,6 +296,49 @@ export class PolygonMutationManager {
         error: error instanceof Error ? error.message : 'Unknown error in addPolygon',
       };
     }
+  }
+
+  private preparePolygonsForAddition(latlngs: Feature<Polygon | MultiPolygon>): {
+    polygons: Feature<Polygon | MultiPolygon>[];
+    skipMerge: boolean;
+  } {
+    let hasSelfIntersections = false;
+
+    try {
+      hasSelfIntersections = this.turfHelper.hasKinks(latlngs);
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error detecting polygon kinks:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    }
+
+    if (!this.config.kinks && hasSelfIntersections) {
+      try {
+        const kinkFreePolygons = this.turfHelper.getKinks(latlngs);
+
+        if (kinkFreePolygons.length > 0) {
+          return {
+            polygons: kinkFreePolygons,
+            skipMerge: false,
+          };
+        }
+      } catch (error) {
+        if (!isTestEnvironment()) {
+          console.warn(
+            'Error splitting polygon kinks:',
+            error instanceof Error ? error.message : String(error),
+          );
+        }
+      }
+    }
+
+    return {
+      polygons: [latlngs],
+      skipMerge: this.config.kinks && hasSelfIntersections,
+    };
   }
 
   /**
