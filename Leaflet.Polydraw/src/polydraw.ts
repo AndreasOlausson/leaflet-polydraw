@@ -352,6 +352,7 @@ class Polydraw extends L.Control {
     container.style.zIndex = '1000';
 
     this.subContainer = leafletAdapter.domUtil.create('div', 'sub-buttons', container);
+    this.subContainer.setAttribute('data-polydraw', 'sub-buttons');
     this.subContainer.style.maxHeight = '0px';
     this.subContainer.style.overflow = 'hidden';
     this.subContainer.style.transition = 'max-height 0.3s ease';
