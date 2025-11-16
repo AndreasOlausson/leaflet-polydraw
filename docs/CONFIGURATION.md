@@ -289,8 +289,8 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;draw                                                   | boolean | `true`                            | Enable draw mode button                                                                                                                                  |
 | &nbsp;&nbsp;subtract                                               | boolean | `true`                            | Enable subtract mode button                                                                                                                              |
 | &nbsp;&nbsp;deleteAll                                              | boolean | `true`                            | Enable delete all button                                                                                                                                 |
-| &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode <sup>\*1</sup>                                                                                                        |
-| &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode <sup>\*1</sup>                                                                                                       |
+| &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode                                                                                                                       |
+| &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode                                                                                                                      |
 | &nbsp;&nbsp;attachElbow                                            | boolean | `true`                            | Enable clicking on edges to add vertices                                                                                                                 |
 | &nbsp;&nbsp;dragElbow                                              | boolean | `true`                            | Enable dragging vertices                                                                                                                                 |
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                            | Enable dragging entire polygons                                                                                                                          |
@@ -401,8 +401,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;opacity                                                | number  | `1`                               | Hole border opacity                                                                                                                                      |
 | &nbsp;&nbsp;fillOpacity                                            | number  | `0.5`                             | Hole fill opacity                                                                                                                                        |
 | **polygonCreation**                                                | object  |                                   | Polygon creation settings                                                                                                                                |
-| &nbsp;&nbsp;method                                                 | string  | `"concaveman"`<sup>\*1, \*2</sup> | Creation method ('concaveman', 'direct', or 'buffer'); concaveman builds a hull, direct preserves the raw path, buffer creates a                         |
-| smoothed outline.                                                  |
+| &nbsp;&nbsp;method                                                 | string  | `"concaveman"`<sup>\*1, \*2</sup> | Creation method ('concaveman', 'direct', or 'buffer'); concaveman builds a hull, direct preserves the raw path, buffer creates a smoothed outline.       |
 | &nbsp;&nbsp;**simplification**                                     | object  |                                   | Creation simplification                                                                                                                                  |
 | &nbsp;&nbsp;&nbsp;&nbsp;mode                                       | string  | `"simple"`                        | Simplification mode                                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;tolerance                                  | number  | `0.00001`                         | Simplification tolerance                                                                                                                                 |
@@ -469,7 +468,7 @@ const polydraw = L.control.polydraw({
 
 ## Footnotes
 
-#### \*1
+#### \*1 (kinks)
 
 The `kinks` option controls how self‑intersecting polygons are handled:
 
@@ -483,7 +482,7 @@ Because of this, `kinks` has no effect when using `concaveman`.
 
 If you need self‑intersections to be preserved (e.g., so `kinks=false` can split a figure‑eight), switch to the `direct` or `buffer` creation method, or use the point‑to‑point drawing mode.
 
-#### \*2
+#### \*2 (creation methods)
 
 Polydraw can convert a freehand trace into a polygon in multiple ways. Set the behavior via `polygonCreation.method`:
 
@@ -533,7 +532,7 @@ const polydrawBuffer = new Polydraw({
 
 For Leaflet v1 control usage, pass the same `config` object into `L.control.polydraw({ config: { ... } })`.
 
-#### \*3
+#### \*3 (simplification tolerance)
 
 Simplification tolerance controls how aggressively vertices are removed.  
 Lower values preserve more detail but create larger polygons with more vertices.  
