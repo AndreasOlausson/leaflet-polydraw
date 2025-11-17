@@ -2391,6 +2391,12 @@ export class PolygonInteractionManager {
     type AreaConfig = ConstructorParameters<typeof Area>[1];
     const _perimeter = new Perimeter(perimeter, this.config as unknown as PerimeterConfig);
     const _area = new Area(area, this.config as unknown as AreaConfig);
+    const infoConfig = this.config.markers.markerInfoIcon ?? {};
+    const showArea = infoConfig.showArea !== false;
+    const showPerimeter = infoConfig.showPerimeter !== false;
+    const useMetricUnits = infoConfig.useMetrics !== false;
+    const areaLabel = infoConfig.areaLabel?.trim();
+    const perimeterLabel = infoConfig.perimeterLabel?.trim();
 
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('info-marker-outer-wrapper');
@@ -2402,16 +2408,32 @@ export class PolygonInteractionManager {
     const infoContentWrapper: HTMLDivElement = document.createElement('div');
     infoContentWrapper.classList.add('info-marker-content');
 
-    const areaDiv: HTMLDivElement = document.createElement('div');
-    areaDiv.classList.add('info-item', 'area');
-    areaDiv.innerHTML = `<strong>Area:</strong> ${_area.metricArea} ${_area.metricUnit}`;
+    if (showArea) {
+      const areaValue = useMetricUnits
+        ? `${_area.metricArea} ${_area.metricUnit}`
+        : `${_area.imperialArea} ${_area.imperialUnit}`;
+      const areaDiv: HTMLDivElement = document.createElement('div');
+      areaDiv.classList.add('info-item', 'area');
+      areaDiv.innerHTML =
+        areaLabel && areaLabel.length > 0
+          ? `<strong>${areaLabel}:</strong> ${areaValue}`
+          : areaValue;
+      infoContentWrapper.appendChild(areaDiv);
+    }
 
-    const perimeterDiv: HTMLDivElement = document.createElement('div');
-    perimeterDiv.classList.add('info-item', 'perimeter');
-    perimeterDiv.innerHTML = `<strong>Perimeter:</strong> ${_perimeter.metricLength} ${_perimeter.metricUnit}`;
+    if (showPerimeter) {
+      const perimeterValue = useMetricUnits
+        ? `${_perimeter.metricLength} ${_perimeter.metricUnit}`
+        : `${_perimeter.imperialLength} ${_perimeter.imperialUnit}`;
+      const perimeterDiv: HTMLDivElement = document.createElement('div');
+      perimeterDiv.classList.add('info-item', 'perimeter');
+      perimeterDiv.innerHTML =
+        perimeterLabel && perimeterLabel.length > 0
+          ? `<strong>${perimeterLabel}:</strong> ${perimeterValue}`
+          : perimeterValue;
+      infoContentWrapper.appendChild(perimeterDiv);
+    }
 
-    infoContentWrapper.appendChild(areaDiv);
-    infoContentWrapper.appendChild(perimeterDiv);
     markerContent.appendChild(infoContentWrapper);
 
     outerWrapper.appendChild(wrapper);
