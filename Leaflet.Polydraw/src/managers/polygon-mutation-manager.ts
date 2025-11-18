@@ -508,7 +508,9 @@ export class PolygonMutationManager {
             // and subsequent rings as holes. This ensures that polygons drawn inside holes
             // are styled as regular polygons (green), not as holes (red).
             if (ringIndex === 0) {
-              this.interactionManager.addMarkers(latLngLiterals, featureGroup);
+              this.interactionManager.addMarkers(latLngLiterals, featureGroup, {
+                optimizationLevel: visualOptimizationLevel,
+              });
             } else {
               // Add red polyline overlay for hole rings
               const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
@@ -1138,9 +1140,13 @@ export class PolygonMutationManager {
 
   // Legacy methods that are now handled by specialized managers but kept for compatibility
 
-  addMarker(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
+  addMarker(
+    latlngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+    options?: { optimizationLevel?: number },
+  ): void {
     // console.log('PolygonMutationManager addMarker');
-    this.interactionManager.addMarkers(latlngs, featureGroup);
+    this.interactionManager.addMarkers(latlngs, featureGroup, options);
   }
 
   addHoleMarker(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {

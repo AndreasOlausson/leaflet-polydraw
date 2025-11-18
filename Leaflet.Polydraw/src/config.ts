@@ -119,12 +119,15 @@ export const defaultConfig: PolydrawConfig = {
       infoMarker: false,
     },
     visualOptimization: {
+      toleranceMin: 0.000005,
+      toleranceMax: 0.005,
+      curve: 1.35,
       sharpAngleThreshold: 30,
       thresholdBoundingBox: 0.05,
       thresholdDistance: 0.05,
       useDistance: true,
       useBoundingBox: false,
-      useAngles: false,
+      useAngles: true,
     },
   },
   polyLineOptions: {

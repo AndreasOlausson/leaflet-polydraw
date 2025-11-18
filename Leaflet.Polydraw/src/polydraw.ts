@@ -1395,6 +1395,22 @@ class Polydraw extends L.Control {
         '[Leaflet.Polydraw] Legacy simplification settings detected. Please migrate to `config.simplification` with `mode`, `simple`, and `dynamic` blocks.',
       );
     }
+
+    const visualOptimization = config.markers?.visualOptimization;
+    const deprecatedVisualOptimizationKeys =
+      visualOptimization &&
+      (visualOptimization.useAngles !== undefined ||
+        visualOptimization.useBoundingBox !== undefined ||
+        visualOptimization.useDistance !== undefined ||
+        visualOptimization.thresholdBoundingBox !== undefined ||
+        visualOptimization.thresholdDistance !== undefined ||
+        visualOptimization.sharpAngleThreshold !== undefined);
+
+    if (deprecatedVisualOptimizationKeys) {
+      console.warn(
+        '[Leaflet.Polydraw] `markers.visualOptimization` is deprecated. Prefer `visualOptimizationLevel` when adding predefined polygons.',
+      );
+    }
   }
 }
 

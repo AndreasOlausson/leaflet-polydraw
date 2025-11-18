@@ -768,7 +768,7 @@ function updateStatusBox() {
   summaryLine.style.color = '#4b5563';
   structureContainer.appendChild(summaryLine);
 
-// --- Expandable panel wrapper ---
+  // --- Expandable panel wrapper ---
   // Preserve collapsed state across updates using a data-attribute on the container element
   const wasCollapsed = structureElement.getAttribute('data-collapsed') === 'true';
 
@@ -960,8 +960,8 @@ updateStatusBox();
 
 document.getElementById('addDebugPoly')?.addEventListener('click', () => {
   // Example with visual optimization level 5 (moderate simplification)
-  polydraw.addPredefinedPolygon(overlappingSquares, {
-    visualOptimizationLevel: 0,
+  polydraw.addPredefinedPolygon(linkoping, {
+    visualOptimizationLevel: 9,
   });
   // Update status after adding predefined polygon
   setTimeout(updateStatusBox, 100);

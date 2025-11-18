@@ -35,6 +35,13 @@ export interface PolygonInteractionManagerDependencies {
   eventManager: EventManager;
 }
 
+interface MarkerImportanceOptions {
+  menuIndex: number;
+  deleteIndex: number;
+  infoIndex: number;
+  optimizationLevel: number;
+}
+
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
  * This includes dragging polygons, dragging markers, edge interactions, and popup menus.
@@ -109,7 +116,11 @@ export class PolygonInteractionManager {
   /**
    * Add markers to a polygon feature group
    */
-  addMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
+  addMarkers(
+    latlngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+    options: { optimizationLevel?: number } = {},
+  ): void {
     // console.log('PolygonInteractionManager addMarkers');
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
@@ -131,6 +142,16 @@ export class PolygonInteractionManager {
     deleteMarkerIdx = separatedIndices.delete;
     infoMarkerIdx = separatedIndices.info;
 
+    const optimizationLevel = options.optimizationLevel ?? 0;
+    const importantIndices = this.deriveImportantMarkerIndices(latlngs, {
+      menuIndex: menuMarkerIdx,
+      deleteIndex: deleteMarkerIdx,
+      infoIndex: infoMarkerIdx,
+      optimizationLevel,
+    });
+    const hasClosingPoint =
+      latlngs.length > 2 && this.latLngEquals(latlngs[0], latlngs[latlngs.length - 1]);
+
     latlngs.forEach((latlng, i) => {
       let iconClasses = this.config.markers.markerIcon.styleClasses;
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
@@ -148,8 +169,18 @@ export class PolygonInteractionManager {
         (i === menuMarkerIdx && this.config.markers.menuMarker) ||
         (i === deleteMarkerIdx && this.config.markers.deleteMarker) ||
         (i === infoMarkerIdx && this.config.markers.infoMarker);
+      const normalizedIndex = this.normalizeMarkerIndex(i, latlngs.length, hasClosingPoint);
+      const isImportant =
+        optimizationLevel <= 0 ||
+        normalizedIndex === null ||
+        importantIndices.has(normalizedIndex) ||
+        isSpecialMarker;
+      const classesForIcon = [...processedClasses];
+      if (!isImportant) {
+        classesForIcon.push('polygon-marker-faded');
+      }
       const marker = new L.Marker(latlng, {
-        icon: this.createDivIcon(processedClasses),
+        icon: this.createDivIcon(classesForIcon),
         draggable: this.config.modes.dragElbow,
         title: this.config.markers.coordsTitle ? this.getLatLngInfoString(latlng) : '',
         zIndexOffset:
@@ -1043,6 +1074,168 @@ export class PolygonInteractionManager {
         opacity: 0,
       });
     }
+  }
+
+  private deriveImportantMarkerIndices(
+    latlngs: L.LatLngLiteral[],
+    options: MarkerImportanceOptions,
+  ): Set<number> {
+    const important = new Set<number>();
+    if (!latlngs || latlngs.length === 0) {
+      return important;
+    }
+
+    const normalizedLevel = Math.min(Math.max(options.optimizationLevel ?? 0, 0), 10);
+    const hasClosingPoint =
+      latlngs.length > 2 && this.latLngEquals(latlngs[0], latlngs[latlngs.length - 1]);
+    const ring = hasClosingPoint ? latlngs.slice(0, -1) : [...latlngs];
+    const vertexCount = ring.length;
+
+    const addIndex = (idx?: number) => {
+      if (idx === undefined || idx === null || idx < 0) {
+        return;
+      }
+      let normalized = idx;
+      if (hasClosingPoint && idx === latlngs.length - 1) {
+        normalized = 0;
+      }
+      if (normalized >= vertexCount) {
+        normalized = vertexCount > 0 ? normalized % vertexCount : 0;
+      }
+      if (normalized >= 0 && normalized < vertexCount) {
+        important.add(normalized);
+      }
+    };
+
+    addIndex(0);
+    addIndex(options.menuIndex);
+    addIndex(options.deleteIndex);
+    addIndex(options.infoIndex);
+
+    if (vertexCount === 0 || normalizedLevel <= 0 || vertexCount <= 3) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+      return important;
+    }
+
+    const tolerance = this.getToleranceForOptimizationLevel(normalizedLevel);
+    let simplifiedVertices =
+      tolerance > 0 ? this.turfHelper.simplifyLatLngRing(ring, tolerance, true) : [...ring];
+
+    if (
+      simplifiedVertices.length > 1 &&
+      this.latLngEquals(simplifiedVertices[0], simplifiedVertices[simplifiedVertices.length - 1])
+    ) {
+      simplifiedVertices = simplifiedVertices.slice(0, -1);
+    }
+
+    if (!simplifiedVertices || simplifiedVertices.length === 0) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+      return important;
+    }
+
+    simplifiedVertices.forEach((vertex) => {
+      const closestIndex = this.findClosestVertexIndex(vertex, ring);
+      if (closestIndex !== null) {
+        important.add(closestIndex);
+      }
+    });
+
+    if (important.size === 0) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+    }
+
+    return important;
+  }
+
+  private normalizeMarkerIndex(
+    index: number,
+    length: number,
+    hasClosingPoint: boolean,
+  ): number | null {
+    if (index === undefined || index === null || index < 0) {
+      return null;
+    }
+    if (hasClosingPoint) {
+      const uniqueLength = Math.max(1, length - 1);
+      if (index === length - 1) {
+        return 0;
+      }
+      if (index >= uniqueLength) {
+        return index % uniqueLength;
+      }
+      return index;
+    }
+    if (index >= length) {
+      return length > 0 ? length - 1 : null;
+    }
+    return index;
+  }
+
+  private latLngEquals(a: L.LatLngLiteral, b: L.LatLngLiteral): boolean {
+    if (!a || !b) return false;
+    return Math.abs(a.lat - b.lat) < 1e-9 && Math.abs(a.lng - b.lng) < 1e-9;
+  }
+
+  private getDistanceMeters(a: L.LatLngLiteral, b: L.LatLngLiteral): number {
+    try {
+      const pointA = leafletAdapter.createLatLng(a.lat, a.lng);
+      const pointB = leafletAdapter.createLatLng(b.lat, b.lng);
+      if (typeof pointA.distanceTo === 'function') {
+        return pointA.distanceTo(pointB);
+      }
+    } catch (error) {
+      // Fallback to haversine below
+    }
+
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    return R * c;
+  }
+
+  private findClosestVertexIndex(
+    target: L.LatLngLiteral,
+    vertices: L.LatLngLiteral[],
+  ): number | null {
+    if (!vertices || vertices.length === 0) {
+      return null;
+    }
+    let closestIndex = 0;
+    let minDistance = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < vertices.length; i++) {
+      const dist = this.getDistanceMeters(target, vertices[i]);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
+        if (dist === 0) {
+          break;
+        }
+      }
+    }
+    return closestIndex;
+  }
+
+  private getToleranceForOptimizationLevel(level: number): number {
+    const normalized = Math.min(Math.max(level, 0), 10) / 10;
+    const visConfig = this.config.markers.visualOptimization ?? {};
+    const minTolerance = Math.max(visConfig.toleranceMin ?? 0.000005, 0);
+    const maxTolerance = Math.max(visConfig.toleranceMax ?? 0.005, minTolerance);
+    const curvePower = visConfig.curve ?? 1.35;
+    const curved = Math.pow(normalized, curvePower);
+    return minTolerance + (maxTolerance - minTolerance) * curved;
   }
 
   private elbowClicked(

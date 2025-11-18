@@ -119,13 +119,16 @@ export interface MarkerOptions {
     deleteMarker: boolean;
     infoMarker: boolean;
   };
-  visualOptimization: {
-    sharpAngleThreshold: number;
-    thresholdBoundingBox: number;
-    thresholdDistance: number;
-    useDistance: boolean;
-    useBoundingBox: boolean;
-    useAngles: boolean;
+  visualOptimization?: {
+    toleranceMin?: number;
+    toleranceMax?: number;
+    curve?: number;
+    sharpAngleThreshold?: number;
+    thresholdBoundingBox?: number;
+    thresholdDistance?: number;
+    useDistance?: boolean;
+    useBoundingBox?: boolean;
+    useAngles?: boolean;
   };
 }
 

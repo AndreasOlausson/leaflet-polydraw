@@ -24,6 +24,18 @@ body {
   transition: background-color 0.25s;
 }
 
+.polygon-marker.polygon-marker-faded {
+  opacity: 0.1;
+  width: 6px !important;
+  height: 6px !important;
+  margin-left: -3px !important;
+  margin-top: -3px !important;
+}
+
+.polygon-marker.polygon-marker-faded:hover {
+  opacity: 1;
+}
+
 .polygon-marker.menu {
   margin-left: -11px !important;
   margin-top: -11px !important;

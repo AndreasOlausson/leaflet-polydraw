@@ -245,6 +245,53 @@ export class TurfHelper {
     return simplified;
   }
 
+  /**
+   * Simplify a LatLng ring using a specific tolerance.
+   * Returns the simplified vertices in LatLngLiteral order.
+   */
+  simplifyLatLngRing(
+    latlngs: L.LatLngLiteral[],
+    tolerance: number,
+    highQuality: boolean = true,
+  ): L.LatLngLiteral[] {
+    if (!latlngs || latlngs.length === 0 || tolerance <= 0) {
+      return latlngs ? [...latlngs] : [];
+    }
+
+    const ring: L.LatLngLiteral[] = [...latlngs];
+    const first = ring[0];
+    const last = ring[ring.length - 1];
+    if (!last || !first || last.lat !== first.lat || last.lng !== first.lng) {
+      ring.push({ lat: first.lat, lng: first.lng });
+    }
+
+    const coords = ring.map((point) => [point.lng, point.lat]);
+    try {
+      const poly = polygon([coords]);
+      const simplified = simplify(poly, {
+        tolerance,
+        highQuality,
+        mutate: false,
+      }) as Feature<Polygon>;
+      const simplifiedCoords = simplified?.geometry?.coordinates?.[0];
+      if (!simplifiedCoords || simplifiedCoords.length === 0) {
+        return [...latlngs];
+      }
+      return simplifiedCoords.map((coord) => ({
+        lat: coord[1],
+        lng: coord[0],
+      }));
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Error simplifying ring:',
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+      return [...latlngs];
+    }
+  }
+
   private resolveSimplificationConfig(): {
     mode: 'simple' | 'dynamic' | 'none';
     simple: { tolerance: number; highQuality: boolean };

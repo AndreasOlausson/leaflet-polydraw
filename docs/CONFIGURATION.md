@@ -1,11 +1,7 @@
 # Configuration
 
 > **Note:**  
-> The configuration file includes several legacy or experimental options that may not currently be used in the codebase.  
-> These have been kept intentionally to maintain backward compatibility and for future feature expansion.  
-> As of version 1.0.0, approximately **77%** of configuration properties are actively used.  
-> The remaining unused options (such as parts of `visualOptimization`, `holeMarkers`, and several polyline settings)  
-> are harmless but currently inactive. They may be deprecated or repurposed in a future release.
+> Most configuration properties are active in the current release. When deprecated keys remain (for example `markers.visualOptimization`), they are honored only for backward compatibility—see the footnotes below for migration tips. Future major versions may remove these legacy options entirely.
 
 ## Default Configuration
 
@@ -377,13 +373,16 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;menuMarker                                 | boolean | `false`                           | Show menu marker on holes                                                                                                                                |
 | &nbsp;&nbsp;&nbsp;&nbsp;deleteMarker                               | boolean | `true`                            | Show delete marker on holes                                                                                                                              |
 | &nbsp;&nbsp;&nbsp;&nbsp;infoMarker                                 | boolean | `false`                           | Show info marker on holes                                                                                                                                |
-| &nbsp;&nbsp;**visualOptimization**                                 | object  |                                   | Visual optimization settings                                                                                                                             |
-| &nbsp;&nbsp;&nbsp;&nbsp;sharpAngleThreshold                        | number  | `30`                              | Angle threshold for optimization                                                                                                                         |
-| &nbsp;&nbsp;&nbsp;&nbsp;thresholdBoundingBox                       | number  | `0.05`                            | Bounding box threshold                                                                                                                                   |
-| &nbsp;&nbsp;&nbsp;&nbsp;thresholdDistance                          | number  | `0.05`                            | Distance threshold                                                                                                                                       |
-| &nbsp;&nbsp;&nbsp;&nbsp;useDistance                                | boolean | `true`                            | Use distance-based optimization                                                                                                                          |
-| &nbsp;&nbsp;&nbsp;&nbsp;useBoundingBox                             | boolean | `false`                           | Use bounding box optimization                                                                                                                            |
-| &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `false`                           | Use angle-based optimization                                                                                                                             |
+| &nbsp;&nbsp;**visualOptimization**<sup>\*4</sup>                   | object  |                                   | Visual optimization settings (deprecated; see note below)                                                                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;toleranceMin                               | number  | `0.000005`                        | Minimum simplification tolerance used when `visualOptimizationLevel` > 0                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;toleranceMax                               | number  | `0.005`                           | Maximum tolerance used at the highest optimization level                                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;curve                                      | number  | `1.35`                            | Exponent controlling how quickly tolerance grows across the 0–10 level range                                                                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;sharpAngleThreshold                        | number  | `30`                              | (Deprecated) Previous sharp-angle cutoff; no longer used                                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;thresholdBoundingBox                       | number  | `0.05`                            | (Deprecated) Previous bounding-box threshold; no longer used                                                                                             |
+| &nbsp;&nbsp;&nbsp;&nbsp;thresholdDistance                          | number  | `0.05`                            | (Deprecated) Previous distance threshold; no longer used                                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;useDistance                                | boolean | `true`                            | (Deprecated) Legacy distance toggle                                                                                                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;useBoundingBox                             | boolean | `false`                           | (Deprecated) Legacy bounding-box toggle                                                                                                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `false`                           | (Deprecated) Legacy angle toggle                                                                                                                         |
 | **polyLineOptions**                                                | object  |                                   | Polyline styling options                                                                                                                                 |
 | &nbsp;&nbsp;opacity                                                | number  | `1`                               | Polyline opacity                                                                                                                                         |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                               | Polyline weight in pixels                                                                                                                                |
@@ -589,3 +588,7 @@ simplification: {
   dynamicMode: { fractionGuard: 0.9, multiplier: 2 },
 }
 ```
+
+#### \*4 (visual optimization
+
+`markers.visualOptimization` is preserved for backward compatibility only. For predefined polygons, prefer the `visualOptimizationLevel` option (0–10) when calling `addPredefinedPolygon`/`addPredefinedGeoJSONs`. Higher levels apply a larger simplification tolerance (between `toleranceMin` and `toleranceMax`) and hide more elbows, while level 0 keeps every handle visible. The polygon geometry itself is never altered.

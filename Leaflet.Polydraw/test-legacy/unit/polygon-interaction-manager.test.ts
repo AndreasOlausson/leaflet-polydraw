@@ -8,6 +8,7 @@ import { EventManager } from '../../src/managers/event-manager';
 import { MarkerPosition } from '../../src/enums';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import { IconFactory } from '../../src/icon-factory';
 import {
   createMockMap,
   createMockPolygon,
@@ -290,7 +291,9 @@ vi.mock('leaflet', async () => {
 // Mock IconFactory
 vi.mock('../../src/icon-factory', () => ({
   IconFactory: {
-    createDivIcon: vi.fn(() => ({ options: {} })),
+    createDivIcon: vi.fn((classNames: string[]) => ({
+      options: { className: Array.isArray(classNames) ? classNames.join(' ') : String(classNames) },
+    })),
   },
 }));
 
@@ -448,6 +451,33 @@ describe('PolygonInteractionManager', () => {
         { passive: true },
       );
       expect(mockElement.addEventListener).toHaveBeenCalledWith('touchend', expect.any(Function));
+    });
+
+    it('should hide non-essential markers when optimization level is provided', () => {
+      const rectangleWithExtras = [
+        { lat: 0, lng: 0 },
+        { lat: 0, lng: 0.5 },
+        { lat: 0, lng: 1 },
+        { lat: 0.5, lng: 1 },
+        { lat: 1, lng: 1 },
+        { lat: 1, lng: 0.5 },
+        { lat: 1, lng: 0 },
+        { lat: 0.5, lng: 0 },
+        { lat: 0, lng: 0 },
+      ];
+
+      manager.addMarkers(rectangleWithExtras, mockFeatureGroup, { optimizationLevel: 8 });
+
+      const iconSpy = vi.mocked(IconFactory.createDivIcon);
+      const hiddenCalls = iconSpy.mock.calls.filter(
+        (call) => Array.isArray(call[0]) && call[0].includes('polygon-marker-faded'),
+      );
+      const visibleCalls = iconSpy.mock.calls.filter(
+        (call) => Array.isArray(call[0]) && !call[0].includes('polygon-marker-faded'),
+      );
+
+      expect(hiddenCalls.length).toBeGreaterThan(0);
+      expect(visibleCalls.length).toBeGreaterThan(0);
     });
   });
 
