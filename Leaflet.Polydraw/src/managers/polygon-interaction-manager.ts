@@ -701,11 +701,13 @@ export class PolygonInteractionManager {
                     return arr;
                   });
 
+                  const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
                   this.emitPolygonUpdated({
                     operation: 'removeHole',
                     polygon: newPolygon,
+                    optimizationLevel,
                   });
                 }
               }
@@ -1182,6 +1184,25 @@ export class PolygonInteractionManager {
     return Math.abs(a.lat - b.lat) < 1e-9 && Math.abs(a.lng - b.lng) < 1e-9;
   }
 
+  private getOptimizationLevelFromFeatureGroup(featureGroup: L.FeatureGroup): number {
+    let level = 0;
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        const poly = layer as PolydrawPolygon;
+        if (typeof poly._polydrawOptimizationLevel === 'number') {
+          level = poly._polydrawOptimizationLevel || 0;
+        }
+      }
+    });
+    return level;
+  }
+
+  private getOptimizationLevelFromPolygonLayer(polygon?: L.Polygon): number {
+    if (!polygon) return 0;
+    const polydrawPolygon = polygon as PolydrawPolygon;
+    return polydrawPolygon._polydrawOptimizationLevel || 0;
+  }
+
   private getDistanceMeters(a: L.LatLngLiteral, b: L.LatLngLiteral): number {
     try {
       const pointA = leafletAdapter.createLatLng(a.lat, a.lng);
@@ -1329,6 +1350,10 @@ export class PolygonInteractionManager {
         break;
       }
     }
+    const optimizationLevel = currentFeatureGroup
+      ? this.getOptimizationLevelFromFeatureGroup(currentFeatureGroup)
+      : this.getOptimizationLevelFromPolygonLayer(polygonLayer);
+
     if (currentFeatureGroup) {
       this.removeFeatureGroup(currentFeatureGroup);
     }
@@ -1337,6 +1362,7 @@ export class PolygonInteractionManager {
     this.emitPolygonUpdated({
       operation: 'removeVertex',
       polygon: newPolygon,
+      optimizationLevel,
     });
   }
 
@@ -1472,6 +1498,8 @@ export class PolygonInteractionManager {
       return;
     }
 
+    const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
 
@@ -1489,6 +1517,7 @@ export class PolygonInteractionManager {
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true, // Allow intelligent merging for intersections
               intelligentMerge: true, // Flag for smart merging logic
+              optimizationLevel,
             });
           }
         } else {
@@ -1499,6 +1528,7 @@ export class PolygonInteractionManager {
             polygon: feature,
             allowMerge: true, // Allow intelligent merging for intersections
             intelligentMerge: true, // Flag for smart merging logic
+            optimizationLevel,
           });
         }
       }
@@ -1516,6 +1546,7 @@ export class PolygonInteractionManager {
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: false, // Fixed: prevent merging during vertex drag
+            optimizationLevel,
           });
         }
       } else {
@@ -1525,6 +1556,7 @@ export class PolygonInteractionManager {
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: false, // Fixed: prevent merging during vertex drag
+          optimizationLevel,
         });
       }
     }
@@ -1755,6 +1787,7 @@ export class PolygonInteractionManager {
         return;
       }
 
+      const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
@@ -1762,6 +1795,7 @@ export class PolygonInteractionManager {
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
+        optimizationLevel,
       });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -2390,11 +2424,13 @@ export class PolygonInteractionManager {
               | undefined;
             if (!polygonLayer) return;
             const newGeoJSON = polygonLayer.toGeoJSON();
+            const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
             this.emitPolygonUpdated({
               operation: 'transform',
               polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
               allowMerge: true,
+              optimizationLevel,
             });
           } finally {
             controller.destroy();
