@@ -5,24 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
     <style>
-      /* Responsive adjustments for the Polydraw status panel */
-      #polydraw-status {
+      /* Stack for demo helper panels (status + sample polygons) */
+      #polydraw-panel-stack {
+        position: absolute;
+        top: 10px;
+        left: 60px;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
         max-width: 420px;
       }
 
+      .polydraw-panel {
+        background: rgba(255, 255, 255, 0.5);
+        border: 2px solid #333;
+        border-radius: 8px;
+        padding: 12px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(4px);
+      }
+
+      #predefined-controls h3,
+      #polydraw-status h3 {
+        margin: 0 0 10px 0;
+        color: #333;
+        font-size: 16px;
+      }
+
+      #predefined-controls small {
+        display: block;
+        margin-top: 6px;
+        color: #444;
+        opacity: 0.85;
+      }
+
+      .sample-button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .sample-button-grid button {
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 6px 8px;
+        background: rgba(255, 255, 255, 0.85);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition:
+          background 0.2s ease,
+          transform 0.1s ease;
+      }
+
+      .sample-button-grid button:hover {
+        background: rgba(76, 175, 80, 0.15);
+      }
+
+      .sample-button-grid button:active {
+        transform: scale(0.97);
+      }
+
       @media (max-width: 1024px) {
-        #polydraw-status {
+        #polydraw-panel-stack {
           max-width: 380px !important;
         }
       }
       @media (max-width: 768px) {
-        #polydraw-status {
+        #polydraw-panel-stack {
           max-width: 340px !important;
         }
       }
-      @media (max-width: 430px) {
+      @media (max-width: 500px) {
         /* iPhone 14/Max and similar */
-        #polydraw-status {
+        #polydraw-panel-stack {
           display: none;
           max-width: 280px !important;
           left: 60px !important;
@@ -33,49 +92,46 @@
   <body style="margin: 0">
     <div id="map" style="height: 100vh"></div>
     <script type="module" src="/src/main.ts"></script>
-    <div
-      style="
-        position: absolute;
-        z-index: 10000;
-        background-color: aquamarine;
-        top: 10px;
-        left: 100px;
-      "
-    >
-      <button id="addDebugPoly">Auto add Linköping, Sweden</button>
-    </div>
 
-    <!-- Status Box -->
-    <div
-      id="polydraw-status"
-      style="
-        position: absolute;
-        top: 10px;
-        left: 60px;
-        background: rgba(255, 255, 255, 0.5);
-        border: 2px solid #333;
-        border-radius: 8px;
-        padding: 12px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
-        z-index: 10000;
-        min-width: 200px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-      "
-    >
-      <h3
-        style="margin: 0 0 10px 0; color: #333; font-size: 16px; cursor: pointer; user-select: none"
-        id="version-header"
-      >
-        Leaflet version detection
-      </h3>
-      <div id="leaflet-version-detection" style="margin-bottom: 8px; font-weight: bold"></div>
-      <h3 style="margin: 0 0 10px 0; color: #333; font-size: 16px">Polygon Status</h3>
-      <div id="polygon-count" style="margin-bottom: 8px; font-weight: bold">
-        Polygons: <span id="count-value">0</span>
+    <div id="polydraw-panel-stack">
+      <!-- Status Box -->
+      <div id="polydraw-status" class="polydraw-panel" style="min-width: 200px">
+        <h3 style="cursor: pointer; user-select: none" id="version-header">
+          Leaflet version detection
+        </h3>
+        <div id="leaflet-version-detection" style="margin-bottom: 8px; font-weight: bold"></div>
+        <h3>Polygon Status</h3>
+        <div id="polygon-count" style="margin-bottom: 8px; font-weight: bold">
+          Polygons: <span id="count-value">0</span>
+        </div>
+        <div id="polygon-structure" style="font-family: monospace; font-size: 12px; color: #666">
+          Structure: <span id="structure-value">[]</span>
+        </div>
       </div>
-      <div id="polygon-structure" style="font-family: monospace; font-size: 12px; color: #666">
-        Structure: <span id="structure-value">[]</span>
+
+      <div id="predefined-controls" class="polydraw-panel">
+        <h3
+          id="samples-header"
+          style="cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px"
+          aria-expanded="true"
+          role="button"
+          tabindex="0"
+        >
+          Sample polygons
+          <span data-chevron="sample" style="display: inline-flex; transition: transform 0.2s ease">
+            ▼
+          </span>
+        </h3>
+        <div id="samples-content" class="sample-button-grid">
+          <button type="button" data-sample="octagon">Octagon</button>
+          <button type="button" data-sample="squareHole">Square + hole</button>
+          <button type="button" data-sample="overlap">Overlap</button>
+          <button type="button" data-sample="linkoping-0">LKPG (SE) • V.O. 0</button>
+          <button type="button" data-sample="linkoping-4">LKPG (SE) • V.O. 4</button>
+          <button type="button" data-sample="linkoping-7">LKPG (SE) • V.O. 7</button>
+          <button type="button" data-sample="linkoping-10">LKPG (SE) • V.O. 10</button>
+        </div>
+        <small>V.O. = visualOptimizationLevel applied when adding the polygon.</small>
       </div>
     </div>
   </body>
