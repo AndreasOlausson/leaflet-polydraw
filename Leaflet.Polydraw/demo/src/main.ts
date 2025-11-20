@@ -515,6 +515,7 @@ function updateStatusBox() {
               console.warn('Metric/WKT computation failed:', e);
             }
           }
+        }
       }
     });
 
