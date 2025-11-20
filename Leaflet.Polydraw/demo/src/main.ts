@@ -274,12 +274,6 @@ function updateStatusBox() {
         polygonStructure.coordinates = latLngs;
         polygonStructure.layer = polygon;
 
-        // Debug: log the structure to understand the data
-        if (Array.isArray(latLngs) && latLngs.length > 0) {
-          if (Array.isArray(latLngs[0]) && latLngs[0].length > 0) {
-          }
-        }
-
         // Helper utilities to count vertices accurately whether ring is closed or not
         const isClosedRing = (ring: L.LatLng[]): boolean => {
           if (!Array.isArray(ring) || ring.length < 2) return false;
@@ -521,8 +515,6 @@ function updateStatusBox() {
               console.warn('Metric/WKT computation failed:', e);
             }
           }
-        } else {
-        }
       }
     });
 
