@@ -132,7 +132,7 @@ export class PolygonInteractionManager {
   addMarkers(
     latlngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
-    options: { optimizationLevel?: number } = {},
+    options: { optimizationLevel?: number; originalOptimizationLevel?: number } = {},
   ): void {
     // console.log('PolygonInteractionManager addMarkers');
     // Get initial marker positions
@@ -722,13 +722,15 @@ export class PolygonInteractionManager {
                     return arr;
                   });
 
-                  const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+                  const { level: optimizationLevel, original: originalOptimizationLevel } =
+                    this.getOptimizationMetadataFromFeatureGroup(featureGroup);
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
                   this.emitPolygonUpdated({
                     operation: 'removeHole',
                     polygon: newPolygon,
                     optimizationLevel,
+                    originalOptimizationLevel,
                   });
                 }
               }
@@ -1077,11 +1079,14 @@ export class PolygonInteractionManager {
           if (newPolygon) {
             const polydrawPolygon = parentPolygon as PolydrawPolygon;
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
+            const originalOptimizationLevel =
+              polydrawPolygon._polydrawOptimizationOriginalLevel || optimizationLevel;
             this.removeFeatureGroup(parentFeatureGroup);
             this.emitPolygonUpdated({
               operation: 'addVertex',
               polygon: newPolygon,
               optimizationLevel,
+              originalOptimizationLevel,
             });
           }
         }
@@ -1215,23 +1220,40 @@ export class PolygonInteractionManager {
     return Math.abs(a.lat - b.lat) < 1e-9 && Math.abs(a.lng - b.lng) < 1e-9;
   }
 
-  private getOptimizationLevelFromFeatureGroup(featureGroup: L.FeatureGroup): number {
+  private getOptimizationMetadataFromFeatureGroup(featureGroup: L.FeatureGroup): {
+    level: number;
+    original: number;
+  } {
     let level = 0;
+    let original = 0;
     featureGroup.eachLayer((layer) => {
       if (layer instanceof L.Polygon) {
         const poly = layer as PolydrawPolygon;
         if (typeof poly._polydrawOptimizationLevel === 'number') {
           level = poly._polydrawOptimizationLevel || 0;
         }
+        if (typeof poly._polydrawOptimizationOriginalLevel === 'number') {
+          original = poly._polydrawOptimizationOriginalLevel || 0;
+        }
       }
     });
-    return level;
+    if (!original && level > 0) {
+      original = level;
+    }
+    return { level, original };
   }
 
-  private getOptimizationLevelFromPolygonLayer(polygon?: L.Polygon): number {
-    if (!polygon) return 0;
+  private getOptimizationMetadataFromPolygonLayer(polygon?: L.Polygon): {
+    level: number;
+    original: number;
+  } {
+    if (!polygon) {
+      return { level: 0, original: 0 };
+    }
     const polydrawPolygon = polygon as PolydrawPolygon;
-    return polydrawPolygon._polydrawOptimizationLevel || 0;
+    const level = polydrawPolygon._polydrawOptimizationLevel || 0;
+    const original = polydrawPolygon._polydrawOptimizationOriginalLevel || (level > 0 ? level : 0);
+    return { level, original };
   }
 
   private getDistanceMeters(a: L.LatLngLiteral, b: L.LatLngLiteral): number {
@@ -1381,9 +1403,10 @@ export class PolygonInteractionManager {
         break;
       }
     }
-    const optimizationLevel = currentFeatureGroup
-      ? this.getOptimizationLevelFromFeatureGroup(currentFeatureGroup)
-      : this.getOptimizationLevelFromPolygonLayer(polygonLayer);
+    const metadata = currentFeatureGroup
+      ? this.getOptimizationMetadataFromFeatureGroup(currentFeatureGroup)
+      : this.getOptimizationMetadataFromPolygonLayer(polygonLayer);
+    const { level: optimizationLevel, original: originalOptimizationLevel } = metadata;
 
     if (currentFeatureGroup) {
       this.removeFeatureGroup(currentFeatureGroup);
@@ -1394,6 +1417,7 @@ export class PolygonInteractionManager {
       operation: 'removeVertex',
       polygon: newPolygon,
       optimizationLevel,
+      originalOptimizationLevel,
     });
   }
 
@@ -1529,7 +1553,10 @@ export class PolygonInteractionManager {
       return;
     }
 
-    const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+    // const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+
+    const { level: optimizationLevel, original: originalOptimizationLevel } =
+      this.getOptimizationMetadataFromFeatureGroup(featureGroup);
 
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
@@ -1549,6 +1576,7 @@ export class PolygonInteractionManager {
               allowMerge: true, // Allow intelligent merging for intersections
               intelligentMerge: true, // Flag for smart merging logic
               optimizationLevel,
+              originalOptimizationLevel,
             });
           }
         } else {
@@ -1560,6 +1588,7 @@ export class PolygonInteractionManager {
             allowMerge: true, // Allow intelligent merging for intersections
             intelligentMerge: true, // Flag for smart merging logic
             optimizationLevel,
+            originalOptimizationLevel,
           });
         }
       }
@@ -1578,6 +1607,7 @@ export class PolygonInteractionManager {
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: false, // Fixed: prevent merging during vertex drag
             optimizationLevel,
+            originalOptimizationLevel,
           });
         }
       } else {
@@ -1588,6 +1618,7 @@ export class PolygonInteractionManager {
           polygon: feature,
           allowMerge: false, // Fixed: prevent merging during vertex drag
           optimizationLevel,
+          originalOptimizationLevel,
         });
       }
     }
@@ -1818,7 +1849,8 @@ export class PolygonInteractionManager {
         return;
       }
 
-      const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+      const { level: optimizationLevel, original: originalOptimizationLevel } =
+        this.getOptimizationMetadataFromFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
@@ -1827,6 +1859,7 @@ export class PolygonInteractionManager {
         polygon: feature,
         allowMerge: true,
         optimizationLevel,
+        originalOptimizationLevel,
       });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -2022,6 +2055,8 @@ export class PolygonInteractionManager {
             Polygon | MultiPolygon
           >;
           const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
+          const { level: optimizationLevel, original: originalOptimizationLevel } =
+            this.getOptimizationMetadataFromFeatureGroup(featureGroup);
 
           // Remove the existing polygon before creating the result
           this.removeFeatureGroup(featureGroup);
@@ -2044,6 +2079,8 @@ export class PolygonInteractionManager {
                   operation: 'modifierSubtract',
                   polygon: this.turfHelper.getTurfPolygon(individualPolygon),
                   allowMerge: false, // Don't merge the result of subtract operations
+                  optimizationLevel,
+                  originalOptimizationLevel,
                 });
               }
             }
@@ -2056,6 +2093,8 @@ export class PolygonInteractionManager {
               operation: 'modifierSubtractFallback',
               polygon: existingPolygon,
               allowMerge: false,
+              optimizationLevel,
+              originalOptimizationLevel,
             });
           }
         } catch (error) {
@@ -2388,6 +2427,16 @@ export class PolygonInteractionManager {
     if (menuOps.rotate.enabled) {
       buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
     }
+    if (menuOps.visualOptimizationToggle?.enabled) {
+      const { level } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+      const isOptimized = typeof level === 'number' && level > 0;
+      const toggleClasses = [
+        'toggle-visual-optimization',
+        isOptimized ? 'visual-optimization-state-hidden' : 'visual-optimization-state-visible',
+      ];
+      const toggleTitle = isOptimized ? 'Show all markers' : 'Hide extra markers';
+      buttons.push(PopupFactory.createMenuButton('toggleOptimization', toggleTitle, toggleClasses));
+    }
 
     // Build popup structure using factory
     const outerWrapper = PopupFactory.buildMenuPopup(buttons);
@@ -2455,13 +2504,15 @@ export class PolygonInteractionManager {
               | undefined;
             if (!polygonLayer) return;
             const newGeoJSON = polygonLayer.toGeoJSON();
-            const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+            const { level: optimizationLevel, original: originalOptimizationLevel } =
+              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
             this.emitPolygonUpdated({
               operation: 'transform',
               polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
               allowMerge: true,
               optimizationLevel,
+              originalOptimizationLevel,
             });
           } finally {
             controller.destroy();
@@ -2493,6 +2544,17 @@ export class PolygonInteractionManager {
       };
     };
 
+    const attachOptimizationToggleHandler = (button: HTMLDivElement) => {
+      const handler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.toggleOptimizationVisibility(featureGroup);
+        closePopupIfOpen();
+      };
+      button.addEventListener('touchend', handler, { passive: false });
+      button.onclick = handler;
+    };
+
     // Attach handlers based on button IDs
     buttons.forEach((button) => {
       const actionId = button.getAttribute('data-action-id');
@@ -2514,6 +2576,9 @@ export class PolygonInteractionManager {
           break;
         case 'rotate':
           attachTransformHandler(button, 'rotate');
+          break;
+        case 'toggleOptimization':
+          attachOptimizationToggleHandler(button);
           break;
       }
     });
@@ -2537,6 +2602,33 @@ export class PolygonInteractionManager {
 
     this._openMenuPopup = popup;
     return popup;
+  }
+
+  private toggleOptimizationVisibility(featureGroup: L.FeatureGroup): void {
+    const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+      | L.Polygon
+      | undefined;
+    if (!polygonLayer) {
+      return;
+    }
+    const metadata = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+    if (!metadata.original && !metadata.level) {
+      return;
+    }
+    const targetLevel =
+      metadata.level > 0 ? 0 : metadata.original > 0 ? metadata.original : metadata.level;
+    if (targetLevel === metadata.level) {
+      return;
+    }
+    const newGeoJSON = polygonLayer.toGeoJSON();
+    this.removeFeatureGroup(featureGroup);
+    this.emitPolygonUpdated({
+      operation: 'toggleOptimization',
+      polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
+      allowMerge: true,
+      optimizationLevel: targetLevel,
+      originalOptimizationLevel: metadata.original || targetLevel,
+    });
   }
 
   private getPolygonGeoJSONFromFeatureGroup(

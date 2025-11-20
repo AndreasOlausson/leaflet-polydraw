@@ -258,6 +258,9 @@ export interface MenuOperationsConfig {
   rotate: {
     enabled: boolean;
   };
+  visualOptimizationToggle: {
+    enabled: boolean;
+  };
 }
 
 /**
@@ -391,6 +394,7 @@ export interface PolygonUpdatedEventData {
   allowMerge?: boolean;
   intelligentMerge?: boolean;
   optimizationLevel?: number;
+  originalOptimizationLevel?: number;
 }
 
 /**
@@ -476,6 +480,7 @@ export interface PolydrawFeatureGroup extends L.FeatureGroup {
  */
 export interface PolydrawPolygon extends L.Polygon {
   _polydrawOptimizationLevel?: number;
+  _polydrawOptimizationOriginalLevel?: number;
   _polydrawHasHoles?: boolean;
   _polydrawFeatureGroup?: PolydrawFeatureGroup;
   _polydrawLatLngs?: Feature<Polygon | MultiPolygon>;
