@@ -9,6 +9,8 @@ import { EventManager } from './managers/event-manager';
 import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
+import { HistoryManager } from './managers/history-manager';
+import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
@@ -53,6 +55,7 @@ class Polydraw extends L.Control {
   private modeManager!: ModeManager;
   private polygonDrawManager!: PolygonDrawManager;
   private polygonMutationManager!: PolygonMutationManager;
+  private historyManager!: HistoryManager;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
 
   private drawMode: DrawMode = DrawMode.Off;
@@ -164,6 +167,34 @@ class Polydraw extends L.Control {
   }
 
   /**
+   * Undo the last action
+   */
+  public async undo(): Promise<void> {
+    if (!this.historyManager.canUndo()) {
+      return;
+    }
+
+    const snapshot = this.historyManager.undo(this.arrayOfFeatureGroups);
+    if (snapshot) {
+      await this.restoreFromSnapshot(snapshot);
+    }
+  }
+
+  /**
+   * Redo the last undone action
+   */
+  public async redo(): Promise<void> {
+    if (!this.historyManager.canRedo()) {
+      return;
+    }
+
+    const snapshot = this.historyManager.redo(this.arrayOfFeatureGroups);
+    if (snapshot) {
+      await this.restoreFromSnapshot(snapshot);
+    }
+  }
+
+  /**
    * Adds a predefined polygon to the map.
    * @param geoborders - Flexible coordinate format: objects ({lat, lng}), arrays ([lat, lng] or [lng, lat]), strings ("lat,lng" or "N59 E10")
    * @param options - Optional parameters, including visual optimization level.
@@ -204,6 +235,9 @@ class Polydraw extends L.Control {
         const coords = group.map((ring) => ring.map((latlng) => [latlng.lng, latlng.lat]));
 
         const polygon2 = this.turfHelper.getMultiPolygon([coords]);
+
+        // Save state before adding polygon
+        this.historyManager.saveState(this.arrayOfFeatureGroups, 'addPredefinedPolygon');
 
         // Use the PolygonMutationManager instead of direct addPolygon
         const result = await this.polygonMutationManager.addPolygon(polygon2, {
@@ -369,6 +403,10 @@ class Polydraw extends L.Control {
       this._handleEraseClick,
       this._handlePointToPointClick,
       this._handlePointToPointSubtractClick,
+      this._handleUndoClick,
+      this._handleRedoClick,
+      this.eventManager,
+      this.historyManager,
     );
 
     // Firefox Android fix: Ensure all buttons have proper touch handling
@@ -434,6 +472,9 @@ class Polydraw extends L.Control {
     this.eventManager.on('polydraw:polygon:created', async (data) => {
       this.stopDraw();
       if (data.isPointToPoint) {
+        // Save state before P2P operation
+        this.historyManager.saveState(this.arrayOfFeatureGroups, 'pointToPoint');
+
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
           // Use subtraction for P2P subtract mode
@@ -497,6 +538,9 @@ class Polydraw extends L.Control {
       modeManager: this.modeManager,
       eventManager: this.eventManager,
       getFeatureGroups: () => this.arrayOfFeatureGroups,
+      saveHistoryState: () => {
+        this.historyManager.saveState(this.arrayOfFeatureGroups, 'vertexDrag');
+      },
     });
   }
 
@@ -661,6 +705,8 @@ class Polydraw extends L.Control {
     if (this.arrayOfFeatureGroups.length === 0) {
       return;
     }
+    // Save state before erasing all
+    this.historyManager.saveState(this.arrayOfFeatureGroups, 'eraseAll');
     this.removeAllFeatureGroups();
   };
 
@@ -692,6 +738,22 @@ class Polydraw extends L.Control {
     this.polygonInformation.saveCurrentState();
   };
 
+  private _handleUndoClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    this.undo();
+  };
+
+  private _handleRedoClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    this.redo();
+  };
+
   private _updateMapInteractions() {
     const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
     const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
@@ -701,12 +763,42 @@ class Polydraw extends L.Control {
     this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
   }
 
+  /**
+   * Restore the map state from a history snapshot
+   */
+  private async restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
+    // Set restoration flag to prevent saveState during restoration
+    this.historyManager.setRestoring(true);
+
+    try {
+      // Clear all existing feature groups
+      this.removeAllFeatureGroups();
+
+      // Restore each polygon from the snapshot
+      for (const feature of snapshot.features) {
+        // Add the polygon back to the map using the mutation manager
+        // Use noMerge and simplify:false to restore polygons exactly as they were
+        await this.polygonMutationManager.addPolygon(feature, {
+          noMerge: true,
+          simplify: false,
+        });
+      }
+
+      // Update polygon information
+      this.polygonInformation.updatePolygons();
+    } finally {
+      // Always reset restoration flag
+      this.historyManager.setRestoring(false);
+    }
+  }
+
   private initializeComponents() {
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.eventManager = new EventManager();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
     this.modeManager = new ModeManager(this.config, this.eventManager);
+    this.historyManager = new HistoryManager(this.eventManager, this.config.maxHistorySize);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       void _k; // make lint happy
       // This is the perfect central place to keep the indicator in sync.
@@ -1084,6 +1176,9 @@ class Polydraw extends L.Control {
    */
   private async handleFreehandDrawCompletion(geoPos: Feature<Polygon | MultiPolygon>) {
     try {
+      // Save state before freehand operation
+      this.historyManager.saveState(this.arrayOfFeatureGroups, 'freehand');
+
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
@@ -1141,6 +1236,21 @@ class Polydraw extends L.Control {
    * @param e - The keyboard event.
    */
   private handleKeyDown(e: KeyboardEvent) {
+    // Handle undo/redo shortcuts
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+    if (isCtrlOrCmd && e.key === 'z') {
+      e.preventDefault();
+      this.undo();
+      return;
+    }
+
+    if (isCtrlOrCmd && e.key === 'y') {
+      e.preventDefault();
+      this.redo();
+      return;
+    }
+
     if (e.key === 'Escape') {
       if (
         this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||

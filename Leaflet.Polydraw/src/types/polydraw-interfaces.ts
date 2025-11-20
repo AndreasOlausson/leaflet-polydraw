@@ -321,6 +321,7 @@ export interface PolydrawConfig {
       };
     };
   };
+  maxHistorySize: number;
 }
 
 /**

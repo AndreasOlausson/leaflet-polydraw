@@ -1,6 +1,8 @@
 import * as L from 'leaflet';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
+import type { EventManager } from './managers/event-manager';
+import type { HistoryManager } from './managers/history-manager';
 import iconPolydraw2Svg from './icons/icon-polydraw2.svg?raw';
 import iconP2PSubtractSvg from './icons/icon-p2p-subtract.svg?raw';
 import iconDrawSvg from './icons/icon-draw.svg?raw';
@@ -8,6 +10,8 @@ import iconSubtractSvg from './icons/icon-subtract.svg?raw';
 import iconP2PDrawSvg from './icons/icon-p2p-draw.svg?raw';
 import iconEraseSvg from './icons/icon-erase.svg?raw';
 import iconCollapseSvg from './icons/icon-collapse.svg?raw';
+import iconUndoSvg from './icons/icon-undo.svg?raw';
+import iconRedoSvg from './icons/icon-redo.svg?raw';
 
 const sanitizeSvg = (svg: string): string =>
   svg
@@ -23,6 +27,8 @@ const icons = {
   p2pSubtract: sanitizeSvg(iconP2PSubtractSvg),
   erase: sanitizeSvg(iconEraseSvg),
   collapse: sanitizeSvg(iconCollapseSvg),
+  undo: sanitizeSvg(iconUndoSvg),
+  redo: sanitizeSvg(iconRedoSvg),
 };
 
 const setButtonIcon = (button: HTMLAnchorElement, svgMarkup: string): void => {
@@ -60,6 +66,10 @@ export function createButtons(
   onEraseClick: () => void,
   onPointToPointClick: () => void,
   onPointToPointSubtractClick: () => void,
+  onUndoClick: () => void,
+  onRedoClick: () => void,
+  eventManager: EventManager,
+  historyManager: HistoryManager,
 ) {
   const activate = leafletAdapter.domUtil.create(
     'a',
@@ -147,6 +157,63 @@ export function createButtons(
     L.DomEvent.on(erase, 'click', L.DomEvent.stop);
     L.DomEvent.on(erase, 'click', onEraseClick);
   }
+
+  // Undo button - always available
+  const undo = leafletAdapter.domUtil.create('a', 'icon-undo', subContainer) as HTMLAnchorElement;
+  undo.href = '#';
+  undo.title = 'Undo (Ctrl+Z / Cmd+Z)';
+  setButtonIcon(undo, icons.undo);
+  L.DomEvent.on(undo, 'mousedown', L.DomEvent.stopPropagation);
+  L.DomEvent.on(undo, 'touchstart', L.DomEvent.stopPropagation);
+  L.DomEvent.on(undo, 'click', L.DomEvent.stopPropagation);
+  L.DomEvent.on(undo, 'click', L.DomEvent.stop);
+  L.DomEvent.on(undo, 'click', onUndoClick);
+
+  // Redo button - always available
+  const redo = leafletAdapter.domUtil.create('a', 'icon-redo', subContainer) as HTMLAnchorElement;
+  redo.href = '#';
+  redo.title = 'Redo (Ctrl+Y / Cmd+Y)';
+  setButtonIcon(redo, icons.redo);
+  L.DomEvent.on(redo, 'mousedown', L.DomEvent.stopPropagation);
+  L.DomEvent.on(redo, 'touchstart', L.DomEvent.stopPropagation);
+  L.DomEvent.on(redo, 'click', L.DomEvent.stopPropagation);
+  L.DomEvent.on(redo, 'click', L.DomEvent.stop);
+  L.DomEvent.on(redo, 'click', onRedoClick);
+
+  // Update button states based on history state
+  const updateHistoryButtonStates = (canUndo: boolean, canRedo: boolean) => {
+    if (canUndo) {
+      undo.style.opacity = '1';
+      undo.style.pointerEvents = 'auto';
+    } else {
+      undo.style.opacity = '0.3';
+      undo.style.pointerEvents = 'none';
+    }
+
+    if (canRedo) {
+      redo.style.opacity = '1';
+      redo.style.pointerEvents = 'auto';
+    } else {
+      redo.style.opacity = '0.3';
+      redo.style.pointerEvents = 'none';
+    }
+  };
+
+  // Listen to history changes and update button states automatically
+  eventManager.on('polydraw:history:changed', (data) => {
+    updateHistoryButtonStates(data.canUndo, data.canRedo);
+  });
+
+  eventManager.on('polydraw:history:undo', (data) => {
+    updateHistoryButtonStates(data.canUndo, data.canRedo);
+  });
+
+  eventManager.on('polydraw:history:redo', (data) => {
+    updateHistoryButtonStates(data.canUndo, data.canRedo);
+  });
+
+  // Initialize button states
+  updateHistoryButtonStates(historyManager.canUndo(), historyManager.canRedo());
 
   // Debug buttons to test autoAddPolygon(s)
 
