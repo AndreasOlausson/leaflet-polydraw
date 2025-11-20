@@ -1,3 +1,4 @@
+/* eslint-env node */
 import { defineConfig, devices } from '@playwright/test';
 import path from 'path';
 
