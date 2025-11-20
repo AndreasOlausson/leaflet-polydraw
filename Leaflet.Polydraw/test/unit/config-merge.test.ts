@@ -385,7 +385,7 @@ describe('deepMerge', () => {
           },
         },
         simplification: {
-          simplifyTolerance: {
+          simple: {
             tolerance: 0.001,
           },
         },
@@ -401,9 +401,9 @@ describe('deepMerge', () => {
       expect(result.markers.visualOptimization.thresholdDistance).toBe(0.1);
       expect(result.markers.visualOptimization.sharpAngleThreshold).toBe(30); // Unchanged
 
-      expect(result.simplification.simplifyTolerance.tolerance).toBe(0.001);
-      expect(result.simplification.simplifyTolerance.highQuality).toBe(false); // Unchanged
-      expect(result.simplification.dynamicMode.fractionGuard).toBe(0.9); // Unchanged
+      expect(result.simplification.simple.tolerance).toBe(0.001);
+      expect(result.simplification.simple.highQuality).toBe(false); // Unchanged
+      expect(result.simplification.dynamic.fractionGuard).toBe(0.9); // Unchanged
     });
 
     it('should merge multiple partial configs in order', () => {

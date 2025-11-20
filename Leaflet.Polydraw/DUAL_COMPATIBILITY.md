@@ -4,7 +4,7 @@
 
 Leaflet.Polydraw now supports both **Leaflet v1.x** and **Leaflet v2.x** with a single plugin! This dual compatibility ensures your applications work seamlessly regardless of which Leaflet version you're using.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -56,7 +56,7 @@ const map = L.map('map').setView([51.505, -0.09], 13);
 const polydraw = new Polydraw().addTo(map);
 ```
 
-## 🔧 How It Works
+## How It Works
 
 ### Automatic Version Detection
 
@@ -81,7 +81,7 @@ The plugin includes a comprehensive compatibility layer that handles:
 - **DOM Utilities**: Provides fallbacks for removed utility methods
 - **Browser Detection**: Maintains compatibility with removed browser flags
 
-## 📦 Package Configuration
+## Package Configuration
 
 ### Peer Dependencies
 
@@ -107,7 +107,7 @@ The plugin includes a comprehensive compatibility layer that handles:
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 The plugin is tested against both Leaflet versions to ensure compatibility:
 
@@ -119,7 +119,7 @@ npm test
 npm run build
 ```
 
-## 🔄 Migration Guide
+## Migration Guide
 
 ### From Leaflet v1.x to v2.x
 
@@ -163,54 +163,51 @@ const polydraw = new Polydraw({
 });
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### Compatibility Layer Structure
 
-```
-src/compatibility/
-├── version-detector.ts    # Detects Leaflet version
-├── leaflet-adapter.ts     # Main compatibility layer
-└── event-adapter.ts       # Event system compatibility
-```
+- `src/compatibility/version-detector.ts` - detects the active Leaflet version.
+- `src/compatibility/leaflet-adapter.ts` - primary compatibility layer and factory abstraction.
+- `src/compatibility/event-adapter.ts` - normalizes event handling between versions.
 
 ### Key Components
 
-1. **Version Detection**: Automatically identifies Leaflet version using multiple detection methods
-2. **Factory Method Abstraction**: Provides unified interface for object creation
-3. **DOM Utility Compatibility**: Handles removed/changed DOM utility methods
-4. **Event System Normalization**: Manages event differences between versions
-5. **Browser Detection Fallbacks**: Provides fallbacks for removed browser flags
+1. **Version Detection**: Automatically identifies the Leaflet major version using several heuristics.
+2. **Factory Method Abstraction**: Provides a unified interface for creating Leaflet objects regardless of factory/constructor syntax.
+3. **DOM Utility Compatibility**: Replaces removed or renamed DOM helpers.
+4. **Event System Normalization**: Bridges the mouse/touch pointer changes and renamed event properties.
+5. **Browser Detection Fallbacks**: Supplies replacements for the deprecated browser flags.
 
-## 🚨 Breaking Changes Handled
+## Breaking Changes Handled
 
 The compatibility layer automatically handles these Leaflet v2.x breaking changes:
 
-### Factory Methods → Constructors
+### Factory Methods -> Constructors
 
-- ✅ `L.marker()` → `new Marker()`
-- ✅ `L.polyline()` → `new Polyline()`
-- ✅ `L.polygon()` → `new Polygon()`
-- ✅ `L.divIcon()` → `new DivIcon()`
+- `L.marker()` -> `new Marker()`
+- `L.polyline()` -> `new Polyline()`
+- `L.polygon()` -> `new Polygon()`
+- `L.divIcon()` -> `new DivIcon()`
 
-### Global L Object → ESM Imports
+### Global L Object -> ESM Imports
 
-- ✅ Automatic detection of import style
-- ✅ Fallback handling for missing global `L`
+- Automatic detection of import style
+- Fallback handling for missing global `L`
 
 ### Event System Changes
 
-- ✅ Mouse/Touch → Pointer events
-- ✅ Event property changes (`layer` → `propagatedFrom`)
+- Mouse/Touch -> Pointer events
+- Event property changes (`layer` -> `propagatedFrom`)
 
 ### Removed Utility Methods
 
-- ✅ `L.Util.trim()` → `String.prototype.trim()`
-- ✅ `L.Util.isArray()` → `Array.isArray()`
-- ✅ `L.Util.extend()` → `Object.assign()`
-- ✅ Browser detection flags fallbacks
+- `L.Util.trim()` -> `String.prototype.trim()`
+- `L.Util.isArray()` -> `Array.isArray()`
+- `L.Util.extend()` -> `Object.assign()`
+- Browser detection flag fallbacks
 
-## 📊 Performance Impact
+## Performance Impact
 
 The compatibility layer is designed to have minimal performance impact:
 
@@ -219,7 +216,7 @@ The compatibility layer is designed to have minimal performance impact:
 - **Memory Usage**: Negligible additional memory usage
 - **Tree Shaking**: Compatible with modern bundlers
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -266,7 +263,7 @@ console.log(debugInfo);
 // }
 ```
 
-## 🤝 Contributing
+## Contributing
 
 When contributing to the dual compatibility system:
 
@@ -275,7 +272,7 @@ When contributing to the dual compatibility system:
 3. Ensure backward compatibility is maintained
 4. Add tests for both versions when applicable
 
-## 📝 License
+## License
 
 This dual compatibility system is part of Leaflet.Polydraw and is licensed under the same MIT license.
 

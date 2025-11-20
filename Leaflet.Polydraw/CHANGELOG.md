@@ -7,12 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [next version]
+
+### Added
+
+- Visual optimization support for predefined polygons: `visualOptimizationLevel` now feeds a simplification pass so you can hide nonessential elbows while keeping geometry intact.
+- Marker info popups honor the `markerInfoIcon` config toggles (`showArea`, `showPerimeter`, labels, metric/imperial switch).
+- Kink handling for polygon merges: self-intersecting polygons are split/merged correctly without forcing the user to toggle `kinks`.
+- Playwright end-to-end suite replaces the old Cypress harness and now runs as part of the repo (first tests live under `test/playwright`).
+
+### Changed
+
+- `markers.visualOptimization` now exposes `toleranceMin`, `toleranceMax`, and `curve` to tune the level-to-tolerance mapping (legacy fields remain for backward compatibility but are ignored).
+- Documentation updates for polygon creation methods, deprecated config blocks, and simplification behavior.
+- Tracer styling obeys the configured colors, so draw mode renders green polylines and subtract mode renders red (matching user expectations).
+- Reporting location unit toggles and labels now honor the config across the demo and plugin, avoiding misleading UI text.
+
+### Fixed
+
+- Missing runtime usage for `showArea`, `showPerimeter`, `areaLabel`, and `perimeterLabel` has been wired up so toggles take effect.
+- Bounding-box midpoint markers for predefined bounding boxes now respect the config (`boundingBox.addMidPointMarkers`).
+
 ## [1.1.2] - 2025-11-06
+
+### Added
+
+- Playwright end-to-end harness under `test/playwright`, replacing the legacy Cypress setup.
 
 ### Fixed
 
 - Polygons now rotate/scale reliably on touch (Leaflet 1.9 & 2.x); buttons stay responsive.
-- General clean up.
+- Removed noisy console output from the demo and plugin.
 
 ## [1.1.1] - 2025-11-06
 

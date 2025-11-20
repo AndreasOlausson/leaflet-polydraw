@@ -5,6 +5,12 @@ import Polydraw from 'leaflet-polydraw';
 import { leafletAdapter } from 'leaflet-polydraw';
 import './version-test';
 
+declare global {
+  interface Window {
+    polydrawControl?: Polydraw;
+  }
+}
+
 // coords for a octagon shaped polygon
 const octagon: L.LatLng[][][] = [
   [
@@ -148,6 +154,7 @@ leafletAdapter
 
 const polydraw = new Polydraw();
 polydraw.addTo(map as any);
+window.polydrawControl = polydraw;
 
 // Status box update functionality
 function updateStatusBox() {
@@ -237,7 +244,7 @@ function updateStatusBox() {
   }
 
   // Build structure representation
-  const structure = featureGroups.map((featureGroup: L.FeatureGroup) => {
+  const structure = featureGroups.map((featureGroup) => {
     let polygonStructure: {
       outer: number;
       holes: number[];
@@ -258,7 +265,7 @@ function updateStatusBox() {
       coordinates: null,
     };
 
-    featureGroup.eachLayer((layer: L.Layer) => {
+    featureGroup.eachLayer((layer) => {
       if (layer instanceof L.Polygon) {
         const polygon = layer as L.Polygon;
         const latLngs = polygon.getLatLngs();
@@ -649,33 +656,78 @@ function updateStatusBox() {
   structureContainer.style.lineHeight = '1.4';
   structureContainer.style.whiteSpace = 'pre';
 
-  let structureText = '[\n';
-
-  structure.forEach((polygonStructure: (typeof structure)[0], polygonIndex: number) => {
-    if (polygonIndex > 0) {
-      structureText += ',\n';
-    }
-
-    structureText += '    [\n        ';
-
-    // Create polygon description
-    let displayText;
+  const formatDisplayText = (polygonStructure: (typeof structure)[0]) => {
     const metrics = polygonStructure.metrics;
     if (polygonStructure.holes.length === 0) {
-      displayText = `[outer: ${polygonStructure.outer} vtx, perim: ${metrics ? (metrics.outerPerimeter !== undefined ? (metrics.outerPerimeter < 1 ? metrics.outerPerimeter.toFixed(2) + ' m' : metrics.outerPerimeter < 1000 ? metrics.outerPerimeter.toFixed(1) + ' m' : (metrics.outerPerimeter / 1000).toFixed(2) + ' km') : '—') : '—'}, ${metrics ? metrics.outerOrientation : '—'}]`;
-    } else {
-      const holeText =
-        polygonStructure.holes.length === 1
-          ? `inner: ${polygonStructure.holes[0]} vtx`
-          : `inner: ${polygonStructure.holes.join(', ')} vtx`;
-      displayText = `[outer: ${polygonStructure.outer} vtx, ${holeText}, total perim: ${metrics ? (metrics.totalPerimeter !== undefined ? (metrics.totalPerimeter < 1 ? metrics.totalPerimeter.toFixed(2) + ' m' : metrics.totalPerimeter < 1000 ? metrics.totalPerimeter.toFixed(1) + ' m' : (metrics.totalPerimeter / 1000).toFixed(2) + ' km') : '—') : '—'}]`;
+      const perim =
+        metrics && metrics.outerPerimeter !== undefined
+          ? metrics.outerPerimeter < 1
+            ? `${metrics.outerPerimeter.toFixed(2)} m`
+            : metrics.outerPerimeter < 1000
+              ? `${metrics.outerPerimeter.toFixed(1)} m`
+              : `${(metrics.outerPerimeter / 1000).toFixed(2)} km`
+          : '—';
+      return `[outer: ${polygonStructure.outer} vtx, perim: ${perim}, ${
+        metrics ? metrics.outerOrientation : '—'
+      }]`;
     }
 
-    structureText += displayText + ' ';
+    const holeText =
+      polygonStructure.holes.length === 1
+        ? `inner: ${polygonStructure.holes[0]} vtx`
+        : `inner: ${polygonStructure.holes.join(', ')} vtx`;
+    const perim =
+      metrics && metrics.totalPerimeter !== undefined
+        ? metrics.totalPerimeter < 1
+          ? `${metrics.totalPerimeter.toFixed(2)} m`
+          : metrics.totalPerimeter < 1000
+            ? `${metrics.totalPerimeter.toFixed(1)} m`
+            : `${(metrics.totalPerimeter / 1000).toFixed(2)} km`
+        : '—';
+    return `[outer: ${polygonStructure.outer} vtx, ${holeText}, total perim: ${perim}]`;
+  };
 
-    // We'll add the info button after creating the text node
-    structureText += '(i)\n    ]';
-  });
+  const createInfoButton = (polygonIndex: number) => {
+    const btn = document.createElement('span');
+    btn.textContent = '(i)';
+    btn.style.color = '#007bff';
+    btn.style.cursor = 'pointer';
+    btn.style.textDecoration = 'underline';
+    btn.style.fontWeight = 'bold';
+    btn.style.fontSize = '12px';
+    btn.style.marginLeft = '6px';
+    btn.title = 'Click to view coordinates';
+
+    btn.addEventListener('click', () => {
+      const item = structure[polygonIndex];
+      if (!item) {
+        console.warn('No polygon data found for index', polygonIndex);
+        return;
+      }
+      const coordsData = formatCoordinatesAsJSON(item.coordinates);
+      try {
+        const layer = item.layer as L.Polygon | undefined;
+        if (layer && typeof (layer as any).setStyle === 'function') {
+          const original = (layer as any).options && { ...(layer as any).options };
+          (layer as any).setStyle({ weight: 5 });
+          setTimeout(() => {
+            if (original) (layer as any).setStyle({ weight: original.weight ?? 3 });
+          }, 1200);
+        }
+      } catch (e) {
+        console.warn('Highlight failed:', e);
+      }
+      showCoordinatesModal(coordsData, polygonIndex);
+    });
+
+    return btn;
+  };
+
+  const appendTextLine = (text: string) => {
+    const line = document.createElement('div');
+    line.textContent = text;
+    structureContainer.appendChild(line);
+  };
 
   const totalPolygons = structure.length;
   const totalVertices = structure.reduce(
@@ -683,168 +735,38 @@ function updateStatusBox() {
       acc + p.outer + p.holes.reduce((a: number, b: number) => a + b, 0),
     0,
   );
-  // Close the structure first, then show summary on its own line after
-  structureText += `\n]`;
-  const summaryLine = `// Summary: ${totalPolygons} polygon(s), ${totalVertices} total vertex/vertices`;
-  structureText += `\n${summaryLine}`;
 
-  // Set the base text
-  structureContainer.textContent = structureText;
+  structureContainer.innerHTML = '';
 
-  // Now we need to replace the (i) markers with actual clickable buttons
-  const lines = structureText.split('\n');
-  structureContainer.innerHTML = ''; // Clear and rebuild with interactive elements
+  if (structure.length === 0) {
+    appendTextLine('[]');
+  } else {
+    appendTextLine('[');
+    structure.forEach((polygonStructure, polygonIndex) => {
+      appendTextLine('    [');
 
-  // Keep track of polygon index for info buttons
-  let currentPolygonIndex = 0;
+      const detailLine = document.createElement('div');
+      detailLine.style.display = 'flex';
+      detailLine.style.alignItems = 'center';
+      detailLine.style.whiteSpace = 'pre';
 
-  lines.forEach((line, lineIndex) => {
-    if (line.includes('(i)')) {
-      // This line has an info button
-      const polygonIndex = currentPolygonIndex;
+      const textSpan = document.createElement('span');
+      textSpan.textContent = `        ${formatDisplayText(polygonStructure)} `;
+      detailLine.appendChild(textSpan);
+      detailLine.appendChild(createInfoButton(polygonIndex));
 
-      const beforeInfo = line.substring(0, line.indexOf('(i)'));
-      const afterInfo = line.substring(line.indexOf('(i)') + 3);
+      structureContainer.appendChild(detailLine);
 
-      // Create line container
-      const lineDiv = document.createElement('div');
-      lineDiv.style.display = 'inline';
+      appendTextLine(polygonIndex < structure.length - 1 ? '    ],' : '    ]');
+    });
+    appendTextLine(']');
+  }
 
-      // Add text before (i)
-      const beforeSpan = document.createElement('span');
-      beforeSpan.textContent = beforeInfo;
-      lineDiv.appendChild(beforeSpan);
-
-      // Create clickable info button
-      const infoButton = document.createElement('span');
-      infoButton.textContent = '(i)';
-      infoButton.style.color = '#007bff';
-      infoButton.style.cursor = 'pointer';
-      infoButton.style.textDecoration = 'underline';
-      infoButton.style.fontWeight = 'bold';
-      infoButton.title = 'Click to view coordinates';
-
-      infoButton.addEventListener('click', () => {
-        if (polygonIndex < 0 || polygonIndex >= structure.length || !structure[polygonIndex]) {
-          console.error(
-            'Invalid polygon index:',
-            polygonIndex,
-            'Structure length:',
-            structure.length,
-          );
-          return;
-        }
-        const item = structure[polygonIndex];
-        const coordsData = formatCoordinatesAsJSON(item.coordinates);
-
-        // Temporary highlight
-        try {
-          const layer = item.layer as L.Polygon | undefined;
-          if (layer && typeof (layer as any).setStyle === 'function') {
-            const original = (layer as any).options && { ...(layer as any).options };
-            (layer as any).setStyle({ weight: 5 });
-            setTimeout(() => {
-              if (original) (layer as any).setStyle({ weight: original.weight ?? 3 });
-            }, 1200);
-          }
-        } catch (e) {
-          console.warn('Highlight failed:', e);
-        }
-
-        // Build a richer modal content string
-        let details = '';
-        if (item.metrics) {
-          const b = item.metrics.bounds;
-          details += `Outer perimeter: ${item.metrics.outerPerimeter < 1 ? item.metrics.outerPerimeter.toFixed(2) + ' m' : item.metrics.outerPerimeter < 1000 ? item.metrics.outerPerimeter.toFixed(1) + ' m' : (item.metrics.outerPerimeter / 1000).toFixed(2) + ' km'}\n`;
-          if (item.holes.length > 0) {
-            details += `Hole perimeters: ${item.metrics.holePerimeters.map((m: number) => (m < 1 ? m.toFixed(2) + ' m' : m < 1000 ? m.toFixed(1) + ' m' : (m / 1000).toFixed(2) + ' km')).join(', ')}\n`;
-          }
-          details += `Total perimeter: ${item.metrics.totalPerimeter < 1 ? item.metrics.totalPerimeter.toFixed(2) + ' m' : item.metrics.totalPerimeter < 1000 ? item.metrics.totalPerimeter.toFixed(1) + ' m' : (item.metrics.totalPerimeter / 1000).toFixed(2) + ' km'}\n`;
-          details += `Outer orientation: ${item.metrics.outerOrientation}`;
-          if (item.metrics.holeOrientations.length) {
-            details += `, Hole orientations: ${item.metrics.holeOrientations.join(', ')}`;
-          }
-          details += '\n';
-          if (b) {
-            details += `Bounds SW: [${b.sw.lat.toFixed(6)}, ${b.sw.lng.toFixed(6)}], NE: [${b.ne.lat.toFixed(6)}, ${b.ne.lng.toFixed(6)}]\n`;
-          }
-        }
-
-        const wkt = item.wkt ?? '';
-
-        // Show modal with three sections
-        showCoordinatesModal(
-          `# Metrics\n${details}\n# Coordinates (JSON)\n${coordsData}\n\n# WKT\n${wkt}`,
-          polygonIndex,
-        );
-
-        // After modal is mounted, inject small copy buttons for JSON and WKT
-        setTimeout(() => {
-          const modal = document.getElementById('coords-modal');
-          if (!modal) return;
-          const pre = modal.querySelector('pre');
-          if (!pre) return;
-
-          // Add toolbar
-          const toolbar = document.createElement('div');
-          toolbar.style.display = 'flex';
-          toolbar.style.gap = '8px';
-          toolbar.style.marginBottom = '8px';
-
-          const copyJsonBtn = document.createElement('button');
-          copyJsonBtn.textContent = 'Copy JSON';
-          copyJsonBtn.onclick = () => {
-            const jsonStart = pre.textContent?.indexOf('# Coordinates (JSON)');
-            if (jsonStart != null && jsonStart >= 0) {
-              const wktStart = pre.textContent?.indexOf('# WKT');
-              const json = pre.textContent
-                ?.slice(jsonStart + '# Coordinates (JSON)'.length)
-                .split('# WKT')[0]
-                .trim();
-              if (json) navigator.clipboard.writeText(json);
-            }
-          };
-
-          const copyWktBtn = document.createElement('button');
-          copyWktBtn.textContent = 'Copy WKT';
-          copyWktBtn.onclick = () => {
-            if (wkt) navigator.clipboard.writeText(wkt);
-          };
-
-          // Insert toolbar before <pre>
-          const contentParent = pre.parentElement;
-          if (contentParent) {
-            contentParent.insertBefore(toolbar, pre);
-            toolbar.appendChild(copyJsonBtn);
-            toolbar.appendChild(copyWktBtn);
-          }
-        }, 0);
-      });
-
-      // Increment polygon index for next info button
-      currentPolygonIndex++;
-
-      lineDiv.appendChild(infoButton);
-
-      // Add text after (i)
-      const afterSpan = document.createElement('span');
-      afterSpan.textContent = afterInfo;
-      lineDiv.appendChild(afterSpan);
-
-      structureContainer.appendChild(lineDiv);
-    } else {
-      // Regular line without (i)
-      const lineDiv = document.createElement('div');
-      lineDiv.style.display = 'inline';
-      lineDiv.textContent = line;
-      structureContainer.appendChild(lineDiv);
-    }
-
-    // Add line break except for the last line
-    if (lineIndex < lines.length - 1) {
-      structureContainer.appendChild(document.createElement('br'));
-    }
-  });
+  const summaryLine = document.createElement('div');
+  summaryLine.textContent = `// Summary: ${totalPolygons} polygon(s), ${totalVertices} total vertex/vertices`;
+  summaryLine.style.marginTop = '4px';
+  summaryLine.style.color = '#4b5563';
+  structureContainer.appendChild(summaryLine);
 
   // --- Expandable panel wrapper ---
   // Preserve collapsed state across updates using a data-attribute on the container element
@@ -1038,8 +960,8 @@ updateStatusBox();
 
 document.getElementById('addDebugPoly')?.addEventListener('click', () => {
   // Example with visual optimization level 5 (moderate simplification)
-  polydraw.addPredefinedPolygon(overlappingSquares, {
-    visualOptimizationLevel: 0,
+  polydraw.addPredefinedPolygon(linkoping, {
+    visualOptimizationLevel: 9,
   });
   // Update status after adding predefined polygon
   setTimeout(updateStatusBox, 100);

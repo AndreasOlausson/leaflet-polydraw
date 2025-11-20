@@ -82,6 +82,7 @@ class Polydraw extends L.Control {
 
     // Apply inline config via deep merge (partial configs supported)
     this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
+    this.warnIfUsingDeprecatedConfiguration(options?.config);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
@@ -385,6 +386,7 @@ class Polydraw extends L.Control {
     container.style.zIndex = '1000';
 
     this.subContainer = leafletAdapter.domUtil.create('div', 'sub-buttons', container);
+    this.subContainer.setAttribute('data-polydraw', 'sub-buttons');
     this.subContainer.style.maxHeight = '0px';
     this.subContainer.style.overflow = 'hidden';
     this.subContainer.style.transition = 'max-height 0.3s ease';
@@ -456,11 +458,7 @@ class Polydraw extends L.Control {
       this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
 
       // Reset tracer style
-      try {
-        this.tracer.setStyle({ color: '' });
-      } catch (error) {
-        // Handle case where tracer renderer is not initialized
-      }
+      this.applyTracerStyle(DrawMode.Off);
     });
 
     // Listen for polygon deletion events to update the activate button indicator
@@ -516,6 +514,64 @@ class Polydraw extends L.Control {
   }
 
   /**
+   * Applies the correct weight/opacity/color/dash style to the tracer for the given mode.
+   */
+  private applyTracerStyle(mode: DrawMode): void {
+    if (!this.tracer) return;
+
+    try {
+      const isSubtractMode = mode === DrawMode.Subtract || mode === DrawMode.PointToPointSubtract;
+      const baseStyle = this.getTracerBaseStyle(isSubtractMode);
+
+      let dashArray: string | undefined;
+      let color = '';
+
+      switch (mode) {
+        case DrawMode.Add:
+          color = this.config.colors.polyline;
+          dashArray = undefined;
+          break;
+        case DrawMode.Subtract:
+          color = this.config.colors.subtractLine;
+          dashArray = undefined;
+          break;
+        case DrawMode.PointToPoint:
+          color = this.config.colors.polyline;
+          dashArray = '5, 5';
+          break;
+        case DrawMode.PointToPointSubtract:
+          color = this.config.colors.subtractLine;
+          dashArray = '5, 5';
+          break;
+        case DrawMode.Off:
+        default:
+          color = '';
+          dashArray = undefined;
+          break;
+      }
+
+      this.tracer.setStyle({
+        ...baseStyle,
+        color,
+        dashArray,
+      });
+    } catch (error) {
+      // Handle case where tracer renderer is not initialized
+    }
+  }
+
+  /**
+   * Returns base tracer styles depending on whether we're in subtract mode.
+   */
+  private getTracerBaseStyle(isSubtractMode: boolean): Pick<L.PathOptions, 'weight' | 'opacity'> {
+    const options = isSubtractMode ? this.config.subtractLineOptions : this.config.polyLineOptions;
+    return {
+      weight: options.weight,
+      opacity: options.opacity,
+    };
+  }
+
+  /**
    * Sets up PolygonDrawManager and PolygonMutationManager with the map.
    */
   private initializeManagers(): void {
@@ -560,6 +616,11 @@ class Polydraw extends L.Control {
 
       // Expect external to be a partial config
       const externalConfig: Partial<PolydrawConfig> = await response.json();
+
+      this.warnIfUsingDeprecatedConfiguration(externalConfig);
+      if (inlineConfig) {
+        this.warnIfUsingDeprecatedConfiguration(inlineConfig);
+      }
 
       // Merge precedence: defaults < external < inline
       this.config = deepMerge<PolydrawConfig>(
@@ -606,39 +667,7 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(this.map.getContainer(), 'crosshair-cursor-enabled');
     }
 
-    try {
-      switch (mode) {
-        case DrawMode.Off:
-          this.tracer.setStyle({ color: '' });
-          break;
-        case DrawMode.Add:
-          this.tracer.setStyle({
-            color: this.config.colors.polyline,
-            dashArray: undefined, // Reset to solid line
-          });
-          break;
-        case DrawMode.Subtract:
-          this.tracer.setStyle({
-            color: this.config.colors.subtractLine,
-            dashArray: undefined, // Reset to solid line
-          });
-          break;
-        case DrawMode.PointToPoint:
-          this.tracer.setStyle({
-            color: this.config.colors.polyline,
-            dashArray: '5, 5',
-          });
-          break;
-        case DrawMode.PointToPointSubtract:
-          this.tracer.setStyle({
-            color: this.config.colors.subtractLine,
-            dashArray: '5, 5',
-          });
-          break;
-      }
-    } catch (error) {
-      // Handle case where tracer renderer is not initialized
-    }
+    this.applyTracerStyle(mode);
   }
 
   /**
@@ -1451,6 +1480,47 @@ class Polydraw extends L.Control {
     svgElement.querySelectorAll('*').forEach((el) => {
       (el as HTMLElement).style.pointerEvents = 'none';
     });
+  }
+
+  private warnIfUsingDeprecatedConfiguration(config?: Partial<PolydrawConfig>) {
+    if (!config) {
+      return;
+    }
+
+    const legacyPolygon = config.polygonCreation?.simplification;
+    const simplification = config.simplification as
+      | {
+          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
+          dynamicMode?: { fractionGuard?: number; multiplier?: number };
+        }
+      | undefined;
+
+    const hasLegacySimplifyTolerance =
+      !!simplification &&
+      (Object.prototype.hasOwnProperty.call(simplification, 'simplifyTolerance') ||
+        Object.prototype.hasOwnProperty.call(simplification, 'dynamicMode'));
+
+    if (legacyPolygon || hasLegacySimplifyTolerance) {
+      console.warn(
+        '[Leaflet.Polydraw] Legacy simplification settings detected. Please migrate to `config.simplification` with `mode`, `simple`, and `dynamic` blocks.',
+      );
+    }
+
+    const visualOptimization = config.markers?.visualOptimization;
+    const deprecatedVisualOptimizationKeys =
+      visualOptimization &&
+      (visualOptimization.useAngles !== undefined ||
+        visualOptimization.useBoundingBox !== undefined ||
+        visualOptimization.useDistance !== undefined ||
+        visualOptimization.thresholdBoundingBox !== undefined ||
+        visualOptimization.thresholdDistance !== undefined ||
+        visualOptimization.sharpAngleThreshold !== undefined);
+
+    if (deprecatedVisualOptimizationKeys) {
+      console.warn(
+        '[Leaflet.Polydraw] `markers.visualOptimization` is deprecated. Prefer `visualOptimizationLevel` when adding predefined polygons.',
+      );
+    }
   }
 }
 

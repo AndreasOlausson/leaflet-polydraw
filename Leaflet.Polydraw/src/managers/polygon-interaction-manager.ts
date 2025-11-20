@@ -36,6 +36,13 @@ export interface PolygonInteractionManagerDependencies {
   saveHistoryState?: () => void;
 }
 
+interface MarkerImportanceOptions {
+  menuIndex: number;
+  deleteIndex: number;
+  infoIndex: number;
+  optimizationLevel: number;
+}
+
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
  * This includes dragging polygons, dragging markers, edge interactions, and popup menus.
@@ -122,7 +129,11 @@ export class PolygonInteractionManager {
   /**
    * Add markers to a polygon feature group
    */
-  addMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
+  addMarkers(
+    latlngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+    options: { optimizationLevel?: number } = {},
+  ): void {
     // console.log('PolygonInteractionManager addMarkers');
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
@@ -144,6 +155,16 @@ export class PolygonInteractionManager {
     deleteMarkerIdx = separatedIndices.delete;
     infoMarkerIdx = separatedIndices.info;
 
+    const optimizationLevel = options.optimizationLevel ?? 0;
+    const importantIndices = this.deriveImportantMarkerIndices(latlngs, {
+      menuIndex: menuMarkerIdx,
+      deleteIndex: deleteMarkerIdx,
+      infoIndex: infoMarkerIdx,
+      optimizationLevel,
+    });
+    const hasClosingPoint =
+      latlngs.length > 2 && this.latLngEquals(latlngs[0], latlngs[latlngs.length - 1]);
+
     latlngs.forEach((latlng, i) => {
       let iconClasses = this.config.markers.markerIcon.styleClasses;
       if (i === menuMarkerIdx && this.config.markers.menuMarker) {
@@ -161,8 +182,18 @@ export class PolygonInteractionManager {
         (i === menuMarkerIdx && this.config.markers.menuMarker) ||
         (i === deleteMarkerIdx && this.config.markers.deleteMarker) ||
         (i === infoMarkerIdx && this.config.markers.infoMarker);
+      const normalizedIndex = this.normalizeMarkerIndex(i, latlngs.length, hasClosingPoint);
+      const isImportant =
+        optimizationLevel <= 0 ||
+        normalizedIndex === null ||
+        importantIndices.has(normalizedIndex) ||
+        isSpecialMarker;
+      const classesForIcon = [...processedClasses];
+      if (!isImportant) {
+        classesForIcon.push('polygon-marker-faded');
+      }
       const marker = new L.Marker(latlng, {
-        icon: this.createDivIcon(processedClasses),
+        icon: this.createDivIcon(classesForIcon),
         draggable: this.config.modes.dragElbow,
         title: this.config.markers.coordsTitle ? this.getLatLngInfoString(latlng) : '',
         zIndexOffset:
@@ -691,11 +722,13 @@ export class PolygonInteractionManager {
                     return arr;
                   });
 
+                  const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.removeFeatureGroup(featureGroup);
                   this.emitPolygonUpdated({
                     operation: 'removeHole',
                     polygon: newPolygon,
+                    optimizationLevel,
                   });
                 }
               }
@@ -1076,6 +1109,187 @@ export class PolygonInteractionManager {
     }
   }
 
+  private deriveImportantMarkerIndices(
+    latlngs: L.LatLngLiteral[],
+    options: MarkerImportanceOptions,
+  ): Set<number> {
+    const important = new Set<number>();
+    if (!latlngs || latlngs.length === 0) {
+      return important;
+    }
+
+    const normalizedLevel = Math.min(Math.max(options.optimizationLevel ?? 0, 0), 10);
+    const hasClosingPoint =
+      latlngs.length > 2 && this.latLngEquals(latlngs[0], latlngs[latlngs.length - 1]);
+    const ring = hasClosingPoint ? latlngs.slice(0, -1) : [...latlngs];
+    const vertexCount = ring.length;
+
+    const addIndex = (idx?: number) => {
+      if (idx === undefined || idx === null || idx < 0) {
+        return;
+      }
+      let normalized = idx;
+      if (hasClosingPoint && idx === latlngs.length - 1) {
+        normalized = 0;
+      }
+      if (normalized >= vertexCount) {
+        normalized = vertexCount > 0 ? normalized % vertexCount : 0;
+      }
+      if (normalized >= 0 && normalized < vertexCount) {
+        important.add(normalized);
+      }
+    };
+
+    addIndex(0);
+    addIndex(options.menuIndex);
+    addIndex(options.deleteIndex);
+    addIndex(options.infoIndex);
+
+    if (vertexCount === 0 || normalizedLevel <= 0 || vertexCount <= 3) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+      return important;
+    }
+
+    const tolerance = this.getToleranceForOptimizationLevel(normalizedLevel);
+    let simplifiedVertices =
+      tolerance > 0 ? this.turfHelper.simplifyLatLngRing(ring, tolerance, true) : [...ring];
+
+    if (
+      simplifiedVertices.length > 1 &&
+      this.latLngEquals(simplifiedVertices[0], simplifiedVertices[simplifiedVertices.length - 1])
+    ) {
+      simplifiedVertices = simplifiedVertices.slice(0, -1);
+    }
+
+    if (!simplifiedVertices || simplifiedVertices.length === 0) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+      return important;
+    }
+
+    simplifiedVertices.forEach((vertex) => {
+      const closestIndex = this.findClosestVertexIndex(vertex, ring);
+      if (closestIndex !== null) {
+        important.add(closestIndex);
+      }
+    });
+
+    if (important.size === 0) {
+      for (let i = 0; i < vertexCount; i++) {
+        important.add(i);
+      }
+    }
+
+    return important;
+  }
+
+  private normalizeMarkerIndex(
+    index: number,
+    length: number,
+    hasClosingPoint: boolean,
+  ): number | null {
+    if (index === undefined || index === null || index < 0) {
+      return null;
+    }
+    if (hasClosingPoint) {
+      const uniqueLength = Math.max(1, length - 1);
+      if (index === length - 1) {
+        return 0;
+      }
+      if (index >= uniqueLength) {
+        return index % uniqueLength;
+      }
+      return index;
+    }
+    if (index >= length) {
+      return length > 0 ? length - 1 : null;
+    }
+    return index;
+  }
+
+  private latLngEquals(a: L.LatLngLiteral, b: L.LatLngLiteral): boolean {
+    if (!a || !b) return false;
+    return Math.abs(a.lat - b.lat) < 1e-9 && Math.abs(a.lng - b.lng) < 1e-9;
+  }
+
+  private getOptimizationLevelFromFeatureGroup(featureGroup: L.FeatureGroup): number {
+    let level = 0;
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        const poly = layer as PolydrawPolygon;
+        if (typeof poly._polydrawOptimizationLevel === 'number') {
+          level = poly._polydrawOptimizationLevel || 0;
+        }
+      }
+    });
+    return level;
+  }
+
+  private getOptimizationLevelFromPolygonLayer(polygon?: L.Polygon): number {
+    if (!polygon) return 0;
+    const polydrawPolygon = polygon as PolydrawPolygon;
+    return polydrawPolygon._polydrawOptimizationLevel || 0;
+  }
+
+  private getDistanceMeters(a: L.LatLngLiteral, b: L.LatLngLiteral): number {
+    try {
+      const pointA = leafletAdapter.createLatLng(a.lat, a.lng);
+      const pointB = leafletAdapter.createLatLng(b.lat, b.lng);
+      if (typeof pointA.distanceTo === 'function') {
+        return pointA.distanceTo(pointB);
+      }
+    } catch (error) {
+      // Fallback to haversine below
+    }
+
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const R = 6371000;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const h =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLng / 2) * Math.sin(dLng / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+    return R * c;
+  }
+
+  private findClosestVertexIndex(
+    target: L.LatLngLiteral,
+    vertices: L.LatLngLiteral[],
+  ): number | null {
+    if (!vertices || vertices.length === 0) {
+      return null;
+    }
+    let closestIndex = 0;
+    let minDistance = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < vertices.length; i++) {
+      const dist = this.getDistanceMeters(target, vertices[i]);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIndex = i;
+        if (dist === 0) {
+          break;
+        }
+      }
+    }
+    return closestIndex;
+  }
+
+  private getToleranceForOptimizationLevel(level: number): number {
+    const normalized = Math.min(Math.max(level, 0), 10) / 10;
+    const visConfig = this.config.markers.visualOptimization ?? {};
+    const minTolerance = Math.max(visConfig.toleranceMin ?? 0.000005, 0);
+    const maxTolerance = Math.max(visConfig.toleranceMax ?? 0.005, minTolerance);
+    const curvePower = visConfig.curve ?? 1.35;
+    const curved = Math.pow(normalized, curvePower);
+    return minTolerance + (maxTolerance - minTolerance) * curved;
+  }
+
   private elbowClicked(
     e: L.LeafletMouseEvent,
     polygonLayer: L.Polygon,
@@ -1167,6 +1381,10 @@ export class PolygonInteractionManager {
         break;
       }
     }
+    const optimizationLevel = currentFeatureGroup
+      ? this.getOptimizationLevelFromFeatureGroup(currentFeatureGroup)
+      : this.getOptimizationLevelFromPolygonLayer(polygonLayer);
+
     if (currentFeatureGroup) {
       this.removeFeatureGroup(currentFeatureGroup);
     }
@@ -1175,6 +1393,7 @@ export class PolygonInteractionManager {
     this.emitPolygonUpdated({
       operation: 'removeVertex',
       polygon: newPolygon,
+      optimizationLevel,
     });
   }
 
@@ -1310,6 +1529,8 @@ export class PolygonInteractionManager {
       return;
     }
 
+    const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
+
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
 
@@ -1327,6 +1548,7 @@ export class PolygonInteractionManager {
               polygon: this.turfHelper.getTurfPolygon(polygon),
               allowMerge: true, // Allow intelligent merging for intersections
               intelligentMerge: true, // Flag for smart merging logic
+              optimizationLevel,
             });
           }
         } else {
@@ -1337,6 +1559,7 @@ export class PolygonInteractionManager {
             polygon: feature,
             allowMerge: true, // Allow intelligent merging for intersections
             intelligentMerge: true, // Flag for smart merging logic
+            optimizationLevel,
           });
         }
       }
@@ -1354,6 +1577,7 @@ export class PolygonInteractionManager {
             operation: 'markerDrag',
             polygon: this.turfHelper.getTurfPolygon(polygon),
             allowMerge: false, // Fixed: prevent merging during vertex drag
+            optimizationLevel,
           });
         }
       } else {
@@ -1363,6 +1587,7 @@ export class PolygonInteractionManager {
           operation: 'markerDrag',
           polygon: feature,
           allowMerge: false, // Fixed: prevent merging during vertex drag
+          optimizationLevel,
         });
       }
     }
@@ -1593,6 +1818,7 @@ export class PolygonInteractionManager {
         return;
       }
 
+      const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
@@ -1600,6 +1826,7 @@ export class PolygonInteractionManager {
         operation: 'polygonDrag',
         polygon: feature,
         allowMerge: true,
+        optimizationLevel,
       });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -2228,11 +2455,13 @@ export class PolygonInteractionManager {
               | undefined;
             if (!polygonLayer) return;
             const newGeoJSON = polygonLayer.toGeoJSON();
+            const optimizationLevel = this.getOptimizationLevelFromFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
             this.emitPolygonUpdated({
               operation: 'transform',
               polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
               allowMerge: true,
+              optimizationLevel,
             });
           } finally {
             controller.destroy();
@@ -2422,6 +2651,12 @@ export class PolygonInteractionManager {
     type AreaConfig = ConstructorParameters<typeof Area>[1];
     const _perimeter = new Perimeter(perimeter, this.config as unknown as PerimeterConfig);
     const _area = new Area(area, this.config as unknown as AreaConfig);
+    const infoConfig = this.config.markers.markerInfoIcon ?? {};
+    const showArea = infoConfig.showArea !== false;
+    const showPerimeter = infoConfig.showPerimeter !== false;
+    const useMetricUnits = infoConfig.useMetrics !== false;
+    const areaLabel = infoConfig.areaLabel?.trim();
+    const perimeterLabel = infoConfig.perimeterLabel?.trim();
 
     const outerWrapper: HTMLDivElement = document.createElement('div');
     outerWrapper.classList.add('info-marker-outer-wrapper');
@@ -2433,16 +2668,32 @@ export class PolygonInteractionManager {
     const infoContentWrapper: HTMLDivElement = document.createElement('div');
     infoContentWrapper.classList.add('info-marker-content');
 
-    const areaDiv: HTMLDivElement = document.createElement('div');
-    areaDiv.classList.add('info-item', 'area');
-    areaDiv.innerHTML = `<strong>Area:</strong> ${_area.metricArea} ${_area.metricUnit}`;
+    if (showArea) {
+      const areaValue = useMetricUnits
+        ? `${_area.metricArea} ${_area.metricUnit}`
+        : `${_area.imperialArea} ${_area.imperialUnit}`;
+      const areaDiv: HTMLDivElement = document.createElement('div');
+      areaDiv.classList.add('info-item', 'area');
+      areaDiv.innerHTML =
+        areaLabel && areaLabel.length > 0
+          ? `<strong>${areaLabel}:</strong> ${areaValue}`
+          : areaValue;
+      infoContentWrapper.appendChild(areaDiv);
+    }
 
-    const perimeterDiv: HTMLDivElement = document.createElement('div');
-    perimeterDiv.classList.add('info-item', 'perimeter');
-    perimeterDiv.innerHTML = `<strong>Perimeter:</strong> ${_perimeter.metricLength} ${_perimeter.metricUnit}`;
+    if (showPerimeter) {
+      const perimeterValue = useMetricUnits
+        ? `${_perimeter.metricLength} ${_perimeter.metricUnit}`
+        : `${_perimeter.imperialLength} ${_perimeter.imperialUnit}`;
+      const perimeterDiv: HTMLDivElement = document.createElement('div');
+      perimeterDiv.classList.add('info-item', 'perimeter');
+      perimeterDiv.innerHTML =
+        perimeterLabel && perimeterLabel.length > 0
+          ? `<strong>${perimeterLabel}:</strong> ${perimeterValue}`
+          : perimeterValue;
+      infoContentWrapper.appendChild(perimeterDiv);
+    }
 
-    infoContentWrapper.appendChild(areaDiv);
-    infoContentWrapper.appendChild(perimeterDiv);
     markerContent.appendChild(infoContentWrapper);
 
     outerWrapper.appendChild(wrapper);

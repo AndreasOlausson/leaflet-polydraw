@@ -177,6 +177,8 @@ const mockTurfHelper = {
   getTurfPolygon: vi.fn(() => mockPolygonFeature),
   getMultiPolygon: vi.fn(() => mockPolygonFeature),
   getSimplified: vi.fn((feature) => feature),
+  hasKinks: vi.fn(() => false),
+  getKinks: vi.fn(() => [mockPolygonFeature]),
 } as any;
 
 const mockPolygonInformation = {
@@ -270,6 +272,9 @@ describe('PolygonMutationManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFeatureGroups = [];
+    mockConfig.kinks = false;
+    (mockTurfHelper.hasKinks as any).mockReturnValue(false);
+    (mockTurfHelper.getKinks as any).mockReturnValue([mockPolygonFeature]);
 
     dependencies = {
       turfHelper: mockTurfHelper,
@@ -347,13 +352,45 @@ describe('PolygonMutationManager', () => {
       expect(result.featureGroups).toHaveLength(1);
     });
 
-    it('should add polygon without merging when kinks are enabled', async () => {
+    it('should keep kinked polygons intact when kinks are enabled', async () => {
+      mockConfig.kinks = true;
+      (mockTurfHelper.hasKinks as any).mockReturnValue(true);
+      mockFeatureGroups.push(new L.FeatureGroup());
+
+      const mergeSpy = vi.spyOn(mutationManager as any, 'mergePolygon');
+      const result = await mutationManager.addPolygon(mockPolygonFeature);
+
+      expect(result.success).toBe(true);
+      expect(mergeSpy).not.toHaveBeenCalled();
+      expect(mockTurfHelper.getKinks).not.toHaveBeenCalled();
+      mergeSpy.mockRestore();
+    });
+
+    it('should split polygons with kinks when not allowed', async () => {
+      (mockTurfHelper.hasKinks as any).mockReturnValue(true);
+      (mockTurfHelper.getKinks as any).mockReturnValue([
+        mockPolygonFeature,
+        mockMultiPolygonFeature,
+      ]);
+
+      const addLayerSpy = vi.spyOn(mutationManager as any, 'addPolygonLayer');
+      const result = await mutationManager.addPolygon(mockPolygonFeature);
+
+      expect(addLayerSpy).toHaveBeenCalledTimes(2);
+      expect(result.featureGroups).toHaveLength(2);
+      addLayerSpy.mockRestore();
+    });
+
+    it('should still merge polygons when kinks are enabled but polygon is simple', async () => {
       mockConfig.kinks = true;
       mockFeatureGroups.push(new L.FeatureGroup());
+      const mergeSpy = vi.spyOn(mutationManager as any, 'mergePolygon');
 
       const result = await mutationManager.addPolygon(mockPolygonFeature);
 
       expect(result.success).toBe(true);
+      expect(mergeSpy).toHaveBeenCalledTimes(1);
+      mergeSpy.mockRestore();
     });
 
     it('should merge polygon when conditions are met', async () => {

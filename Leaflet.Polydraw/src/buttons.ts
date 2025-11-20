@@ -78,6 +78,7 @@ export function createButtons(
   ) as HTMLAnchorElement;
   activate.href = '#';
   activate.title = 'Activate';
+  activate.setAttribute('data-polydraw', 'activate-button');
   setButtonIcon(activate, icons.activate);
   activate.dataset.activeIcon = icons.activate;
   activate.dataset.collapsedIcon = icons.collapse;
@@ -90,6 +91,7 @@ export function createButtons(
     const draw = leafletAdapter.domUtil.create('a', 'icon-draw', subContainer) as HTMLAnchorElement;
     draw.href = '#';
     draw.title = 'Draw';
+    draw.setAttribute('data-polydraw', 'draw-button');
     setButtonIcon(draw, icons.draw);
     L.DomEvent.on(draw, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(draw, 'touchstart', L.DomEvent.stopPropagation);
@@ -106,6 +108,7 @@ export function createButtons(
     ) as HTMLAnchorElement;
     subtract.href = '#';
     subtract.title = 'Subtract';
+    subtract.setAttribute('data-polydraw', 'subtract-button');
     setButtonIcon(subtract, icons.subtract);
     L.DomEvent.on(subtract, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(subtract, 'touchstart', L.DomEvent.stopPropagation);
@@ -118,6 +121,7 @@ export function createButtons(
     const p2p = leafletAdapter.domUtil.create('a', 'icon-p2p', subContainer) as HTMLAnchorElement;
     p2p.href = '#';
     p2p.title = 'Point to Point';
+    p2p.setAttribute('data-polydraw', 'p2p-button');
     setButtonIcon(p2p, icons.p2p);
     L.DomEvent.on(p2p, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(p2p, 'touchstart', L.DomEvent.stopPropagation);
@@ -134,6 +138,7 @@ export function createButtons(
     ) as HTMLAnchorElement;
     p2pSubtract.href = '#';
     p2pSubtract.title = 'Point to Point Subtract';
+    p2pSubtract.setAttribute('data-polydraw', 'p2p-subtract-button');
     setButtonIcon(p2pSubtract, icons.p2pSubtract);
     L.DomEvent.on(p2pSubtract, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(p2pSubtract, 'touchstart', L.DomEvent.stopPropagation);
@@ -150,6 +155,7 @@ export function createButtons(
     ) as HTMLAnchorElement;
     erase.href = '#';
     erase.title = 'Erase All';
+    erase.setAttribute('data-polydraw', 'erase-button');
     setButtonIcon(erase, icons.erase);
     L.DomEvent.on(erase, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(erase, 'touchstart', L.DomEvent.stopPropagation);

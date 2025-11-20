@@ -8,6 +8,7 @@ import { EventManager } from '../../src/managers/event-manager';
 import { MarkerPosition } from '../../src/enums';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import { IconFactory } from '../../src/icon-factory';
 import {
   createMockMap,
   createMockPolygon,
@@ -290,7 +291,9 @@ vi.mock('leaflet', async () => {
 // Mock IconFactory
 vi.mock('../../src/icon-factory', () => ({
   IconFactory: {
-    createDivIcon: vi.fn(() => ({ options: {} })),
+    createDivIcon: vi.fn((classNames: string[]) => ({
+      options: { className: Array.isArray(classNames) ? classNames.join(' ') : String(classNames) },
+    })),
   },
 }));
 
@@ -317,10 +320,14 @@ vi.mock('../../src/utils', () => ({
   Perimeter: vi.fn(() => ({
     metricLength: '100',
     metricUnit: 'm',
+    imperialLength: '328',
+    imperialUnit: 'ft',
   })),
   Area: vi.fn(() => ({
     metricArea: '1000',
     metricUnit: 'm²',
+    imperialArea: '10764',
+    imperialUnit: 'ft²',
   })),
   isTouchDevice: vi.fn(() => false),
   isTestEnvironment: vi.fn(() => true),
@@ -328,6 +335,7 @@ vi.mock('../../src/utils', () => ({
 
 describe('PolygonInteractionManager', () => {
   let manager: PolygonInteractionManager;
+  let createdElements: any[];
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -340,21 +348,33 @@ describe('PolygonInteractionManager', () => {
     });
 
     // Mock document.createElement
+    createdElements = [];
     (globalThis as any).document.createElement = vi.fn((tagName: string) => {
-      const element = {
+      const element: any = {
         tagName: tagName.toUpperCase(),
         classList: {
-          add: vi.fn(),
-          remove: vi.fn(),
+          classes: new Set<string>(),
+          add: vi.fn((cls: string) => {
+            element.classList.classes.add(cls);
+          }),
+          remove: vi.fn((cls: string) => {
+            element.classList.classes.delete(cls);
+          }),
         },
         style: {},
-        appendChild: vi.fn(),
+        innerHTML: '',
+        children: [] as any[],
+        appendChild: vi.fn((child: any) => {
+          element.children.push(child);
+          return child;
+        }),
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
         querySelectorAll: vi.fn(() => []),
         cloneNode: vi.fn(() => element),
       };
-      return element as any;
+      createdElements.push(element);
+      return element;
     });
 
     manager = new PolygonInteractionManager(mockDependencies, mockFeatureGroupAccess);
@@ -431,6 +451,33 @@ describe('PolygonInteractionManager', () => {
         { passive: true },
       );
       expect(mockElement.addEventListener).toHaveBeenCalledWith('touchend', expect.any(Function));
+    });
+
+    it('should hide non-essential markers when optimization level is provided', () => {
+      const rectangleWithExtras = [
+        { lat: 0, lng: 0 },
+        { lat: 0, lng: 0.5 },
+        { lat: 0, lng: 1 },
+        { lat: 0.5, lng: 1 },
+        { lat: 1, lng: 1 },
+        { lat: 1, lng: 0.5 },
+        { lat: 1, lng: 0 },
+        { lat: 0.5, lng: 0 },
+        { lat: 0, lng: 0 },
+      ];
+
+      manager.addMarkers(rectangleWithExtras, mockFeatureGroup, { optimizationLevel: 8 });
+
+      const iconSpy = vi.mocked(IconFactory.createDivIcon);
+      const hiddenCalls = iconSpy.mock.calls.filter(
+        (call) => Array.isArray(call[0]) && call[0].includes('polygon-marker-faded'),
+      );
+      const visibleCalls = iconSpy.mock.calls.filter(
+        (call) => Array.isArray(call[0]) && !call[0].includes('polygon-marker-faded'),
+      );
+
+      expect(hiddenCalls.length).toBeGreaterThan(0);
+      expect(visibleCalls.length).toBeGreaterThan(0);
     });
   });
 
@@ -1787,6 +1834,34 @@ describe('PolygonInteractionManager', () => {
         expect(popup).toBeDefined();
         expect(popup.setLatLng).toBeDefined();
         expect(popup.openOn).toBeDefined();
+
+        const areaRow = createdElements.find((el) => el.classList.classes?.has('area'));
+        const perimeterRow = createdElements.find((el) => el.classList.classes?.has('perimeter'));
+
+        expect(areaRow?.innerHTML).toContain('<strong>Area:</strong>');
+        expect(perimeterRow?.innerHTML).toContain('<strong>Perimeter:</strong>');
+      });
+
+      it('should respect info marker visibility, labels, and units', () => {
+        const originalInfoConfig = { ...mockConfig.markers.markerInfoIcon };
+        mockConfig.markers.markerInfoIcon = {
+          ...originalInfoConfig,
+          showArea: false,
+          showPerimeter: true,
+          perimeterLabel: 'Length',
+          useMetrics: false,
+        };
+
+        (manager as any).generateInfoMarkerPopup(1000, 100);
+
+        const areaRow = createdElements.find((el) => el.classList.classes?.has('area'));
+        const perimeterRow = createdElements.find((el) => el.classList.classes?.has('perimeter'));
+
+        expect(areaRow).toBeUndefined();
+        expect(perimeterRow?.innerHTML).toContain('<strong>Length:</strong>');
+        expect(perimeterRow?.innerHTML).toContain('ft');
+
+        mockConfig.markers.markerInfoIcon = originalInfoConfig;
       });
     });
 
