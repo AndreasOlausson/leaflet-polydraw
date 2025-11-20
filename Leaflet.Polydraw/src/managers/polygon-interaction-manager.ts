@@ -68,7 +68,11 @@ export class PolygonInteractionManager {
   private emitPolygonUpdated(data: PolygonUpdatedEventData): void {
     // Save history state before modification for all operations except drag operations
     // (markerDrag and polygonDrag already save state on dragstart)
-    if (data.operation !== 'markerDrag' && data.operation !== 'polygonDrag' && this.saveHistoryState) {
+    if (
+      data.operation !== 'markerDrag' &&
+      data.operation !== 'polygonDrag' &&
+      this.saveHistoryState
+    ) {
       this.saveHistoryState();
     }
     this.eventManager.emit('polydraw:polygon:updated', data);

@@ -10,6 +10,7 @@ import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import { HistoryManager } from './managers/history-manager';
+import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
@@ -765,7 +766,7 @@ class Polydraw extends L.Control {
   /**
    * Restore the map state from a history snapshot
    */
-  private async restoreFromSnapshot(snapshot: import('./managers/history-manager').HistorySnapshot): Promise<void> {
+  private async restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
     // Set restoration flag to prevent saveState during restoration
     this.historyManager.setRestoring(true);
 
