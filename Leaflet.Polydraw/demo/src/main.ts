@@ -951,15 +951,6 @@ function updateStatusBox() {
 // Initial status update
 updateStatusBox();
 
-document.getElementById('addDebugPoly')?.addEventListener('click', () => {
-  // Example with visual optimization level 5 (moderate simplification)
-  polydraw.addPredefinedPolygon(linkoping, {
-    visualOptimizationLevel: 9,
-  });
-  // Update status after adding predefined polygon
-  setTimeout(updateStatusBox, 100);
-});
-
 const linkoping: L.LatLng[][][] = [
   [
     [
@@ -3770,3 +3761,117 @@ const linkoping: L.LatLng[][][] = [
     ],
   ],
 ];
+
+type SampleKey =
+  | 'octagon'
+  | 'squareHole'
+  | 'overlap'
+  | 'linkoping-0'
+  | 'linkoping-4'
+  | 'linkoping-7'
+  | 'linkoping-10';
+
+interface SampleDefinition {
+  coordinates: L.LatLng[][][];
+  visualOptimizationLevel?: number;
+  viewport?: {
+    center: L.LatLngExpression;
+    zoom?: number;
+  };
+}
+
+const sampleLibrary: Record<SampleKey, SampleDefinition> = {
+  octagon: {
+    coordinates: octagon,
+    visualOptimizationLevel: 2,
+    viewport: { center: leafletAdapter.createLatLng(58.4015, 15.6), zoom: 13 },
+  },
+  squareHole: {
+    coordinates: squareWithHole,
+    viewport: { center: leafletAdapter.createLatLng(58.402, 15.6), zoom: 14 },
+  },
+  overlap: {
+    coordinates: overlappingSquares,
+    viewport: { center: leafletAdapter.createLatLng(58.402, 15.6), zoom: 14 },
+  },
+  'linkoping-0': {
+    coordinates: linkoping,
+    visualOptimizationLevel: 0,
+    viewport: { center: leafletAdapter.createLatLng(58.41, 15.62), zoom: 11 },
+  },
+  'linkoping-4': {
+    coordinates: linkoping,
+    visualOptimizationLevel: 4,
+    viewport: { center: leafletAdapter.createLatLng(58.41, 15.62), zoom: 11 },
+  },
+  'linkoping-7': {
+    coordinates: linkoping,
+    visualOptimizationLevel: 7,
+    viewport: { center: leafletAdapter.createLatLng(58.41, 15.62), zoom: 11 },
+  },
+  'linkoping-10': {
+    coordinates: linkoping,
+    visualOptimizationLevel: 10,
+    viewport: { center: leafletAdapter.createLatLng(58.41, 15.62), zoom: 11 },
+  },
+};
+
+function registerSampleButtons(): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-sample]');
+  buttons.forEach((button) => {
+    const key = button.dataset.sample as SampleKey | undefined;
+    if (!key || !(key in sampleLibrary)) {
+      button.disabled = true;
+      return;
+    }
+    button.addEventListener('click', () => {
+      const sample = sampleLibrary[key];
+      try {
+        polydraw.addPredefinedPolygon(sample.coordinates, {
+          visualOptimizationLevel: sample.visualOptimizationLevel ?? 0,
+        });
+        if (sample.viewport) {
+          map.setView(sample.viewport.center, sample.viewport.zoom ?? map.getZoom());
+        }
+        setTimeout(updateStatusBox, 100);
+      } catch (error) {
+        console.warn(`Failed to add sample polygon "${key}":`, error);
+      }
+    });
+  });
+}
+
+registerSampleButtons();
+
+function setupSamplePanelCollapse(): void {
+  const header = document.getElementById('samples-header');
+  const content = document.getElementById('samples-content');
+  const chevron = header?.querySelector('[data-chevron="sample"]') as HTMLElement | null;
+  if (!header || !content) return;
+
+  let collapsed = false;
+  const updateState = () => {
+    content.style.display = collapsed ? 'none' : 'grid';
+    if (chevron) {
+      chevron.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    }
+    header.setAttribute('aria-expanded', String(!collapsed));
+  };
+  const toggle = () => {
+    collapsed = !collapsed;
+    updateState();
+  };
+
+  header.addEventListener('click', toggle);
+  header.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggle();
+    }
+  });
+  header.setAttribute('tabindex', '0');
+  header.setAttribute('role', 'button');
+  updateState();
+}
+
+setupSamplePanelCollapse();
