@@ -1268,13 +1268,13 @@ class Polydraw extends L.Control {
     // Handle undo/redo shortcuts
     const isCtrlOrCmd = e.ctrlKey || e.metaKey;
 
-    if (isCtrlOrCmd && e.key === 'z') {
+    if (isCtrlOrCmd && e.key === 'z' && !e.shiftKey) {
       e.preventDefault();
       this.undo();
       return;
     }
 
-    if (isCtrlOrCmd && e.key === 'y') {
+    if (isCtrlOrCmd && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
       e.preventDefault();
       this.redo();
       return;
