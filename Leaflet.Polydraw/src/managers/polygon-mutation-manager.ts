@@ -34,6 +34,7 @@ export interface AddPolygonOptions {
   noMerge?: boolean;
   dynamicTolerance?: boolean;
   visualOptimizationLevel?: number;
+  originalOptimizationLevel?: number;
 }
 
 export interface MutationManagerDependencies {
@@ -151,11 +152,13 @@ export class PolygonMutationManager {
    * Handle polygon modification from interaction manager
    */
   private async handlePolygonModified(data: PolygonUpdatedEventData): Promise<void> {
-    // Don't simplify drag operations to preserve vertex count
-    const shouldSimplify =
-      data.operation !== 'addVertex' &&
-      data.operation !== 'markerDrag' &&
-      data.operation !== 'polygonDrag';
+    const skipSimplifyOperations = new Set([
+      'addVertex',
+      'markerDrag',
+      'polygonDrag',
+      'toggleOptimization',
+    ]);
+    const shouldSimplify = !data.operation || !skipSimplifyOperations.has(data.operation);
 
     // Handle intelligent merging for vertex drag operations
     let allowMerge = data.allowMerge;
@@ -168,6 +171,7 @@ export class PolygonMutationManager {
       simplify: shouldSimplify,
       noMerge: !allowMerge,
       visualOptimizationLevel: data.optimizationLevel || 0,
+      originalOptimizationLevel: data.originalOptimizationLevel,
     };
     await this.addPolygon(data.polygon, options);
   }
@@ -180,6 +184,8 @@ export class PolygonMutationManager {
 
     // Get the complete polygon GeoJSON including holes before removing the feature group
     const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);
+    const { level: optimizationLevel, original: originalOptimizationLevel } =
+      this.getOptimizationMetadataFromFeatureGroup(data.featureGroup);
 
     // Remove the original polygon
     this.removeFeatureGroupInternal(data.featureGroup);
@@ -212,7 +218,11 @@ export class PolygonMutationManager {
     }
 
     if (result.success && result.result) {
-      await this.addPolygon(result.result, { simplify: false });
+      await this.addPolygon(result.result, {
+        simplify: false,
+        visualOptimizationLevel: optimizationLevel,
+        originalOptimizationLevel,
+      });
     }
   }
 
@@ -445,7 +455,12 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygonLayer');
-    const { simplify = true, dynamicTolerance = false, visualOptimizationLevel = 0 } = options;
+    const {
+      simplify = true,
+      dynamicTolerance = false,
+      visualOptimizationLevel = 0,
+      originalOptimizationLevel,
+    } = options;
 
     try {
       // Validate input
@@ -458,12 +473,18 @@ export class PolygonMutationManager {
       const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
 
       let polygon: L.Polygon & Record<string, unknown>;
+      let effectiveOriginal = visualOptimizationLevel;
       try {
         polygon = this.getPolygon(latLngs);
         if (!polygon) {
           return { success: false, error: 'Failed to create polygon' };
         }
         polygon._polydrawOptimizationLevel = visualOptimizationLevel;
+        effectiveOriginal =
+          originalOptimizationLevel ??
+          (polygon._polydrawOptimizationOriginalLevel as number | undefined) ??
+          visualOptimizationLevel;
+        polygon._polydrawOptimizationOriginalLevel = effectiveOriginal || 0;
         featureGroup.addLayer(polygon);
         this.interactionManager.suppressDeleteMarkerClicks(250);
       } catch (error) {
@@ -512,6 +533,7 @@ export class PolygonMutationManager {
             if (ringIndex === 0) {
               this.interactionManager.addMarkers(latLngLiterals, featureGroup, {
                 optimizationLevel: visualOptimizationLevel,
+                originalOptimizationLevel: effectiveOriginal,
               });
             } else {
               // Add red polyline overlay for hole rings
@@ -986,6 +1008,36 @@ export class PolygonMutationManager {
     }
   }
 
+  private getOptimizationMetadataFromFeatureGroup(featureGroup?: L.FeatureGroup): {
+    level: number;
+    original: number;
+  } {
+    if (!featureGroup) {
+      return { level: 0, original: 0 };
+    }
+
+    let level = 0;
+    let original = 0;
+
+    featureGroup.eachLayer((layer: L.Layer) => {
+      if (layer instanceof L.Polygon) {
+        const polygonLayer = layer as PolydrawPolygon;
+        if (typeof polygonLayer._polydrawOptimizationLevel === 'number') {
+          level = polygonLayer._polydrawOptimizationLevel || 0;
+        }
+        if (typeof polygonLayer._polydrawOptimizationOriginalLevel === 'number') {
+          original = polygonLayer._polydrawOptimizationOriginalLevel || 0;
+        }
+      }
+    });
+
+    if (!original && level > 0) {
+      original = level;
+    }
+
+    return { level, original };
+  }
+
   // Public methods that delegate to interaction manager
 
   /**
@@ -1145,7 +1197,7 @@ export class PolygonMutationManager {
   addMarker(
     latlngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
-    options?: { optimizationLevel?: number },
+    options?: { optimizationLevel?: number; originalOptimizationLevel?: number },
   ): void {
     // console.log('PolygonMutationManager addMarker');
     this.interactionManager.addMarkers(latlngs, featureGroup, options);

@@ -100,6 +100,10 @@ Access operations through the menu marker:
 - **Double Elbows**: Add intermediate vertices for higher resolution
 - **Bounding Box**: Convert to rectangular bounds
 - **Bezier Curves**: Apply smooth curve interpolation (alpha)
+- **Scale**: Use the transform handles to resize the polygon without redrawing it.
+- **Rotate**: Use the transform handles to rotate the polygon without redrawing it.
+- **Visual Optimization Toggle**: Quickly show or hide the pruned “elbow” markers on predefined polygons, so you can inspect every
+  vertex or keep the view uncluttered.
 
 ## Smart Marker System
 

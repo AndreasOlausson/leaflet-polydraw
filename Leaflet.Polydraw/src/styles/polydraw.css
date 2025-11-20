@@ -208,6 +208,16 @@ body {
   background-image: url('../icons/icon-rotate.svg');
 }
 
+.marker-menu-content
+  .marker-menu-button.toggle-visual-optimization.visual-optimization-state-visible {
+  background-image: url('../icons/icon-visual-optimization-show.svg');
+}
+
+.marker-menu-content
+  .marker-menu-button.toggle-visual-optimization.visual-optimization-state-hidden {
+  background-image: url('../icons/icon-visual-optimization-hide.svg');
+}
+
 .marker-menu-button {
   padding: 4px;
   border: 1px solid #aaaaaa;

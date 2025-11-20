@@ -193,6 +193,9 @@ export const defaultConfig: PolydrawConfig = {
     rotate: {
       enabled: true,
     },
+    visualOptimizationToggle: {
+      enabled: true,
+    },
   },
   boundingBox: {
     addMidPointMarkers: true,
