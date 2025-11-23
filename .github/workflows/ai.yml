@@ -6,10 +6,12 @@ on:
 
 jobs:
   ai-review:
+    # Körs bara om det är "rätt" repo och målet är main
     if: >
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
+    
     permissions:
       contents: read
       pull-requests: write
@@ -21,42 +23,38 @@ jobs:
           fetch-depth: 0
 
       - name: Query AI for review
-        if: ${{ secrets.OPENAI_API_KEY != '' }}
+        # FIX: Inga ${{ }} här i 'if'
+        if: secrets.OPENAI_API_KEY != ''
         env:
+          # Här MÅSTE vi dock ha ${{ }} för att sätta miljövariabeln
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -e
           BASE_BRANCH="${{ github.base_ref }}"
 
-          # 1. Save the diff to a file, excluding "noise" files to save tokens
-          # ':(exclude)...' is standard git pathspec
+          # 1. Hämta diff, exkludera låsfiler och annat skräp
           git diff "origin/${BASE_BRANCH}...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)*.svg' > pr.diff
 
-          # Check if file is empty (no relevant changes)
+          # Avbryt om diffen är tom
           if [ ! -s pr.diff ]; then
             echo "No relevant changes to review."
             exit 0
           fi
 
-          # (Optional) Simple check to avoid extremely large payloads
-          # If diff is larger than approx 100KB (adjust as needed)
+          # 2. Storlekskontroll (trunkera om över 100KB)
           DIFF_SIZE=$(wc -c < pr.diff)
           if [ "$DIFF_SIZE" -gt 100000 ]; then
-             echo "Diff is too large ($DIFF_SIZE bytes) for AI review. Truncating..."
+             echo "Diff is too large ($DIFF_SIZE bytes). Truncating..."
              head -c 100000 pr.diff > pr.diff.tmp && mv pr.diff.tmp pr.diff
              echo -e "\n... (Diff truncated due to size) ..." >> pr.diff
           fi
 
           SYSTEM_PROMPT="You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback."
-
-          # Prepare text for user prompt, but read the diff via jq --rawfile
           USER_PROMPT_INTRO="Review this diff and comment on potential issues, improvements, and risks:\n\n"
 
-          # Function to build JSON safely even for very large diffs
+          # 3. Funktion för att bygga JSON säkert med jq
           build_payload() {
             local model="$1"
-            # --rawfile diff_content pr.diff reads file directly into a jq variable
-            # This avoids "Argument list too long" errors in bash
             jq -n \
               --arg model "$model" \
               --arg system "$SYSTEM_PROMPT" \
@@ -79,7 +77,7 @@ jobs:
               -d "$payload"
           }
 
-          # Primary model (high capability) vs Fallback (higher limits/availability)
+          # 4. Modell-val och Fallback-logik
           PRIMARY_MODEL="gpt-5.1"
           FALLBACK_MODEL="gpt-5-mini"
 
@@ -87,25 +85,27 @@ jobs:
           PRIMARY_PAYLOAD=$(build_payload "$PRIMARY_MODEL")
           RESPONSE=$(call_api "$PRIMARY_PAYLOAD")
 
-          # Fallback logic: If primary fails (e.g., rate limits or model not found)
+          # Om primär modell misslyckas (t.ex. rate limit eller 404), kör fallback
           if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
-            echo "Primary model failed, switching to fallback: $FALLBACK_MODEL"
+            echo "Primary model failed. Switching to fallback: $FALLBACK_MODEL"
             FALLBACK_PAYLOAD=$(build_payload "$FALLBACK_MODEL")
             RESPONSE=$(call_api "$FALLBACK_PAYLOAD")
           fi
 
-          # Final error check
+          # Om det fortfarande är fel -> avsluta med felkod
           if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
             echo "Error from OpenAI API:"
             echo "$RESPONSE" | jq '.'
             exit 1
           fi
 
+          # Spara svaret
           echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
 
       - name: Post review as PR comment
-        if: ${{ secrets.OPENAI_API_KEY != '' && hashFiles('review.md') != '' }}
+        # FIX: Inga ${{ }} här heller i 'if'
+        if: secrets.OPENAI_API_KEY != '' && hashFiles('review.md') != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          header: ai-review # Useful if you want to update the comment later
+          header: ai-review
           path: review.md
