@@ -13,9 +13,11 @@ jobs:
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -35,4 +37,4 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add -u
-          git diff --cached --quiet || (git commit -m "chore: auto-fix eslint issues" && git push)
+          git diff --cached --quiet || (git commit -m "chore: auto-fix eslint issues" && git push origin HEAD:${{ github.head_ref }})

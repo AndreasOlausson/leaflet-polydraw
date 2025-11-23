@@ -12,6 +12,7 @@ import iconEraseSvg from './icons/icon-erase.svg?raw';
 import iconCollapseSvg from './icons/icon-collapse.svg?raw';
 import iconUndoSvg from './icons/icon-undo.svg?raw';
 import iconRedoSvg from './icons/icon-redo.svg?raw';
+import { applySvgIcon } from './utils/svg-icon.util';
 
 const sanitizeSvg = (svg: string): string =>
   svg
@@ -32,17 +33,7 @@ const icons = {
 };
 
 const setButtonIcon = (button: HTMLAnchorElement, svgMarkup: string): void => {
-  button.innerHTML = svgMarkup;
-  const svgElement = button.querySelector('svg');
-  if (!svgElement) return;
-
-  svgElement.setAttribute('width', '24');
-  svgElement.setAttribute('height', '24');
-  (svgElement as unknown as HTMLElement).style.pointerEvents = 'none';
-
-  svgElement.querySelectorAll('*').forEach((el) => {
-    (el as HTMLElement).style.pointerEvents = 'none';
-  });
+  applySvgIcon(button, svgMarkup);
 };
 
 /**

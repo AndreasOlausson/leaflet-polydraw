@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
-import { gotoDemo, openToolbar, selectors, clickToolbarButton, seedPolygon, waitForPolygonCount } from './utils';
+import {
+  gotoDemo,
+  openToolbar,
+  selectors,
+  clickToolbarButton,
+  seedPolygon,
+  waitForPolygonCount,
+} from './utils';
 
 test.describe('Polygon management', () => {
   test('indicator appears when polygons exist', async ({ page }) => {
