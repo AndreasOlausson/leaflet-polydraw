@@ -1,47 +1,37 @@
-name: CI
+name: AI Pull Request Review
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  test:
+  ai-review:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x, 22.x]
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Shallow clones should be disabled for better analysis
+          fetch-depth: 0
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Collect diff
+        id: diff
+        run: |
+          echo "DIFF<<EOF" >> $GITHUB_ENV
+          git diff origin/${{ github.base_ref }}...HEAD >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Query ChatGPT for review
+        id: review
+        run: |
+          RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
+            -d "{\"model\": \"gpt-5.1\", \"messages\": [ {\"role\": \"system\", \"content\": \"You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback.\"}, {\"role\": \"user\", \"content\": \"Review this diff and comment on potential issues, improvements, and risks: $DIFF\"} ] }")
+
+          echo "REVIEW=$(echo \"$RESPONSE\" | jq -r '.choices[0].message.content')" >> $GITHUB_ENV
+
+      - name: Post review as PR comment
+        uses: marocchino/sticky-pull-request-comment@v2
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-          cache-dependency-path: ./Leaflet.Polydraw/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: ./Leaflet.Polydraw
-
-      - name: Run linter
-        run: npm run lint
-        working-directory: ./Leaflet.Polydraw
-
-      - name: Run tests with coverage
-        run: npm test -- --run --coverage
-        working-directory: ./Leaflet.Polydraw
-
-      - name: Build package
-        run: npm run build
-        working-directory: ./Leaflet.Polydraw
-
-      - name: Test package creation
-        run: npm pack
-        working-directory: ./Leaflet.Polydraw
+          message: ${{ env.REVIEW }}
