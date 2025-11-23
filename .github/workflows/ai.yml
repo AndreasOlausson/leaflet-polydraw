@@ -6,8 +6,10 @@ on:
 
 jobs:
   ai-review:
+    if: >
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       pull-requests: write
@@ -18,43 +20,92 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Query ChatGPT for review
+      - name: Query AI for review
+        if: ${{ secrets.OPENAI_API_KEY != '' }}
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -e
-          # Get diff against base branch
-          git fetch origin ${{ github.base_ref }} --depth=0
-          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD)
+          BASE_BRANCH="${{ github.base_ref }}"
 
-          # Build JSON-safe prompt body
-          BODY=$(jq -Rs . <<< "Review this diff and comment on potential issues, improvements, and risks:\n\n$DIFF")
+          # 1. Spara diffen till en fil, exkludera "skräp" som tar upp tokens
+          # ':(exclude)...' är standard git pathspec
+          git diff "origin/${BASE_BRANCH}...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)*.svg' > pr.diff
 
-          # Call OpenAI Chat Completions API
-          RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${OPENAI_API_KEY}" \
-            -d "$(cat <<EOF
-          {
-            \"model\": \"gpt-5.1\",
-            \"messages\": [
-              {
-                \"role\": \"system\",
-                \"content\": \"You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback.\"
-              },
-              {
-                \"role\": \"user\",
-                \"content\": $BODY
-              }
-            ]
+          # Kontrollera om filen är tom (inga relevanta ändringar)
+          if [ ! -s pr.diff ]; then
+            echo "No relevant changes to review."
+            exit 0
+          fi
+
+          # (Optional) Enkel check för att undvika extremt stora payloads
+          # Om diffen är större än ca 100KB (anpassa efter behov)
+          DIFF_SIZE=$(wc -c < pr.diff)
+          if [ "$DIFF_SIZE" -gt 100000 ]; then
+             echo "Diff is too large ($DIFF_SIZE bytes) for AI review. Truncating..."
+             head -c 100000 pr.diff > pr.diff.tmp && mv pr.diff.tmp pr.diff
+             echo -e "\n... (Diff truncated due to size) ..." >> pr.diff
+          fi
+
+          SYSTEM_PROMPT="You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback."
+
+          # Vi förbereder texten för användar-prompten, men läser in diffen via jq --rawfile
+          USER_PROMPT_INTRO="Review this diff and comment on potential issues, improvements, and risks:\n\n"
+
+          # Funktion som bygger JSON säkert även för jättestora diffar
+          build_payload() {
+            local model="$1"
+            # --rawfile diff_content pr.diff läser filen direkt in i en variabel i jq
+            # Detta undviker "Argument list too long" i bash
+            jq -n \
+              --arg model "$model" \
+              --arg system "$SYSTEM_PROMPT" \
+              --arg intro "$USER_PROMPT_INTRO" \
+              --rawfile diff_content pr.diff \
+              '{
+                model: $model,
+                messages: [
+                  { role: "system", content: $system },
+                  { role: "user", content: ($intro + $diff_content) }
+                ]
+              }'
           }
-          EOF
-          )")
 
-          # Extract review text and write to file
+          call_api() {
+            local payload="$1"
+            curl -s https://api.openai.com/v1/chat/completions \
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+              -d "$payload"
+          }
+
+          # Notera: gpt-5.1 finns inte än, så detta kommer trigga din fallback
+          PRIMARY_MODEL="gpt-5.1"
+          FALLBACK_MODEL="gpt-4o" # eller gpt-4-turbo / gpt-3.5-turbo
+
+          echo "Attempting review with $PRIMARY_MODEL..."
+          PRIMARY_PAYLOAD=$(build_payload "$PRIMARY_MODEL")
+          RESPONSE=$(call_api "$PRIMARY_PAYLOAD")
+
+          # Din fallback-logik (perfekt implementerad)
+          if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "Primary model failed (likely not found), switching to fallback: $FALLBACK_MODEL"
+            FALLBACK_PAYLOAD=$(build_payload "$FALLBACK_MODEL")
+            RESPONSE=$(call_api "$FALLBACK_PAYLOAD")
+          fi
+
+          # Final error check
+          if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
+            echo "Error from OpenAI API:"
+            echo "$RESPONSE" | jq '.'
+            exit 1
+          fi
+
           echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
 
       - name: Post review as PR comment
+        if: ${{ secrets.OPENAI_API_KEY != '' && hashFiles('review.md') != '' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: ai-review # Bra om du vill kunna uppdatera kommentaren senare
           path: review.md
