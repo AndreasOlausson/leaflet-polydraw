@@ -8,30 +8,53 @@ jobs:
   ai-review:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Collect diff
-        id: diff
-        run: |
-          echo "DIFF<<EOF" >> $GITHUB_ENV
-          git diff origin/${{ github.base_ref }}...HEAD >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
       - name: Query ChatGPT for review
-        id: review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
+          set -e
+          # Get diff against base branch
+          git fetch origin ${{ github.base_ref }} --depth=0
+          DIFF=$(git diff origin/${{ github.base_ref }}...HEAD)
+
+          # Build JSON-safe prompt body
+          BODY=$(jq -Rs . <<< "Review this diff and comment on potential issues, improvements, and risks:\n\n$DIFF")
+
+          # Call OpenAI Chat Completions API
           RESPONSE=$(curl https://api.openai.com/v1/chat/completions \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.OPENAI_API_KEY }}" \
-            -d "{\"model\": \"gpt-5.1\", \"messages\": [ {\"role\": \"system\", \"content\": \"You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback.\"}, {\"role\": \"user\", \"content\": \"Review this diff and comment on potential issues, improvements, and risks: $DIFF\"} ] }")
+            -H "Authorization: Bearer ${OPENAI_API_KEY}" \
+            -d "$(cat <<EOF
+          {
+            \"model\": \"gpt-5.1\",
+            \"messages\": [
+              {
+                \"role\": \"system\",
+                \"content\": \"You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback.\"
+              },
+              {
+                \"role\": \"user\",
+                \"content\": $BODY
+              }
+            ]
+          }
+          EOF
+          )")
 
-          echo "REVIEW=$(echo \"$RESPONSE\" | jq -r '.choices[0].message.content')" >> $GITHUB_ENV
+          # Extract review text and write to file
+          echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
 
       - name: Post review as PR comment
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          message: ${{ env.REVIEW }}
+          path: review.md
