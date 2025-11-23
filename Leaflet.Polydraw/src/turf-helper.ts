@@ -31,8 +31,6 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import booleanWithin from '@turf/boolean-within';
 import booleanEqual from '@turf/boolean-equal';
 import nearestPoint from '@turf/nearest-point';
-import polygonToLine from '@turf/polygon-to-line';
-import lineToPolygon from '@turf/line-to-polygon';
 import bezierSpline from '@turf/bezier-spline';
 import length from '@turf/length';
 // @ts-expect-error - concaveman doesn't have types
@@ -1002,20 +1000,56 @@ export class TurfHelper {
   }
 
   getBezierMultiPolygon(polygonArray: Position[][][]): Feature<Polygon | MultiPolygon> {
-    const line = polygonToLine(this.getMultiPolygon(polygonArray));
-    // Add first point to "close" the line
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (line as any).features[0].geometry.coordinates.push(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (line as any).features[0].geometry.coordinates[0],
-    );
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const bezierLine = bezierSpline((line as any).features[0], {
-      resolution: this.config.bezier.resolution,
-      sharpness: this.config.bezier.sharpness,
+    const ensureClosedRing = (ring: Position[]): Position[] => {
+      if (!ring || ring.length === 0) return ring;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      if (first[0] === last[0] && first[1] === last[1]) {
+        return ring;
+      }
+      return [...ring, [first[0], first[1]]];
+    };
+
+    const dedupeRing = (ring: Position[]): Position[] => {
+      if (!ring || ring.length === 0) return ring;
+      const tolerance = 0.000001;
+      const seen = new Set<string>();
+      const cleaned: Position[] = [];
+      for (let i = 0; i < ring.length; i++) {
+        const pt = ring[i];
+        if (!Array.isArray(pt) || pt.length < 2) continue;
+        const key = `${Math.round(pt[0] / tolerance)}:${Math.round(pt[1] / tolerance)}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        cleaned.push(pt);
+      }
+      // Ensure closed
+      return ensureClosedRing(cleaned);
+    };
+
+    const smoothedPolygons = polygonArray.map((poly) => {
+      return poly.map((ring) => {
+        const safeRing = ensureClosedRing(ring);
+        try {
+          const ls = lineString(safeRing);
+          const bez = bezierSpline(ls, {
+            resolution: this.config.bezier.resolution,
+            sharpness: this.config.bezier.sharpness,
+          });
+          const coords = (bez.geometry.coordinates as Position[]) ?? safeRing;
+          const closed = ensureClosedRing(coords);
+          const deduped = dedupeRing(closed);
+          return deduped.length >= 4 ? deduped : safeRing;
+        } catch (error) {
+          if (!isTestEnvironment()) {
+            console.warn('Bezier smoothing failed for ring, falling back to original:', error);
+          }
+          return safeRing;
+        }
+      });
     });
-    const bezierPoly = lineToPolygon(bezierLine);
-    return bezierPoly;
+
+    return this.getMultiPolygon(smoothedPolygons);
   }
 
   /**
@@ -1525,6 +1559,7 @@ export class TurfHelper {
 
       const cleaned: Position[] = [];
       const tolerance = 0.000001; // Very small tolerance for coordinate comparison
+      const seen = new Set<string>();
 
       for (let i = 0; i < coords.length; i++) {
         const current = coords[i];
@@ -1546,8 +1581,13 @@ export class TurfHelper {
         const latDiff = Math.abs(current[1] - next[1]);
         const lngDiff = Math.abs(current[0] - next[0]);
 
-        if (latDiff > tolerance || lngDiff > tolerance) {
+        // Drop exact/same-within-tolerance duplicates anywhere in the ring (not just consecutive)
+        const key = `${Math.round(current[0] / tolerance)}:${Math.round(current[1] / tolerance)}`;
+        const isDuplicate = seen.has(key);
+
+        if ((latDiff > tolerance || lngDiff > tolerance) && !isDuplicate) {
           cleaned.push(current);
+          seen.add(key);
         }
       }
 

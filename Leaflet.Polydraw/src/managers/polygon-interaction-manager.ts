@@ -1220,6 +1220,72 @@ export class PolygonInteractionManager {
     return Math.abs(a.lat - b.lat) < 1e-9 && Math.abs(a.lng - b.lng) < 1e-9;
   }
 
+  private isLatLngLiteral(value: unknown): value is L.LatLngLiteral {
+    return (
+      !!value &&
+      typeof value === 'object' &&
+      'lat' in value &&
+      'lng' in value &&
+      typeof (value as L.LatLngLiteral).lat === 'number' &&
+      typeof (value as L.LatLngLiteral).lng === 'number'
+    );
+  }
+
+  private getOrderedMarkers(featureGroup: L.FeatureGroup): L.Marker[] {
+    const markers: L.Marker[] = [];
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        markers.push(layer);
+      }
+    });
+    return markers.sort(
+      (a, b) =>
+        leafletAdapter.util.stamp(a as unknown as L.Layer) -
+        leafletAdapter.util.stamp(b as unknown as L.Layer),
+    );
+  }
+
+  private countLatLngNodes(latlngs: unknown): number {
+    if (!Array.isArray(latlngs)) return 0;
+    if (latlngs.length === 0) return 0;
+
+    if (this.isLatLngLiteral(latlngs[0])) {
+      return latlngs.length;
+    }
+
+    return latlngs.reduce((sum, item) => sum + this.countLatLngNodes(item), 0);
+  }
+
+  private rebuildLatLngStructure<T>(
+    original: T,
+    markerPositions: L.LatLng[],
+    markerIndex: { value: number },
+  ): T {
+    if (!Array.isArray(original)) {
+      return original;
+    }
+
+    if (original.length > 0 && this.isLatLngLiteral(original[0])) {
+      const ring = original as unknown as L.LatLngLiteral[];
+      const hasClosingPoint = ring.length > 1 && this.latLngEquals(ring[0], ring[ring.length - 1]);
+      const updated = ring.map((_pt, idx) => {
+        const pos = markerPositions[markerIndex.value] ?? ring[idx];
+        markerIndex.value += 1;
+        return leafletAdapter.createLatLng(pos.lat, pos.lng);
+      });
+
+      if (hasClosingPoint && updated.length > 1) {
+        updated[updated.length - 1] = updated[0];
+      }
+
+      return updated as unknown as T;
+    }
+
+    return (original as unknown as unknown[]).map((child) =>
+      this.rebuildLatLngStructure(child, markerPositions, markerIndex),
+    ) as unknown as T;
+  }
+
   private getOptimizationMetadataFromFeatureGroup(featureGroup: L.FeatureGroup): {
     level: number;
     original: number;
@@ -1428,12 +1494,9 @@ export class PolygonInteractionManager {
       }
       return;
     }
-    // console.log('PolygonInteractionManager markerDrag', featureGroup);
-    const newPos: L.LatLng[][][] = [];
-    let testarray: L.LatLng[] = [];
-    let hole: L.LatLng[][] = [];
-    const layers: L.Layer[] = featureGroup.getLayers();
-    const polygonLayer = layers.find((l) => l instanceof L.Polygon) as L.Polygon | undefined;
+    const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+      | L.Polygon
+      | undefined;
 
     if (!polygonLayer) {
       if (!isTestEnvironment()) {
@@ -1442,106 +1505,33 @@ export class PolygonInteractionManager {
       return;
     }
 
-    const posarrays = polygonLayer.getLatLngs() as L.LatLng[][][] | L.LatLng[][];
-    let length = 0;
-
-    // Filter out only markers from the layers (exclude polylines for holes)
-    const markers = layers.filter((layer): layer is L.Marker => layer instanceof L.Marker);
-
-    if (posarrays.length > 1) {
-      for (let index = 0; index < posarrays.length; index++) {
-        testarray = [];
-        hole = [];
-        if (index === 0) {
-          if ((posarrays[0] as unknown as L.LatLng[][] | L.LatLng[]).length > 1) {
-            for (
-              let i = 0;
-              i < (posarrays[0] as unknown as L.LatLng[][] | L.LatLng[]).length;
-              i++
-            ) {
-              for (
-                let j = 0;
-                j < ((posarrays[0] as unknown as L.LatLng[][])[i] as L.LatLng[]).length;
-                j++
-              ) {
-                if (markers[j]) {
-                  testarray.push(markers[j].getLatLng());
-                }
-              }
-              hole.push(testarray);
-            }
-          } else {
-            for (
-              let j = 0;
-              j < ((posarrays[0] as unknown as L.LatLng[][])[0] as L.LatLng[]).length;
-              j++
-            ) {
-              if (markers[j]) {
-                testarray.push(markers[j].getLatLng());
-              }
-            }
-            hole.push(testarray);
-          }
-          newPos.push(hole);
-        } else {
-          length += (posarrays[index - 1] as unknown as L.LatLng[][]).length;
-          for (
-            let j = length;
-            j < ((posarrays[index] as unknown as L.LatLng[][])[0] as L.LatLng[]).length + length;
-            j++
-          ) {
-            if (markers[j]) {
-              testarray.push(markers[j].getLatLng());
-            }
-          }
-          hole.push(testarray);
-          newPos.push(hole);
-        }
-      }
-    } else {
-      hole = [];
-      let length2 = 0;
-      for (let index = 0; index < (posarrays[0] as unknown as L.LatLng[][]).length; index++) {
-        testarray = [];
-        if (index === 0) {
-          if (((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length > 1) {
-            for (
-              let j = 0;
-              j < ((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length;
-              j++
-            ) {
-              if (markers[j]) {
-                testarray.push(markers[j].getLatLng());
-              }
-            }
-          } else {
-            for (
-              let j = 0;
-              j < ((posarrays[0] as unknown as L.LatLng[][])[0] as L.LatLng[]).length;
-              j++
-            ) {
-              if (markers[j]) {
-                testarray.push(markers[j].getLatLng());
-              }
-            }
-          }
-        } else {
-          length2 += ((posarrays[0] as unknown as L.LatLng[][])[index - 1] as L.LatLng[]).length;
-          for (
-            let j = length2;
-            j < ((posarrays[0] as unknown as L.LatLng[][])[index] as L.LatLng[]).length + length2;
-            j++
-          ) {
-            if (markers[j]) {
-              testarray.push(markers[j].getLatLng());
-            }
-          }
-        }
-        hole.push(testarray);
-      }
-      newPos.push(hole);
+    const markers = this.getOrderedMarkers(featureGroup);
+    if (markers.length === 0) {
+      return;
     }
-    polygonLayer.setLatLngs(newPos as unknown as L.LatLng[][] | L.LatLng[][][]);
+
+    const markerPositions = markers.map((m) => m.getLatLng());
+    const expectedVertices = this.countLatLngNodes(polygonLayer.getLatLngs());
+    if (markerPositions.length < expectedVertices) {
+      if (!isTestEnvironment()) {
+        console.warn(
+          'Not enough markers to rebuild polygon during drag. Expected:',
+          expectedVertices,
+          'got:',
+          markerPositions.length,
+        );
+      }
+      return;
+    }
+
+    const markerIndex = { value: 0 };
+    const updatedLatLngs = this.rebuildLatLngStructure(
+      polygonLayer.getLatLngs(),
+      markerPositions,
+      markerIndex,
+    );
+
+    polygonLayer.setLatLngs(updatedLatLngs as unknown as L.LatLng[][] | L.LatLng[][][]);
   }
 
   private async markerDragEnd(featureGroup: L.FeatureGroup): Promise<void> {
@@ -1561,66 +1551,59 @@ export class PolygonInteractionManager {
     // Remove the current feature group first to avoid duplication
     this.removeFeatureGroup(featureGroup);
 
+    const emitCleanedPolygon = (
+      polygon: Feature<Polygon | MultiPolygon>,
+      allowMerge: boolean,
+      opts: { optimizationLevel: number; originalOptimizationLevel: number },
+    ) => {
+      const cleaned = this.turfHelper.removeDuplicateVertices(polygon);
+      let shouldSplit = false;
+      try {
+        shouldSplit = this.turfHelper.hasKinks(cleaned);
+      } catch {
+        shouldSplit = false;
+      }
+
+      if (shouldSplit) {
+        // For marker drag we prefer keeping the polygon intact even if it self-intersects
+        this.emitPolygonUpdated({
+          operation: 'markerDrag',
+          polygon: cleaned,
+          allowMerge,
+          optimizationLevel: opts.optimizationLevel,
+          originalOptimizationLevel: opts.originalOptimizationLevel,
+        });
+        return;
+      }
+
+      this.emitPolygonUpdated({
+        operation: 'markerDrag',
+        polygon: cleaned,
+        allowMerge,
+        optimizationLevel: opts.optimizationLevel,
+        originalOptimizationLevel: opts.originalOptimizationLevel,
+      });
+    };
+
     if (featureCollection.features[0].geometry.type === 'MultiPolygon') {
       for (const element of featureCollection.features[0].geometry.coordinates) {
         const feature = this.turfHelper.getMultiPolygon([element]);
-
-        if (this.turfHelper.hasKinks(feature)) {
-          const unkink = this.turfHelper.getKinks(feature);
-          for (const polygon of unkink) {
-            // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
-            // but prevent unwanted styling changes for non-intersecting polygons
-            this.emitPolygonUpdated({
-              operation: 'markerDrag',
-              polygon: this.turfHelper.getTurfPolygon(polygon),
-              allowMerge: true, // Allow intelligent merging for intersections
-              intelligentMerge: true, // Flag for smart merging logic
-              optimizationLevel,
-              originalOptimizationLevel,
-            });
-          }
-        } else {
-          // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
-          // but prevent unwanted styling changes for non-intersecting polygons
-          this.emitPolygonUpdated({
-            operation: 'markerDrag',
-            polygon: feature,
-            allowMerge: true, // Allow intelligent merging for intersections
-            intelligentMerge: true, // Flag for smart merging logic
-            optimizationLevel,
-            originalOptimizationLevel,
-          });
-        }
+        // INTELLIGENT MERGING: Allow merging when polygon intersects with existing structures
+        emitCleanedPolygon(feature, true, {
+          optimizationLevel,
+          originalOptimizationLevel,
+        });
       }
     } else {
       const feature = this.turfHelper.getMultiPolygon([
         featureCollection.features[0].geometry.coordinates,
       ]);
 
-      if (this.turfHelper.hasKinks(feature)) {
-        const unkink = this.turfHelper.getKinks(feature);
-        for (const polygon of unkink) {
-          // CRITICAL FIX: Don't allow merging for marker drag operations
-          // This prevents incorrect styling when dragging vertices of polygons with holes
-          this.emitPolygonUpdated({
-            operation: 'markerDrag',
-            polygon: this.turfHelper.getTurfPolygon(polygon),
-            allowMerge: false, // Fixed: prevent merging during vertex drag
-            optimizationLevel,
-            originalOptimizationLevel,
-          });
-        }
-      } else {
-        // CRITICAL FIX: Don't allow merging for marker drag operations
-        // This prevents incorrect styling when dragging vertices of polygons with holes
-        this.emitPolygonUpdated({
-          operation: 'markerDrag',
-          polygon: feature,
-          allowMerge: false, // Fixed: prevent merging during vertex drag
-          optimizationLevel,
-          originalOptimizationLevel,
-        });
-      }
+      // CRITICAL FIX: Don't allow merging for marker drag operations
+      emitCleanedPolygon(feature, false, {
+        optimizationLevel,
+        originalOptimizationLevel,
+      });
     }
     this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
   }

@@ -35,6 +35,7 @@ export interface AddPolygonOptions {
   dynamicTolerance?: boolean;
   visualOptimizationLevel?: number;
   originalOptimizationLevel?: number;
+  skipKinkProcessing?: boolean;
 }
 
 export interface MutationManagerDependencies {
@@ -172,6 +173,7 @@ export class PolygonMutationManager {
       noMerge: !allowMerge,
       visualOptimizationLevel: data.optimizationLevel || 0,
       originalOptimizationLevel: data.originalOptimizationLevel,
+      skipKinkProcessing: data.operation === 'markerDrag',
     };
     await this.addPolygon(data.polygon, options);
   }
@@ -255,7 +257,7 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygon');
-    const { polygons, skipMerge } = this.preparePolygonsForAddition(latlngs);
+    const { polygons, skipMerge } = this.preparePolygonsForAddition(latlngs, options);
     const aggregatedFeatureGroups: L.FeatureGroup[] = [];
 
     for (const polygon of polygons) {
@@ -310,7 +312,10 @@ export class PolygonMutationManager {
     }
   }
 
-  private preparePolygonsForAddition(latlngs: Feature<Polygon | MultiPolygon>): {
+  private preparePolygonsForAddition(
+    latlngs: Feature<Polygon | MultiPolygon>,
+    options: AddPolygonOptions = {},
+  ): {
     polygons: Feature<Polygon | MultiPolygon>[];
     skipMerge: boolean;
   } {
@@ -327,7 +332,9 @@ export class PolygonMutationManager {
       }
     }
 
-    if (!this.config.kinks && hasSelfIntersections) {
+    const skipKinks = options.skipKinkProcessing === true;
+
+    if (!skipKinks && !this.config.kinks && hasSelfIntersections) {
       try {
         const kinkFreePolygons = this.turfHelper.getKinks(latlngs);
 

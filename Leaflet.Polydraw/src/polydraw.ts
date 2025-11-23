@@ -19,6 +19,7 @@ import { EventAdapter } from './compatibility/event-adapter';
 import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
 import { deepMerge } from './utils/config-merge.util';
+import { applySvgIcon } from './utils/svg-icon.util';
 
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
@@ -1470,16 +1471,7 @@ class Polydraw extends L.Control {
   }
 
   private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {
-    button.innerHTML = svgMarkup;
-    const svgElement = button.querySelector('svg');
-    if (!svgElement) return;
-
-    svgElement.setAttribute('width', '24');
-    svgElement.setAttribute('height', '24');
-    (svgElement as unknown as HTMLElement).style.pointerEvents = 'none';
-    svgElement.querySelectorAll('*').forEach((el) => {
-      (el as HTMLElement).style.pointerEvents = 'none';
-    });
+    applySvgIcon(button, svgMarkup);
   }
 
   private warnIfUsingDeprecatedConfiguration(config?: Partial<PolydrawConfig>) {
