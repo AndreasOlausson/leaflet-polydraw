@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Missing runtime usage for `showArea`, `showPerimeter`, `areaLabel`, and `perimeterLabel` has been wired up so toggles take effect.
 - Bounding-box midpoint markers for predefined bounding boxes now respect the config (`boundingBox.addMidPointMarkers`).
+- Removed metadata from all SVG icons to reduce file size and ensure clean, editor-neutral assets.
 
 ## [1.1.2] - 2025-11-06
 
