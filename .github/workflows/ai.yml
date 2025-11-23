@@ -28,18 +28,18 @@ jobs:
           set -e
           BASE_BRANCH="${{ github.base_ref }}"
 
-          # 1. Spara diffen till en fil, exkludera "skräp" som tar upp tokens
-          # ':(exclude)...' är standard git pathspec
+          # 1. Save the diff to a file, excluding "noise" files to save tokens
+          # ':(exclude)...' is standard git pathspec
           git diff "origin/${BASE_BRANCH}...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)*.svg' > pr.diff
 
-          # Kontrollera om filen är tom (inga relevanta ändringar)
+          # Check if file is empty (no relevant changes)
           if [ ! -s pr.diff ]; then
             echo "No relevant changes to review."
             exit 0
           fi
 
-          # (Optional) Enkel check för att undvika extremt stora payloads
-          # Om diffen är större än ca 100KB (anpassa efter behov)
+          # (Optional) Simple check to avoid extremely large payloads
+          # If diff is larger than approx 100KB (adjust as needed)
           DIFF_SIZE=$(wc -c < pr.diff)
           if [ "$DIFF_SIZE" -gt 100000 ]; then
              echo "Diff is too large ($DIFF_SIZE bytes) for AI review. Truncating..."
@@ -49,14 +49,14 @@ jobs:
 
           SYSTEM_PROMPT="You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback."
 
-          # Vi förbereder texten för användar-prompten, men läser in diffen via jq --rawfile
+          # Prepare text for user prompt, but read the diff via jq --rawfile
           USER_PROMPT_INTRO="Review this diff and comment on potential issues, improvements, and risks:\n\n"
 
-          # Funktion som bygger JSON säkert även för jättestora diffar
+          # Function to build JSON safely even for very large diffs
           build_payload() {
             local model="$1"
-            # --rawfile diff_content pr.diff läser filen direkt in i en variabel i jq
-            # Detta undviker "Argument list too long" i bash
+            # --rawfile diff_content pr.diff reads file directly into a jq variable
+            # This avoids "Argument list too long" errors in bash
             jq -n \
               --arg model "$model" \
               --arg system "$SYSTEM_PROMPT" \
@@ -79,17 +79,17 @@ jobs:
               -d "$payload"
           }
 
-          # Notera: gpt-5.1 finns inte än, så detta kommer trigga din fallback
+          # Primary model (high capability) vs Fallback (higher limits/availability)
           PRIMARY_MODEL="gpt-5.1"
-          FALLBACK_MODEL="gpt-4o" # eller gpt-4-turbo / gpt-3.5-turbo
+          FALLBACK_MODEL="gpt-5-mini"
 
           echo "Attempting review with $PRIMARY_MODEL..."
           PRIMARY_PAYLOAD=$(build_payload "$PRIMARY_MODEL")
           RESPONSE=$(call_api "$PRIMARY_PAYLOAD")
 
-          # Din fallback-logik (perfekt implementerad)
+          # Fallback logic: If primary fails (e.g., rate limits or model not found)
           if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
-            echo "Primary model failed (likely not found), switching to fallback: $FALLBACK_MODEL"
+            echo "Primary model failed, switching to fallback: $FALLBACK_MODEL"
             FALLBACK_PAYLOAD=$(build_payload "$FALLBACK_MODEL")
             RESPONSE=$(call_api "$FALLBACK_PAYLOAD")
           fi
@@ -107,5 +107,5 @@ jobs:
         if: ${{ secrets.OPENAI_API_KEY != '' && hashFiles('review.md') != '' }}
         uses: marocchino/sticky-pull-request-comment@v2
         with:
-          header: ai-review # Bra om du vill kunna uppdatera kommentaren senare
+          header: ai-review # Useful if you want to update the comment later
           path: review.md
