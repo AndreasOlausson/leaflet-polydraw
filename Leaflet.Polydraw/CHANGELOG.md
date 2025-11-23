@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Kink handling for polygon merges: self-intersecting polygons are split/merged correctly without forcing the user to toggle `kinks`.
 - Playwright end-to-end suite replaces the old Cypress harness and now runs as part of the repo (first tests live under `test/playwright`).
 - Visual optimization toggle button now ships with dedicated show/hide icons and state-aware tooltips, so the menu immediately reflects whether extra elbows are currently visible.
+- Added automatic AI-powered pull request reviews using ChatGPT (gpt-5.1) to improve code quality and provide consistent feedback.
 
 ### Changed
 
