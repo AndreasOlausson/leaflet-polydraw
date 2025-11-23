@@ -6,7 +6,6 @@ on:
 
 jobs:
   ai-review:
-    # Körs bara om det är "rätt" repo och målet är main
     if: >
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main'
@@ -16,6 +15,10 @@ jobs:
       contents: read
       pull-requests: write
 
+    # Move secret to job-level env to satisfy linter/security checks
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -23,25 +26,22 @@ jobs:
           fetch-depth: 0
 
       - name: Query AI for review
-        # FIX: Inga ${{ }} här i 'if'
-        if: secrets.OPENAI_API_KEY != ''
-        env:
-          # Här MÅSTE vi dock ha ${{ }} för att sätta miljövariabeln
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        # Use env context here to avoid linter errors with secrets in 'if'
+        if: env.OPENAI_API_KEY != ''
         run: |
           set -e
           BASE_BRANCH="${{ github.base_ref }}"
 
-          # 1. Hämta diff, exkludera låsfiler och annat skräp
+          # 1. Diff against base branch, excluding lock files and assets to save tokens
           git diff "origin/${BASE_BRANCH}...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)*.svg' > pr.diff
 
-          # Avbryt om diffen är tom
+          # Exit if no relevant changes found
           if [ ! -s pr.diff ]; then
             echo "No relevant changes to review."
             exit 0
           fi
 
-          # 2. Storlekskontroll (trunkera om över 100KB)
+          # 2. Size check: Truncate if diff is too large to prevent payload errors
           DIFF_SIZE=$(wc -c < pr.diff)
           if [ "$DIFF_SIZE" -gt 100000 ]; then
              echo "Diff is too large ($DIFF_SIZE bytes). Truncating..."
@@ -52,9 +52,11 @@ jobs:
           SYSTEM_PROMPT="You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback."
           USER_PROMPT_INTRO="Review this diff and comment on potential issues, improvements, and risks:\n\n"
 
-          # 3. Funktion för att bygga JSON säkert med jq
+          # 3. Build JSON payload safely using jq
           build_payload() {
             local model="$1"
+            # Using --rawfile reads the file content directly into a jq variable,
+            # avoiding "Argument list too long" errors in bash.
             jq -n \
               --arg model "$model" \
               --arg system "$SYSTEM_PROMPT" \
@@ -77,7 +79,8 @@ jobs:
               -d "$payload"
           }
 
-          # 4. Modell-val och Fallback-logik
+          # 4. Model selection with fallback logic
+          # gpt-5.1 has a lower TPM limit (30k), so we fallback to mini if needed.
           PRIMARY_MODEL="gpt-5.1"
           FALLBACK_MODEL="gpt-5-mini"
 
@@ -85,26 +88,25 @@ jobs:
           PRIMARY_PAYLOAD=$(build_payload "$PRIMARY_MODEL")
           RESPONSE=$(call_api "$PRIMARY_PAYLOAD")
 
-          # Om primär modell misslyckas (t.ex. rate limit eller 404), kör fallback
+          # If primary model fails (e.g. rate limit or not found), switch to fallback
           if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
             echo "Primary model failed. Switching to fallback: $FALLBACK_MODEL"
             FALLBACK_PAYLOAD=$(build_payload "$FALLBACK_MODEL")
             RESPONSE=$(call_api "$FALLBACK_PAYLOAD")
           fi
 
-          # Om det fortfarande är fel -> avsluta med felkod
+          # Final error check
           if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
             echo "Error from OpenAI API:"
             echo "$RESPONSE" | jq '.'
             exit 1
           fi
 
-          # Spara svaret
+          # Save success response
           echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
 
       - name: Post review as PR comment
-        # FIX: Inga ${{ }} här heller i 'if'
-        if: secrets.OPENAI_API_KEY != '' && hashFiles('review.md') != ''
+        if: env.OPENAI_API_KEY != '' && hashFiles('review.md') != ''
         uses: marocchino/sticky-pull-request-comment@v2
         with:
           header: ai-review
