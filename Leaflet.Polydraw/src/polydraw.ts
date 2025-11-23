@@ -10,8 +10,6 @@ import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import { HistoryManager } from './managers/history-manager';
-import type { HistorySnapshot } from './managers/history-manager';
-import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
@@ -20,7 +18,8 @@ import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
 import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
-
+import type { HistorySnapshot } from './managers/history-manager';
+import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
 
 // Create a local interface that extends L.Map for our specific needs
