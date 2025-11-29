@@ -5,7 +5,7 @@
 
 ## Default Configuration
 
-```javascript
+```typescript
 {
   mergePolygons: true,
   kinks: false,
@@ -124,12 +124,15 @@
       infoMarker: false,
     },
     visualOptimization: {
+      toleranceMin: 0.000005,
+      toleranceMax: 0.005,
+      curve: 1.35,
       sharpAngleThreshold: 30,
       thresholdBoundingBox: 0.05,
       thresholdDistance: 0.05,
       useDistance: true,
       useBoundingBox: false,
-      useAngles: false,
+      useAngles: true,
     },
   },
   polyLineOptions: {
@@ -195,6 +198,9 @@
     rotate: {
       enabled: true,
     },
+    visualOptimizationToggle: {
+      enabled: true,
+    },
   },
   boundingBox: {
     addMidPointMarkers: true,
@@ -254,7 +260,7 @@ The configuration system uses deep merging, which means you only need to specify
 
 **Example:**
 
-```javascript
+```typescript
 // Only override specific colors - everything else uses defaults
 const polydraw = L.control.polydraw({
   config: {
@@ -382,7 +388,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;thresholdDistance                          | number  | `0.05`                            | (Deprecated) Previous distance threshold; no longer used                                                                                                 |
 | &nbsp;&nbsp;&nbsp;&nbsp;useDistance                                | boolean | `true`                            | (Deprecated) Legacy distance toggle                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;useBoundingBox                             | boolean | `false`                           | (Deprecated) Legacy bounding-box toggle                                                                                                                  |
-| &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `false`                           | (Deprecated) Legacy angle toggle                                                                                                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;useAngles                                  | boolean | `true`                            | Angle-based elbow visibility toggle                                                                                                                      |
 | **polyLineOptions**                                                | object  |                                   | Polyline styling options                                                                                                                                 |
 | &nbsp;&nbsp;opacity                                                | number  | `1`                               | Polyline opacity                                                                                                                                         |
 | &nbsp;&nbsp;weight                                                 | number  | `2`                               | Polyline weight in pixels                                                                                                                                |
@@ -436,6 +442,8 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable scale operation                                                                                                                                   |
 | &nbsp;&nbsp;**rotate**                                             | object  |                                   | Rotate operation configuration                                                                                                                           |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable rotate operation                                                                                                                                  |
+| &nbsp;&nbsp;**visualOptimizationToggle**                           | object  |                                   | Visual optimization toggle in marker menu                                                                                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable the visual optimization toggle button in the polygon menu                                                                                         |
 | **colors**                                                         | object  |                                   | Color configuration                                                                                                                                      |
 | &nbsp;&nbsp;**dragPolygons**                                       | object  |                                   | Drag polygon colors                                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;subtract                                   | string  | `"#D9460F"`                       | Color for subtract mode during drag                                                                                                                      |
@@ -543,7 +551,7 @@ and should generally be kept very small (e.g., 0.0001–0.001) to avoid distorti
 
 Load configuration from an external JSON file:
 
-```javascript
+```typescript
 const polyDrawControl = L.control.polydraw({
   configPath: "path/to/your/polydraw.config.json",
 });
@@ -551,7 +559,7 @@ const polyDrawControl = L.control.polydraw({
 
 You can also combine external configuration with inline configuration. Inline configuration takes precedence:
 
-```javascript
+```typescript
 const polyDrawControl = L.control.polydraw({
   configPath: "config/polydraw.json",
   config: {

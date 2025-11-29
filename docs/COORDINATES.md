@@ -5,7 +5,7 @@ The `addPredefinedPolygon()` method intelligently interprets both **object**, **
 
 **Supported Formats:**
 
-```javascript
+```typescript
 // Object formats
 { lat: 59.903, lng: 10.724 }
 { latitude: 59.903, longitude: 10.724 }
@@ -25,7 +25,7 @@ The `addPredefinedPolygon()` method intelligently interprets both **object**, **
 
 **Usage Example:**
 
-```javascript
+```typescript
 // All these formats work automatically
 polydraw.addPredefinedPolygon([
   [
@@ -51,7 +51,7 @@ polydraw.addPredefinedPolygon([
 
 For working with standard GeoJSON data (from APIs, files, or GIS systems), use `addPredefinedGeoJSONs()` instead:
 
-```javascript
+```typescript
 // GeoJSON uses [lng, lat] order (standard)
 const geojsonFeature = {
   type: "Feature",

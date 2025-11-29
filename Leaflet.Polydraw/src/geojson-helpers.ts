@@ -235,16 +235,31 @@ export function area(feature: Feature<Polygon | MultiPolygon>): number {
   let totalArea = 0;
 
   for (const polygon of coords) {
+    // Outer ring minus holes
+    // Use shoelace in degrees; caller should convert to meters if needed.
     for (let i = 0; i < polygon.length; i++) {
       const ring = polygon[i];
       const ringArea = calculateRingArea(ring);
-
-      // First ring is exterior (positive area), subsequent rings are holes (negative area)
-      totalArea += i === 0 ? Math.abs(ringArea) : -Math.abs(ringArea);
+      totalArea += i === 0 ? ringArea : -ringArea;
     }
   }
 
   return Math.abs(totalArea);
+}
+
+/**
+ * Shoelace area in degrees² for a single ring. Expects closed ring.
+ */
+function calculateRingArea(ring: Position[]): number {
+  if (!ring || ring.length < 3) return 0;
+  let area = 0;
+  const n = ring.length;
+  for (let i = 0; i < n - 1; i++) {
+    const [x1, y1] = ring[i];
+    const [x2, y2] = ring[i + 1];
+    area += x1 * y2 - x2 * y1;
+  }
+  return 0.5 * area;
 }
 
 /**
@@ -277,22 +292,4 @@ export function centroid(feature: Feature<Polygon | MultiPolygon>): Feature<Poin
  */
 function toRadians(degrees: number): number {
   return degrees * MATH.DEG_TO_RAD;
-}
-
-/**
- * Helper function to calculate the area of a ring using the Shoelace formula
- */
-function calculateRingArea(ring: Position[]): number {
-  let area = 0;
-  const n = ring.length;
-
-  for (let i = 0; i < n - 1; i++) {
-    const [x1, y1] = ring[i];
-    const [x2, y2] = ring[i + 1];
-    area += x1 * y2 - x2 * y1;
-  }
-
-  // Convert to square meters (approximate)
-  // This is a simplified conversion - for precise calculations, you'd need to account for projection
-  return Math.abs(area) * 0.5 * Math.pow(EARTH_RADIUS.MEAN_METERS * MATH.DEG_TO_RAD, 2);
 }

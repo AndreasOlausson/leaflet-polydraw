@@ -8,7 +8,7 @@ For most use cases, simply add the plugin and use the built-in buttons. However,
 
 Add polygons programmatically with smart coordinate auto-detection (useful for loading saved data).
 
-```javascript
+```typescript
 // Supports multiple coordinate formats automatically
 const polygon = [
   [
@@ -34,7 +34,7 @@ polydraw.addPredefinedPolygon(polygon);
 
 Add polygons from GeoJSON format (useful for loading data from APIs, files, or GIS systems).
 
-```javascript
+```typescript
 // Single Polygon
 const polygonFeature = {
   type: "Feature",
@@ -104,7 +104,7 @@ await polydraw.addPredefinedGeoJSONs([polygonFeature], {
 
 Get all polygons for data export.
 
-```javascript
+```typescript
 const polygons = polydraw.getAllPolygons();
 // Use for saving, exporting, or processing polygon data
 ```
@@ -115,7 +115,7 @@ const polygons = polydraw.getAllPolygons();
 
 Programmatically control drawing modes (the buttons do this automatically).
 
-```javascript
+```typescript
 import { DrawMode } from "leaflet-polydraw";
 polydraw.setDrawMode(DrawMode.Add); // Same as clicking the draw button
 ```
@@ -124,7 +124,7 @@ polydraw.setDrawMode(DrawMode.Add); // Same as clicking the draw button
 
 Update configuration after initialization.
 
-```javascript
+```typescript
 polydraw.configurate({
   polygonOptions: { color: "#ff0000" },
 });

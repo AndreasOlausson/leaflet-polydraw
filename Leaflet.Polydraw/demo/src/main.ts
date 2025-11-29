@@ -143,6 +143,60 @@ const multipleSimplePolygons: L.LatLng[][][] = [
   ],
 ];
 
+// Star/compass base
+const starBase: L.LatLngLiteral[] = [
+  { lat: 58.001914, lng: 15.344043 },
+  { lat: 58.006914, lng: 15.348043 },
+  { lat: 58.008914, lng: 15.340043 },
+  { lat: 58.010914, lng: 15.348043 },
+  { lat: 58.014914, lng: 15.344043 },
+  { lat: 58.012914, lng: 15.352043 },
+  { lat: 58.016914, lng: 15.356043 },
+  { lat: 58.012914, lng: 15.360043 },
+  { lat: 58.014914, lng: 15.368043 },
+  { lat: 58.010914, lng: 15.364043 },
+  { lat: 58.008914, lng: 15.372043 },
+  { lat: 58.006914, lng: 15.364043 },
+  { lat: 58.001914, lng: 15.368043 },
+  { lat: 58.003914, lng: 15.360043 },
+  { lat: 57.999914, lng: 15.356043 },
+  { lat: 58.003914, lng: 15.352043 },
+];
+
+const doubleElbow = (ring: L.LatLngLiteral[]): L.LatLngLiteral[] => {
+  const result: L.LatLngLiteral[] = [];
+  for (let i = 0; i < ring.length; i++) {
+    const p1 = ring[i];
+    const p2 = ring[(i + 1) % ring.length];
+    result.push(p1);
+    result.push({
+      lat: (p1.lat + p2.lat) / 2,
+      lng: (p1.lng + p2.lng) / 2,
+    });
+  }
+  return result;
+};
+
+const buildStar = (iterations: number): L.LatLng[][][] => {
+  let ring = [...starBase];
+  for (let i = 0; i < iterations; i++) {
+    ring = doubleElbow(ring);
+  }
+  // close the ring
+  ring.push(ring[0]);
+  const closedRing = ring.map((pt) => leafletAdapter.createLatLng(pt.lat, pt.lng));
+  if (
+    closedRing[0].lat !== closedRing[closedRing.length - 1].lat ||
+    closedRing[0].lng !== closedRing[closedRing.length - 1].lng
+  ) {
+    closedRing.push(closedRing[0]);
+  }
+  return [[closedRing]];
+};
+
+const star16 = buildStar(0); // 16 points + closure
+const star1024 = buildStar(6); // 16 * 2^6 = 1024 points + closure
+
 const map = leafletAdapter.createMap('map').setView([58.402514, 15.606188], 10);
 
 leafletAdapter
@@ -3764,6 +3818,8 @@ const linkoping: L.LatLng[][][] = [
 
 type SampleKey =
   | 'octagon'
+  | 'star16'
+  | 'star1024'
   | 'squareHole'
   | 'overlap'
   | 'linkoping-0'
@@ -3781,6 +3837,14 @@ interface SampleDefinition {
 }
 
 const sampleLibrary: Record<SampleKey, SampleDefinition> = {
+  star16: {
+    coordinates: star16,
+    viewport: { center: leafletAdapter.createLatLng(58.01, 15.35), zoom: 12 },
+  },
+  star1024: {
+    coordinates: star1024,
+    viewport: { center: leafletAdapter.createLatLng(58.01, 15.35), zoom: 12 },
+  },
   octagon: {
     coordinates: octagon,
     visualOptimizationLevel: 2,

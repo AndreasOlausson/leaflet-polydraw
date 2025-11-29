@@ -2,7 +2,7 @@
 
 ## Basic Usage
 
-```javascript
+```typescript
 import * as L from "leaflet";
 import Polydraw from "leaflet-polydraw";
 
@@ -34,7 +34,7 @@ const octagon = [
   ],
 ];
 
-polydraw.addPredefinedPolygon(octagon);
+await polydraw.addPredefinedPolygon(octagon);
 
 // Or load from GeoJSON format (useful for API data)
 const geojsonPolygon = {
@@ -66,7 +66,7 @@ await polydraw.addPredefinedGeoJSONs([geojsonPolygon]);
 Polydraw can be fully customized using a configuration object.  
 For example:
 
-```js
+```typescript
 import Polydraw from "leaflet-polydraw";
 
 const polyDrawControl = L.control

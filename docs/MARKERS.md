@@ -31,7 +31,7 @@
 
 Customize marker positions using the `MarkerPosition` enum:
 
-```javascript
+```typescript
 const polyDrawControl = L.control.polydraw({
   config: {
     markers: {
@@ -58,7 +58,7 @@ This configuration gives this result.
 
 ![Marker Positions](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/star.png)
 
-```javascript
+```typescript
 MarkerPosition {
     SouthWest = 0,
     South = 1,

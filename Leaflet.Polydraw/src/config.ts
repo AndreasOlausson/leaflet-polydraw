@@ -30,6 +30,7 @@ export const defaultConfig: PolydrawConfig = {
       },
       hideMarkersOnDrag: true,
     },
+    q,
   },
   edgeDeletion: {
     keys: {
@@ -161,7 +162,7 @@ export const defaultConfig: PolydrawConfig = {
   simplification: {
     mode: 'simple',
     simple: {
-      tolerance: 0.001,
+      tolerance: 0.000001,
       highQuality: false,
     },
     dynamic: {

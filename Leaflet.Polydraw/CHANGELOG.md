@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `markers.visualOptimization` now exposes `toleranceMin`, `toleranceMax`, and `curve` to tune the level-to-tolerance mapping (legacy fields remain for backward compatibility but are ignored).
+  Simplification now scales tolerance by zoom and shape size, keeping vertex reduction consistent whether you draw zoomed in or out.
 - Documentation updates for polygon creation methods, deprecated config blocks, and simplification behavior.
 - Tracer styling obeys the configured colors, so draw mode renders green polylines and subtract mode renders red (matching user expectations).
 - Reporting location unit toggles and labels now honor the config across the demo and plugin, avoiding misleading UI text.

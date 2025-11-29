@@ -49,6 +49,28 @@ Create precise polygons by clicking to place each vertex. Perfect for:
 
 You can also drag markers to adjust the shape and delete them by holding the modifier key (Cmd/Ctrl) and clicking on a marker, just like with regular polygon editing.
 
+## Point-to-Point Subtract
+
+[![Point-to-Point Subtract](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)
+
+Use point-to-point with subtraction to cut precise holes or remove segments:
+
+- Click to place each vertex of the subtracting shape
+- Complete the ring (click first vertex or double-click/tap)
+- The ring subtracts from existing polygons, creating holes or splits
+
+This mode mirrors point-to-point drawing but applies the shape as a subtraction instead of an addition.
+
+## Undo & Redo
+
+[![Undo and Redo](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-drop.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-drop.gif)
+
+Step backward or forward through edits:
+
+- Undo/redo polygon drawing, subtraction, vertex edits, and transforms
+- Accessible via toolbar buttons or keyboard shortcuts
+- History is capped to keep memory under control (`config.maxHistorySize`)
+
 ## Smart Polygon Merging
 
 [![Smart Merging](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/merge.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/merge.gif)

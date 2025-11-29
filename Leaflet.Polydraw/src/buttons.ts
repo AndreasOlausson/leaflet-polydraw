@@ -1,8 +1,7 @@
 import * as L from 'leaflet';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
-import type { EventManager } from './managers/event-manager';
-import type { HistoryManager } from './managers/history-manager';
+import { applySvgIcon } from './utils/svg-icon.util';
 import iconPolydraw2Svg from './icons/icon-polydraw2.svg?raw';
 import iconP2PSubtractSvg from './icons/icon-p2p-subtract.svg?raw';
 import iconDrawSvg from './icons/icon-draw.svg?raw';
@@ -12,24 +11,19 @@ import iconEraseSvg from './icons/icon-erase.svg?raw';
 import iconCollapseSvg from './icons/icon-collapse.svg?raw';
 import iconUndoSvg from './icons/icon-undo.svg?raw';
 import iconRedoSvg from './icons/icon-redo.svg?raw';
-import { applySvgIcon } from './utils/svg-icon.util';
-
-const sanitizeSvg = (svg: string): string =>
-  svg
-    .replace(/<\?xml[^>]*\?>\s*/g, '')
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .trim();
+import type { EventManager } from './managers/event-manager';
+import type { HistoryManager } from './managers/history-manager';
 
 const icons = {
-  activate: sanitizeSvg(iconPolydraw2Svg),
-  draw: sanitizeSvg(iconDrawSvg),
-  subtract: sanitizeSvg(iconSubtractSvg),
-  p2p: sanitizeSvg(iconP2PDrawSvg),
-  p2pSubtract: sanitizeSvg(iconP2PSubtractSvg),
-  erase: sanitizeSvg(iconEraseSvg),
-  collapse: sanitizeSvg(iconCollapseSvg),
-  undo: sanitizeSvg(iconUndoSvg),
-  redo: sanitizeSvg(iconRedoSvg),
+  activate: iconPolydraw2Svg.trim(),
+  draw: iconDrawSvg.trim(),
+  subtract: iconSubtractSvg.trim(),
+  p2p: iconP2PDrawSvg.trim(),
+  p2pSubtract: iconP2PSubtractSvg.trim(),
+  erase: iconEraseSvg.trim(),
+  collapse: iconCollapseSvg.trim(),
+  undo: iconUndoSvg.trim(),
+  redo: iconRedoSvg.trim(),
 };
 
 const setButtonIcon = (button: HTMLAnchorElement, svgMarkup: string): void => {
@@ -169,7 +163,7 @@ export function createButtons(
   // Redo button - always available
   const redo = leafletAdapter.domUtil.create('a', 'icon-redo', subContainer) as HTMLAnchorElement;
   redo.href = '#';
-  redo.title = 'Redo (Ctrl+Y / Cmd+Y)';
+  redo.title = 'Redo (Ctrl+Y / Cmd+Shift+Z)';
   setButtonIcon(redo, icons.redo);
   L.DomEvent.on(redo, 'mousedown', L.DomEvent.stopPropagation);
   L.DomEvent.on(redo, 'touchstart', L.DomEvent.stopPropagation);
@@ -211,22 +205,4 @@ export function createButtons(
 
   // Initialize button states
   updateHistoryButtonStates(historyManager.canUndo(), historyManager.canRedo());
-
-  // Debug buttons to test autoAddPolygon(s)
-
-  // const start = L.DomUtil.create('a', 'icon-start', subContainer);
-  // start.href = '#';
-  // start.title = 'Start';
-  // start.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="5,5 5,15 15,10" /></svg>';
-  // if (onStartClick) {
-  //   L.DomEvent.on(start, 'click', L.DomEvent.stop).on(start, 'click', onStartClick);
-  // }
-
-  // const hole = L.DomUtil.create('a', 'icon-hole', subContainer);
-  // hole.href = '#';
-  // hole.title = 'Hole';
-  // hole.innerHTML = '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7" /><circle cx="10" cy="10" r="3" fill="white" /></svg>';
-  // if (onHoleClick) {
-  //   L.DomEvent.on(hole, 'click', L.DomEvent.stop).on(hole, 'click', onHoleClick);
-  // }
 }

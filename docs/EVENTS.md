@@ -6,7 +6,7 @@ Polydraw emits various events that allow you to respond to user interactions and
 
 Listen for drawing mode changes to update your UI or trigger specific behaviors:
 
-```javascript
+```typescript
 polydraw.onDrawModeChanged((mode) => {
   console.log("Draw mode changed to:", mode);
 
@@ -29,7 +29,7 @@ polydraw.onDrawModeChanged((mode) => {
 
 Track polygon creation, modification, and deletion:
 
-```javascript
+```typescript
 // Polygon created
 map.on("polygon:created", (e) => {
   console.log("New polygon created:", e.polygon);
@@ -56,7 +56,7 @@ map.on("polygon:deleted", (e) => {
 
 Monitor polygon dragging for real-time updates or validation:
 
-```javascript
+```typescript
 // Drag start - useful for showing drag indicators
 map.on("polygon:dragstart", (e) => {
   console.log("Drag started:", e.polygon);
@@ -85,7 +85,7 @@ map.on("polygon:drag", (e) => {
 
 Track automatic merging and hole creation:
 
-```javascript
+```typescript
 // Polygons merged automatically
 map.on("polygons:merged", (e) => {
   console.log("Polygons merged:", e.originalPolygons, "→", e.resultPolygon);
@@ -103,7 +103,7 @@ map.on("polygon:hole-created", (e) => {
 
 **Auto-save functionality:**
 
-```javascript
+```typescript
 map.on("polygon:created polygon:modified polygon:dragend", (e) => {
   debounce(() => saveToLocalStorage(polydraw.getAllPolygons()), 1000);
 });
@@ -111,7 +111,7 @@ map.on("polygon:created polygon:modified polygon:dragend", (e) => {
 
 **Validation and feedback:**
 
-```javascript
+```typescript
 map.on("polygon:created", (e) => {
   const area = calculateArea(e.polygon);
   if (area < MIN_AREA) {
@@ -123,7 +123,7 @@ map.on("polygon:created", (e) => {
 
 **Analytics tracking:**
 
-```javascript
+```typescript
 polydraw.onDrawModeChanged((mode) => {
   analytics.track("draw_mode_changed", { mode: mode });
 });

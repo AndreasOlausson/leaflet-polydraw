@@ -127,7 +127,7 @@ If you're upgrading from Leaflet v1.x to v2.x, Leaflet.Polydraw will continue to
 
 #### Before (v1.x style)
 
-```javascript
+```typescript
 const map = L.map('map');
 const marker = L.marker([51.5, -0.09]);
 const polydraw = L.control.polydraw();
@@ -135,7 +135,7 @@ const polydraw = L.control.polydraw();
 
 #### After (v2.x style)
 
-```javascript
+```typescript
 import { Map, Marker } from 'leaflet';
 import Polydraw from 'leaflet-polydraw';
 

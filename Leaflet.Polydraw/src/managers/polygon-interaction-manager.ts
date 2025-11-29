@@ -1557,31 +1557,37 @@ export class PolygonInteractionManager {
       opts: { optimizationLevel: number; originalOptimizationLevel: number },
     ) => {
       const cleaned = this.turfHelper.removeDuplicateVertices(polygon);
-      let shouldSplit = false;
-      try {
-        shouldSplit = this.turfHelper.hasKinks(cleaned);
-      } catch {
-        shouldSplit = false;
+      const parts: Feature<Polygon | MultiPolygon>[] = [];
+
+      if (!this.config.kinks) {
+        try {
+          const split = this.turfHelper.getKinks(cleaned);
+          if (split && split.length > 0) {
+            parts.push(...split);
+          }
+        } catch {
+          // ignore and fall back
+        }
       }
 
-      if (shouldSplit) {
-        // For marker drag we prefer keeping the polygon intact even if it self-intersects
+      if (parts.length === 0) {
+        if (cleaned.geometry.type === 'MultiPolygon') {
+          cleaned.geometry.coordinates.forEach((coords) =>
+            parts.push(this.turfHelper.getMultiPolygon([coords])),
+          );
+        } else {
+          parts.push(cleaned);
+        }
+      }
+
+      parts.forEach((part) => {
         this.emitPolygonUpdated({
           operation: 'markerDrag',
-          polygon: cleaned,
+          polygon: part,
           allowMerge,
           optimizationLevel: opts.optimizationLevel,
           originalOptimizationLevel: opts.originalOptimizationLevel,
         });
-        return;
-      }
-
-      this.emitPolygonUpdated({
-        operation: 'markerDrag',
-        polygon: cleaned,
-        allowMerge,
-        optimizationLevel: opts.optimizationLevel,
-        originalOptimizationLevel: opts.originalOptimizationLevel,
       });
     };
 

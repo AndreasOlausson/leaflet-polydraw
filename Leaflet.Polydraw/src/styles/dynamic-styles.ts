@@ -12,6 +12,8 @@ export function injectDynamicStyles(config: PolydrawConfig): void {
     .leaflet-polydraw-p2p-marker { background-color: ${config.colors.styles.p2pMarker.backgroundColor}; border: 2px solid ${config.colors.styles.p2pMarker.borderColor}; border-radius: 50%; box-sizing: border-box; }
     .leaflet-polydraw-p2p-first-marker { position: relative; }
     .leaflet-polydraw-p2p-first-marker:hover { transform: scale(1.5); transition: all 0.2s ease; }
+    .leaflet-polydraw-p2p-first-marker-ready[data-p2p-mode="add"]:hover { background-color: ${config.colors.p2p.closingMarker}; border-color: ${config.colors.p2p.closingMarker}; cursor: pointer; }
+    .leaflet-polydraw-p2p-first-marker-ready[data-p2p-mode="subtract"]:hover { background-color: ${config.colors.dragPolygons.subtract}; border-color: ${config.colors.dragPolygons.subtract}; cursor: pointer; }
   `;
   document.head.appendChild(style);
 }
