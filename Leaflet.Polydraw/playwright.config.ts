@@ -1,12 +1,8 @@
-import { defineConfig, devices } from '@playwright/test';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import process from 'node:process';
+const path = require('node:path');
+const process = require('node:process');
+const { defineConfig, devices } = require('@playwright/test');
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-export default defineConfig({
+module.exports = defineConfig({
   testDir: path.resolve(__dirname, 'test/playwright'),
   fullyParallel: true,
   reporter: [['list'], ['html', { open: 'never' }]],
