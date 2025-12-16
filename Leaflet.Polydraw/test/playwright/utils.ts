@@ -73,13 +73,33 @@ export async function drawPointToPointPolygon(
   const box = await getMapBox(page);
   await page.locator('#map').scrollIntoViewIfNeeded();
   const coords = toViewportPoints(box, points);
+  const useTouch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
   for (const point of coords.slice(0, -1)) {
-    await page.mouse.click(point.x, point.y);
+    if (useTouch) {
+      await page.touchscreen.tap(point.x, point.y);
+    } else {
+      await page.mouse.click(point.x, point.y);
+    }
     await page.waitForTimeout(50);
   }
   const last = coords[coords.length - 1];
-  await page.mouse.dblclick(last.x, last.y);
+  if (useTouch) {
+    await page.touchscreen.tap(last.x, last.y);
+    await page.waitForTimeout(80);
+    await page.touchscreen.tap(last.x, last.y);
+  } else {
+    await page.mouse.dblclick(last.x, last.y);
+  }
   await page.waitForTimeout(300);
+
+  // Fallback: if touch events didn't register a polygon, send a final mouse double click
+  if (useTouch) {
+    const count = await getPolygonCount(page);
+    if (count === 0) {
+      await page.mouse.dblclick(last.x, last.y);
+      await page.waitForTimeout(300);
+    }
+  }
 }
 
 export async function getPrimaryPolygonRingCount(page: Page): Promise<number> {

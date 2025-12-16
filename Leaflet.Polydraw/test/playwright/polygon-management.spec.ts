@@ -29,6 +29,7 @@ test.describe('Polygon management', () => {
     await gotoDemo(page);
     await openToolbar(page);
     await seedPolygon(page);
+    await waitForPolygonCount(page, 1);
 
     await clickToolbarButton(page, selectors.erase);
     await waitForPolygonCount(page, 0);

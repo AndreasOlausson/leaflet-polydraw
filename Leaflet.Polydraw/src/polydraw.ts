@@ -476,7 +476,7 @@ class Polydraw extends L.Control {
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
           // Use subtraction for P2P subtract mode
-          await this.polygonMutationManager.subtractPolygon(data.polygon);
+          await this.polygonMutationManager.subtractPolygon(data.polygon, { simplify: false });
         } else {
           // Use addition for regular P2P mode
           await this.polygonMutationManager.addPolygon(data.polygon, {

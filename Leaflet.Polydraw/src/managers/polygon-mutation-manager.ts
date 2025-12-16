@@ -363,8 +363,13 @@ export class PolygonMutationManager {
   /**
    * Subtract a polygon from existing polygons
    */
-  async subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>): Promise<MutationResult> {
+  async subtractPolygon(
+    latlngs: Feature<Polygon | MultiPolygon>,
+    options: AddPolygonOptions = {},
+  ): Promise<MutationResult> {
     // console.log('PolygonMutationManager subtractPolygon');
+    const { simplify = true, visualOptimizationLevel, originalOptimizationLevel } = options;
+
     try {
       // Find only the polygons that actually intersect with the subtract area
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -418,7 +423,11 @@ export class PolygonMutationManager {
           // Add the result polygons
           if (result.success && result.results) {
             for (const resultPolygon of result.results) {
-              const addResult = await this.addPolygonLayer(resultPolygon, { simplify: true });
+              const addResult = await this.addPolygonLayer(resultPolygon, {
+                simplify,
+                visualOptimizationLevel,
+                originalOptimizationLevel,
+              });
               if (addResult.success && addResult.featureGroups) {
                 resultFeatureGroups.push(...addResult.featureGroups);
               }

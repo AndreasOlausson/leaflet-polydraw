@@ -154,14 +154,14 @@ export const defaultConfig: PolydrawConfig = {
     method: 'concaveman',
     simplification: {
       mode: 'simple',
-      tolerance: 0.00001,
+      tolerance: 0.001,
       highQuality: false,
     },
   },
   simplification: {
     mode: 'simple',
     simple: {
-      tolerance: 0.000001,
+      tolerance: 0.0001,
       highQuality: false,
     },
     dynamic: {

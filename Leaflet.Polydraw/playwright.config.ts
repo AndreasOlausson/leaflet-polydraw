@@ -17,12 +17,24 @@ module.exports = defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'chromium-touch',
+      use: { ...devices['Desktop Chrome'], hasTouch: true },
+    },
+    {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
     {
+      name: 'firefox-touch',
+      use: { ...devices['Desktop Firefox'], hasTouch: true },
+    },
+    {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'webkit-touch',
+      use: { ...devices['Desktop Safari'], hasTouch: true },
     },
   ],
   webServer: {
