@@ -69,6 +69,85 @@
         transform: scale(0.97);
       }
 
+      .marker-generator-row {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 6px;
+        align-items: center;
+      }
+
+      #samples-extra {
+        margin-top: 8px;
+      }
+
+      .demo-point-marker {
+        width: 10px;
+        height: 10px;
+        background: rgba(33, 111, 219, 0.85);
+        border: 1px solid rgba(10, 42, 82, 0.9);
+        border-radius: 50%;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+      }
+
+      .demo-point-marker.is-inside {
+        background: rgba(33, 169, 96, 0.95);
+        border-color: rgba(10, 90, 48, 0.95);
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.7),
+          0 0 6px rgba(33, 169, 96, 0.55);
+        opacity: 1;
+      }
+
+      .demo-point-marker.is-outside {
+        background: rgba(120, 135, 155, 0.45);
+        border-color: rgba(60, 70, 92, 0.6);
+        box-shadow: none;
+        opacity: 0.45;
+      }
+
+      .marker-generator-row label {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .marker-generator-row input {
+        width: 100%;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 13px;
+        background: rgba(255, 255, 255, 0.85);
+      }
+
+      .marker-generator-row button {
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.85);
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition:
+          background 0.2s ease,
+          transform 0.1s ease;
+      }
+
+      .marker-generator-row button:hover {
+        background: rgba(76, 175, 80, 0.15);
+      }
+
+      .marker-generator-row button:active {
+        transform: scale(0.97);
+      }
+
+      #point-filter-summary {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #333;
+        font-weight: 600;
+      }
+
       @media (max-width: 1024px) {
         #polydraw-panel-stack {
           max-width: 380px !important;
@@ -133,7 +212,22 @@
           <button type="button" data-sample="linkoping-7">LKPG (SE) • V.O. 7</button>
           <button type="button" data-sample="linkoping-10">LKPG (SE) • V.O. 10</button>
         </div>
-        <small>V.O. = visualOptimizationLevel applied when adding the polygon.</small>
+        <div id="samples-extra">
+          <div class="marker-generator-row">
+            <label for="marker-count">Vertices</label>
+            <input id="marker-count" type="number" min="3" max="2000" step="1" value="200" />
+            <button type="button" id="marker-generate">Generate</button>
+          </div>
+          <small>Generates a single polygon with N vertices spread across the current view.</small>
+          <div class="marker-generator-row">
+            <label for="point-count">Points</label>
+            <input id="point-count" type="number" min="1" max="2000" step="1" value="500" />
+            <button type="button" id="point-generate">Generate</button>
+          </div>
+          <small>Adds N map markers spread across the current view.</small>
+          <div id="point-filter-summary">Points in polygons: 0 / 0</div>
+          <small>V.O. = visualOptimizationLevel applied when adding the polygon.</small>
+        </div>
       </div>
     </div>
   </body>
