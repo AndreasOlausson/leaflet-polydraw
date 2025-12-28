@@ -14,14 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Visual optimization support for predefined polygons: `visualOptimizationLevel` now feeds a simplification pass so you can hide nonessential elbows while keeping geometry intact.
 - Marker info popups honor the `markerInfoIcon` config toggles (`showArea`, `showPerimeter`, labels, metric/imperial switch).
 - Kink handling for polygon merges: self-intersecting polygons are split/merged correctly without forcing the user to toggle `kinks`.
-- Playwright end-to-end suite replaces the old Cypress harness and now runs as part of the repo (first tests live under `test/playwright`).
+- Playwright end-to-end suite is the primary E2E harness (tests live under `test/playwright`).
 - Visual optimization toggle button now ships with dedicated show/hide icons and state-aware tooltips, so the menu immediately reflects whether extra elbows are currently visible.
 - Added automatic AI-powered pull request reviews using ChatGPT (gpt-5.1) to improve code quality and provide consistent feedback.
+- History memory budgeting with per-snapshot and total caps to prevent unbounded growth.
+- Public `cleanup()` API and comprehensive teardown for Polydraw instances.
 
 ### Changed
 
 - `markers.visualOptimization` now exposes `toleranceMin`, `toleranceMax`, and `curve` to tune the level-to-tolerance mapping (legacy fields remain for backward compatibility but are ignored).
-  Simplification now scales tolerance by zoom and shape size, keeping vertex reduction consistent whether you draw zoomed in or out.
+  Simplification now adapts tolerance by shape size and latitude to keep vertex reduction consistent across scales.
+- P2P closing tolerance uses pixel distance, and the first marker uses a ready-state class for styling.
+- Bezier smoothing now runs per ring with closure/deduping to avoid invalid rings.
 - Documentation updates for polygon creation methods, deprecated config blocks, and simplification behavior.
 - Tracer styling obeys the configured colors, so draw mode renders green polylines and subtract mode renders red (matching user expectations).
 - Reporting location unit toggles and labels now honor the config across the demo and plugin, avoiding misleading UI text.
@@ -30,12 +34,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Missing runtime usage for `showArea`, `showPerimeter`, `areaLabel`, and `perimeterLabel` has been wired up so toggles take effect.
 - Bounding-box midpoint markers for predefined bounding boxes now respect the config (`boundingBox.addMidPointMarkers`).
+- Transform cancel no longer emits a polygon update or history entry.
+- Event listener and feature-group cleanup leaks during removal.
+- Visual optimization toggle button is hidden when the polygon has no optimization metadata.
+
+### Removed
+
+- Cypress E2E harness and related configs; Playwright remains.
 
 ## [1.1.2] - 2025-11-06
 
 ### Added
 
-- Playwright end-to-end harness under `test/playwright`, replacing the legacy Cypress setup.
+- Playwright end-to-end harness under `test/playwright` (Cypress is now legacy).
 
 ### Fixed
 
@@ -95,7 +106,7 @@ _(First dual-version release with Leaflet 1.x and 2.x compatibility)_
 
 - **API Enhancement**: `addPredefinedPolygon()` now accepts flexible `unknown[][][]` input with automatic coordinate conversion
 - **Default Coordinate Format**: GeoJSON order (lng, lat) as default for ambiguous numeric coordinate pairs
-- **Test Architecture**: Complete test suite reorganization with `test/unit` and `test/cypress` structure
+- **Test Architecture**: Complete test suite reorganization with `test/unit` and `test/cypress` structure (Cypress now legacy)
 - **Version Detection**: Automatic Leaflet version detection with adapter pattern for seamless compatibility
 
 ### Enhanced
@@ -121,7 +132,7 @@ _(First dual-version release with Leaflet 1.x and 2.x compatibility)_
 - **"Intelligent" Merging System**: Implemented "smart" polygon merging that only merges polygons when they actually intersect, preventing unwanted merging behavior
 - **Comprehensive Test Suite**: Added extensive unit tests (mix of manual and AI-generated) covering all major functionality with ~80% code coverage, though with varying quality
 - **Mock Factory (in progress)**: Initial implementation of centralized mock factory; work still ongoing
-- **Cypress E2E Testing**: Initial setup of Cypress end-to-end testing framework; actual tests still to be implemented
+- **Cypress E2E Testing**: Initial setup of Cypress end-to-end testing framework; actual tests still to be implemented (legacy, removed in next version)
 
 ### Fixed
 
@@ -156,7 +167,7 @@ _(First dual-version release with Leaflet 1.x and 2.x compatibility)_
 
 - Implemented several visual feedback features for polygon dragging, including `opacity`, `markerBehavior` (hide/fade), and `hideMarkersOnDrag` for subtract mode.
 - Added a "Roadmap & Future Improvements" section to the README.
-- Installed Cypress for end-to-end testing (initial setup without tests).
+- Installed Cypress for end-to-end testing (initial setup without tests; legacy, removed in next version).
 
 ### Changed
 

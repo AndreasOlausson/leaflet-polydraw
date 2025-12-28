@@ -15,7 +15,6 @@ export default defineConfig({
         'dist/**',
         'demo/**',
         'docs/**',
-        'cypress/**',
         'test/**',
         '**/*.config.*',
         '**/*.d.ts',

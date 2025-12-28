@@ -29,7 +29,7 @@ export class PolygonTransformController {
   private normalizedLatLngs: L.LatLng[][][];
   private wasMapDraggingEnabled: boolean = false;
   private mode: 'scale' | 'rotate';
-  private onExit?: () => void;
+  private onExit?: (confirmed: boolean) => void;
   private rotateStartAngle: number | null = null;
   private rotateBaseRotation: number = 0;
   private originalTouchAction: string | null = null;
@@ -38,7 +38,7 @@ export class PolygonTransformController {
     map: L.Map,
     featureGroup: L.FeatureGroup,
     mode: 'scale' | 'rotate' = 'scale',
-    onExit?: () => void,
+    onExit?: (confirmed: boolean) => void,
   ) {
     this.map = map;
     this.mode = mode;
@@ -294,12 +294,12 @@ export class PolygonTransformController {
 
   private handleCancel(): void {
     this.cancel();
+    if (this.onExit) this.onExit(false);
     this.destroy();
-    if (this.onExit) this.onExit();
   }
 
   private handleConfirm(): void {
-    if (this.onExit) this.onExit();
+    if (this.onExit) this.onExit(true);
     this.destroy();
   }
 }

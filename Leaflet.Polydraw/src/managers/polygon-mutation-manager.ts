@@ -966,6 +966,10 @@ export class PolygonMutationManager {
    */
   private removeFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
     // console.log('PolygonMutationManager removeFeatureGroupInternal');
+
+    // Clean up resources before removing
+    this.cleanupFeatureGroup(featureGroup);
+
     featureGroup.clearLayers();
     const featureGroups = this.getFeatureGroups();
     const index = featureGroups.indexOf(featureGroup);
@@ -1356,6 +1360,17 @@ export class PolygonMutationManager {
   removeFeatureGroup(featureGroup: L.FeatureGroup): void {
     // console.log('PolygonMutationManager removeFeatureGroup');
     this.removeFeatureGroupInternal(featureGroup);
+  }
+
+  /**
+   * Clean up all resources associated with a feature group
+   * This method ensures proper cleanup of event listeners and associated resources
+   */
+  cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
+    // console.log('PolygonMutationManager cleanupFeatureGroup');
+
+    // Delegate cleanup to interaction manager
+    this.interactionManager.cleanupFeatureGroup(featureGroup);
   }
 
   onPolygonMouseMove(e: L.LeafletMouseEvent): void {

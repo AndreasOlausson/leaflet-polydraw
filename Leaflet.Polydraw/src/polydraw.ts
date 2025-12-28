@@ -142,11 +142,87 @@ class Polydraw extends L.Control {
    */
   public onRemove(_map: L.Map) {
     void _map; // make lint happy
+    this.comprehensiveCleanup();
+  }
+
+  /**
+   * Perform comprehensive cleanup of all resources
+   * This method ensures proper cleanup of event listeners, managers, and DOM elements
+   */
+  public comprehensiveCleanup(): void {
+    // Clean up map event listeners first (before nulling handlers)
+    this.events(false);
+    this.drawStartedEvents(false);
+
+    // Remove keyboard handlers
     this.removeKeyboardHandlers();
+
+    // Clean up tracer
     if (this.tracer) {
       this.map.removeLayer(this.tracer);
+      this.tracer = null as any; // Reset tracer reference
     }
-    this.removeAllFeatureGroups();
+
+    // Clean up all feature groups with proper resource cleanup
+    this.arrayOfFeatureGroups.forEach((featureGroup) => {
+      try {
+        if (this.polygonMutationManager) {
+          this.polygonMutationManager.cleanupFeatureGroup(featureGroup);
+        }
+        this.map.removeLayer(featureGroup);
+      } catch (error) {
+        console.warn('Error cleaning up feature group:', error);
+      }
+    });
+    this.arrayOfFeatureGroups.length = 0;
+
+    // Clean up polygon information
+    if (this.polygonInformation) {
+      this.polygonInformation.deletePolygonInformationStorage();
+    }
+
+    // Clean up event listeners
+    this.drawModeListeners.length = 0;
+
+    // Clean up bound event handlers (safe to call even if already null)
+    if (this._boundKeyDownHandler) {
+      this._boundKeyDownHandler = null as any;
+    }
+    if (this._boundKeyUpHandler) {
+      this._boundKeyUpHandler = null as any;
+    }
+    if (this._boundTouchMove) {
+      this._boundTouchMove = null as any;
+    }
+    if (this._boundTouchEnd) {
+      this._boundTouchEnd = null as any;
+    }
+    if (this._boundTouchStart) {
+      this._boundTouchStart = null as any;
+    }
+    if (this._boundPointerDown) {
+      this._boundPointerDown = null as any;
+    }
+    if (this._boundPointerMove) {
+      this._boundPointerMove = null as any;
+    }
+    if (this._boundPointerUp) {
+      this._boundPointerUp = null as any;
+    }
+
+    // Clean up timer
+    if (this._tapTimeout) {
+      clearTimeout(this._tapTimeout);
+      this._tapTimeout = null;
+    }
+
+    // Reset state
+    this.drawMode = DrawMode.Off;
+    this.isModifierKeyHeld = false;
+    this._lastTapTime = 0;
+
+    // Clean up UI references
+    this.subContainer = undefined;
   }
 
   /**
@@ -354,6 +430,10 @@ class Polydraw extends L.Control {
   public removeAllFeatureGroups() {
     this.arrayOfFeatureGroups.forEach((featureGroups) => {
       try {
+        // Perform proper cleanup before removing
+        if (this.polygonMutationManager) {
+          this.polygonMutationManager.cleanupFeatureGroup(featureGroups);
+        }
         this.map.removeLayer(featureGroups);
       } catch (error) {
         // Silently handle layer removal errors
@@ -364,6 +444,18 @@ class Polydraw extends L.Control {
     this.polygonInformation.updatePolygons();
     // Update the indicator state after removing all polygons
     this.updateActivateButtonIndicator();
+  }
+
+  /**
+   * Public method to perform comprehensive cleanup
+   * This can be called manually to clean up resources without removing the control from the map
+   */
+  public cleanup(): void {
+    // Make cleanup idempotent - safe to call multiple times
+    if (!this.map) {
+      return; // Already cleaned up or not initialized
+    }
+    this.comprehensiveCleanup();
   }
 
   /**
@@ -1247,7 +1339,12 @@ class Polydraw extends L.Control {
    * Sets up the keyboard event handlers for the document.
    */
   private setupKeyboardHandlers() {
-    this._boundKeyUpHandler = this.handleKeyUp.bind(this);
+    if (!this._boundKeyDownHandler) {
+      this._boundKeyDownHandler = this.handleKeyDown.bind(this);
+    }
+    if (!this._boundKeyUpHandler) {
+      this._boundKeyUpHandler = this.handleKeyUp.bind(this);
+    }
     document.addEventListener('keydown', this._boundKeyDownHandler);
     document.addEventListener('keyup', this._boundKeyUpHandler);
   }
@@ -1256,8 +1353,12 @@ class Polydraw extends L.Control {
    * Removes the keyboard event handlers from the document.
    */
   private removeKeyboardHandlers() {
-    document.removeEventListener('keydown', this._boundKeyDownHandler);
-    document.removeEventListener('keyup', this._boundKeyUpHandler);
+    if (this._boundKeyDownHandler) {
+      document.removeEventListener('keydown', this._boundKeyDownHandler);
+    }
+    if (this._boundKeyUpHandler) {
+      document.removeEventListener('keyup', this._boundKeyUpHandler);
+    }
   }
 
   /**

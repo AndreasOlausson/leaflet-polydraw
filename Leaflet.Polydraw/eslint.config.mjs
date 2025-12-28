@@ -75,21 +75,6 @@ export default [
     rules: baseRules,
   },
   {
-    files: ['test/cypress/**/*.ts'],
-    languageOptions: {
-      parser: typescriptParser,
-      parserOptions: baseParserOptions,
-      globals: {
-        ...globals.browser,
-        ...globals.es2021,
-        cy: 'readonly',
-        Cypress: 'readonly',
-      },
-    },
-    plugins: basePlugins,
-    rules: baseRules,
-  },
-  {
     ignores: [
       'dist/',
       'node_modules/',
@@ -98,8 +83,6 @@ export default [
       'test-legacy/',
       '**/*.min.js',
       '**/*.bundle.js',
-      'cypress/screenshots/',
-      'cypress/videos/',
     ],
   },
 ];

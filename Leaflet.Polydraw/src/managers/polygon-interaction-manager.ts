@@ -50,6 +50,14 @@ interface MarkerImportanceOptions {
 export class PolygonInteractionManager {
   private markerFeatureGroupMap = new WeakMap<L.Marker, L.FeatureGroup>();
   private markerModifierHandlers = new WeakMap<L.Marker, (e: Event) => void>();
+  private markerTouchListeners = new WeakMap<
+    L.Marker,
+    { touchstart: (e: Event) => void; touchend: (e: Event) => void }
+  >();
+  private markerEdgeDeletionListeners = new WeakMap<
+    L.Marker,
+    { mouseenter: (e: Event) => void; mouseleave: (e: Event) => void }
+  >();
   private _activeMarker: L.Marker | null = null;
   private isDraggingMarker = false;
   private turfHelper: TurfHelper;
@@ -239,15 +247,11 @@ export class PolygonInteractionManager {
       // Patch: Add touchend event for menu/info markers to simulate click on iOS
       const el = marker.getElement();
       if (el) {
-        el.addEventListener(
-          'touchstart',
-          (e) => {
-            // console.log('marker touchstart');
-            e.stopPropagation();
-          },
-          { passive: true },
-        );
-        el.addEventListener('touchend', (e) => {
+        const touchstartHandler = (e: Event) => {
+          // console.log('marker touchstart');
+          e.stopPropagation();
+        };
+        const touchendHandler = (e: Event) => {
           // console.log('marker touchend');
           e.preventDefault();
           e.stopPropagation();
@@ -260,6 +264,15 @@ export class PolygonInteractionManager {
             }
           }
           this._activeMarker = null;
+        };
+
+        el.addEventListener('touchstart', touchstartHandler, { passive: true });
+        el.addEventListener('touchend', touchendHandler);
+
+        // Store handlers for cleanup
+        this.markerTouchListeners.set(marker, {
+          touchstart: touchstartHandler,
+          touchend: touchendHandler,
         });
       }
 
@@ -422,6 +435,7 @@ export class PolygonInteractionManager {
               if (this.saveHistoryState) {
                 this.saveHistoryState();
               }
+              this.cleanupFeatureGroup(featureGroup);
               this.removeFeatureGroup(featureGroup);
               this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
               this.eventManager.emit('polydraw:polygon:deleted', undefined);
@@ -534,14 +548,10 @@ export class PolygonInteractionManager {
 
       const el = marker.getElement();
       if (el) {
-        el.addEventListener(
-          'touchstart',
-          (e) => {
-            e.stopPropagation();
-          },
-          { passive: true },
-        );
-        el.addEventListener('touchend', (e) => {
+        const touchstartHandler = (e: Event) => {
+          e.stopPropagation();
+        };
+        const touchendHandler = (e: Event) => {
           e.preventDefault();
           e.stopPropagation();
           marker.fire('click');
@@ -552,6 +562,15 @@ export class PolygonInteractionManager {
             }
           }
           this._activeMarker = null;
+        };
+
+        el.addEventListener('touchstart', touchstartHandler, { passive: true });
+        el.addEventListener('touchend', touchendHandler);
+
+        // Store handlers for cleanup
+        this.markerTouchListeners.set(marker, {
+          touchstart: touchstartHandler,
+          touchend: touchendHandler,
         });
       }
 
@@ -725,6 +744,7 @@ export class PolygonInteractionManager {
                   const { level: optimizationLevel, original: originalOptimizationLevel } =
                     this.getOptimizationMetadataFromFeatureGroup(featureGroup);
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
+                  this.cleanupFeatureGroup(featureGroup);
                   this.removeFeatureGroup(featureGroup);
                   this.emitPolygonUpdated({
                     operation: 'removeHole',
@@ -1030,12 +1050,21 @@ export class PolygonInteractionManager {
       // Add hover listeners for edge deletion feedback
       element.addEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
       element.addEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
+
+      // Store handlers for cleanup
+      this.markerEdgeDeletionListeners.set(marker, {
+        mouseenter: this.onMarkerHoverForEdgeDeletionEvent,
+        mouseleave: this.onMarkerLeaveForEdgeDeletionEvent,
+      });
     } else {
       // Remove hover listeners and reset style
       element.removeEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
       element.removeEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
       element.style.backgroundColor = '';
       element.style.borderColor = '';
+
+      // Clean up stored handlers
+      this.markerEdgeDeletionListeners.delete(marker);
     }
   }
 
@@ -1047,7 +1076,78 @@ export class PolygonInteractionManager {
     this.isModifierKeyHeld = isHeld;
   }
 
+  /**
+   * Clean up all resources associated with a marker
+   * This method ensures proper cleanup of event listeners and WeakMap entries
+   */
+  cleanupMarker(marker: L.Marker): void {
+    // console.log('PolygonInteractionManager cleanupMarker');
+
+    const element = marker.getElement();
+
+    // Always clean up document-level listeners first (DOM-optional)
+    const modifierHandler = this.markerModifierHandlers.get(marker);
+    if (modifierHandler) {
+      document.removeEventListener('keydown', modifierHandler);
+      document.removeEventListener('keyup', modifierHandler);
+      if (element) {
+        element.removeEventListener('mousemove', modifierHandler);
+      }
+      this.markerModifierHandlers.delete(marker);
+    }
+
+    // Clean up touch event listeners (remove from element if present, always delete mapping)
+    const touchListeners = this.markerTouchListeners.get(marker);
+    if (touchListeners) {
+      if (element) {
+        element.removeEventListener('touchstart', touchListeners.touchstart);
+        element.removeEventListener('touchend', touchListeners.touchend);
+      }
+      this.markerTouchListeners.delete(marker);
+    }
+
+    // Clean up edge deletion event listeners (remove from element if present, always delete mapping)
+    const edgeDeletionListeners = this.markerEdgeDeletionListeners.get(marker);
+    if (edgeDeletionListeners) {
+      if (element) {
+        element.removeEventListener('mouseenter', edgeDeletionListeners.mouseenter);
+        element.removeEventListener('mouseleave', edgeDeletionListeners.mouseleave);
+      }
+      this.markerEdgeDeletionListeners.delete(marker);
+    }
+
+    // Clean up feature group mapping last
+    this.markerFeatureGroupMap.delete(marker);
+  }
+
+  /**
+   * Clean up all resources associated with a feature group
+   * This method ensures proper cleanup of all markers and associated resources
+   */
+  cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
+    // console.log('PolygonInteractionManager cleanupFeatureGroup');
+
+    // Clean up all markers in the feature group
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Marker) {
+        this.cleanupMarker(layer as L.Marker);
+      }
+    });
+
+    this.destroyTransformController(featureGroup);
+  }
+
   // Private methods
+
+  private destroyTransformController(featureGroup: L.FeatureGroup): void {
+    const transformController = this.transformControllers.get(featureGroup);
+    if (!transformController) {
+      return;
+    }
+    transformController.destroy();
+    this.transformControllers.delete(featureGroup);
+    this.transformModeActive = false;
+  }
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
     // console.log('onEdgeClick');
@@ -1081,6 +1181,7 @@ export class PolygonInteractionManager {
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             const originalOptimizationLevel =
               polydrawPolygon._polydrawOptimizationOriginalLevel || optimizationLevel;
+            this.cleanupFeatureGroup(parentFeatureGroup);
             this.removeFeatureGroup(parentFeatureGroup);
             this.emitPolygonUpdated({
               operation: 'addVertex',
@@ -1549,6 +1650,7 @@ export class PolygonInteractionManager {
       this.getOptimizationMetadataFromFeatureGroup(featureGroup);
 
     // Remove the current feature group first to avoid duplication
+    this.cleanupFeatureGroup(featureGroup);
     this.removeFeatureGroup(featureGroup);
 
     const emitCleanedPolygon = (
@@ -1840,6 +1942,7 @@ export class PolygonInteractionManager {
 
       const { level: optimizationLevel, original: originalOptimizationLevel } =
         this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+      this.cleanupFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
       const feature = this.turfHelper.getTurfPolygon(newGeoJSON);
@@ -2048,6 +2151,7 @@ export class PolygonInteractionManager {
             this.getOptimizationMetadataFromFeatureGroup(featureGroup);
 
           // Remove the existing polygon before creating the result
+          this.cleanupFeatureGroup(featureGroup);
           this.removeFeatureGroup(featureGroup);
 
           // Perform the subtraction: existing polygon - dragged polygon
@@ -2417,14 +2521,19 @@ export class PolygonInteractionManager {
       buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
     }
     if (menuOps.visualOptimizationToggle?.enabled) {
-      const { level } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
-      const isOptimized = typeof level === 'number' && level > 0;
-      const toggleClasses = [
-        'toggle-visual-optimization',
-        isOptimized ? 'visual-optimization-state-hidden' : 'visual-optimization-state-visible',
-      ];
-      const toggleTitle = isOptimized ? 'Show all markers' : 'Hide extra markers';
-      buttons.push(PopupFactory.createMenuButton('toggleOptimization', toggleTitle, toggleClasses));
+      const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+      const hasOptimization = original > 0 || level > 0;
+      if (hasOptimization) {
+        const isOptimized = typeof level === 'number' && level > 0;
+        const toggleClasses = [
+          'toggle-visual-optimization',
+          isOptimized ? 'visual-optimization-state-hidden' : 'visual-optimization-state-visible',
+        ];
+        const toggleTitle = isOptimized ? 'Show all markers' : 'Hide extra markers';
+        buttons.push(
+          PopupFactory.createMenuButton('toggleOptimization', toggleTitle, toggleClasses),
+        );
+      }
     }
 
     // Build popup structure using factory
@@ -2486,15 +2595,32 @@ export class PolygonInteractionManager {
         this.transformControllers.delete(featureGroup);
       }
       try {
-        const controller = new PolygonTransformController(this.map, featureGroup, mode, () => {
-          try {
+        const controller = new PolygonTransformController(
+          this.map,
+          featureGroup,
+          mode,
+          (confirmed) => {
+            if (this.transformControllers.get(featureGroup) === controller) {
+              this.transformControllers.delete(featureGroup);
+            }
+            this.transformModeActive = false;
+
             const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
               | L.Polygon
               | undefined;
-            if (!polygonLayer) return;
+            if (!polygonLayer) {
+              return;
+            }
+
+            if (!confirmed) {
+              this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
+              return;
+            }
+
             const newGeoJSON = polygonLayer.toGeoJSON();
             const { level: optimizationLevel, original: originalOptimizationLevel } =
               this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+            this.cleanupFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
             this.emitPolygonUpdated({
               operation: 'transform',
@@ -2503,12 +2629,8 @@ export class PolygonInteractionManager {
               optimizationLevel,
               originalOptimizationLevel,
             });
-          } finally {
-            controller.destroy();
-            this.transformControllers.delete(featureGroup);
-            this.transformModeActive = false;
-          }
-        });
+          },
+        );
         this.transformControllers.set(featureGroup, controller);
         const polyLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
           | L.Polygon
@@ -2610,6 +2732,7 @@ export class PolygonInteractionManager {
       return;
     }
     const newGeoJSON = polygonLayer.toGeoJSON();
+    this.cleanupFeatureGroup(featureGroup);
     this.removeFeatureGroup(featureGroup);
     this.emitPolygonUpdated({
       operation: 'toggleOptimization',

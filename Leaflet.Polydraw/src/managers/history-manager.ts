@@ -30,6 +30,9 @@ export class HistoryManager {
   private undoStack: HistorySnapshot[] = [];
   private redoStack: HistorySnapshot[] = [];
   private maxHistorySize: number = 50;
+  private maxSnapshotSize: number = 500000; // 500KB per snapshot
+  private maxTotalMemory: number = 5000000; // 5MB total memory budget
+  private currentMemoryUsage: number = 0;
   private eventManager: EventManager;
   private isRestoring: boolean = false;
 
@@ -50,23 +53,77 @@ export class HistoryManager {
     }
 
     const snapshot = this.createSnapshot(featureGroups, action);
+    const snapshotSize = this.calculateSnapshotSize(snapshot);
+
+    // Clear redo stack when new action is performed (always, even if we skip saving)
+    this.redoStack = [];
+
+    // Check if snapshot exceeds individual size limit
+    if (snapshotSize > this.maxSnapshotSize) {
+      console.warn(
+        `History snapshot too large (${snapshotSize} bytes, limit ${this.maxSnapshotSize} bytes). Skipping save.`,
+      );
+      return;
+    }
 
     // Add to undo stack
     this.undoStack.push(snapshot);
+    this.currentMemoryUsage += snapshotSize;
 
-    // Limit stack size
-    if (this.undoStack.length > this.maxHistorySize) {
-      this.undoStack.shift(); // Remove oldest snapshot
-    }
-
-    // Clear redo stack when new action is performed
-    this.redoStack = [];
+    // Enforce memory budget
+    this.enforceMemoryBudget();
 
     // Emit history changed event
     this.eventManager.emit('polydraw:history:changed', {
       canUndo: this.canUndo(),
       canRedo: this.canRedo(),
     });
+  }
+
+  /**
+   * Calculate the approximate size of a snapshot in bytes
+   */
+  private calculateSnapshotSize(snapshot: HistorySnapshot): number {
+    try {
+      // Use JSON stringification to estimate size
+      const jsonString = JSON.stringify(snapshot);
+      return jsonString.length * 2; // Approximate UTF-16 character size
+    } catch (error) {
+      console.warn('Error calculating snapshot size:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Enforce memory budget by removing oldest snapshots if needed
+   */
+  private enforceMemoryBudget(): void {
+    // First, enforce maximum stack size
+    while (this.undoStack.length > this.maxHistorySize) {
+      const removedSnapshot = this.undoStack.shift();
+      if (removedSnapshot) {
+        this.currentMemoryUsage -= this.calculateSnapshotSize(removedSnapshot);
+      }
+    }
+
+    // Then, enforce total memory budget
+    while (this.currentMemoryUsage > this.maxTotalMemory && this.undoStack.length > 0) {
+      const removedSnapshot = this.undoStack.shift();
+      if (removedSnapshot) {
+        this.currentMemoryUsage -= this.calculateSnapshotSize(removedSnapshot);
+      }
+    }
+  }
+
+  /**
+   * Enforce memory budget for redo stack
+   */
+  private enforceRedoMemoryBudget(): void {
+    // Limit redo stack size to half of max history size
+    const maxRedoSize = Math.floor(this.maxHistorySize / 2);
+    while (this.redoStack.length > maxRedoSize) {
+      this.redoStack.shift();
+    }
   }
 
   /**
@@ -81,10 +138,19 @@ export class HistoryManager {
 
     // Save current state to redo stack before undoing
     const currentSnapshot = this.createSnapshot(featureGroups, 'redo-point');
-    this.redoStack.push(currentSnapshot);
+    const currentSnapshotSize = this.calculateSnapshotSize(currentSnapshot);
+
+    // Check if current snapshot exceeds size limit before adding to redo stack
+    if (currentSnapshotSize <= this.maxSnapshotSize) {
+      this.redoStack.push(currentSnapshot);
+      this.enforceRedoMemoryBudget();
+    } else {
+      console.warn(`Current state too large (${currentSnapshotSize} bytes) to save to redo stack.`);
+    }
 
     // Get the previous state
     const previousSnapshot = this.undoStack.pop()!;
+    this.currentMemoryUsage -= this.calculateSnapshotSize(previousSnapshot);
 
     // Emit undo event with current state
     this.eventManager.emit('polydraw:history:undo', {
@@ -108,7 +174,19 @@ export class HistoryManager {
 
     // Save current state to undo stack before redoing
     const currentSnapshot = this.createSnapshot(featureGroups, 'undo-point');
-    this.undoStack.push(currentSnapshot);
+    const currentSnapshotSize = this.calculateSnapshotSize(currentSnapshot);
+
+    // Check if current snapshot exceeds size limit before adding to undo stack
+    if (currentSnapshotSize <= this.maxSnapshotSize) {
+      this.undoStack.push(currentSnapshot);
+      this.currentMemoryUsage += currentSnapshotSize;
+      this.enforceMemoryBudget();
+    } else {
+      console.warn(`Current state too large (${currentSnapshotSize} bytes) to save to undo stack.`);
+    }
+
+    // Enforce redo stack memory budget
+    this.enforceRedoMemoryBudget();
 
     // Get the next state
     const nextSnapshot = this.redoStack.pop()!;
@@ -143,6 +221,7 @@ export class HistoryManager {
   clear(): void {
     this.undoStack = [];
     this.redoStack = [];
+    this.currentMemoryUsage = 0;
 
     // Emit history changed event
     this.eventManager.emit('polydraw:history:changed', {
