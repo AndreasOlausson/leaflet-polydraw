@@ -1,4 +1,4 @@
-# API Reference
+1# API Reference
 
 For most use cases, simply add the plugin and use the built-in buttons. However, these methods are available for programmatic control:
 
@@ -92,6 +92,12 @@ await polydraw.addPredefinedGeoJSONs([polygonFeature], {
   visualOptimizationLevel: 2,
 });
 ```
+
+### Visual Optimization
+
+[![Visual Optimization](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/vo.mp4)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/vo.mp4)
+
+Visual optimization reduces elbow marker density on complex polygons while preserving shape. Set `visualOptimizationLevel` when adding polygons (predefined or GeoJSON), and use the Visual Optimization toggle in the polygon menu tools to show or hide the pruned markers.
 
 **Supported GeoJSON Types:**
 
