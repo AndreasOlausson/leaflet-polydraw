@@ -1,9 +1,12 @@
-const path = require('node:path');
-const process = require('node:process');
-const { defineConfig, devices } = require('@playwright/test');
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+import { defineConfig, devices } from '@playwright/test';
 
-module.exports = defineConfig({
-  testDir: path.resolve(__dirname, 'test/playwright'),
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig({
+  testDir: path.resolve(rootDir, 'test/playwright'),
   fullyParallel: true,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
@@ -39,7 +42,7 @@ module.exports = defineConfig({
   ],
   webServer: {
     command: 'npm run preview -- --host 127.0.0.1 --port 4173',
-    cwd: path.resolve(__dirname, 'demo'),
+    cwd: path.resolve(rootDir, 'demo'),
     port: 4173,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
