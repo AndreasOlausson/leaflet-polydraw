@@ -226,9 +226,8 @@ export function midpoint(
 
 /**
  * Calculates the area of a polygon using the Shoelace formula
- * Replaces @turf/area function
  * @param feature - Polygon or MultiPolygon feature
- * @returns Area in square meters
+ * @returns Area in degrees² (planar). Use @turf/area for meters².
  */
 export function area(feature: Feature<Polygon | MultiPolygon>): number {
   const coords = getCoords(feature);

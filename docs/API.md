@@ -1,4 +1,4 @@
-1# API Reference
+# API Reference
 
 For most use cases, simply add the plugin and use the built-in buttons. However, these methods are available for programmatic control:
 
