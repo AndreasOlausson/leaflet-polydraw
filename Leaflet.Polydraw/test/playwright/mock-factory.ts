@@ -84,7 +84,10 @@ export class DemoFactory {
     const box = await map.boundingBox();
     if (!box) throw new Error('Map bounds not found');
     await map.scrollIntoViewIfNeeded();
-    const toScreen = (nx: number, ny: number) => ({ x: box.x + nx * box.width, y: box.y + ny * box.height });
+    const toScreen = (nx: number, ny: number) => ({
+      x: box.x + nx * box.width,
+      y: box.y + ny * box.height,
+    });
 
     const [startNx, startNy] = points[0];
     const start = toScreen(startNx, startNy);
