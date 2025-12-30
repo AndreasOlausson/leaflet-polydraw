@@ -487,6 +487,11 @@ body {
   color: white !important;
 }
 
+.leaflet-container .leaflet-control-attribution {
+  display: flex;
+  gap: 4px;
+}
+
 /* Firefox Android button fix - ensure draw mode buttons remain responsive */
 .leaflet-control.leaflet-bar {
   position: relative;

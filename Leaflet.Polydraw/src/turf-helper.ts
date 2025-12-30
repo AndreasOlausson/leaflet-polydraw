@@ -10,9 +10,10 @@ import {
   bboxPolygon,
   distance,
   midpoint,
-  area,
   centroid,
 } from './geojson-helpers';
+import { EARTH_RADIUS, MATH } from './constants';
+import turfArea from '@turf/area';
 
 // Complex turf functions that we'll keep for now
 import centerOfMass from '@turf/center-of-mass';
@@ -52,6 +53,66 @@ export class TurfHelper {
 
   constructor(config: object) {
     this.config = { ...defaultConfig, ...config };
+  }
+
+  /**
+   * Convert a degree-based tolerance into an approximate degree tolerance that is
+   * consistent in screen space by scaling with the local meters-per-degree.
+   * Input `tolerance` is treated as degrees; we scale it so that the resulting
+   * simplify tolerance corresponds to the same ground distance at the given point.
+   */
+  private toProjectedTolerance(tolerance: number, anchor: L.LatLngLiteral): number {
+    if (tolerance <= 0) return 0;
+    try {
+      const metersPerDegree = EARTH_RADIUS.MEAN_METERS * MATH.DEG_TO_RAD;
+      const targetMeters = tolerance * metersPerDegree;
+      // Convert meters back to degrees at this latitude (approximate)
+      const scale = Math.cos(anchor.lat * MATH.DEG_TO_RAD);
+      if (scale === 0) return tolerance;
+      return targetMeters / (metersPerDegree * scale);
+    } catch {
+      return tolerance;
+    }
+  }
+
+  /**
+   * Compute a diagonal (degrees) for a polygon/multipolygon bbox.
+   */
+  private getFeatureDiagonal(feature: Feature<Polygon | MultiPolygon>): number {
+    try {
+      const [minX, minY, maxX, maxY] = bbox(feature as unknown as any);
+      return Math.hypot(maxX - minX, maxY - minY);
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Compute a diagonal (degrees) for a ring of LatLngs.
+   */
+  private getRingDiagonal(ring: L.LatLngLiteral[]): number {
+    if (!ring || ring.length === 0) return 0;
+    let minLat = ring[0].lat;
+    let maxLat = ring[0].lat;
+    let minLng = ring[0].lng;
+    let maxLng = ring[0].lng;
+    for (const pt of ring) {
+      minLat = Math.min(minLat, pt.lat);
+      maxLat = Math.max(maxLat, pt.lat);
+      minLng = Math.min(minLng, pt.lng);
+      maxLng = Math.max(maxLng, pt.lng);
+    }
+    return Math.hypot(maxLng - minLng, maxLat - minLat);
+  }
+
+  /**
+   * Adapt a base tolerance to the shape size so small shapes don't oversimplify.
+   */
+  private getAdaptiveTolerance(baseTolerance: number, diagonal: number): number {
+    if (baseTolerance <= 0) return 0;
+    if (diagonal <= 0) return baseTolerance;
+    const adaptive = diagonal * 0.02; // 2% of shape diagonal
+    return Math.min(baseTolerance, adaptive);
   }
 
   union(
@@ -206,8 +267,12 @@ export class TurfHelper {
     }
 
     if (simplification.mode === 'simple') {
+      const adaptedTol = this.getAdaptiveTolerance(
+        simplification.simple.tolerance,
+        this.getFeatureDiagonal(polygon),
+      );
       return simplify(polygon, {
-        tolerance: simplification.simple.tolerance,
+        tolerance: this.toProjectedTolerance(adaptedTol, this.getReferenceLatLng(polygon)),
         highQuality: simplification.simple.highQuality,
         mutate: false,
       });
@@ -217,19 +282,27 @@ export class TurfHelper {
     const numOfEdges = polygon.geometry.coordinates[0][0].length;
     const fractionGuard = simplification.dynamic.fractionGuard;
     const multiplier = simplification.dynamic.multiplier;
+    const adaptedBaseTol = this.getAdaptiveTolerance(
+      simplification.dynamic.baseTolerance,
+      this.getFeatureDiagonal(polygon),
+    );
+
     const baseArgs = {
       highQuality: simplification.dynamic.highQuality,
       mutate: false,
     };
 
     const runSimplify = (toleranceValue: number) =>
-      simplify(polygon, { ...baseArgs, tolerance: toleranceValue });
+      simplify(polygon, {
+        ...baseArgs,
+        tolerance: this.toProjectedTolerance(toleranceValue, this.getReferenceLatLng(polygon)),
+      });
 
     if (!dynamicTolerance) {
-      return runSimplify(simplification.dynamic.baseTolerance);
+      return runSimplify(adaptedBaseTol);
     }
 
-    let currentTolerance = simplification.dynamic.baseTolerance;
+    let currentTolerance = adaptedBaseTol;
     let simplified = runSimplify(currentTolerance);
 
     while (
@@ -264,10 +337,11 @@ export class TurfHelper {
     }
 
     const coords = ring.map((point) => [point.lng, point.lat]);
+    const adaptedTol = this.getAdaptiveTolerance(tolerance, this.getRingDiagonal(ring));
     try {
       const poly = polygon([coords]);
       const simplified = simplify(poly, {
-        tolerance,
+        tolerance: this.toProjectedTolerance(adaptedTol, latlngs[0]),
         highQuality,
         mutate: false,
       }) as Feature<Polygon>;
@@ -410,6 +484,22 @@ export class TurfHelper {
     return getCoords(feature);
   }
 
+  /**
+   * Get a representative lat/lng from a polygon/multipolygon to anchor tolerance scaling.
+   */
+  private getReferenceLatLng(feature: Feature<Polygon | MultiPolygon>): L.LatLngLiteral {
+    try {
+      const coords = getCoords(feature);
+      const first = coords?.[0]?.[0]?.[0];
+      if (first && Array.isArray(first) && first.length >= 2) {
+        return { lat: first[1], lng: first[0] };
+      }
+    } catch {
+      // ignore
+    }
+    return { lat: 0, lng: 0 };
+  }
+
   hasKinks(feature: Feature<Polygon | MultiPolygon>) {
     const k = kinks(feature);
     return k.features.length > 0;
@@ -505,7 +595,7 @@ export class TurfHelper {
             intersection.geometry.type === 'MultiPolygon')
         ) {
           // Check if the intersection has meaningful area
-          const polygonArea = area(intersection);
+          const polygonArea = turfArea(intersection);
           if (polygonArea > 0.000001) {
             // Very small threshold for meaningful intersection
             return true;
@@ -963,7 +1053,7 @@ export class TurfHelper {
   }
 
   getPolygonArea(poly: Feature<Polygon | MultiPolygon>): number {
-    const polygonArea = area(poly);
+    const polygonArea = turfArea(poly);
     return polygonArea;
   }
 
@@ -1504,7 +1594,7 @@ export class TurfHelper {
                   geometry: { type: 'Polygon', coordinates: coords },
                   properties: {},
                 };
-                const polygonArea = area(poly);
+                const polygonArea = turfArea(poly);
                 if (polygonArea > largestArea) {
                   largestArea = polygonArea;
                   largestPolygon = poly;

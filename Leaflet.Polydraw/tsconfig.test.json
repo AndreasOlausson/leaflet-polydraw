@@ -5,5 +5,5 @@
     "noUnusedParameters": false
   },
   "include": ["test"],
-  "exclude": ["node_modules", "dist", "test/cypress"]
+  "exclude": ["node_modules", "dist"]
 }

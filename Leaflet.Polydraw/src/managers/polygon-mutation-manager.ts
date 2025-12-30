@@ -363,8 +363,13 @@ export class PolygonMutationManager {
   /**
    * Subtract a polygon from existing polygons
    */
-  async subtractPolygon(latlngs: Feature<Polygon | MultiPolygon>): Promise<MutationResult> {
+  async subtractPolygon(
+    latlngs: Feature<Polygon | MultiPolygon>,
+    options: AddPolygonOptions = {},
+  ): Promise<MutationResult> {
     // console.log('PolygonMutationManager subtractPolygon');
+    const { simplify = true, visualOptimizationLevel, originalOptimizationLevel } = options;
+
     try {
       // Find only the polygons that actually intersect with the subtract area
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -418,7 +423,11 @@ export class PolygonMutationManager {
           // Add the result polygons
           if (result.success && result.results) {
             for (const resultPolygon of result.results) {
-              const addResult = await this.addPolygonLayer(resultPolygon, { simplify: true });
+              const addResult = await this.addPolygonLayer(resultPolygon, {
+                simplify,
+                visualOptimizationLevel,
+                originalOptimizationLevel,
+              });
               if (addResult.success && addResult.featureGroups) {
                 resultFeatureGroups.push(...addResult.featureGroups);
               }
@@ -957,6 +966,10 @@ export class PolygonMutationManager {
    */
   private removeFeatureGroupInternal(featureGroup: L.FeatureGroup): void {
     // console.log('PolygonMutationManager removeFeatureGroupInternal');
+
+    // Clean up resources before removing
+    this.cleanupFeatureGroup(featureGroup);
+
     featureGroup.clearLayers();
     const featureGroups = this.getFeatureGroups();
     const index = featureGroups.indexOf(featureGroup);
@@ -1347,6 +1360,17 @@ export class PolygonMutationManager {
   removeFeatureGroup(featureGroup: L.FeatureGroup): void {
     // console.log('PolygonMutationManager removeFeatureGroup');
     this.removeFeatureGroupInternal(featureGroup);
+  }
+
+  /**
+   * Clean up all resources associated with a feature group
+   * This method ensures proper cleanup of event listeners and associated resources
+   */
+  cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
+    // console.log('PolygonMutationManager cleanupFeatureGroup');
+
+    // Delegate cleanup to interaction manager
+    this.interactionManager.cleanupFeatureGroup(featureGroup);
   }
 
   onPolygonMouseMove(e: L.LeafletMouseEvent): void {

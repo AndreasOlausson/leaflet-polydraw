@@ -233,23 +233,4 @@ export class CoordinateUtils {
       group.map((polygon) => polygon.map((coord) => this.convertToLatLng(coord))),
     );
   }
-
-  // ========================================================================
-  // POTENTIALLY UNUSED METHODS - TO BE REVIEWED FOR DELETION
-  // ========================================================================
-
-  // /**
-  //  * Simple within check (placeholder for more complex logic)
-  //  * This is a simplified version - in a real implementation this would use proper geometric algorithms
-  //  */
-  // private static isWithin(inner: number[][], outer: number[][]): boolean {
-  //   // Simplified check - just compare first points
-  //   if (!inner || !outer || inner.length === 0 || outer.length === 0) {
-  //     return false;
-  //   }
-
-  //   // This is a placeholder implementation
-  //   // In the real implementation, this would use proper point-in-polygon algorithms
-  //   return false;
-  // }
 }

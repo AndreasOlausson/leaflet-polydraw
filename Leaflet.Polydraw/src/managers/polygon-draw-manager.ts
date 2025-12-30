@@ -271,6 +271,7 @@ export class PolygonDrawManager {
 
       this.p2pMarkers.push(pointMarker);
       this.updateP2PTracer();
+      this.updateFirstMarkerReadyState();
     } catch (error) {
       // Handle marker creation errors in test environment
     }
@@ -431,41 +432,15 @@ export class PolygonDrawManager {
     // console.log('PolygonDrawManager isClickingFirstPoint');
     if (!firstPoint) return false;
 
-    // Use zoom-dependent tolerance - higher zoom = smaller tolerance
-    const zoom = this.map.getZoom();
-    // Base tolerance at zoom 10, scale down exponentially for higher zooms
-    const baseTolerance = 0.0005;
-    let tolerance = baseTolerance / Math.pow(2, Math.max(0, zoom - 10));
+    // Use pixel-based tolerance so zoom level doesn't affect closing.
+    const clickPt = this.map.latLngToLayerPoint(clickLatLng);
+    const firstPt = this.map.latLngToLayerPoint(firstPoint);
+    const pixelDist = clickPt.distanceTo(firstPt);
 
-    // Increase tolerance for touch devices (finger precision is lower than mouse)
-    if (this.isTouchDevice()) {
-      tolerance *= 5; // 5x larger tolerance for touch devices
-    }
+    const basePxTolerance = 12;
+    const tolerancePx = this.isTouchDevice() ? basePxTolerance * 2 : basePxTolerance;
 
-    // Additional tolerance multiplier for easier closing
-    tolerance *= 3; // 3x larger tolerance to make closing easier
-
-    // console.log('First point click tolerance check:', {
-    //   zoom: zoom,
-    //   baseTolerance: baseTolerance,
-    //   calculatedTolerance: tolerance,
-    //   clickLatLng: {
-    //     lat: clickLatLng.lat.toFixed(10),
-    //     lng: clickLatLng.lng.toFixed(10),
-    //   },
-    //   firstPoint: {
-    //     lat: firstPoint.lat.toFixed(10),
-    //     lng: firstPoint.lng.toFixed(10),
-    //   },
-    //   distances: {
-    //     lat: Math.abs(clickLatLng.lat - firstPoint.lat),
-    //     lng: Math.abs(clickLatLng.lng - firstPoint.lng),
-    //   },
-    // });
-
-    const latDiff = Math.abs(clickLatLng.lat - firstPoint.lat);
-    const lngDiff = Math.abs(clickLatLng.lng - firstPoint.lng);
-    const isClicking = latDiff < tolerance && lngDiff < tolerance;
+    const isClicking = pixelDist <= tolerancePx;
 
     // console.log('First point click result:', {
     //   tolerance: tolerance,
@@ -535,6 +510,7 @@ export class PolygonDrawManager {
       if (markerIndex === 0 && this.p2pMarkers.length > 0) {
         this.setupFirstMarker();
       }
+      this.updateFirstMarkerReadyState();
     }
   }
 
@@ -574,6 +550,7 @@ export class PolygonDrawManager {
     const element = firstMarker.getElement();
     if (element) {
       element.classList.add('leaflet-polydraw-p2p-first-marker');
+      element.classList.remove('leaflet-polydraw-p2p-first-marker-ready');
       firstMarker.setIcon(
         leafletAdapter.createDivIcon({
           className: 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker',
@@ -592,8 +569,6 @@ export class PolygonDrawManager {
       if (this.p2pMarkers.length >= 3) {
         const element = firstMarker.getElement();
         if (element) {
-          element.style.backgroundColor = this.config.colors.p2p.closingMarker;
-          element.style.borderColor = this.config.colors.p2p.closingMarker;
           element.style.cursor = 'pointer';
           element.title = 'Click to close polygon';
         }
@@ -623,6 +598,38 @@ export class PolygonDrawManager {
         this.completePointToPointPolygon();
       }
     });
+  }
+
+  /**
+   * Toggle helper class for first marker when polygon can be closed.
+   */
+  private updateFirstMarkerReadyState(): void {
+    if (this.p2pMarkers.length === 0) return;
+    const firstMarker = this.p2pMarkers[0];
+    const element = firstMarker.getElement();
+    if (!element) return;
+    if (this.p2pMarkers.length >= 3) {
+      element.classList.add('leaflet-polydraw-p2p-first-marker-ready');
+      element.setAttribute(
+        'data-p2p-mode',
+        this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract ? 'subtract' : 'add',
+      );
+      element.style.cursor = 'pointer';
+      element.title = 'Click to close polygon';
+    } else {
+      element.classList.remove('leaflet-polydraw-p2p-first-marker-ready');
+      element.removeAttribute('data-p2p-mode');
+      element.style.cursor = '';
+      element.removeAttribute('title');
+    }
+  }
+
+  /**
+   * Refresh the first-marker ready state when draw mode changes.
+   */
+  public refreshP2PMarkerState(): void {
+    if (this.p2pMarkers.length === 0) return;
+    this.updateFirstMarkerReadyState();
   }
 
   /**

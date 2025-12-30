@@ -2,7 +2,7 @@
 
 ## Draw Mode
 
-[![Draw Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/draw-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/draw-mode.gif)
+[![Draw Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/draw.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/draw.mp4)
 
 Create polygons by drawing freehand shapes on the map. Perfect for:
 
@@ -17,7 +17,7 @@ Simply click the draw button and drag your mouse/finger to create polygon shapes
 
 ## Subtract Draw Mode
 
-[![Subtract Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/subtract-mode.gif)
+[![Subtract Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/subtract.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/subtract.mp4)
 
 Create holes and complex shapes by subtracting areas from existing polygons. Ideal for:
 
@@ -30,7 +30,7 @@ Click the subtract button and draw over existing polygons to remove those areas,
 
 ## Point-to-Point Drawing
 
-[![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/p2p.gif)
+[![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/p2p-draw.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/p2p-draw.mp4)
 
 Create precise polygons by clicking to place each vertex. Perfect for:
 
@@ -49,9 +49,31 @@ Create precise polygons by clicking to place each vertex. Perfect for:
 
 You can also drag markers to adjust the shape and delete them by holding the modifier key (Cmd/Ctrl) and clicking on a marker, just like with regular polygon editing.
 
+## Point-to-Point Subtract
+
+[![Point-to-Point Subtract](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/p2p-subtract.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/p2p-subtract.mp4)
+
+Use point-to-point with subtraction to cut precise holes or remove segments:
+
+- Click to place each vertex of the subtracting shape
+- Complete the ring (click first vertex or double-click/tap)
+- The ring subtracts from existing polygons, creating holes or splits
+
+This mode mirrors point-to-point drawing but applies the shape as a subtraction instead of an addition.
+
+## Undo & Redo
+
+[![Undo and Redo](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/undo.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/undo.mp4)
+
+Step backward or forward through edits:
+
+- Undo/redo polygon drawing, subtraction, vertex edits, and transforms
+- Accessible via toolbar buttons or keyboard shortcuts
+- History is capped to keep memory under control (`config.maxHistorySize`)
+
 ## Smart Polygon Merging
 
-[![Smart Merging](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/merge.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/merge.gif)
+[![Smart Merging](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/merge.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/merge.mp4)
 
 The plugin features **two independent merge systems**:
 
@@ -69,7 +91,7 @@ The plugin features **two independent merge systems**:
 
 ## Drag & Drop Functionality
 
-[![Drag and Drop](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-drop.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-drop.gif)
+[![Drag and Drop](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/merge2.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/merge2.mp4)
 
 **Drag-to-Merge**: Drag polygons together to automatically merge them
 
@@ -79,7 +101,7 @@ The plugin features **two independent merge systems**:
 
 ## Drag Elbows (Vertex Editing)
 
-[![Drag Elbows](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-elbows.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/drag-elbows.gif)
+[![Drag Elbows](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/elbow.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/elbow.mp4)
 
 Fine-tune polygon shapes by dragging individual vertices. Perfect for:
 
@@ -92,7 +114,7 @@ Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex,
 
 ## Advanced Editing Tools
 
-[![Editing Tools](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/editing-tools.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/editing-tools.gif)
+[![Editing Tools](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/polygon-tools.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/polygon-tools.mp4)
 
 Access operations through the menu marker:
 
@@ -103,11 +125,19 @@ Access operations through the menu marker:
 - **Scale**: Use the transform handles to resize the polygon without redrawing it.
 - **Rotate**: Use the transform handles to rotate the polygon without redrawing it.
 - **Visual Optimization Toggle**: Quickly show or hide the pruned “elbow” markers on predefined polygons, so you can inspect every
-  vertex or keep the view uncluttered.
+  vertex or keep the view uncluttered. (see [API.md](API.md))
+
+## Programmatic Import & Export
+
+Load and save polygon data directly from your app:
+
+- **Predefined polygons**: Add polygons from saved data with automatic coordinate format detection.
+- **GeoJSON support**: Import `Polygon` and `MultiPolygon` features, including holes.
+- **Export**: Read back all polygons for persistence or server sync.
+
+See [API.md](API.md) for method details and examples.
 
 ## Smart Marker System
-
-[![Smart Markers](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/smart-markers.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/smart-markers.png)
 
 Intelligent marker positioning prevents overlapping on small polygons:
 

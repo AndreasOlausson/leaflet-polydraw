@@ -10,12 +10,13 @@
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-For development setup, testing, and coding guidelines, see  
-[Contributing Guide](./docs/CONTRIBUTING.md)
+If you are unsure about the process, open an issue first with a short repro or a proposal.
+For general open-source contribution guidelines, see
+[Leaflet's contributing guide](https://github.com/Leaflet/Leaflet/blob/main/CONTRIBUTING.md).
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE).
+This project is licensed under the [MIT License](../Leaflet.Polydraw/LICENSE).
 
 ## Acknowledgments
 

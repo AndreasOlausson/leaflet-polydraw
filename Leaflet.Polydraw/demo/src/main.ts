@@ -143,6 +143,60 @@ const multipleSimplePolygons: L.LatLng[][][] = [
   ],
 ];
 
+// Star/compass base
+const starBase: L.LatLngLiteral[] = [
+  { lat: 58.001914, lng: 15.344043 },
+  { lat: 58.006914, lng: 15.348043 },
+  { lat: 58.008914, lng: 15.340043 },
+  { lat: 58.010914, lng: 15.348043 },
+  { lat: 58.014914, lng: 15.344043 },
+  { lat: 58.012914, lng: 15.352043 },
+  { lat: 58.016914, lng: 15.356043 },
+  { lat: 58.012914, lng: 15.360043 },
+  { lat: 58.014914, lng: 15.368043 },
+  { lat: 58.010914, lng: 15.364043 },
+  { lat: 58.008914, lng: 15.372043 },
+  { lat: 58.006914, lng: 15.364043 },
+  { lat: 58.001914, lng: 15.368043 },
+  { lat: 58.003914, lng: 15.360043 },
+  { lat: 57.999914, lng: 15.356043 },
+  { lat: 58.003914, lng: 15.352043 },
+];
+
+const doubleElbow = (ring: L.LatLngLiteral[]): L.LatLngLiteral[] => {
+  const result: L.LatLngLiteral[] = [];
+  for (let i = 0; i < ring.length; i++) {
+    const p1 = ring[i];
+    const p2 = ring[(i + 1) % ring.length];
+    result.push(p1);
+    result.push({
+      lat: (p1.lat + p2.lat) / 2,
+      lng: (p1.lng + p2.lng) / 2,
+    });
+  }
+  return result;
+};
+
+const buildStar = (iterations: number): L.LatLng[][][] => {
+  let ring = [...starBase];
+  for (let i = 0; i < iterations; i++) {
+    ring = doubleElbow(ring);
+  }
+  // close the ring
+  ring.push(ring[0]);
+  const closedRing = ring.map((pt) => leafletAdapter.createLatLng(pt.lat, pt.lng));
+  if (
+    closedRing[0].lat !== closedRing[closedRing.length - 1].lat ||
+    closedRing[0].lng !== closedRing[closedRing.length - 1].lng
+  ) {
+    closedRing.push(closedRing[0]);
+  }
+  return [[closedRing]];
+};
+
+const star16 = buildStar(0); // 16 points + closure
+const star1024 = buildStar(6); // 16 * 2^6 = 1024 points + closure
+
 const map = leafletAdapter.createMap('map').setView([58.402514, 15.606188], 10);
 
 leafletAdapter
@@ -155,6 +209,12 @@ leafletAdapter
 const polydraw = new Polydraw();
 polydraw.addTo(map as any);
 window.polydrawControl = polydraw;
+
+const pointMarkerState = {
+  layer: null as L.LayerGroup | null,
+  markers: [] as L.Marker[],
+  points: [] as L.LatLngLiteral[],
+};
 
 // Status box update functionality
 function updateStatusBox() {
@@ -930,26 +990,192 @@ function updateStatusBox() {
   }
 }
 
+type PolygonRings = {
+  outer: L.LatLng[];
+  holes: L.LatLng[][];
+};
+
+const isLatLngValue = (value: any): value is L.LatLng =>
+  value && typeof value.lat === 'number' && typeof value.lng === 'number';
+
+const isClosedRing = (ring: L.LatLng[]): boolean => {
+  if (!Array.isArray(ring) || ring.length < 2) return false;
+  const first = ring[0] as L.LatLng;
+  const last = ring[ring.length - 1] as L.LatLng;
+  if (first && typeof (first as any).equals === 'function') {
+    return (first as any).equals(last, 1e-9);
+  }
+  return Math.abs(first.lat - last.lat) < 1e-12 && Math.abs(first.lng - last.lng) < 1e-12;
+};
+
+const normalizeRing = (ring: L.LatLng[]): L.LatLng[] => {
+  if (!Array.isArray(ring) || ring.length === 0) return [];
+  return isClosedRing(ring) ? ring.slice(0, -1) : ring;
+};
+
+const normalizePolygonLatLngs = (
+  latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+): PolygonRings[] => {
+  if (!Array.isArray(latLngs) || latLngs.length === 0) return [];
+  const first = latLngs[0] as any;
+
+  if (isLatLngValue(first)) {
+    return [{ outer: latLngs as L.LatLng[], holes: [] }];
+  }
+
+  if (Array.isArray(first) && isLatLngValue((first as any)[0])) {
+    const rings = latLngs as L.LatLng[][];
+    const [outer, ...holes] = rings;
+    return outer ? [{ outer, holes }] : [];
+  }
+
+  const polygons = latLngs as L.LatLng[][][];
+  const result: PolygonRings[] = [];
+  polygons.forEach((polygon) => {
+    if (!Array.isArray(polygon) || polygon.length === 0) return;
+    const [outer, ...holes] = polygon;
+    if (outer) {
+      result.push({ outer, holes });
+    }
+  });
+  return result;
+};
+
+const isPointOnSegment = (point: L.LatLngLiteral, a: L.LatLng, b: L.LatLng): boolean => {
+  const ax = a.lng;
+  const ay = a.lat;
+  const bx = b.lng;
+  const by = b.lat;
+  const px = point.lng;
+  const py = point.lat;
+  const cross = (py - ay) * (bx - ax) - (px - ax) * (by - ay);
+  if (Math.abs(cross) > 1e-12) return false;
+  const dot = (px - ax) * (bx - ax) + (py - ay) * (by - ay);
+  if (dot < -1e-12) return false;
+  const lenSq = (bx - ax) * (bx - ax) + (by - ay) * (by - ay);
+  if (dot - lenSq > 1e-12) return false;
+  return true;
+};
+
+const isPointInRing = (point: L.LatLngLiteral, ring: L.LatLng[]): boolean => {
+  if (!Array.isArray(ring) || ring.length < 3) return false;
+
+  const x = point.lng;
+  const y = point.lat;
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[i];
+    const b = ring[j];
+    if (isPointOnSegment(point, a, b)) {
+      return true;
+    }
+    const xi = a.lng;
+    const yi = a.lat;
+    const xj = b.lng;
+    const yj = b.lat;
+    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+};
+
+const isPointInPolygon = (point: L.LatLngLiteral, polygon: PolygonRings): boolean => {
+  if (!isPointInRing(point, polygon.outer)) return false;
+  for (const hole of polygon.holes) {
+    if (isPointInRing(point, hole)) return false;
+  }
+  return true;
+};
+
+const collectPolygonRings = (): PolygonRings[] => {
+  const polygons: PolygonRings[] = [];
+  const featureGroups = polydraw.getFeatureGroups();
+  featureGroups.forEach((featureGroup) => {
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        const latLngs = layer.getLatLngs() as L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
+        const normalized = normalizePolygonLatLngs(latLngs);
+        normalized.forEach((polygon) => {
+          const outer = normalizeRing(polygon.outer);
+          if (outer.length < 3) return;
+          const holes = polygon.holes
+            .map(normalizeRing)
+            .filter((ring) => Array.isArray(ring) && ring.length >= 3);
+          polygons.push({ outer, holes });
+        });
+      }
+    });
+  });
+  return polygons;
+};
+
+function updatePointFilter(): void {
+  const summary = document.getElementById('point-filter-summary');
+  if (!summary) return;
+
+  const points = pointMarkerState.points;
+  const markers = pointMarkerState.markers;
+  if (points.length === 0 || markers.length === 0) {
+    summary.textContent = 'Points in polygons: 0 / 0';
+    return;
+  }
+
+  const polygons = collectPolygonRings();
+  if (polygons.length === 0) {
+    summary.textContent = `Points in polygons: 0 / ${points.length} (no polygons)`;
+    markers.forEach((marker) => {
+      const el = marker.getElement();
+      if (!el) return;
+      el.classList.remove('is-inside', 'is-outside');
+    });
+    return;
+  }
+
+  let insideCount = 0;
+  const total = Math.min(points.length, markers.length);
+  for (let i = 0; i < total; i++) {
+    const point = points[i];
+    let inside = false;
+    for (const polygon of polygons) {
+      if (isPointInPolygon(point, polygon)) {
+        inside = true;
+        break;
+      }
+    }
+    if (inside) insideCount += 1;
+    const el = markers[i]?.getElement();
+    if (el) {
+      el.classList.toggle('is-inside', inside);
+      el.classList.toggle('is-outside', !inside);
+    }
+  }
+
+  summary.textContent = `Points in polygons: ${insideCount} / ${points.length}`;
+}
+
 // Subscribe to polygon changes using proper event handling
-(polydraw as any).on('polydraw:polygon:created', () => {
+const refreshPolygonViews = () => {
   updateStatusBox();
-});
+  updatePointFilter();
+};
+
+(polydraw as any).on('polydraw:polygon:created', refreshPolygonViews);
+(polydraw as any).on('polydraw:polygon:updated', refreshPolygonViews);
+(polydraw as any).on('polydraw:polygon:deleted', refreshPolygonViews);
+(polydraw as any).on('polydraw:history:undo', refreshPolygonViews);
+(polydraw as any).on('polydraw:history:redo', refreshPolygonViews);
 
 (polydraw as any).on('polydraw:mode:change', (data: any) => {
   updateStatusBox();
 });
 
 // Listen for any polygon operations (add, subtract, delete)
-(polydraw as any).on('polygonOperationComplete', () => {
-  updateStatusBox();
-});
+(polydraw as any).on('polygonOperationComplete', refreshPolygonViews);
 
-(polydraw as any).on('polygonDeleted', () => {
-  updateStatusBox();
-});
+(polydraw as any).on('polygonDeleted', refreshPolygonViews);
 
 // Initial status update
-updateStatusBox();
+refreshPolygonViews();
 
 const linkoping: L.LatLng[][][] = [
   [
@@ -3764,6 +3990,8 @@ const linkoping: L.LatLng[][][] = [
 
 type SampleKey =
   | 'octagon'
+  | 'star16'
+  | 'star1024'
   | 'squareHole'
   | 'overlap'
   | 'linkoping-0'
@@ -3781,6 +4009,14 @@ interface SampleDefinition {
 }
 
 const sampleLibrary: Record<SampleKey, SampleDefinition> = {
+  star16: {
+    coordinates: star16,
+    viewport: { center: leafletAdapter.createLatLng(58.01, 15.35), zoom: 12 },
+  },
+  star1024: {
+    coordinates: star1024,
+    viewport: { center: leafletAdapter.createLatLng(58.01, 15.35), zoom: 12 },
+  },
   octagon: {
     coordinates: octagon,
     visualOptimizationLevel: 2,
@@ -3833,7 +4069,7 @@ function registerSampleButtons(): void {
         if (sample.viewport) {
           map.setView(sample.viewport.center, sample.viewport.zoom ?? map.getZoom());
         }
-        setTimeout(updateStatusBox, 100);
+        setTimeout(refreshPolygonViews, 100);
       } catch (error) {
         console.warn(`Failed to add sample polygon "${key}":`, error);
       }
@@ -3843,15 +4079,141 @@ function registerSampleButtons(): void {
 
 registerSampleButtons();
 
+const clampCount = (value: number, min: number, max: number): number => {
+  if (!Number.isFinite(value)) return min;
+  return Math.min(max, Math.max(min, Math.floor(value)));
+};
+
+const createSpreadPoints = (count: number, bounds: L.LatLngBounds): L.LatLngLiteral[] => {
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  const width = Math.max(0.000001, Math.abs(ne.lng - sw.lng));
+  const height = Math.max(0.000001, Math.abs(ne.lat - sw.lat));
+  const aspect = width / height;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(count * aspect)));
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const lngStep = width / cols;
+  const latStep = height / rows;
+  const points: L.LatLngLiteral[] = [];
+
+  for (let row = 0; row < rows && points.length < count; row++) {
+    for (let col = 0; col < cols && points.length < count; col++) {
+      const lat = sw.lat + row * latStep + Math.random() * latStep;
+      const lng = sw.lng + col * lngStep + Math.random() * lngStep;
+      points.push({ lat, lng });
+    }
+  }
+
+  return points;
+};
+
+function setupMarkerGenerator(): void {
+  const input = document.getElementById('marker-count') as HTMLInputElement | null;
+  const button = document.getElementById('marker-generate') as HTMLButtonElement | null;
+  if (!input || !button) return;
+
+  const sortPointsByAngle = (
+    points: L.LatLngLiteral[],
+    anchor: L.LatLngLiteral,
+  ): L.LatLngLiteral[] => {
+    return [...points].sort(
+      (a, b) =>
+        Math.atan2(a.lat - anchor.lat, a.lng - anchor.lng) -
+        Math.atan2(b.lat - anchor.lat, b.lng - anchor.lng),
+    );
+  };
+
+  const generate = () => {
+    const count = clampCount(Number.parseInt(input.value, 10), 3, 2000);
+    input.value = String(count);
+
+    const points = createSpreadPoints(count, map.getBounds());
+    if (points.length < 3) {
+      return;
+    }
+
+    const center = map.getBounds().getCenter();
+    const sorted = sortPointsByAngle(points, { lat: center.lat, lng: center.lng });
+    const ring = sorted.map((pt) => leafletAdapter.createLatLng(pt.lat, pt.lng));
+    const first = ring[0];
+    const last = ring[ring.length - 1];
+    if (first && last && (first.lat !== last.lat || first.lng !== last.lng)) {
+      ring.push(leafletAdapter.createLatLng(first.lat, first.lng));
+    }
+
+    polydraw.addPredefinedPolygon([[ring]], { visualOptimizationLevel: 0 });
+    setTimeout(refreshPolygonViews, 100);
+  };
+
+  button.addEventListener('click', generate);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      generate();
+    }
+  });
+}
+
+setupMarkerGenerator();
+
+function setupPointMarkerGenerator(): void {
+  const input = document.getElementById('point-count') as HTMLInputElement | null;
+  const button = document.getElementById('point-generate') as HTMLButtonElement | null;
+  if (!input || !button) return;
+
+  const pointIcon = leafletAdapter.createDivIcon({
+    className: 'demo-point-marker leaflet-div-icon',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+  });
+
+  const generate = () => {
+    const count = clampCount(Number.parseInt(input.value, 10), 1, 2000);
+    input.value = String(count);
+
+    if (pointMarkerState.layer) {
+      map.removeLayer(pointMarkerState.layer);
+      pointMarkerState.layer = null;
+    }
+
+    const points = createSpreadPoints(count, map.getBounds());
+    const markers = points.map((pt) =>
+      leafletAdapter.createMarker(leafletAdapter.createLatLng(pt.lat, pt.lng), {
+        icon: pointIcon,
+        interactive: false,
+        keyboard: false,
+      }),
+    );
+    pointMarkerState.points = points;
+    pointMarkerState.markers = markers;
+    pointMarkerState.layer = leafletAdapter.createLayerGroup(markers).addTo(map);
+    setTimeout(updatePointFilter, 0);
+  };
+
+  button.addEventListener('click', generate);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      generate();
+    }
+  });
+}
+
+setupPointMarkerGenerator();
+
 function setupSamplePanelCollapse(): void {
   const header = document.getElementById('samples-header');
   const content = document.getElementById('samples-content');
+  const extra = document.getElementById('samples-extra');
   const chevron = header?.querySelector('[data-chevron="sample"]') as HTMLElement | null;
   if (!header || !content) return;
 
   let collapsed = false;
   const updateState = () => {
     content.style.display = collapsed ? 'none' : 'grid';
+    if (extra) {
+      extra.style.display = collapsed ? 'none' : 'block';
+    }
     if (chevron) {
       chevron.style.transform = collapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
     }
