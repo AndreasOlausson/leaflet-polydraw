@@ -781,7 +781,8 @@ class Polydraw extends L.Control {
     } else {
       leafletAdapter.domUtil.addClass(activateButton, 'active');
       if (this.subContainer) {
-        this.subContainer.style.maxHeight = '250px';
+        const targetHeight = this.subContainer.scrollHeight;
+        this.subContainer.style.maxHeight = `${targetHeight || 250}px`;
       }
     }
     // Update the indicator state whenever the panel is toggled
