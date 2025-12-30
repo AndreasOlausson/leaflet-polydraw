@@ -745,6 +745,9 @@ class Polydraw extends L.Control {
     this.modeManager.updateStateForMode(mode);
     this.emitDrawModeChanged();
     this.updateMarkerDraggableState();
+    if (this.polygonDrawManager?.refreshP2PMarkerState) {
+      this.polygonDrawManager.refreshP2PMarkerState();
+    }
   }
 
   /**

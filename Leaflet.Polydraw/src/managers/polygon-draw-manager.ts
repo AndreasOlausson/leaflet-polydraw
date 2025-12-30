@@ -625,6 +625,14 @@ export class PolygonDrawManager {
   }
 
   /**
+   * Refresh the first-marker ready state when draw mode changes.
+   */
+  public refreshP2PMarkerState(): void {
+    if (this.p2pMarkers.length === 0) return;
+    this.updateFirstMarkerReadyState();
+  }
+
+  /**
    * Handle marker hover for edge deletion feedback
    */
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {

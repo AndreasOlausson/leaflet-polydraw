@@ -56,6 +56,8 @@ const map = L.map('map').setView([51.505, -0.09], 13);
 const polydraw = new Polydraw().addTo(map);
 ```
 
+The examples use TypeScript fences for clarity, but the same imports work in plain JavaScript bundlers.
+
 ## How It Works
 
 ### Automatic Version Detection

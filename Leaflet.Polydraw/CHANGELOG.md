@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Behavioral changes: simplification tolerance now adapts by shape size/latitude, and canceling a transform no longer emits an update or history entry.
 - `markers.visualOptimization` now exposes `toleranceMin`, `toleranceMax`, and `curve` to tune the level-to-tolerance mapping (legacy fields remain for backward compatibility but are ignored).
   Simplification now adapts tolerance by shape size and latitude to keep vertex reduction consistent across scales.
 - P2P closing tolerance uses pixel distance, and the first marker uses a ready-state class for styling.
