@@ -6,6 +6,7 @@ import { PolygonUtil } from '../polygon.util';
 import { MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
+import { LeafletVersionDetector } from '../compatibility/version-detector';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
@@ -901,28 +902,38 @@ export class PolygonInteractionManager {
       try {
         const container = this.map.getContainer();
         container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
-      } catch (error) {
+      } catch {
         // Handle DOM errors
       }
 
       this.map.on('mousemove', this.onPolygonMouseMove, this);
       this.map.on('mouseup', this.onPolygonMouseUp, this);
       // Also register pointer events (Leaflet v2)
-      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
-      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
+      (this.map as L.Evented).on(
+        'pointermove',
+        this.onPolygonMouseMove as L.LeafletEventHandlerFn,
+        this,
+      );
+      (this.map as L.Evented).on(
+        'pointerup',
+        this.onPolygonMouseUp as L.LeafletEventHandlerFn,
+        this,
+      );
 
       this.currentDragPolygon = polygon;
     });
 
     // Support pointer events (Leaflet v2) in addition to mousedown
-    (polygon as any).on('pointerdown', (e: any) => {
+    (polygon as L.Evented).on('pointerdown', ((event: L.LeafletEvent) => {
+      const e = event as L.LeafletMouseEvent;
       if (this.transformModeActive) {
         return;
       }
       // If not in off mode, it's a drawing click. Forward to map and stop.
       if (!this.modeManager.isInOffMode()) {
-        L.DomEvent.stopPropagation(e);
-        (this.map as any).fire('pointerdown', e);
+        const originalEvent = (e.originalEvent ?? e) as Event;
+        L.DomEvent.stopPropagation(originalEvent);
+        (this.map as L.Evented).fire('pointerdown', e);
         return;
       }
 
@@ -930,11 +941,13 @@ export class PolygonInteractionManager {
         return;
       }
       // Normalize originalEvent presence
-      const orig = e && e.originalEvent ? e.originalEvent : e;
+      const orig = (e.originalEvent ?? e) as Event;
       L.DomEvent.stopPropagation(orig);
       L.DomEvent.preventDefault(orig);
 
-      const isModifierPressed = this.detectDragSubtractModifierKey(orig);
+      const isModifierPressed = this.detectDragSubtractModifierKey(
+        orig as MouseEvent | PointerEvent,
+      );
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
@@ -958,24 +971,32 @@ export class PolygonInteractionManager {
       try {
         const container = this.map.getContainer();
         container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
-      } catch (error) {
+      } catch {
         // Handle DOM errors
       }
 
       this.map.on('mousemove', this.onPolygonMouseMove, this);
       this.map.on('mouseup', this.onPolygonMouseUp, this);
-      (this.map as any).on('pointermove', this.onPolygonMouseMove, this);
-      (this.map as any).on('pointerup', this.onPolygonMouseUp, this);
+      (this.map as L.Evented).on(
+        'pointermove',
+        this.onPolygonMouseMove as L.LeafletEventHandlerFn,
+        this,
+      );
+      (this.map as L.Evented).on(
+        'pointerup',
+        this.onPolygonMouseUp as L.LeafletEventHandlerFn,
+        this,
+      );
 
       this.currentDragPolygon = polygon;
-    });
+    }) as L.LeafletEventHandlerFn);
 
     polygon.on('mouseover', () => {
       if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
           const container = this.map.getContainer();
           container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
-        } catch (error) {
+        } catch {
           // Handle DOM errors
         }
       }
@@ -986,7 +1007,7 @@ export class PolygonInteractionManager {
         try {
           const container = this.map.getContainer();
           container.style.cursor = '';
-        } catch (error) {
+        } catch {
           // Handle DOM errors
         }
       }
@@ -1016,7 +1037,7 @@ export class PolygonInteractionManager {
                 marker.dragging.disable();
               }
             }
-          } catch (error) {
+          } catch {
             // Handle any errors in updating marker state
           }
         }
@@ -1191,7 +1212,7 @@ export class PolygonInteractionManager {
             });
           }
         }
-      } catch (error) {
+      } catch {
         // Handle errors
       }
     }
@@ -1430,7 +1451,7 @@ export class PolygonInteractionManager {
       if (typeof pointA.distanceTo === 'function') {
         return pointA.distanceTo(pointB);
       }
-    } catch (error) {
+    } catch {
       // Fallback to haversine below
     }
 
@@ -1764,8 +1785,16 @@ export class PolygonInteractionManager {
     this.map.off('mousemove', this.onPolygonMouseMove, this);
     this.map.off('mouseup', this.onPolygonMouseUp, this);
     // Also remove pointer listeners (Leaflet v2)
-    (this.map as any).off('pointermove', this.onPolygonMouseMove, this);
-    (this.map as any).off('pointerup', this.onPolygonMouseUp, this);
+    (this.map as L.Evented).off(
+      'pointermove',
+      this.onPolygonMouseMove as L.LeafletEventHandlerFn,
+      this,
+    );
+    (this.map as L.Evented).off(
+      'pointerup',
+      this.onPolygonMouseUp as L.LeafletEventHandlerFn,
+      this,
+    );
 
     if (this.map.dragging) {
       this.map.dragging.enable();
@@ -1781,7 +1810,7 @@ export class PolygonInteractionManager {
     try {
       const container = this.map.getContainer();
       container.style.cursor = '';
-    } catch (error) {
+    } catch {
       // Handle DOM errors
     }
 
@@ -1955,7 +1984,7 @@ export class PolygonInteractionManager {
       });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
-    } catch (error) {
+    } catch {
       // Handle errors
     }
   }
@@ -1973,7 +2002,7 @@ export class PolygonInteractionManager {
     return isMac ? 'metaKey' : 'ctrlKey';
   }
 
-  private detectDragSubtractModifierKey(event: MouseEvent | KeyboardEvent): boolean {
+  private detectDragSubtractModifierKey(event: MouseEvent | KeyboardEvent | PointerEvent): boolean {
     if (isTouchDevice()) {
       return false;
     }
@@ -1981,8 +2010,8 @@ export class PolygonInteractionManager {
     const modifierKey = this.getDragSubtractModifierKey();
     // Type-guarded check for both MouseEvent and KeyboardEvent
     return (
-      ((event as MouseEvent | KeyboardEvent)[
-        modifierKey as keyof (MouseEvent | KeyboardEvent)
+      ((event as MouseEvent | KeyboardEvent | PointerEvent)[
+        modifierKey as keyof (MouseEvent | KeyboardEvent | PointerEvent)
       ] as boolean) || false
     );
   }
@@ -2004,7 +2033,7 @@ export class PolygonInteractionManager {
         });
       }
       this.updateMarkerColorsForSubtractMode(polygon, enabled);
-    } catch (error) {
+    } catch {
       // Handle DOM errors
     }
   }
@@ -2056,7 +2085,7 @@ export class PolygonInteractionManager {
           }
         }
       });
-    } catch (error) {
+    } catch {
       // Handle errors
     }
   }
@@ -2117,7 +2146,7 @@ export class PolygonInteractionManager {
                 intersectingFeatureGroups.push(featureGroup);
               }
             }
-          } catch (intersectError) {
+          } catch {
             // If intersection fails, try the polygonIntersect method
             try {
               const hasIntersection = this.turfHelper.polygonIntersect(
@@ -2127,11 +2156,11 @@ export class PolygonInteractionManager {
               if (hasIntersection) {
                 intersectingFeatureGroups.push(featureGroup);
               }
-            } catch (polygonIntersectError) {
+            } catch {
               // Continue with other polygons
             }
           }
-        } catch (error) {
+        } catch {
           // Handle errors
         }
       });
@@ -2244,7 +2273,7 @@ export class PolygonInteractionManager {
           try {
             const container = this.map.getContainer();
             container.style.cursor = 'pointer';
-          } catch (error) {
+          } catch {
             // Handle DOM errors
           }
         } else {
@@ -2255,7 +2284,7 @@ export class PolygonInteractionManager {
           try {
             const container = this.map.getContainer();
             container.style.cursor = '';
-          } catch (error) {
+          } catch {
             // Handle DOM errors
           }
         }
@@ -2282,7 +2311,7 @@ export class PolygonInteractionManager {
       try {
         const container = this.map.getContainer();
         container.style.cursor = '';
-      } catch (error) {
+      } catch {
         // Handle DOM errors
       }
 
@@ -2703,11 +2732,12 @@ export class PolygonInteractionManager {
     });
 
     const isMobile = window.innerWidth <= 600;
+    const versionClass = LeafletVersionDetector.isV1() ? ' leaflet-v1' : ' leaflet-v2';
     const popup = leafletAdapter
       .createPopup({
         closeButton: false,
         autoClose: true,
-        className: `menu-popup${isMobile ? ' mobile-popup' : ''}`,
+        className: `menu-popup${isMobile ? ' mobile-popup' : ''}${versionClass}`,
       })
       .setContent(outerWrapper);
 

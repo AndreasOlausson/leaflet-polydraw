@@ -272,7 +272,7 @@ export class PolygonDrawManager {
       this.p2pMarkers.push(pointMarker);
       this.updateP2PTracer();
       this.updateFirstMarkerReadyState();
-    } catch (error) {
+    } catch {
       // Handle marker creation errors in test environment
     }
   }
@@ -303,7 +303,8 @@ export class PolygonDrawManager {
   /**
    * Handle double-tap to complete point-to-point polygon (touch devices)
    */
-  handleDoubleTap(_e: TouchEvent): void {
+  handleDoubleTap(event: TouchEvent): void {
+    void event;
     // Only handle double-tap in Point-to-Point modes
     if (
       this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&
@@ -420,7 +421,7 @@ export class PolygonDrawManager {
       this.tracer.setStyle({
         dashArray: undefined,
       });
-    } catch (error) {
+    } catch {
       // Handle tracer style errors in test environment
     }
   }
@@ -478,7 +479,7 @@ export class PolygonDrawManager {
           color: lineColor,
           dashArray: '5, 5',
         });
-      } catch (error) {
+      } catch {
         // Handle tracer style errors in test environment
       }
     } else {
@@ -487,7 +488,7 @@ export class PolygonDrawManager {
         this.tracer.setStyle({
           dashArray: undefined,
         });
-      } catch (error) {
+      } catch {
         // Handle tracer style errors in test environment
       }
     }
@@ -649,7 +650,7 @@ export class PolygonDrawManager {
           try {
             const container = this.map.getContainer();
             container.style.cursor = 'pointer';
-          } catch (error) {
+          } catch {
             // Handle DOM errors
           }
         } else {
@@ -657,7 +658,7 @@ export class PolygonDrawManager {
           try {
             const container = this.map.getContainer();
             container.style.cursor = '';
-          } catch (error) {
+          } catch {
             // Handle DOM errors
           }
         }
@@ -672,7 +673,7 @@ export class PolygonDrawManager {
       try {
         const container = this.map.getContainer();
         container.style.cursor = '';
-      } catch (error) {
+      } catch {
         // Handle DOM errors
       }
       const handler = this.markerModifierHandlers.get(marker);

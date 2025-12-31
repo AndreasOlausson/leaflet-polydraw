@@ -1,9 +1,8 @@
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
-const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const rootDir = path.resolve(process.cwd());
 
 export default defineConfig({
   testDir: path.resolve(rootDir, 'test/playwright'),

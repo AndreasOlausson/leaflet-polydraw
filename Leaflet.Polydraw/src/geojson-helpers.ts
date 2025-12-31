@@ -6,6 +6,8 @@ import type {
   LineString,
   FeatureCollection,
   Position,
+  Geometry,
+  GeometryCollection,
 } from 'geojson';
 import { EARTH_RADIUS, MATH } from './constants';
 
@@ -20,7 +22,10 @@ export type Coord = [number, number];
  * @param properties - Optional properties object
  * @returns GeoJSON Point feature
  */
-export function point(coordinates: Position, properties: Record<string, any> = {}): Feature<Point> {
+export function point(
+  coordinates: Position,
+  properties: Record<string, unknown> = {},
+): Feature<Point> {
   return {
     type: 'Feature',
     geometry: {
@@ -39,7 +44,7 @@ export function point(coordinates: Position, properties: Record<string, any> = {
  */
 export function lineString(
   coordinates: Position[],
-  properties: Record<string, any> = {},
+  properties: Record<string, unknown> = {},
 ): Feature<LineString> {
   return {
     type: 'Feature',
@@ -59,7 +64,7 @@ export function lineString(
  */
 export function polygon(
   coordinates: Position[][],
-  properties: Record<string, any> = {},
+  properties: Record<string, unknown> = {},
 ): Feature<Polygon> {
   return {
     type: 'Feature',
@@ -79,7 +84,7 @@ export function polygon(
  */
 export function multiPolygon(
   coordinates: Position[][][],
-  properties: Record<string, any> = {},
+  properties: Record<string, unknown> = {},
 ): Feature<MultiPolygon> {
   return {
     type: 'Feature',
@@ -96,7 +101,9 @@ export function multiPolygon(
  * @param features - Array of GeoJSON features
  * @returns GeoJSON FeatureCollection
  */
-export function featureCollection(features: Feature[]): FeatureCollection {
+export function featureCollection<T extends Geometry>(
+  features: Feature<T>[],
+): FeatureCollection<T> {
   return {
     type: 'FeatureCollection',
     features,
@@ -124,17 +131,21 @@ export function getCoords(feature: Feature<Polygon | MultiPolygon>): Position[][
  * @param feature - GeoJSON feature
  * @returns [minX, minY, maxX, maxY] bounding box
  */
-export function bbox(feature: Feature<any>): [number, number, number, number] {
+type BboxCoords = Position | Position[] | Position[][] | Position[][][];
+
+export function bbox(feature: Feature<Geometry>): [number, number, number, number] {
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
 
-  const processCoordinates = (coords: any) => {
+  const processCoordinates = (coords: BboxCoords) => {
     if (Array.isArray(coords[0])) {
-      coords.forEach(processCoordinates);
+      (coords as Position[] | Position[][] | Position[][][]).forEach((item) =>
+        processCoordinates(item as BboxCoords),
+      );
     } else {
-      const [x, y] = coords;
+      const [x, y] = coords as Position;
       minX = Math.min(minX, x);
       minY = Math.min(minY, y);
       maxX = Math.max(maxX, x);
@@ -142,7 +153,16 @@ export function bbox(feature: Feature<any>): [number, number, number, number] {
     }
   };
 
-  processCoordinates(feature.geometry.coordinates);
+  const processGeometry = (geometry: Geometry): void => {
+    if (geometry.type === 'GeometryCollection') {
+      const collection = geometry as GeometryCollection;
+      collection.geometries.forEach(processGeometry);
+      return;
+    }
+    processCoordinates(geometry.coordinates as BboxCoords);
+  };
+
+  processGeometry(feature.geometry);
   return [minX, minY, maxX, maxY];
 }
 

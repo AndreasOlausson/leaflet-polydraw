@@ -36,7 +36,16 @@ import bezierSpline from '@turf/bezier-spline';
 import length from '@turf/length';
 // @ts-expect-error - concaveman doesn't have types
 import concaveman from 'concaveman';
-import type { Feature, Polygon, MultiPolygon, Position, Point } from 'geojson';
+import type {
+  Feature,
+  Polygon,
+  MultiPolygon,
+  Position,
+  Point,
+  LineString,
+  MultiLineString,
+  FeatureCollection,
+} from 'geojson';
 import * as L from 'leaflet';
 import { defaultConfig } from './config';
 import { isTestEnvironment } from './utils';
@@ -47,6 +56,8 @@ import { isTestEnvironment } from './utils';
 interface PolydrawFeature extends Feature<Polygon | MultiPolygon> {
   _polydrawHoleTraversalOccurred?: boolean;
 }
+
+type TraceFeature = Feature<LineString | MultiLineString | Polygon | MultiPolygon>;
 
 export class TurfHelper {
   private config: typeof defaultConfig = defaultConfig;
@@ -80,7 +91,7 @@ export class TurfHelper {
    */
   private getFeatureDiagonal(feature: Feature<Polygon | MultiPolygon>): number {
     try {
-      const [minX, minY, maxX, maxY] = bbox(feature as unknown as any);
+      const [minX, minY, maxX, maxY] = bbox(feature);
       return Math.hypot(maxX - minX, maxY - minY);
     } catch {
       return 0;
@@ -120,7 +131,7 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
-      const fc = featureCollection([poly1, poly2]) as any;
+      const fc = featureCollection([poly1, poly2]) as FeatureCollection<Polygon | MultiPolygon>;
       const u = union(fc);
       return u ? this.getTurfPolygon(u) : null;
     } catch (error) {
@@ -134,8 +145,7 @@ export class TurfHelper {
   /**
    * Create polygon from drawing trace using configured method
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createPolygonFromTrace(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+  createPolygonFromTrace(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
     const method = this.config.polygonCreation?.method || 'concaveman';
 
     switch (method) {
@@ -158,7 +168,7 @@ export class TurfHelper {
   /**
    * Original concaveman implementation
    */
-  turfConcaveman(feature: Feature<Polygon | MultiPolygon>): Feature<Polygon | MultiPolygon> {
+  turfConcaveman(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
     const points = explode(feature);
     const coordinates = points.features.map((f) => f.geometry.coordinates);
     return multiPolygon([[concaveman(coordinates)]]);
@@ -167,8 +177,7 @@ export class TurfHelper {
   /**
    * Create convex hull polygon (simplest, fewest edges)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createConvexPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+  private createConvexPolygon(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
     const points = explode(feature);
     const convexHull = convex(points);
 
@@ -183,8 +192,7 @@ export class TurfHelper {
   /**
    * Create polygon directly from line coordinates (moderate edge count)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createDirectPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+  private createDirectPolygon(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
     let coordinates: number[][];
 
     if (feature.geometry.type === 'LineString') {
@@ -221,15 +229,13 @@ export class TurfHelper {
   /**
    * Create polygon using buffer method (smooth curves)
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createBufferedPolygon(feature: Feature<any>): Feature<Polygon | MultiPolygon> {
+  private createBufferedPolygon(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
     try {
       // Convert to line if needed
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let line: Feature<any>;
+      let line: Feature<LineString>;
 
       if (feature.geometry.type === 'LineString') {
-        line = feature;
+        line = feature as Feature<LineString>;
       } else {
         // Convert polygon or other geometry to line
         const points = explode(feature);
@@ -559,15 +565,19 @@ export class TurfHelper {
       }
 
       // Additional validation: check for null/invalid coordinates in the geometry
-      const validateCoordinates = (coords: any): boolean => {
+      const isMultiPolygonCoords = (
+        coords: Position[][] | Position[][][],
+      ): coords is Position[][][] => Array.isArray(coords[0]?.[0]?.[0]);
+
+      const validateCoordinates = (coords: Position[][] | Position[][][]): boolean => {
         if (!Array.isArray(coords)) return false;
 
-        for (const ring of coords) {
+        const rings = isMultiPolygonCoords(coords) ? coords.flat() : coords;
+        for (const ring of rings) {
           if (!Array.isArray(ring)) return false;
-
           for (const coord of ring) {
             if (!Array.isArray(coord) || coord.length < 2) return false;
-            if (coord.some((c: any) => c === null || c === undefined || !isFinite(c))) {
+            if (coord.some((c) => c === null || c === undefined || !isFinite(c))) {
               return false;
             }
           }
@@ -585,7 +595,9 @@ export class TurfHelper {
 
       // Method 1: Try direct intersection using intersect with FeatureCollection
       try {
-        const fc = featureCollection([polygon, latlngs]) as any;
+        const fc = featureCollection([polygon, latlngs]) as FeatureCollection<
+          Polygon | MultiPolygon
+        >;
         const intersection = intersect(fc);
 
         if (
@@ -601,7 +613,7 @@ export class TurfHelper {
             return true;
           }
         }
-      } catch (error) {
+      } catch {
         // Continue to fallback methods
       }
 
@@ -621,7 +633,7 @@ export class TurfHelper {
             return true;
           }
         }
-      } catch (error) {
+      } catch {
         // Continue to next method
       }
 
@@ -683,14 +695,14 @@ export class TurfHelper {
                   if (intersection && intersection.features && intersection.features.length > 0) {
                     return true;
                   }
-                } catch (lineError) {
+                } catch {
                   // Continue checking other line pairs
                 }
               }
             }
           }
         }
-      } catch (error) {
+      } catch {
         // Continue to fallback
       }
 
@@ -729,7 +741,7 @@ export class TurfHelper {
     poly2: Feature<Polygon | MultiPolygon>,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
-      const fc = featureCollection([poly1, poly2]) as any;
+      const fc = featureCollection([poly1, poly2]) as FeatureCollection<Polygon | MultiPolygon>;
       const result = intersect(fc);
 
       // Validate that the result is actually a polygon or multipolygon
@@ -754,8 +766,7 @@ export class TurfHelper {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getDistance(point1: any, point2: any): number {
+  getDistance(point1: Position | Feature<Point>, point2: Position | Feature<Point>): number {
     return distance(point1, point2);
   }
 
@@ -772,7 +783,7 @@ export class TurfHelper {
   ): boolean {
     try {
       return booleanWithin(innerPolygon, outerPolygon);
-    } catch (error) {
+    } catch {
       // Fallback: check if all vertices of inner polygon are within outer polygon
       const innerCoords = getCoords(innerPolygon);
       const outerCoords = getCoords(outerPolygon);
@@ -811,12 +822,16 @@ export class TurfHelper {
    * Supports GeoJSON Feature<Point>, Turf Position [lng, lat], and Leaflet LatLngLiteral.
    */
   private toPointFeature(
-    pt: Feature<Point> | Position | L.LatLngLiteral | { geometry?: { coordinates?: number[] } },
+    pt: Feature<Point> | Position | L.LatLngLiteral | { geometry?: { coordinates?: Position } },
   ): Feature<Point> {
     // Case 1: Already a Feature<Point>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((pt as Feature<Point>)?.type === 'Feature' && (pt as any).geometry?.type === 'Point') {
-      return pt as Feature<Point>;
+    const isPointFeature = (value: unknown): value is Feature<Point> => {
+      if (!value || typeof value !== 'object') return false;
+      const candidate = value as Feature<Point>;
+      return candidate.type === 'Feature' && candidate.geometry?.type === 'Point';
+    };
+    if (isPointFeature(pt)) {
+      return pt;
     }
 
     // Case 2: Turf Position [lng, lat]
@@ -830,17 +845,28 @@ export class TurfHelper {
     }
 
     // Case 3: Leaflet LatLngLiteral {lat, lng}
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof (pt as any)?.lat === 'number' && typeof (pt as any)?.lng === 'number') {
-      const p = pt as L.LatLngLiteral;
+    const isLatLngLiteral = (value: unknown): value is L.LatLngLiteral => {
+      if (!value || typeof value !== 'object') return false;
+      return (
+        typeof (value as L.LatLngLiteral).lat === 'number' &&
+        typeof (value as L.LatLngLiteral).lng === 'number'
+      );
+    };
+    if (isLatLngLiteral(pt)) {
+      const p = pt;
       return point([p.lng, p.lat]);
     }
 
     // Case 4: Generic object with geometry.coordinates
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((pt as any)?.geometry?.coordinates && Array.isArray((pt as any).geometry.coordinates)) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return point((pt as any).geometry.coordinates as Position);
+    const hasGeometryCoordinates = (
+      value: unknown,
+    ): value is { geometry: { coordinates: Position } } => {
+      if (!value || typeof value !== 'object') return false;
+      const maybeGeometry = (value as { geometry?: { coordinates?: Position } }).geometry;
+      return !!maybeGeometry && Array.isArray(maybeGeometry.coordinates);
+    };
+    if (hasGeometryCoordinates(pt)) {
+      return point(pt.geometry.coordinates);
     }
 
     // Fallback – throw to make caller handle gracefully
@@ -857,10 +883,9 @@ export class TurfHelper {
     polygon: Feature<Polygon | MultiPolygon>,
   ): boolean {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pointFeature = this.toPointFeature(pt as any);
+      const pointFeature = this.toPointFeature(pt);
       return booleanPointInPolygon(pointFeature, polygon);
-    } catch (error) {
+    } catch {
       // Be quiet in failure – just return false to avoid noisy test output
       return false;
     }
@@ -974,7 +999,9 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> | null {
     try {
       // In Turf 7.x, difference expects a FeatureCollection with multiple features
-      const fc = featureCollection([polygon1, polygon2]) as any;
+      const fc = featureCollection([polygon1, polygon2]) as FeatureCollection<
+        Polygon | MultiPolygon
+      >;
       const diff = difference(fc);
 
       const result = diff ? this.getTurfPolygon(diff) : null;
@@ -991,14 +1018,10 @@ export class TurfHelper {
   }
 
   getBoundingBoxCompassPosition(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _polygon: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _MarkerPosition: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _useOffset: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    _offsetDirection: any,
+    _polygon: unknown,
+    _MarkerPosition: unknown,
+    _useOffset: boolean,
+    _offsetDirection: unknown,
   ) {
     void _polygon; // make lint happy
     void _MarkerPosition; // make lint happy
@@ -1008,10 +1031,10 @@ export class TurfHelper {
     return null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getNearestPointIndex(targetPoint: Coord, points: any): number {
-    const index = nearestPoint(targetPoint, points).properties.featureIndex;
-    return index;
+  getNearestPointIndex(targetPoint: Coord, points: FeatureCollection<Point>): number {
+    const nearest = nearestPoint(targetPoint, points);
+    const props = nearest.properties as { featureIndex?: number };
+    return props.featureIndex ?? 0;
   }
 
   /**
@@ -1041,8 +1064,7 @@ export class TurfHelper {
     return polygon(coordinates);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getFeaturePointCollection(points: L.LatLngLiteral[]): any {
+  getFeaturePointCollection(points: L.LatLngLiteral[]): FeatureCollection<Point> {
     const pts: Feature<Point>[] = [];
     points.forEach((v) => {
       const p = point([v.lng, v.lat], {});
@@ -1493,7 +1515,7 @@ export class TurfHelper {
       }
 
       return false;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -1552,7 +1574,7 @@ export class TurfHelper {
         };
         (fallbackPolygon as PolydrawFeature)._polydrawHoleTraversalOccurred = true;
         return [fallbackPolygon];
-      } catch (fallbackError) {
+      } catch {
         return [outerPolygon];
       }
     }

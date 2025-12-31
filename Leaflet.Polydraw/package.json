@@ -1,6 +1,6 @@
 {
   "name": "leaflet-polydraw",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x.",
   "types": "dist/types/index.d.ts",
   "exports": {
@@ -45,10 +45,10 @@
     "node": ">=18",
     "npm": ">=9"
   },
-  "packageManager": "npm@10.2.0",
+  "packageManager": "npm@10.7.0",
   "scripts": {
-    "build": "npm run lint:fix && tsc && vite build && npm run build:types",
-    "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, defaultConfig } from \"./polydraw\";' > dist/types/index.d.ts",
+    "build": "npm run lint:fix && vite build && npm run build:types",
+    "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, defaultConfig, registerWithLeaflet } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest",
@@ -58,6 +58,7 @@
     "test:legacy": "vitest --config vitest.config.ts",
     "test:playwright": "npm run build && npm --prefix demo run build && playwright test",
     "test:e2e": "npm run test:playwright",
+    "test:types": "tsc --noEmit --project tsconfig.json",
     "lint": "eslint ./src --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
     "prepare": "npm run build"
@@ -122,5 +123,7 @@
     "README.md",
     "LICENSE"
   ],
-  "sideEffects": false
+  "sideEffects": [
+    "*.css"
+  ]
 }

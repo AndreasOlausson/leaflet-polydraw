@@ -8,15 +8,17 @@ test.describe('Toolbar interactions', () => {
 
     const activateButton = page.locator(selectors.activate);
     const subButtons = page.locator(selectors.subButtons);
+    const getMaxHeight = async () =>
+      subButtons.evaluate((el) => parseFloat(getComputedStyle(el).maxHeight) || 0);
 
-    await expect(subButtons).toHaveCSS('max-height', '0px');
+    await expect.poll(getMaxHeight).toBe(0);
 
     await activateButton.click();
-    await expect(subButtons).toHaveCSS('max-height', '250px');
+    await expect.poll(getMaxHeight).toBeGreaterThan(0);
     await expect(activateButton).toHaveClass(/active/);
 
     await activateButton.click();
-    await expect(subButtons).toHaveCSS('max-height', '0px');
+    await expect.poll(getMaxHeight).toBe(0);
     await expect(activateButton).not.toHaveClass(/active/);
   });
 

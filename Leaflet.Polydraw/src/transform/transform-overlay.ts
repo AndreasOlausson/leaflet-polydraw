@@ -9,6 +9,7 @@ import {
   type TransformOverlayCallbacks,
   type PixelBBox,
   type PixelPoint,
+  type TransformHandleEvent,
 } from './transform-types';
 import cancelIconSvg from '../icons/icon-cancel.svg?raw';
 import confirmIconSvg from '../icons/icon-confirm.svg?raw';
@@ -48,7 +49,8 @@ export class TransformOverlay {
     this.onCancel = onCancel;
     this.onConfirm = onConfirm;
     const paneName = 'polydraw-transform';
-    let pane = (this.map as any).getPane ? (this.map as any).getPane(paneName) : undefined;
+    const mapWithPane = this.map as L.Map & { getPane?: (name: string) => HTMLElement | undefined };
+    let pane = mapWithPane.getPane?.(paneName);
     if (!pane) pane = this.map.createPane(paneName);
     pane.style.zIndex = '650';
     pane.style.pointerEvents = 'auto';
@@ -227,7 +229,7 @@ export class TransformOverlay {
   }
 
   private startDrag(type: TransformHandleType, start: PixelPoint, evt: Event): void {
-    L.DomEvent.stop(evt as any);
+    L.DomEvent.stop(evt);
     this.draggingHandle = type;
 
     // Hide buttons while dragging to avoid inadvertent taps
@@ -235,47 +237,30 @@ export class TransformOverlay {
 
     this.documentMoveHandler = (e: Event) => this.onDrag(e);
     this.documentUpHandler = (e: Event) => this.endDrag(e);
+    const doc = document as unknown as HTMLElement;
+    const moveHandler = this.documentMoveHandler as (e: Event) => void;
+    const upHandler = this.documentUpHandler as (e: Event) => void;
     if (this.supportsPointerEvents && evt instanceof PointerEvent) {
       this.activePointerId = evt.pointerId;
       this.pointerCaptureTarget = this.map.getContainer();
       this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'pointermove',
-        this.documentMoveHandler as any,
-      );
-      L.DomEvent.on(document as unknown as HTMLElement, 'pointerup', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'pointercancel',
-        this.documentUpHandler as any,
-      );
+      L.DomEvent.on(doc, 'pointermove', moveHandler);
+      L.DomEvent.on(doc, 'pointerup', upHandler);
+      L.DomEvent.on(doc, 'pointercancel', upHandler);
     } else {
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'mousemove',
-        this.documentMoveHandler as any,
-      );
-      L.DomEvent.on(document as unknown as HTMLElement, 'mouseup', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'touchmove',
-        this.documentMoveHandler as any,
-      );
-      L.DomEvent.on(document as unknown as HTMLElement, 'touchend', this.documentUpHandler as any);
-      L.DomEvent.on(
-        document as unknown as HTMLElement,
-        'touchcancel',
-        this.documentUpHandler as any,
-      );
+      L.DomEvent.on(doc, 'mousemove', moveHandler);
+      L.DomEvent.on(doc, 'mouseup', upHandler);
+      L.DomEvent.on(doc, 'touchmove', moveHandler);
+      L.DomEvent.on(doc, 'touchend', upHandler);
+      L.DomEvent.on(doc, 'touchcancel', upHandler);
     }
-    this.callbacks.onStartHandleDrag(type, start, evt as unknown as MouseEvent);
+    this.callbacks.onStartHandleDrag(type, start, evt as TransformHandleEvent);
   }
 
   private onDrag(evt: Event): void {
     if (this.draggingHandle == null) return;
     const pos = this.getMouseLayerPoint(evt);
-    this.callbacks.onDragHandle(this.draggingHandle, pos, evt as unknown as MouseEvent);
+    this.callbacks.onDragHandle(this.draggingHandle, pos, evt as TransformHandleEvent);
   }
 
   private endDrag(evt: Event): void {
@@ -283,7 +268,7 @@ export class TransformOverlay {
     const type = this.draggingHandle;
     this.draggingHandle = null;
     const pos = this.getMouseLayerPoint(evt);
-    this.callbacks.onEndHandleDrag(type, pos, evt as unknown as MouseEvent);
+    this.callbacks.onEndHandleDrag(type, pos, evt as TransformHandleEvent);
 
     // Restore buttons near top-right handle when drag completes
     if (this.currentBBox) {
@@ -292,60 +277,33 @@ export class TransformOverlay {
     this.showButtons();
 
     if (this.documentMoveHandler || this.documentUpHandler) {
+      const doc = document as unknown as HTMLElement;
       if (this.supportsPointerEvents && this.pointerCaptureTarget) {
         if (this.activePointerId != null) {
           this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
         }
         if (this.documentMoveHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointermove',
-            this.documentMoveHandler as any,
-          );
+          const moveHandler = this.documentMoveHandler as (e: Event) => void;
+          L.DomEvent.off(doc, 'pointermove', moveHandler);
         }
         if (this.documentUpHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointerup',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'pointercancel',
-            this.documentUpHandler as any,
-          );
+          const upHandler = this.documentUpHandler as (e: Event) => void;
+          L.DomEvent.off(doc, 'pointerup', upHandler);
+          L.DomEvent.off(doc, 'pointercancel', upHandler);
         }
         this.pointerCaptureTarget = null;
         this.activePointerId = null;
       } else {
         if (this.documentMoveHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'mousemove',
-            this.documentMoveHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchmove',
-            this.documentMoveHandler as any,
-          );
+          const moveHandler = this.documentMoveHandler as (e: Event) => void;
+          L.DomEvent.off(doc, 'mousemove', moveHandler);
+          L.DomEvent.off(doc, 'touchmove', moveHandler);
         }
         if (this.documentUpHandler) {
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'mouseup',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchend',
-            this.documentUpHandler as any,
-          );
-          L.DomEvent.off(
-            document as unknown as HTMLElement,
-            'touchcancel',
-            this.documentUpHandler as any,
-          );
+          const upHandler = this.documentUpHandler as (e: Event) => void;
+          L.DomEvent.off(doc, 'mouseup', upHandler);
+          L.DomEvent.off(doc, 'touchend', upHandler);
+          L.DomEvent.off(doc, 'touchcancel', upHandler);
         }
       }
       this.documentMoveHandler = null;
@@ -444,19 +402,19 @@ export class TransformOverlay {
       this.cancelBtn.className = 'polydraw-transform-cancel';
       this.cancelBtn.innerHTML = cancelSvg;
       L.DomEvent.on(this.cancelBtn, 'mousedown', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onCancel && this.onCancel();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onCancel) this.onCancel();
       });
       L.DomEvent.on(this.cancelBtn, 'touchstart', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onCancel && this.onCancel();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onCancel) this.onCancel();
       });
       L.DomEvent.on(this.cancelBtn, 'pointerdown', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onCancel && this.onCancel();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onCancel) this.onCancel();
       });
       this.root.appendChild(this.cancelBtn);
     }
@@ -466,19 +424,19 @@ export class TransformOverlay {
       this.confirmBtn.className = 'polydraw-transform-confirm';
       this.confirmBtn.innerHTML = confirmSvg;
       L.DomEvent.on(this.confirmBtn, 'mousedown', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onConfirm && this.onConfirm();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onConfirm) this.onConfirm();
       });
       L.DomEvent.on(this.confirmBtn, 'touchstart', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onConfirm && this.onConfirm();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onConfirm) this.onConfirm();
       });
       L.DomEvent.on(this.confirmBtn, 'pointerdown', (e: Event) => {
-        (e as any).stopPropagation?.();
-        (e as any).preventDefault?.();
-        this.onConfirm && this.onConfirm();
+        e.stopPropagation();
+        e.preventDefault();
+        if (this.onConfirm) this.onConfirm();
       });
       this.root.appendChild(this.confirmBtn);
     }
