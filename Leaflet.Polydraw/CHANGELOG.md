@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [next version]
+## [1.2.1] - 2025-12-31
+
+### Fixed
+
+- Remove duplicate TypeScript compile step in build pipeline.
+- Resolve TypeScript warnings.
+- Playwright config now runs under CommonJS loaders.
+
+## [1.2.0] - 2025-12-30
+
+> ⚠️ Note: Tagged as `v1.2.0` in git but never published to npm.
 
 ### Added
 

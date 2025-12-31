@@ -18,6 +18,8 @@ export enum TransformHandleType {
 
 export type PixelPoint = { x: number; y: number };
 
+export type TransformHandleEvent = MouseEvent | TouchEvent | PointerEvent;
+
 export interface PixelBBox {
   minX: number;
   minY: number;
@@ -39,7 +41,11 @@ export interface TransformState {
 }
 
 export interface TransformOverlayCallbacks {
-  onStartHandleDrag: (type: TransformHandleType, start: PixelPoint, evt: MouseEvent) => void;
-  onDragHandle: (type: TransformHandleType, current: PixelPoint, evt: MouseEvent) => void;
-  onEndHandleDrag: (type: TransformHandleType, end: PixelPoint, evt: MouseEvent) => void;
+  onStartHandleDrag: (
+    type: TransformHandleType,
+    start: PixelPoint,
+    evt: TransformHandleEvent,
+  ) => void;
+  onDragHandle: (type: TransformHandleType, current: PixelPoint, evt: TransformHandleEvent) => void;
+  onEndHandleDrag: (type: TransformHandleType, end: PixelPoint, evt: TransformHandleEvent) => void;
 }

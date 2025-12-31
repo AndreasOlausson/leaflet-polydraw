@@ -399,7 +399,7 @@ export class PolygonMutationManager {
           if (hasIntersection) {
             intersectingFeatureGroups.push(featureGroup);
           }
-        } catch (error) {
+        } catch {
           // Continue with other feature groups
         }
       });
@@ -433,7 +433,7 @@ export class PolygonMutationManager {
               }
             }
           }
-        } catch (error) {
+        } catch {
           // Continue with other feature groups
         }
       }
@@ -503,7 +503,7 @@ export class PolygonMutationManager {
         polygon._polydrawOptimizationOriginalLevel = effectiveOriginal || 0;
         featureGroup.addLayer(polygon);
         this.interactionManager.suppressDeleteMarkerClicks(250);
-      } catch (error) {
+      } catch {
         return { success: false, error: 'Failed to create polygon layer' };
       }
 
@@ -512,7 +512,7 @@ export class PolygonMutationManager {
       try {
         const rawLatLngs = polygon.getLatLngs();
         markerLatlngs = this.normalizePolygonCoordinates(rawLatLngs);
-      } catch (error) {
+      } catch {
         markerLatlngs = [];
       }
 
@@ -564,18 +564,18 @@ export class PolygonMutationManager {
 
               this.interactionManager.addHoleMarkers(latLngLiterals, featureGroup);
             }
-          } catch (markerError) {
+          } catch {
             // Continue with other elements
           }
         });
-      } catch (error) {
+      } catch {
         // Continue without markers if they fail
       }
 
       // Add edge click listeners using interaction manager
       try {
         this.interactionManager.addEdgeClickListeners(polygon, featureGroup);
-      } catch (error) {
+      } catch {
         // Continue without edge listeners if they fail
       }
 
@@ -584,7 +584,7 @@ export class PolygonMutationManager {
       // Add to map - this should be done after all setup is complete
       try {
         featureGroup.addTo(this.map);
-      } catch (error) {
+      } catch {
         // The polygon is still added to arrayOfFeatureGroups for functionality
       }
 
@@ -644,7 +644,7 @@ export class PolygonMutationManager {
                     intersectingFeatureGroups.push(featureGroup);
                     polygonFeature.push(feature);
                   }
-                } catch (error) {
+                } catch {
                   // Continue with other elements
                 }
               },
@@ -657,11 +657,11 @@ export class PolygonMutationManager {
                 intersectingFeatureGroups.push(featureGroup);
                 polygonFeature.push(feature);
               }
-            } catch (error) {
+            } catch {
               // Continue with other features
             }
           }
-        } catch (error) {
+        } catch {
           // Continue with other feature groups
         }
       });
@@ -753,14 +753,14 @@ export class PolygonMutationManager {
           if (this.geometryManager.checkPolygonIntersection(existingPolygon, polygon)) {
             return true; // Allow merging if there's an intersection
           }
-        } catch (error) {
+        } catch {
           // Continue checking other feature groups
           continue;
         }
       }
 
       return false; // No intersections found, don't allow merging
-    } catch (error) {
+    } catch {
       // If there's any error, default to false (don't allow merging)
       return false;
     }
@@ -816,20 +816,20 @@ export class PolygonMutationManager {
                 if (this.turfHelper.isPolygonCompletelyWithin(newPolygon, holePolygon)) {
                   return true;
                 }
-              } catch (error) {
+              } catch {
                 // Continue checking other holes
                 continue;
               }
             }
           }
-        } catch (error) {
+        } catch {
           // Continue checking other feature groups
           continue;
         }
       }
 
       return false;
-    } catch (error) {
+    } catch {
       // If there's any error, default to false (allow normal processing)
       return false;
     }
@@ -887,7 +887,7 @@ export class PolygonMutationManager {
 
     try {
       return flattenToRings(rawLatLngs);
-    } catch (error) {
+    } catch {
       return [];
     }
   }
@@ -1147,7 +1147,7 @@ export class PolygonMutationManager {
         lat: latSum / count,
         lng: lngSum / count,
       };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -1207,7 +1207,7 @@ export class PolygonMutationManager {
       }
 
       return { minLat, maxLat, minLng, maxLng };
-    } catch (error) {
+    } catch {
       return null;
     }
   }
@@ -1431,7 +1431,7 @@ export class PolygonMutationManager {
           if (hasIntersection) {
             intersectingFeatureGroups.push(featureGroup);
           }
-        } catch (error) {
+        } catch {
           // Handle errors
         }
       });
@@ -1460,11 +1460,11 @@ export class PolygonMutationManager {
               this.addPolygonLayer(resultPolygon, { simplify: true });
             }
           }
-        } catch (error) {
+        } catch {
           // Handle errors
         }
       });
-    } catch (error) {
+    } catch {
       // Handle errors
     }
   }

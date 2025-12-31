@@ -5,7 +5,11 @@ import { TurfHelper } from './turf-helper';
 import { createButtons } from './buttons';
 import { PolygonInformationService } from './polygon-information.service';
 import { MapStateService } from './map-state';
-import { EventManager } from './managers/event-manager';
+import {
+  EventManager,
+  type PolydrawEvent,
+  type PolydrawEventCallback,
+} from './managers/event-manager';
 import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
@@ -45,7 +49,7 @@ type PredefinedOptions = {
 
 class Polydraw extends L.Control {
   private map!: L.Map;
-  private tracer!: L.Polyline;
+  private tracer: L.Polyline | null = null;
   private turfHelper!: TurfHelper;
   private subContainer?: HTMLElement;
   private config: PolydrawConfig;
@@ -60,15 +64,15 @@ class Polydraw extends L.Control {
 
   private drawMode: DrawMode = DrawMode.Off;
   private drawModeListeners: DrawModeChangeHandler[] = [];
-  private _boundKeyDownHandler!: (e: KeyboardEvent) => void;
-  private _boundKeyUpHandler!: (e: KeyboardEvent) => void;
+  private _boundKeyDownHandler?: (e: KeyboardEvent) => void;
+  private _boundKeyUpHandler?: (e: KeyboardEvent) => void;
   private isModifierKeyHeld: boolean = false;
-  private _boundTouchMove!: (e: TouchEvent) => void;
-  private _boundTouchEnd!: (e: TouchEvent) => void;
-  private _boundTouchStart!: (e: TouchEvent) => void;
-  private _boundPointerDown!: (e: PointerEvent) => void;
-  private _boundPointerMove!: (e: PointerEvent) => void;
-  private _boundPointerUp!: (e: PointerEvent) => void;
+  private _boundTouchMove?: (e: TouchEvent) => void;
+  private _boundTouchEnd?: (e: TouchEvent) => void;
+  private _boundTouchStart?: (e: TouchEvent) => void;
+  private _boundPointerDown?: (e: PointerEvent) => void;
+  private _boundPointerMove?: (e: PointerEvent) => void;
+  private _boundPointerUp?: (e: PointerEvent) => void;
   private _lastTapTime: number = 0;
   private _tapTimeout: number | null = null;
   private pointerEventsHandled: boolean =
@@ -160,7 +164,7 @@ class Polydraw extends L.Control {
     // Clean up tracer
     if (this.tracer) {
       this.map.removeLayer(this.tracer);
-      this.tracer = null as any; // Reset tracer reference
+      this.tracer = null; // Reset tracer reference
     }
 
     // Clean up all feature groups with proper resource cleanup
@@ -186,28 +190,28 @@ class Polydraw extends L.Control {
 
     // Clean up bound event handlers (safe to call even if already null)
     if (this._boundKeyDownHandler) {
-      this._boundKeyDownHandler = null as any;
+      this._boundKeyDownHandler = undefined;
     }
     if (this._boundKeyUpHandler) {
-      this._boundKeyUpHandler = null as any;
+      this._boundKeyUpHandler = undefined;
     }
     if (this._boundTouchMove) {
-      this._boundTouchMove = null as any;
+      this._boundTouchMove = undefined;
     }
     if (this._boundTouchEnd) {
-      this._boundTouchEnd = null as any;
+      this._boundTouchEnd = undefined;
     }
     if (this._boundTouchStart) {
-      this._boundTouchStart = null as any;
+      this._boundTouchStart = undefined;
     }
     if (this._boundPointerDown) {
-      this._boundPointerDown = null as any;
+      this._boundPointerDown = undefined;
     }
     if (this._boundPointerMove) {
-      this._boundPointerMove = null as any;
+      this._boundPointerMove = undefined;
     }
     if (this._boundPointerUp) {
-      this._boundPointerUp = null as any;
+      this._boundPointerUp = undefined;
     }
 
     // Clean up timer
@@ -352,14 +356,14 @@ class Polydraw extends L.Control {
         // MultiPolygon: coordinates[polygon][ring][point]
         for (const polygonCoords of coordinates) {
           const latLngs = polygonCoords.map((ring) =>
-            ring.map((point) => L.latLng(point[1], point[0])),
+            ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
           );
           await this.addPredefinedPolygon([latLngs], options);
         }
       } else if (type === 'Polygon') {
         // Polygon: coordinates[ring][point]
         const latLngs = coordinates.map((ring) =>
-          ring.map((point) => L.latLng(point[1], point[0])),
+          ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
         );
         await this.addPredefinedPolygon([latLngs], options);
       }
@@ -409,8 +413,7 @@ class Polydraw extends L.Control {
    * @param event - The event type to listen for.
    * @param callback - The callback function to execute when the event is triggered.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public on(event: any, callback: any): void {
+  public on<T extends PolydrawEvent>(event: T, callback: PolydrawEventCallback<T>): void {
     this.eventManager.on(event, callback);
   }
 
@@ -419,8 +422,7 @@ class Polydraw extends L.Control {
    * @param event - The event type to stop listening for.
    * @param callback - The callback function to remove.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public off(event: any, callback: any): void {
+  public off<T extends PolydrawEvent>(event: T, callback: PolydrawEventCallback<T>): void {
     this.eventManager.off(event, callback);
   }
 
@@ -435,7 +437,7 @@ class Polydraw extends L.Control {
           this.polygonMutationManager.cleanupFeatureGroup(featureGroups);
         }
         this.map.removeLayer(featureGroups);
-      } catch (error) {
+      } catch {
         // Silently handle layer removal errors
       }
     });
@@ -600,7 +602,7 @@ class Polydraw extends L.Control {
     });
     try {
       this.tracer.addTo(this.map);
-    } catch (error) {
+    } catch {
       // Silently handle tracer initialization in test environment
     }
   }
@@ -647,7 +649,7 @@ class Polydraw extends L.Control {
         color,
         dashArray,
       });
-    } catch (error) {
+    } catch {
       // Handle case where tracer renderer is not initialized
     }
   }
@@ -674,7 +676,7 @@ class Polydraw extends L.Control {
       config: this.config,
       modeManager: this.modeManager,
       eventManager: this.eventManager,
-      tracer: this.tracer,
+      tracer: this.tracer!,
     });
 
     // Initialize PolygonMutationManager now that map is available
@@ -966,7 +968,7 @@ class Polydraw extends L.Control {
                 marker.dragging.disable();
               }
             }
-          } catch (error) {
+          } catch {
             // Handle any errors in updating marker state
           }
         }
@@ -1016,7 +1018,7 @@ class Polydraw extends L.Control {
    * Resets the tracer polyline by clearing its LatLngs.
    */
   private resetTracker() {
-    this.tracer.setLatLngs([]);
+    this.tracer?.setLatLngs([]);
   }
 
   /**
@@ -1158,13 +1160,13 @@ class Polydraw extends L.Control {
    * Handles the mouse down event to start a drawing operation.
    * @param event - The mouse, touch, or pointer event.
    */
-  private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+  private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
     // Safeguard against unintended browser actions
     if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
-      normalizedEvent.preventDefault();
+      normalizedEvent.preventDefault?.();
     }
 
     // Check if we're still in a drawing mode before processing
@@ -1189,6 +1191,9 @@ class Polydraw extends L.Control {
     }
 
     // Handle normal drawing modes (Add, Subtract)
+    if (!this.tracer) {
+      return;
+    }
     this.tracer.setLatLngs([clickLatLng]);
     this.startDraw();
   }
@@ -1197,18 +1202,18 @@ class Polydraw extends L.Control {
    * Handles the mouse move event to draw the tracer polyline.
    * @param event - The mouse, touch, or pointer event.
    */
-  private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+  private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
     // Prevent scroll or pull-to-refresh on mobile
     if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
-      normalizedEvent.preventDefault();
+      normalizedEvent.preventDefault?.();
     }
 
     // Extract coordinates using the event adapter
     const latlng = EventAdapter.extractCoordinates(normalizedEvent, this.map);
-    if (latlng) {
+    if (latlng && this.tracer) {
       this.tracer.addLatLng(latlng);
     }
   }
@@ -1217,17 +1222,21 @@ class Polydraw extends L.Control {
    * Handles the mouse up event to complete a drawing operation.
    * @param event - The mouse, touch, or pointer event.
    */
-  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent | any) {
+  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
     // Prevent unintended scroll or refresh on touchend/touchup (mobile)
     if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
-      normalizedEvent.preventDefault();
+      normalizedEvent.preventDefault?.();
     }
     this.polygonInformation.deletePolygonInformationStorage();
 
     // Get tracer coordinates and validate before processing
+    if (!this.tracer) {
+      this.stopDraw();
+      return;
+    }
     const tracerGeoJSON = this.tracer.toGeoJSON() as Feature<LineString>;
 
     // Check if tracer has valid coordinates before processing
@@ -1245,7 +1254,7 @@ class Polydraw extends L.Control {
     let geoPos: Feature<Polygon | MultiPolygon>;
     try {
       geoPos = this.turfHelper.createPolygonFromTrace(tracerGeoJSON);
-    } catch (error) {
+    } catch {
       // Handle polygon creation errors (e.g., invalid polygon)
       this.stopDraw();
       return;
@@ -1621,11 +1630,21 @@ class Polydraw extends L.Control {
 }
 
 // Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
-if (typeof L !== 'undefined' && L.control) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (L.control as any).polydraw = function (options?: PolydrawOptions): Polydraw {
-    return new Polydraw(options);
-  };
+if (typeof globalThis !== 'undefined') {
+  const globalL = (
+    globalThis as {
+      L?: {
+        control?: {
+          polydraw?: (options?: PolydrawOptions) => Polydraw;
+        };
+      };
+    }
+  ).L;
+  if (globalL?.control) {
+    globalL.control.polydraw = function (options?: PolydrawOptions): Polydraw {
+      return new Polydraw(options);
+    };
+  }
 }
 
 export default Polydraw;

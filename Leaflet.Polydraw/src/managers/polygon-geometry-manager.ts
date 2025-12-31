@@ -44,7 +44,7 @@ export class PolygonGeometryManager {
       if (poly1WithinPoly2 || poly2WithinPoly1) {
         return true;
       }
-    } catch (error) {
+    } catch {
       // Continue to next method
     }
 
@@ -54,7 +54,7 @@ export class PolygonGeometryManager {
       if (result) {
         return true;
       }
-    } catch (error) {
+    } catch {
       // Continue to next method
     }
 
@@ -73,7 +73,7 @@ export class PolygonGeometryManager {
           return true;
         }
       }
-    } catch (error) {
+    } catch {
       // Continue to next method
     }
 
@@ -111,7 +111,7 @@ export class PolygonGeometryManager {
           }
         }
       }
-    } catch (error) {
+    } catch {
       // Continue to next method
     }
 
@@ -124,7 +124,7 @@ export class PolygonGeometryManager {
       // If we reach this point, none of the precise geometric methods detected
       // an intersection, so we should return false rather than using a fallback
       // that might give false positives
-    } catch (error) {
+    } catch {
       // Continue to fallback
     }
 

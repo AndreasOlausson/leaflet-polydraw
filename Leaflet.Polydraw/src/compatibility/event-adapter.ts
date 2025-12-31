@@ -3,8 +3,31 @@
  * Handles differences in event systems between Leaflet v1.x and v2.x
  */
 
+import type * as L from 'leaflet';
 import { LeafletVersionDetector } from './version-detector';
 import { LeafletVersion } from '../enums';
+
+type TouchLike = { clientX: number; clientY: number };
+type LeafletLikeEvent = {
+  layer?: unknown;
+  propagatedFrom?: unknown;
+  type?: string;
+  _isPointerEvent?: boolean;
+  latlng?: L.LatLng;
+  touches?: ArrayLike<TouchLike>;
+  pointerType?: string;
+  isPrimary?: boolean;
+  clientX?: number;
+  clientY?: number;
+  cancelable?: boolean;
+  preventDefault?: () => void;
+  stopPropagation?: () => void;
+};
+
+type LeafletMapLike = {
+  getContainer: () => HTMLElement;
+  containerPointToLatLng: (point: [number, number]) => L.LatLng;
+};
 
 export class EventAdapter {
   /**
@@ -12,7 +35,7 @@ export class EventAdapter {
    * @param event - The event to normalize
    * @returns The normalized event
    */
-  static normalizeEvent(event: any): any {
+  static normalizeEvent(event: LeafletLikeEvent): LeafletLikeEvent {
     const version = LeafletVersionDetector.getVersion();
 
     if (version === LeafletVersion.V2) {
@@ -77,7 +100,7 @@ export class EventAdapter {
    * @param map - The map instance for coordinate conversion
    * @returns The LatLng coordinates or null if not available
    */
-  static extractCoordinates(event: any, map: any): any {
+  static extractCoordinates(event: LeafletLikeEvent, map: LeafletMapLike): L.LatLng | null {
     // Handle Leaflet mouse events
     if (event.latlng) {
       return event.latlng;
@@ -93,13 +116,13 @@ export class EventAdapter {
     }
 
     // Handle pointer events (v2)
-    if (event.pointerType && event.clientX !== undefined) {
+    if (event.pointerType && event.clientX !== undefined && event.clientY !== undefined) {
       const rect = map.getContainer().getBoundingClientRect();
       return map.containerPointToLatLng([event.clientX - rect.x, event.clientY - rect.y]);
     }
 
     // Handle regular mouse events
-    if (event.clientX !== undefined) {
+    if (event.clientX !== undefined && event.clientY !== undefined) {
       const rect = map.getContainer().getBoundingClientRect();
       return map.containerPointToLatLng([event.clientX - rect.x, event.clientY - rect.y]);
     }
@@ -112,7 +135,7 @@ export class EventAdapter {
    * @param event - The event to check
    * @returns true if preventDefault should be called
    */
-  static shouldPreventDefault(event: any): boolean {
+  static shouldPreventDefault(event: LeafletLikeEvent): boolean {
     // Always prevent default for touch events to avoid scrolling
     if (event.type && event.type.startsWith('touch')) {
       return true;

@@ -3,10 +3,13 @@
  * Provides a unified interface for both Leaflet v1.x and v2.x
  */
 
+import * as L from 'leaflet';
 import { LeafletVersionDetector } from './version-detector';
 import { LeafletVersion } from '../enums';
 
-declare const L: any;
+type UnknownRecord = Record<string, unknown>;
+type UnknownFn = (...args: unknown[]) => unknown;
+type AnimationFrameCallback = (time: number) => void;
 
 export class LeafletAdapter {
   private version: LeafletVersion;
@@ -19,132 +22,90 @@ export class LeafletAdapter {
    * Creates a tile layer compatible with both Leaflet versions
    */
   createTileLayer(urlTemplate: string, options?: L.TileLayerOptions): L.TileLayer {
-    if (this.version === LeafletVersion.V1) {
-      return L.tileLayer(urlTemplate, options);
-    } else {
-      return new L.TileLayer(urlTemplate, options);
-    }
+    return new L.TileLayer(urlTemplate, options);
   }
 
   /**
    * Creates a map compatible with both Leaflet versions
    */
   createMap(element: string | HTMLElement, options?: L.MapOptions): L.Map {
-    if (this.version === LeafletVersion.V1) {
-      return L.map(element, options);
-    } else {
-      return new L.Map(element, options);
-    }
+    return new L.Map(element, options);
   }
 
   /**
    * Creates a marker compatible with both Leaflet versions
    */
   createMarker(latlng: L.LatLng, options?: L.MarkerOptions): L.Marker {
-    if (this.version === LeafletVersion.V1) {
-      return L.marker(latlng, options);
-    } else {
-      return new L.Marker(latlng, options);
-    }
+    return new L.Marker(latlng, options);
   }
 
   /**
    * Creates a polyline compatible with both Leaflet versions
    */
   createPolyline(latlngs: L.LatLng[], options?: L.PolylineOptions): L.Polyline {
-    if (this.version === LeafletVersion.V1) {
-      return L.polyline(latlngs, options);
-    } else {
-      return new L.Polyline(latlngs, options);
-    }
+    return new L.Polyline(latlngs, options);
   }
 
   /**
    * Creates a polygon compatible with both Leaflet versions
    */
   createPolygon(latlngs: L.LatLng[] | L.LatLng[][], options?: L.PolylineOptions): L.Polygon {
-    if (this.version === LeafletVersion.V1) {
-      return L.polygon(latlngs, options);
-    } else {
-      return new L.Polygon(latlngs, options);
-    }
+    return new L.Polygon(latlngs, options);
   }
 
   /**
    * Creates a div icon compatible with both Leaflet versions
    */
   createDivIcon(options?: L.DivIconOptions): L.DivIcon {
-    if (this.version === LeafletVersion.V1) {
-      return L.divIcon(options);
-    } else {
-      return new L.DivIcon(options);
-    }
+    return new L.DivIcon(options);
   }
 
   /**
    * Creates a LatLng object compatible with both Leaflet versions
    */
   createLatLng(lat: number, lng: number, alt?: number): L.LatLng {
-    if (this.version === LeafletVersion.V1) {
-      return L.latLng(lat, lng, alt);
-    } else {
-      return new L.LatLng(lat, lng, alt);
-    }
+    return new L.LatLng(lat, lng, alt);
   }
 
   /**
    * Creates a LatLngBounds object compatible with both Leaflet versions
    */
   createLatLngBounds(corner1?: L.LatLngExpression, corner2?: L.LatLngExpression): L.LatLngBounds {
-    if (this.version === LeafletVersion.V1) {
-      return L.latLngBounds(corner1, corner2);
-    } else {
+    if (corner1 && corner2) {
       return new L.LatLngBounds(corner1, corner2);
     }
+    if (corner1) {
+      return new L.LatLngBounds(corner1, corner1);
+    }
+    return new L.LatLngBounds([] as L.LatLngExpression[]);
   }
 
   /**
    * Creates a Point object compatible with both Leaflet versions
    */
   createPoint(x: number, y: number, round?: boolean): L.Point {
-    if (this.version === LeafletVersion.V1) {
-      return L.point(x, y, round);
-    } else {
-      return new L.Point(x, y, round);
-    }
+    return new L.Point(x, y, round);
   }
 
   /**
    * Creates a popup compatible with both Leaflet versions
    */
   createPopup(options?: L.PopupOptions, source?: L.Layer): L.Popup {
-    if (this.version === LeafletVersion.V1) {
-      return L.popup(options, source);
-    } else {
-      return new L.Popup(options, source);
-    }
+    return new L.Popup(options, source);
   }
 
   /**
    * Creates a feature group compatible with both Leaflet versions
    */
   createFeatureGroup(layers?: L.Layer[]): L.FeatureGroup {
-    if (this.version === LeafletVersion.V1) {
-      return L.featureGroup(layers);
-    } else {
-      return new L.FeatureGroup(layers);
-    }
+    return new L.FeatureGroup(layers);
   }
 
   /**
    * Creates a layer group compatible with both Leaflet versions
    */
   createLayerGroup(layers?: L.Layer[]): L.LayerGroup {
-    if (this.version === LeafletVersion.V1) {
-      return L.layerGroup(layers);
-    } else {
-      return new L.LayerGroup(layers);
-    }
+    return new L.LayerGroup(layers);
   }
 
   /**
@@ -210,8 +171,8 @@ export class LeafletAdapter {
     on: (
       obj: HTMLElement,
       types: string,
-      fn: L.LeafletEventHandlerFn,
-      context?: any,
+      fn: (e: Event) => void,
+      context?: unknown,
     ): typeof this => {
       L.DomEvent.on(obj, types, fn, context);
       return this;
@@ -220,8 +181,8 @@ export class LeafletAdapter {
     off: (
       obj: HTMLElement,
       types: string,
-      fn: L.LeafletEventHandlerFn,
-      context?: any,
+      fn: (e: Event) => void,
+      context?: unknown,
     ): typeof this => {
       L.DomEvent.off(obj, types, fn, context);
       return this;
@@ -257,8 +218,11 @@ export class LeafletAdapter {
         return L.DomEvent.getMousePosition(e, container);
       } else {
         // In v2, this might be renamed to getPointerPosition
-        return L.DomEvent.getPointerPosition
-          ? L.DomEvent.getPointerPosition(e, container)
+        const domEvent = L.DomEvent as typeof L.DomEvent & {
+          getPointerPosition?: (event: MouseEvent, container?: HTMLElement) => L.Point;
+        };
+        return domEvent.getPointerPosition
+          ? domEvent.getPointerPosition(e, container)
           : L.DomEvent.getMousePosition(e, container);
       }
     },
@@ -268,34 +232,30 @@ export class LeafletAdapter {
    * Utility methods compatibility
    */
   util = {
-    extend: (dest: any, ...sources: any[]): any => {
+    extend: (dest: UnknownRecord, ...sources: UnknownRecord[]): UnknownRecord => {
       if (this.version === LeafletVersion.V1) {
-        return L.Util.extend(dest, ...sources);
+        return L.Util.extend(dest, ...sources) as UnknownRecord;
       } else {
         // In v2, use native Object.assign
         return Object.assign(dest, ...sources);
       }
     },
 
-    bind: (fn: (...args: any[]) => any, obj: any): ((...args: any[]) => any) => {
+    bind: <T extends UnknownFn>(fn: T, obj: unknown): T => {
       if (this.version === LeafletVersion.V1) {
-        return L.Util.bind(fn, obj);
+        return L.Util.bind(fn, obj) as T;
       } else {
         // In v2, use native bind
-        return fn.bind(obj);
+        return fn.bind(obj) as T;
       }
     },
 
-    stamp: (obj: any): number => {
+    stamp: (obj: object): number => {
       return L.Util.stamp(obj);
     },
 
-    throttle: (
-      fn: (...args: any[]) => any,
-      time: number,
-      context: any,
-    ): ((...args: any[]) => any) => {
-      return L.Util.throttle(fn, time, context);
+    throttle: (fn: UnknownFn, time: number, context: unknown): UnknownFn => {
+      return L.Util.throttle(fn, time, context) as UnknownFn;
     },
 
     wrapNum: (x: number, range: number[], includeMax?: boolean): number => {
@@ -323,11 +283,15 @@ export class LeafletAdapter {
       return L.Util.splitWords(str);
     },
 
-    setOptions: (obj: any, options: any): any => {
-      return L.Util.setOptions(obj, options);
+    setOptions: (obj: UnknownRecord, options: UnknownRecord): UnknownRecord => {
+      return L.Util.setOptions(obj, options) as UnknownRecord;
     },
 
-    getParamString: (obj: any, existingUrl?: string, uppercase?: boolean): string => {
+    getParamString: (
+      obj: Record<string, unknown>,
+      existingUrl?: string,
+      uppercase?: boolean,
+    ): string => {
       if (this.version === LeafletVersion.V1) {
         return L.Util.getParamString(obj, existingUrl, uppercase);
       } else {
@@ -336,7 +300,7 @@ export class LeafletAdapter {
         for (const key in obj) {
           if (Object.prototype.hasOwnProperty.call(obj, key)) {
             const paramKey = uppercase ? key.toUpperCase() : key;
-            params.set(paramKey, obj[key]);
+            params.set(paramKey, String(obj[key]));
           }
         }
         const paramString = params.toString();
@@ -348,11 +312,11 @@ export class LeafletAdapter {
       }
     },
 
-    template: (str: string, data: any): string => {
+    template: (str: string, data: UnknownRecord): string => {
       return L.Util.template(str, data);
     },
 
-    isArray: (obj: any): boolean => {
+    isArray: (obj: unknown): boolean => {
       if (this.version === LeafletVersion.V1) {
         return L.Util.isArray(obj);
       } else {
@@ -361,16 +325,20 @@ export class LeafletAdapter {
       }
     },
 
-    indexOf: (array: any[], item: any): number => {
+    indexOf: (array: unknown[], item: unknown): number => {
       return L.Util.indexOf(array, item);
     },
 
-    requestAnimFrame: (fn: (...args: any[]) => any, context?: any, immediate?: boolean): number => {
+    requestAnimFrame: (
+      fn: AnimationFrameCallback,
+      context?: unknown,
+      immediate?: boolean,
+    ): number => {
       if (this.version === LeafletVersion.V1) {
         return L.Util.requestAnimFrame(fn, context, immediate);
       } else {
         // In v2, use native requestAnimationFrame
-        return requestAnimationFrame(context ? fn.bind(context) : fn);
+        return requestAnimationFrame((context ? fn.bind(context) : fn) as AnimationFrameCallback);
       }
     },
 
@@ -391,6 +359,12 @@ export class LeafletAdapter {
   getBrowser() {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
+    const browser = L.Browser as typeof L.Browser & {
+      phantom?: boolean;
+      touchNative?: boolean;
+      passiveEvents?: boolean;
+      inlineSvg?: boolean;
+    };
     return {
       get ie(): boolean {
         return self.version === LeafletVersion.V1 ? L.Browser.ie : false; // Removed in v2
@@ -443,7 +417,7 @@ export class LeafletAdapter {
       },
 
       get phantom(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.phantom : false; // Removed in v2
+        return self.version === LeafletVersion.V1 ? (browser.phantom ?? false) : false; // Removed in v2
       },
 
       get opera12(): boolean {
@@ -495,7 +469,7 @@ export class LeafletAdapter {
       },
 
       get touchNative(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.touchNative : false; // Removed in v2
+        return self.version === LeafletVersion.V1 ? (browser.touchNative ?? false) : false; // Removed in v2
       },
 
       get mobileOpera(): boolean {
@@ -511,7 +485,7 @@ export class LeafletAdapter {
       },
 
       get passiveEvents(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.passiveEvents : true; // Assume true in v2
+        return self.version === LeafletVersion.V1 ? (browser.passiveEvents ?? true) : true; // Assume true in v2
       },
 
       get canvas(): boolean {
@@ -527,7 +501,7 @@ export class LeafletAdapter {
       },
 
       get inlineSvg(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.inlineSvg : true; // Assume true in v2
+        return self.version === LeafletVersion.V1 ? (browser.inlineSvg ?? true) : true; // Assume true in v2
       },
     };
   }

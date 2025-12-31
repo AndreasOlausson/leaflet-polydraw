@@ -9,7 +9,14 @@ import {
   TransformHandleType,
   type PixelPoint,
   type PixelBBox,
+  type TransformHandleEvent,
 } from './transform-types';
+
+type MapDraggingHandler = {
+  enabled?: () => boolean;
+  disable?: () => void;
+  enable?: () => void;
+};
 import {
   applyTransform,
   getPixelBBox,
@@ -33,6 +40,7 @@ export class PolygonTransformController {
   private rotateStartAngle: number | null = null;
   private rotateBaseRotation: number = 0;
   private originalTouchAction: string | null = null;
+  private readonly mapDraggingHandler?: MapDraggingHandler;
 
   constructor(
     map: L.Map,
@@ -76,8 +84,8 @@ export class PolygonTransformController {
       this.map,
       {
         onStartHandleDrag: (type, start, e) => this.onStartDrag(type, start, e),
-        onDragHandle: (type, current, e) => this.onDrag(type, current, e),
-        onEndHandleDrag: (_type, _end, _e) => {},
+        onDragHandle: (type, current) => this.onDrag(type, current),
+        onEndHandleDrag: () => {},
       },
       this.mode,
       () => this.handleCancel(),
@@ -88,13 +96,13 @@ export class PolygonTransformController {
     this.map.on('zoom viewreset move', this.updateOverlay, this);
 
     // Disable map dragging during transform for consistent UX
-    if ((this.map as any).dragging) {
+    this.mapDraggingHandler = (this.map as { dragging?: MapDraggingHandler }).dragging;
+    if (this.mapDraggingHandler) {
       // Leaflet v1 has dragging.enabled(); v2 similar
-      const dragging = (this.map as any).dragging;
-      if (typeof dragging.enabled === 'function') {
-        this.wasMapDraggingEnabled = dragging.enabled();
+      if (typeof this.mapDraggingHandler.enabled === 'function') {
+        this.wasMapDraggingEnabled = this.mapDraggingHandler.enabled();
       }
-      dragging.disable();
+      this.mapDraggingHandler.disable?.();
     }
     const container = this.map.getContainer();
     this.originalTouchAction = container.style.touchAction || null;
@@ -110,10 +118,9 @@ export class PolygonTransformController {
     this.overlay.destroy();
     this.state.isActive = false;
     // Restore map dragging state
-    if ((this.map as any).dragging) {
-      const dragging = (this.map as any).dragging;
-      if (this.wasMapDraggingEnabled && typeof dragging.enable === 'function') {
-        dragging.enable();
+    if (this.mapDraggingHandler) {
+      if (this.wasMapDraggingEnabled && typeof this.mapDraggingHandler.enable === 'function') {
+        this.mapDraggingHandler.enable();
       }
     }
     const container = this.map.getContainer();
@@ -144,7 +151,11 @@ export class PolygonTransformController {
     this.overlay.update(bbox, this.state.pivot, this.state.rotation);
   };
 
-  private onStartDrag(type: TransformHandleType, start: PixelPoint, evt: MouseEvent): void {
+  private onStartDrag(
+    type: TransformHandleType,
+    start: PixelPoint,
+    evt: TransformHandleEvent,
+  ): void {
     const isMac = navigator.userAgent.toLowerCase().includes('mac');
     const ctrlOrCmd = isMac ? evt.metaKey : evt.ctrlKey;
     this.state.uniformScale = !!evt.shiftKey;
@@ -161,7 +172,7 @@ export class PolygonTransformController {
     }
   }
 
-  private onDrag(type: TransformHandleType, current: PixelPoint, _evt: MouseEvent): void {
+  private onDrag(type: TransformHandleType, current: PixelPoint): void {
     const origBBox = getPixelBBox(this.state.originalPixelRings);
 
     switch (type) {
