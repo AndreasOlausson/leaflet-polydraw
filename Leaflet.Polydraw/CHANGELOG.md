@@ -9,11 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.1] - 2025-12-31
 
+### Added
+
+- `registerWithLeaflet` helper for late global registration in module builds.
+
 ### Fixed
 
 - Remove duplicate TypeScript compile step in build pipeline.
 - Resolve TypeScript warnings.
 - Playwright config now runs under CommonJS loaders.
+- Version detection no longer caches v2 when global Leaflet is unavailable.
 
 ## [1.2.0] - 2025-12-30
 

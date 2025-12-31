@@ -1629,21 +1629,38 @@ class Polydraw extends L.Control {
   }
 }
 
-// Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
-if (typeof globalThis !== 'undefined') {
-  const globalL = (
-    globalThis as {
-      L?: {
-        control?: {
-          polydraw?: (options?: PolydrawOptions) => Polydraw;
-        };
-      };
+type LeafletRegisterTarget = {
+  control?: {
+    polydraw?: (options?: PolydrawOptions) => Polydraw;
+  };
+};
+
+export const registerWithLeaflet = (leafletInstance?: LeafletRegisterTarget): void => {
+  if (!leafletInstance) {
+    return;
+  }
+
+  if (typeof globalThis !== 'undefined') {
+    const globalL = (globalThis as { L?: LeafletRegisterTarget }).L;
+    if (!globalL) {
+      (globalThis as { L?: LeafletRegisterTarget }).L = leafletInstance;
     }
-  ).L;
-  if (globalL?.control) {
-    globalL.control.polydraw = function (options?: PolydrawOptions): Polydraw {
+  }
+
+  if (leafletInstance.control) {
+    leafletInstance.control.polydraw = function (options?: PolydrawOptions): Polydraw {
       return new Polydraw(options);
     };
+  }
+
+  LeafletVersionDetector.reset();
+};
+
+// Add the polydraw method to L.control with proper typing (only for v1.x compatibility)
+if (typeof globalThis !== 'undefined') {
+  const globalL = (globalThis as { L?: LeafletRegisterTarget }).L;
+  if (globalL) {
+    registerWithLeaflet(globalL);
   }
 }
 

@@ -6,6 +6,7 @@ import { PolygonUtil } from '../polygon.util';
 import { MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
+import { LeafletVersionDetector } from '../compatibility/version-detector';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
@@ -2731,11 +2732,12 @@ export class PolygonInteractionManager {
     });
 
     const isMobile = window.innerWidth <= 600;
+    const versionClass = LeafletVersionDetector.isV1() ? ' leaflet-v1' : ' leaflet-v2';
     const popup = leafletAdapter
       .createPopup({
         closeButton: false,
         autoClose: true,
-        className: `menu-popup${isMobile ? ' mobile-popup' : ''}`,
+        className: `menu-popup${isMobile ? ' mobile-popup' : ''}${versionClass}`,
       })
       .setContent(outerWrapper);
 

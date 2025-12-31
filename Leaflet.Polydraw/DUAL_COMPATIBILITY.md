@@ -58,6 +58,20 @@ const polydraw = new Polydraw().addTo(map);
 
 The examples use TypeScript fences for clarity, but the same imports work in plain JavaScript bundlers.
 
+### Optional: Register with Global Leaflet
+
+If Leaflet is loaded after Polydraw or you want `L.control.polydraw` in module builds, register explicitly:
+
+```typescript
+import * as L from 'leaflet';
+import Polydraw, { registerWithLeaflet } from 'leaflet-polydraw';
+
+registerWithLeaflet(L);
+
+const map = L.map('map').setView([51.505, -0.09], 13);
+const polydraw = new Polydraw().addTo(map);
+```
+
 ## How It Works
 
 ### Automatic Version Detection
@@ -77,8 +91,8 @@ const isV2 = LeafletVersionDetector.isV2();
 
 The plugin includes a comprehensive compatibility layer that handles:
 
-- **Factory Methods vs Constructors**: Automatically uses `L.marker()` for v1.x and `new Marker()` for v2.x
-- **Global L Object**: Handles both global `L` access and ESM imports
+- **Factory Methods vs Constructors**: Uses constructors internally (supported by both v1.x and v2.x)
+- **Global L Object**: Handles both global `L` access and ESM imports; call `registerWithLeaflet(L)` if Leaflet is loaded after Polydraw
 - **Event System**: Manages differences between mouse/touch events and pointer events
 - **DOM Utilities**: Provides fallbacks for removed utility methods
 - **Browser Detection**: Maintains compatibility with removed browser flags
@@ -185,17 +199,14 @@ const polydraw = new Polydraw({
 
 The compatibility layer automatically handles these Leaflet v2.x breaking changes:
 
-### Factory Methods -> Constructors
+### Constructors Across Versions
 
-- `L.marker()` -> `new Marker()`
-- `L.polyline()` -> `new Polyline()`
-- `L.polygon()` -> `new Polygon()`
-- `L.divIcon()` -> `new DivIcon()`
+Leaflet v2 removed factory helpers, but constructors are available in both v1 and v2. Polydraw uses constructors internally (e.g. `new Marker()`, `new Polygon()`), so it works with either version.
 
 ### Global L Object -> ESM Imports
 
 - Automatic detection of import style
-- Fallback handling for missing global `L`
+- Optional `registerWithLeaflet(L)` for late global registration or module-only usage
 
 ### Event System Changes
 
@@ -226,7 +237,7 @@ The compatibility layer is designed to have minimal performance impact:
 
 This usually occurs in test environments or when using ESM imports incorrectly.
 
-**Solution**: The compatibility layer handles this automatically. If you see this error, ensure you're importing Leaflet correctly for your version.
+**Solution**: Ensure Leaflet is loaded before importing Polydraw, or call `registerWithLeaflet(L)` after Leaflet loads in module builds.
 
 #### Type Errors with TypeScript
 

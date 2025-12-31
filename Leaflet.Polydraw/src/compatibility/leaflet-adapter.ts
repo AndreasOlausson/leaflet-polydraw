@@ -12,10 +12,8 @@ type UnknownFn = (...args: unknown[]) => unknown;
 type AnimationFrameCallback = (time: number) => void;
 
 export class LeafletAdapter {
-  private version: LeafletVersion;
-
-  constructor() {
-    this.version = LeafletVersionDetector.getVersion();
+  private get version(): LeafletVersion {
+    return LeafletVersionDetector.getVersion();
   }
 
   /**

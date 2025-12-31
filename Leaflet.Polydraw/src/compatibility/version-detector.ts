@@ -31,7 +31,14 @@ export class LeafletVersionDetector {
       return this._detectedVersion;
     }
 
-    this._detectedVersion = this.detectVersion();
+    const globalL = getGlobalLeaflet();
+    if (!globalL) {
+      // Default to v2 when Leaflet isn't on the global scope.
+      // Avoid caching so we can re-detect if L appears later.
+      return LeafletVersion.V2;
+    }
+
+    this._detectedVersion = this.detectVersion(globalL);
     return this._detectedVersion;
   }
 
@@ -39,44 +46,43 @@ export class LeafletVersionDetector {
    * Performs the actual version detection
    * @returns The detected Leaflet version
    */
-  private static detectVersion(): LeafletVersion {
-    // Check if L is available
-    const globalL = getGlobalLeaflet();
-    if (!globalL) {
+  private static detectVersion(globalL?: LeafletGlobal): LeafletVersion {
+    const resolvedGlobal = globalL ?? getGlobalLeaflet();
+    if (!resolvedGlobal) {
       // If L is not available, assume v2 (ESM import scenario)
       return LeafletVersion.V2;
     }
 
     // Check for explicit version string (most reliable)
-    if (globalL.version) {
-      if (globalL.version.startsWith('2.')) {
+    if (resolvedGlobal.version) {
+      if (resolvedGlobal.version.startsWith('2.')) {
         return LeafletVersion.V2;
       }
-      if (globalL.version.startsWith('1.')) {
+      if (resolvedGlobal.version.startsWith('1.')) {
         return LeafletVersion.V1;
       }
     }
 
     // Check for v2 indicators - factory methods should not exist
-    if (typeof globalL.marker !== 'function') {
+    if (typeof resolvedGlobal.marker !== 'function') {
       return LeafletVersion.V2;
     }
 
     // Check for v1 indicators - factory methods should exist
     if (
-      typeof globalL.marker === 'function' &&
-      typeof globalL.polyline === 'function' &&
-      typeof globalL.polygon === 'function'
+      typeof resolvedGlobal.marker === 'function' &&
+      typeof resolvedGlobal.polyline === 'function' &&
+      typeof resolvedGlobal.polygon === 'function'
     ) {
       return LeafletVersion.V1;
     }
 
     // Check for v2 class constructors
     if (
-      globalL.Marker &&
-      typeof globalL.Marker === 'function' &&
-      globalL.Polyline &&
-      typeof globalL.Polyline === 'function'
+      resolvedGlobal.Marker &&
+      typeof resolvedGlobal.Marker === 'function' &&
+      resolvedGlobal.Polyline &&
+      typeof resolvedGlobal.Polyline === 'function'
     ) {
       return LeafletVersion.V2;
     }

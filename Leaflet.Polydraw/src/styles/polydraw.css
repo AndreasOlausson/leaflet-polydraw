@@ -169,6 +169,21 @@ body {
   }
 }
 
+.menu-popup.leaflet-v1 .leaflet-popup-content {
+  width: 100% !important;
+}
+
+.menu-popup.leaflet-v1 .marker-menu-content {
+  max-width: none;
+}
+
+@supports (display: grid) {
+  .menu-popup.leaflet-v1 .marker-menu-content {
+    grid-template-columns: repeat(3, minmax(32px, 1fr));
+    margin-right: 12px;
+  }
+}
+
 .marker-menu-content .marker-menu-button {
   width: 22px;
   height: 22px;
