@@ -36,6 +36,14 @@ export class PolygonGeometryManager {
     polygon2: Feature<Polygon | MultiPolygon>,
   ): boolean {
     // console.log('PolygonGeometryManager checkPolygonIntersection');
+    // Polygons fully inside holes should not be treated as intersecting.
+    if (
+      this.isPolygonInsideHole(polygon1, polygon2) ||
+      this.isPolygonInsideHole(polygon2, polygon1)
+    ) {
+      return false;
+    }
+
     // Method 1: Check if one polygon is completely within the other (for donut scenarios)
     try {
       const poly1WithinPoly2 = this.turfHelper.isPolygonCompletelyWithin(polygon1, polygon2);
@@ -128,6 +136,35 @@ export class PolygonGeometryManager {
       // Continue to fallback
     }
 
+    return false;
+  }
+
+  private isPolygonInsideHole(
+    innerPolygon: Feature<Polygon | MultiPolygon>,
+    outerPolygon: Feature<Polygon | MultiPolygon>,
+  ): boolean {
+    try {
+      const outerCoords = this.turfHelper.getCoords(outerPolygon);
+      for (const polygonCoords of outerCoords) {
+        if (!polygonCoords || polygonCoords.length <= 1) {
+          continue;
+        }
+        const holes = polygonCoords.slice(1);
+        for (const holeCoords of holes) {
+          try {
+            const holePolygon = this.turfHelper.createPolygon([holeCoords]);
+            if (this.turfHelper.isPolygonCompletelyWithin(innerPolygon, holePolygon)) {
+              return true;
+            }
+          } catch {
+            // Ignore invalid holes and keep checking others.
+            continue;
+          }
+        }
+      }
+    } catch {
+      // Fall back to normal intersection checks.
+    }
     return false;
   }
 

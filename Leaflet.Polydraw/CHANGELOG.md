@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - Unreleased
+
+### Added
+
+- Playwright coverage for dragging polygons with holes to confirm merge and non-merge behavior.
+
+### Fixed
+
+- Prevent polygons drawn inside holes from being merged away when dragging a polygon.
+
 ## [1.2.1] - 2025-12-31
 
 ### Added

@@ -91,4 +91,25 @@ export const latlngPolys = {
     { lat: 58.401, lng: 15.593 },
     { lat: 58.406, lng: 15.593 },
   ],
+  donutOuter: [
+    { lat: 58.41, lng: 15.59 },
+    { lat: 58.39, lng: 15.59 },
+    { lat: 58.39, lng: 15.61 },
+    { lat: 58.41, lng: 15.61 },
+    { lat: 58.41, lng: 15.59 },
+  ],
+  donutHole: [
+    { lat: 58.405, lng: 15.595 },
+    { lat: 58.405, lng: 15.605 },
+    { lat: 58.395, lng: 15.605 },
+    { lat: 58.395, lng: 15.595 },
+    { lat: 58.405, lng: 15.595 },
+  ],
+  holeInner: [
+    { lat: 58.4035, lng: 15.598 },
+    { lat: 58.401, lng: 15.598 },
+    { lat: 58.401, lng: 15.602 },
+    { lat: 58.4035, lng: 15.602 },
+    { lat: 58.4035, lng: 15.598 },
+  ],
 };

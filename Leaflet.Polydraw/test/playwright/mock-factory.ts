@@ -110,6 +110,134 @@ export class DemoFactory {
     }, rings);
     await this.page.waitForTimeout(100);
   }
+
+  /** Drag a polygon by a lat/lng offset (optionally target polygons with holes). */
+  async dragPolygonByOffset(
+    offsetLat: number,
+    offsetLng: number,
+    options: { requireHoles?: boolean } = {},
+  ) {
+    await this.page.evaluate(
+      async ({ offsetLat: latOffset, offsetLng: lngOffset, requireHoles }) => {
+        const ctrl = (window as any).polydrawControl;
+        ctrl?.setDrawMode?.(0);
+
+        const map = ctrl?.map ?? ctrl?._map;
+        const groups = ctrl?.getFeatureGroups?.() ?? [];
+        if (!map || !groups.length) {
+          throw new Error('Map or feature groups not ready');
+        }
+
+        let targetPolygon: any = null;
+        let targetRings: any[] | null = null;
+        for (const fg of groups) {
+          let polygon: any = null;
+          let rings: any[] | null = null;
+          fg.eachLayer((layer: any) => {
+            if (
+              !polygon &&
+              typeof layer?.getBounds === 'function' &&
+              typeof layer?.getLatLngs === 'function'
+            ) {
+              const latLngs = layer.getLatLngs?.();
+              if (!Array.isArray(latLngs) || latLngs.length === 0) {
+                return;
+              }
+              // Normalize: MultiPolygon -> first polygon rings; Polygon -> rings
+              if (Array.isArray(latLngs[0]) && Array.isArray(latLngs[0][0])) {
+                rings = latLngs[0];
+              } else if (Array.isArray(latLngs[0])) {
+                rings = latLngs;
+              } else {
+                return;
+              }
+              polygon = layer;
+            }
+          });
+          if (!polygon) continue;
+          if (requireHoles && (!rings || rings.length <= 1)) {
+            continue;
+          }
+          targetPolygon = polygon;
+          targetRings = rings;
+          break;
+        }
+
+        if (!targetPolygon) {
+          throw new Error('Target polygon not found for drag');
+        }
+
+        let startLatLng = targetPolygon.getBounds().getCenter();
+        if (requireHoles && targetRings && targetRings.length > 1) {
+          const outer = targetRings[0];
+          const hole = targetRings[1];
+          const outerPt = outer?.[0];
+          const holePt = hole?.[0];
+          if (outerPt && holePt && typeof outerPt.lat === 'number' && typeof holePt.lat === 'number') {
+            startLatLng = {
+              lat: (outerPt.lat + holePt.lat) / 2,
+              lng: (outerPt.lng + holePt.lng) / 2,
+            };
+          }
+        }
+
+        const target = { lat: startLatLng.lat + latOffset, lng: startLatLng.lng + lngOffset };
+        const startPt = map.latLngToContainerPoint(startLatLng);
+        const endPt = map.latLngToContainerPoint(target);
+        const rect = map.getContainer().getBoundingClientRect();
+        const start = { x: rect.left + startPt.x, y: rect.top + startPt.y };
+        const end = { x: rect.left + endPt.x, y: rect.top + endPt.y };
+
+        const pathTarget = targetPolygon._path as HTMLElement | undefined;
+        const downTarget =
+          pathTarget ?? document.elementFromPoint(start.x, start.y) ?? map.getContainer();
+        const moveTarget = map.getContainer();
+        const usePointer = typeof window.PointerEvent === 'function';
+        const isTouch = (navigator.maxTouchPoints || 0) > 0;
+
+        const dispatchPointer = (type: string, x: number, y: number, targetEl: Element) => {
+          if (usePointer) {
+            const event = new PointerEvent(type, {
+              clientX: x,
+              clientY: y,
+              bubbles: true,
+              cancelable: true,
+              pointerType: isTouch ? 'touch' : 'mouse',
+              isPrimary: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+            });
+            targetEl.dispatchEvent(event);
+          } else {
+            const mouseType = type.replace('pointer', 'mouse');
+            const event = new MouseEvent(mouseType, {
+              clientX: x,
+              clientY: y,
+              bubbles: true,
+              cancelable: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+            });
+            targetEl.dispatchEvent(event);
+          }
+        };
+
+        dispatchPointer('pointerdown', start.x, start.y, downTarget);
+        const steps = 8;
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const x = start.x + (end.x - start.x) * t;
+          const y = start.y + (end.y - start.y) * t;
+          dispatchPointer('pointermove', x, y, moveTarget);
+          await new Promise((resolve) => setTimeout(resolve, 16));
+        }
+        dispatchPointer('pointerup', end.x, end.y, moveTarget);
+      },
+      { offsetLat, offsetLng, requireHoles: options.requireHoles ?? false },
+    );
+
+    await this.page.waitForTimeout(250);
+  }
 }
 
 export const selectors = {

@@ -150,7 +150,7 @@ describe('Marker Inside Hole Bug Fix', () => {
       expect(polygonCount).toBeGreaterThan(0); // Should have the polygon
       expect(markerCount).toBeGreaterThan(0); // Should have markers (this was the bug)
 
-      console.log(`Polygon inside hole test: ${markerCount} markers, ${polygonCount} polygons`);
+      // console.log(`Polygon inside hole test: ${markerCount} markers, ${polygonCount} polygons`);
     });
 
     it('should create markers for polygons drawn outside holes (control test)', async () => {
@@ -232,7 +232,7 @@ describe('Marker Inside Hole Bug Fix', () => {
       expect(polygonCount).toBeGreaterThan(0);
       expect(markerCount).toBeGreaterThan(0); // This should always work
 
-      console.log(`Polygon outside hole test: ${markerCount} markers, ${polygonCount} polygons`);
+      // console.log(`Polygon outside hole test: ${markerCount} markers, ${polygonCount} polygons`);
     });
 
     it('should handle complex coordinate structures in normalizePolygonCoordinates', () => {
@@ -298,7 +298,7 @@ describe('Marker Inside Hole Bug Fix', () => {
         const result = (mutationManager as any).normalizePolygonCoordinates(testCase.input);
         expect(Array.isArray(result)).toBe(true);
         expect(result.length).toBe(testCase.expectedLength);
-        console.log(`${testCase.name}: ${result.length} rings`);
+        // console.log(`${testCase.name}: ${result.length} rings`);
       });
     });
 
@@ -330,7 +330,7 @@ describe('Marker Inside Hole Bug Fix', () => {
         const result = (mutationManager as any).normalizePolygonCoordinates(testCase.input);
         expect(Array.isArray(result)).toBe(true);
         expect(result.length).toBe(testCase.expectedLength);
-        console.log(`${testCase.name}: ${result.length} rings`);
+        // console.log(`${testCase.name}: ${result.length} rings`);
       });
     });
   });
