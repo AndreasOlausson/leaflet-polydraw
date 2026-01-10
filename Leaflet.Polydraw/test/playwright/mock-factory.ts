@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test';
 
 type NormalizedPoint = [number, number];
+type LatLngLike = { lat: number; lng: number };
+type LatLngRing = LatLngLike[];
+type LatLngRings = LatLngRing[];
 
 /**
  * DemoFactory centralizes common Playwright actions against the demo app:
@@ -128,38 +131,47 @@ export class DemoFactory {
           throw new Error('Map or feature groups not ready');
         }
 
+        const getLayerRings = (layer: any): LatLngRings | null => {
+          const latLngs = layer?.getLatLngs?.() as unknown;
+          if (!Array.isArray(latLngs) || latLngs.length === 0) {
+            return null;
+          }
+          const first = latLngs[0] as unknown;
+          if (Array.isArray(first) && Array.isArray(first[0])) {
+            return first as LatLngRings;
+          }
+          if (Array.isArray(first)) {
+            return latLngs as LatLngRings;
+          }
+          return null;
+        };
+
         let targetPolygon: any = null;
-        let targetRings: any[] | null = null;
+        let targetRings: LatLngRings | null = null;
         for (const fg of groups) {
           let polygon: any = null;
-          let rings: any[] | null = null;
+          let rings: LatLngRings | null = null;
           fg.eachLayer((layer: any) => {
             if (
               !polygon &&
               typeof layer?.getBounds === 'function' &&
               typeof layer?.getLatLngs === 'function'
             ) {
-              const latLngs = layer.getLatLngs?.();
-              if (!Array.isArray(latLngs) || latLngs.length === 0) {
+              const candidate = getLayerRings(layer);
+              if (!candidate) {
                 return;
               }
-              // Normalize: MultiPolygon -> first polygon rings; Polygon -> rings
-              if (Array.isArray(latLngs[0]) && Array.isArray(latLngs[0][0])) {
-                rings = latLngs[0];
-              } else if (Array.isArray(latLngs[0])) {
-                rings = latLngs;
-              } else {
-                return;
-              }
+              rings = candidate;
               polygon = layer;
             }
           });
           if (!polygon) continue;
-          if (requireHoles && (!rings || rings.length <= 1)) {
+          const ringList = rings as unknown as LatLngRings | null;
+          if (requireHoles && (!ringList || ringList.length <= 1)) {
             continue;
           }
           targetPolygon = polygon;
-          targetRings = rings;
+          targetRings = ringList;
           break;
         }
 
@@ -168,12 +180,18 @@ export class DemoFactory {
         }
 
         let startLatLng = targetPolygon.getBounds().getCenter();
-        if (requireHoles && targetRings && targetRings.length > 1) {
-          const outer = targetRings[0];
-          const hole = targetRings[1];
-          const outerPt = outer?.[0];
-          const holePt = hole?.[0];
-          if (outerPt && holePt && typeof outerPt.lat === 'number' && typeof holePt.lat === 'number') {
+        const ringSet = targetRings as unknown as LatLngRings | null;
+        if (requireHoles && ringSet && ringSet.length > 1) {
+          const outer = ringSet[0];
+          const hole = ringSet[1];
+          const outerPt = outer?.[0] as LatLngLike | undefined;
+          const holePt = hole?.[0] as LatLngLike | undefined;
+          if (
+            outerPt &&
+            holePt &&
+            typeof outerPt.lat === 'number' &&
+            typeof holePt.lat === 'number'
+          ) {
             startLatLng = {
               lat: (outerPt.lat + holePt.lat) / 2,
               lng: (outerPt.lng + holePt.lng) / 2,

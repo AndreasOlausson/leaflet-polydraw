@@ -203,6 +203,10 @@ export const defaultConfig: PolydrawConfig = {
   bezier: {
     resolution: 10000,
     sharpness: 0.75,
+    resampleMultiplier: 10,
+    maxNodes: 1000,
+    visualOptimizationLevel: 10,
+    ghostMarkers: false,
   },
   colors: {
     dragPolygons: {

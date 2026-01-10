@@ -8,28 +8,13 @@ export class PopupFactory {
    * @param id Unique identifier for the button.
    * @param title Tooltip text.
    * @param cssClasses Additional CSS classes to apply.
-   * @param options Optional configuration (alpha banner, etc.).
    * @returns HTMLDivElement representing the menu button.
    */
-  static createMenuButton(
-    id: string,
-    title: string,
-    cssClasses: string[],
-    options?: {
-      alphaBanner?: boolean;
-    },
-  ): HTMLDivElement {
+  static createMenuButton(id: string, title: string, cssClasses: string[]): HTMLDivElement {
     const button = document.createElement('div');
     button.classList.add('marker-menu-button', ...cssClasses);
     button.title = title;
     button.setAttribute('data-action-id', id);
-
-    if (options?.alphaBanner) {
-      const alphaBanner = document.createElement('span');
-      alphaBanner.classList.add('alpha-banner');
-      alphaBanner.textContent = 'ALPHA';
-      button.appendChild(alphaBanner);
-    }
 
     return button;
   }

@@ -2533,11 +2533,7 @@ export class PolygonInteractionManager {
 
     // Bezier button
     if (menuOps.bezier.enabled) {
-      buttons.push(
-        PopupFactory.createMenuButton('bezier', 'Curve', ['bezier'], {
-          alphaBanner: true,
-        }),
-      );
+      buttons.push(PopupFactory.createMenuButton('bezier', 'Curve', ['bezier']));
     }
 
     // Scale button

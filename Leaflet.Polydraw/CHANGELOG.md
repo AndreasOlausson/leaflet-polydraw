@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Playwright coverage for dragging polygons with holes to confirm merge and non-merge behavior.
+- Bezier config options for resampling density, max node count, visual optimization level, and ghost markers.
 
 ### Fixed
 
 - Prevent polygons drawn inside holes from being merged away when dragging a polygon.
+- Bezier smoothing resamples to even spacing to avoid clustered nodes on straight segments.
 
 ## [1.2.1] - 2025-12-31
 

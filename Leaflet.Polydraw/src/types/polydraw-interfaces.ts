@@ -296,6 +296,10 @@ export interface PolydrawConfig {
   bezier: {
     resolution: number;
     sharpness: number;
+    resampleMultiplier: number;
+    maxNodes: number;
+    visualOptimizationLevel: number;
+    ghostMarkers: boolean;
   };
   colors: {
     dragPolygons: {

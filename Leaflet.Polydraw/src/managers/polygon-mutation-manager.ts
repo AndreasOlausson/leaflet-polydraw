@@ -220,11 +220,33 @@ export class PolygonMutationManager {
     }
 
     if (result.success && result.result) {
-      await this.addPolygon(result.result, {
+      const bezierLevel =
+        data.action === 'bezier'
+          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          : optimizationLevel;
+      const bezierOriginal =
+        data.action === 'bezier'
+          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          : originalOptimizationLevel;
+      const addResult = await this.addPolygon(result.result, {
         simplify: false,
-        visualOptimizationLevel: optimizationLevel,
-        originalOptimizationLevel,
+        visualOptimizationLevel: bezierLevel,
+        originalOptimizationLevel: bezierOriginal,
       });
+      if (data.action === 'bezier' && this.config.bezier?.ghostMarkers) {
+        const ghostOpacity = 0.001;
+        addResult.featureGroups?.forEach((featureGroup) => {
+          featureGroup.eachLayer((layer) => {
+            if (layer instanceof L.Polygon) {
+              const polygon = layer as PolydrawPolygon;
+              polygon.setStyle({ opacity: ghostOpacity, fillOpacity: ghostOpacity });
+              if (polygon._polydrawDragData) {
+                polygon._polydrawDragData.originalOpacity = ghostOpacity;
+              }
+            }
+          });
+        });
+      }
     }
   }
 

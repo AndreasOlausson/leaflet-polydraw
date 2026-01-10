@@ -208,6 +208,10 @@
   bezier: {
     resolution: 10000,
     sharpness: 0.75,
+    resampleMultiplier: 10,
+    maxNodes: 1000,
+    visualOptimizationLevel: 10,
+    ghostMarkers: false,
   },
   colors: {
     dragPolygons: {
@@ -426,6 +430,10 @@ const polydraw = L.control.polydraw({
 | **bezier**                                                         | object  |                                   | Bezier curve settings                                                                                                                                    |
 | &nbsp;&nbsp;resolution                                             | number  | `10000`                           | Bezier curve resolution                                                                                                                                  |
 | &nbsp;&nbsp;sharpness                                              | number  | `0.75`                            | Bezier curve sharpness                                                                                                                                   |
+| &nbsp;&nbsp;resampleMultiplier                                     | number  | `10`                              | Output points per input vertex when resampling                                                                                                           |
+| &nbsp;&nbsp;maxNodes                                               | number  | `1000`                            | Maximum number of nodes after bezier smoothing                                                                                                           |
+| &nbsp;&nbsp;visualOptimizationLevel                                | number  | `10`                              | Visual optimization level applied after bezier                                                                                                           |
+| &nbsp;&nbsp;ghostMarkers                                           | boolean | `false`                           | Make the bezier result almost invisible while keeping it draggable                                                                                       |
 | **menuOperations**                                                 | object  |                                   | Menu operation toggles                                                                                                                                   |
 | &nbsp;&nbsp;**simplify**                                           | object  |                                   | Simplify operation configuration                                                                                                                         |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable simplify operation                                                                                                                                |
