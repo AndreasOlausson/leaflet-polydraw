@@ -263,6 +263,58 @@ export interface MenuOperationsConfig {
   };
 }
 
+export type PolygonActionHistory =
+  | 'simplify'
+  | 'doubleElbows'
+  | 'bbox'
+  | 'bezier'
+  | 'scale'
+  | 'rotate'
+  | 'toggleOptimization';
+
+export type HistoryAction =
+  | 'freehand'
+  | 'pointToPoint'
+  | 'addPredefinedPolygon'
+  | 'eraseAll'
+  | 'markerDrag'
+  | 'polygonDrag'
+  | 'addVertex'
+  | 'removeVertex'
+  | 'removeHole'
+  | 'modifierSubtract'
+  | 'deletePolygon'
+  | PolygonActionHistory;
+
+export interface PolygonActionsHistoryCaptureConfig {
+  simplify: boolean;
+  doubleElbows: boolean;
+  bbox: boolean;
+  bezier: boolean;
+  scale: boolean;
+  rotate: boolean;
+  toggleOptimization: boolean;
+}
+
+export interface HistoryCaptureConfig {
+  freehand: boolean;
+  pointToPoint: boolean;
+  addPredefinedPolygon: boolean;
+  eraseAll: boolean;
+  markerDrag: boolean;
+  polygonDrag: boolean;
+  addVertex: boolean;
+  removeVertex: boolean;
+  removeHole: boolean;
+  modifierSubtract: boolean;
+  deletePolygon: boolean;
+  polygonActions?: PolygonActionsHistoryCaptureConfig;
+}
+
+export interface HistoryConfig {
+  capture: HistoryCaptureConfig;
+}
+
 /**
  * Complete Polydraw configuration interface
  */
@@ -343,6 +395,7 @@ export interface PolydrawConfig {
       };
     };
   };
+  history: HistoryConfig;
   maxHistorySize: number;
 }
 

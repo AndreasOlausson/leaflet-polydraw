@@ -9,6 +9,7 @@ import type {
   PolygonUpdatedEventData,
   Position,
   PolydrawPolygon,
+  HistoryAction,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import {
@@ -46,7 +47,7 @@ export interface MutationManagerDependencies {
   modeManager: ModeManager;
   eventManager: EventManager;
   getFeatureGroups: () => L.FeatureGroup[];
-  saveHistoryState?: () => void;
+  saveHistoryState?: (action: HistoryAction) => void;
 }
 
 /**
@@ -60,6 +61,7 @@ export class PolygonMutationManager {
   private config: PolydrawConfig;
   private eventManager: EventManager;
   private getFeatureGroups: () => L.FeatureGroup[];
+  private saveHistoryState?: (action: HistoryAction) => void;
 
   // Specialized managers
   private geometryManager!: PolygonGeometryManager;
@@ -72,6 +74,7 @@ export class PolygonMutationManager {
     this.config = dependencies.config;
     this.eventManager = dependencies.eventManager;
     this.getFeatureGroups = dependencies.getFeatureGroups;
+    this.saveHistoryState = dependencies.saveHistoryState;
 
     // Initialize specialized managers
     this.initializeSpecializedManagers(dependencies);
@@ -183,6 +186,10 @@ export class PolygonMutationManager {
    */
   private async handleMenuAction(data: MenuActionData): Promise<void> {
     // console.log('PolygonMutationManager handleMenuAction');
+
+    if (this.saveHistoryState) {
+      this.saveHistoryState(data.action);
+    }
 
     // Get the complete polygon GeoJSON including holes before removing the feature group
     const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);

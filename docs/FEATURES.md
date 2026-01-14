@@ -68,8 +68,10 @@ This mode mirrors point-to-point drawing but applies the shape as a subtraction 
 Step backward or forward through edits:
 
 - Undo/redo polygon drawing, subtraction, vertex edits, and transforms
+- Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier)
 - Accessible via toolbar buttons or keyboard shortcuts
 - History is capped to keep memory under control (`config.maxHistorySize`)
+- You can opt out of specific action types via `config.history.capture` (snapshots still store full state)
 
 ## Smart Polygon Merging
 

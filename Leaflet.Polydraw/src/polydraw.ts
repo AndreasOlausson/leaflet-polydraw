@@ -24,7 +24,12 @@ import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
 import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
-import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
+import type {
+  PolydrawConfig,
+  DrawModeChangeHandler,
+  HistoryAction,
+  PolygonActionHistory,
+} from './types/polydraw-interfaces';
 
 // Create a local interface that extends L.Map for our specific needs
 interface ExtendedMap extends L.Map {
@@ -261,6 +266,36 @@ class Polydraw extends L.Control {
     }
   }
 
+  private isPolygonAction(action: HistoryAction): action is PolygonActionHistory {
+    return (
+      action === 'simplify' ||
+      action === 'doubleElbows' ||
+      action === 'bbox' ||
+      action === 'bezier' ||
+      action === 'scale' ||
+      action === 'rotate' ||
+      action === 'toggleOptimization'
+    );
+  }
+
+  private shouldCaptureHistory(action: HistoryAction): boolean {
+    const capture = this.config.history?.capture;
+    if (!capture) {
+      return true;
+    }
+    if (this.isPolygonAction(action)) {
+      return capture.polygonActions?.[action] !== false;
+    }
+    return capture[action] !== false;
+  }
+
+  private saveHistory(action: HistoryAction): void {
+    if (!this.shouldCaptureHistory(action)) {
+      return;
+    }
+    this.historyManager.saveState(this.arrayOfFeatureGroups, action);
+  }
+
   /**
    * Redo the last undone action
    */
@@ -318,7 +353,7 @@ class Polydraw extends L.Control {
         const polygon2 = this.turfHelper.getMultiPolygon([coords]);
 
         // Save state before adding polygon
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'addPredefinedPolygon');
+        this.saveHistory('addPredefinedPolygon');
 
         // Use the PolygonMutationManager instead of direct addPolygon
         const result = await this.polygonMutationManager.addPolygon(polygon2, {
@@ -565,7 +600,7 @@ class Polydraw extends L.Control {
       this.stopDraw();
       if (data.isPointToPoint) {
         // Save state before P2P operation
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'pointToPoint');
+        this.saveHistory('pointToPoint');
 
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
@@ -688,8 +723,8 @@ class Polydraw extends L.Control {
       modeManager: this.modeManager,
       eventManager: this.eventManager,
       getFeatureGroups: () => this.arrayOfFeatureGroups,
-      saveHistoryState: () => {
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'vertexDrag');
+      saveHistoryState: (action: HistoryAction) => {
+        this.saveHistory(action);
       },
     });
   }
@@ -833,7 +868,7 @@ class Polydraw extends L.Control {
       return;
     }
     // Save state before erasing all
-    this.historyManager.saveState(this.arrayOfFeatureGroups, 'eraseAll');
+    this.saveHistory('eraseAll');
     this.removeAllFeatureGroups();
   };
 
@@ -1311,7 +1346,7 @@ class Polydraw extends L.Control {
   private async handleFreehandDrawCompletion(geoPos: Feature<Polygon | MultiPolygon>) {
     try {
       // Save state before freehand operation
-      this.historyManager.saveState(this.arrayOfFeatureGroups, 'freehand');
+      this.saveHistory('freehand');
 
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
