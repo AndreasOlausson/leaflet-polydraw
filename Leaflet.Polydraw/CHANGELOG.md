@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bezier config options for resampling density, max node count, visual optimization level, and ghost markers.
 - Per-action history capture controls via `config.history.capture` (including `polygonActions` for menu tools).
 
+### Removed
+
+- Removed the unmaintained `Polydraw_Docker` helper project, Docker scripts, and `docs/DOCKER.md`.
+
 ### Fixed
 
 - Prevent polygons drawn inside holes from being merged away when dragging a polygon.

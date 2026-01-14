@@ -58,6 +58,5 @@ Comprehensive documentation is available in the `/docs` directory:
 - [Events](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/EVENTS.md)
 - [Coordinate Formats](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/COORDINATES.md)
 - [Demo (Leaflet 1.x / 2.x)](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/DEMO.md)
-- [Docker](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/DOCKER.md)
 - [General (Browser Support, License, Acknowledgments)](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/GENERAL.md)
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
