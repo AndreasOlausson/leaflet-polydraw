@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - Removed the unmaintained `Polydraw_Docker` helper project, Docker scripts, and `docs/DOCKER.md`.
+- Removed the legacy `test-legacy` suite and `test:legacy` script.
 
 ### Fixed
 

@@ -4,6 +4,8 @@ type NormalizedPoint = [number, number];
 type LatLngLike = { lat: number; lng: number };
 type LatLngRing = LatLngLike[];
 type LatLngRings = LatLngRing[];
+type GeoCoord = [number, number];
+type GeoBounds = { minLat: number; maxLat: number; minLng: number; maxLng: number };
 
 /**
  * DemoFactory centralizes common Playwright actions against the demo app:
@@ -255,6 +257,253 @@ export class DemoFactory {
     );
 
     await this.page.waitForTimeout(250);
+  }
+
+  /** Ensure draw mode is Off so marker interactions work */
+  async ensureOffMode() {
+    await this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      ctrl?.setDrawMode?.(0);
+    });
+  }
+
+  /** Open the polygon menu for the first menu marker */
+  async openMenu() {
+    await this.ensureOffMode();
+    const menuMarker = this.page.locator('.polygon-marker.menu').first();
+    await menuMarker.waitFor({ state: 'visible' });
+    await menuMarker.click();
+    await this.page.locator('.menu-popup .marker-menu-button').first().waitFor({ state: 'visible' });
+  }
+
+  /** Click a polygon menu action by data-action-id */
+  async clickMenuAction(actionId: string) {
+    await this.openMenu();
+    const action = this.page.locator(
+      `.menu-popup .marker-menu-button[data-action-id="${actionId}"]`,
+    );
+    await action.first().click();
+    await this.page.waitForTimeout(150);
+  }
+
+  /** Start a transform mode from the polygon menu */
+  async startTransform(mode: 'scale' | 'rotate') {
+    await this.clickMenuAction(mode);
+    await this.page.locator('.polydraw-transform-handle').first().waitFor({ state: 'visible' });
+  }
+
+  /** Drag a transform handle by pixel deltas */
+  async dragTransformHandle(handle: string, deltaX: number, deltaY: number) {
+    await this.page.evaluate(
+      async ({ handle, deltaX, deltaY }) => {
+        const el = document.querySelector(
+          `.polydraw-transform-handle.handle-${handle}`,
+        ) as HTMLElement | null;
+        if (!el) {
+          throw new Error(`Transform handle not found: ${handle}`);
+        }
+        const rect = el.getBoundingClientRect();
+        const startX = rect.left + rect.width / 2;
+        const startY = rect.top + rect.height / 2;
+        const endX = startX + deltaX;
+        const endY = startY + deltaY;
+
+        const supportsPointer = typeof (window as any).PointerEvent === 'function';
+        const pointerId = 1;
+        const createPointer = (type: string, x: number, y: number) =>
+          new PointerEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            clientX: x,
+            clientY: y,
+            pointerId,
+            pointerType: 'mouse',
+            isPrimary: true,
+            button: type === 'pointerup' ? 0 : 0,
+            buttons: type === 'pointerup' ? 0 : 1,
+            pressure: type === 'pointerup' ? 0 : 0.5,
+          });
+        const createMouse = (type: string, x: number, y: number) =>
+          new MouseEvent(type, {
+            bubbles: true,
+            cancelable: true,
+            clientX: x,
+            clientY: y,
+            button: 0,
+            buttons: type === 'mouseup' ? 0 : 1,
+          });
+
+        const dispatch = (type: string, x: number, y: number, target: EventTarget) => {
+          if (supportsPointer) {
+            target.dispatchEvent(createPointer(type, x, y));
+            return;
+          }
+          const mouseType = type.replace('pointer', 'mouse');
+          target.dispatchEvent(createMouse(mouseType, x, y));
+        };
+
+        const moveTarget = document;
+        const mapTarget = document.querySelector('.leaflet-container') ?? document;
+        dispatch('pointerdown', startX, startY, el);
+        const steps = 8;
+        for (let i = 1; i <= steps; i += 1) {
+          const t = i / steps;
+          const x = startX + (endX - startX) * t;
+          const y = startY + (endY - startY) * t;
+          dispatch('pointermove', x, y, moveTarget);
+          await new Promise((resolve) => setTimeout(resolve, 16));
+        }
+        dispatch('pointerup', endX, endY, moveTarget);
+        if (mapTarget !== moveTarget) {
+          dispatch('pointerup', endX, endY, mapTarget);
+        }
+      },
+      { handle, deltaX, deltaY },
+    );
+    await this.page.waitForTimeout(200);
+  }
+
+  /** Rotate by a given angle using the rotate handle */
+  async rotateTransformByDegrees(degrees: number) {
+    await this.page.evaluate(async (deg) => {
+      const handle = document.querySelector(
+        '.polydraw-transform-handle.handle-rotate',
+      ) as HTMLElement | null;
+      const box = document.querySelector('.polydraw-transform-box') as HTMLElement | null;
+      if (!handle || !box) {
+        throw new Error('Rotate handle or box not found');
+      }
+
+      const handleRect = handle.getBoundingClientRect();
+      const boxRect = box.getBoundingClientRect();
+      const centerX = boxRect.left + boxRect.width / 2;
+      const centerY = boxRect.top + boxRect.height / 2;
+      const startX = handleRect.left + handleRect.width / 2;
+      const startY = handleRect.top + handleRect.height / 2;
+      const radius = Math.hypot(startX - centerX, startY - centerY);
+      const startAngle = Math.atan2(startY - centerY, startX - centerX);
+      const targetAngle = startAngle + (deg * Math.PI) / 180;
+      const endX = centerX + radius * Math.cos(targetAngle);
+      const endY = centerY + radius * Math.sin(targetAngle);
+
+      const supportsPointer = typeof (window as any).PointerEvent === 'function';
+      const pointerId = 1;
+      const createPointer = (type: string, x: number, y: number) =>
+        new PointerEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          pointerId,
+          pointerType: 'mouse',
+          isPrimary: true,
+          button: type === 'pointerup' ? 0 : 0,
+          buttons: type === 'pointerup' ? 0 : 1,
+          pressure: type === 'pointerup' ? 0 : 0.5,
+        });
+      const createMouse = (type: string, x: number, y: number) =>
+        new MouseEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          clientX: x,
+          clientY: y,
+          button: 0,
+          buttons: type === 'mouseup' ? 0 : 1,
+        });
+      const dispatch = (type: string, x: number, y: number, target: EventTarget) => {
+        if (supportsPointer) {
+          target.dispatchEvent(createPointer(type, x, y));
+          return;
+        }
+        const mouseType = type.replace('pointer', 'mouse');
+        target.dispatchEvent(createMouse(mouseType, x, y));
+      };
+      const moveTarget = document;
+      const mapTarget = document.querySelector('.leaflet-container') ?? document;
+      dispatch('pointerdown', startX, startY, handle);
+      const steps = 10;
+      for (let i = 1; i <= steps; i += 1) {
+        const t = i / steps;
+        const x = startX + (endX - startX) * t;
+        const y = startY + (endY - startY) * t;
+        dispatch('pointermove', x, y, moveTarget);
+        await new Promise((resolve) => setTimeout(resolve, 16));
+      }
+      dispatch('pointerup', endX, endY, moveTarget);
+      if (mapTarget !== moveTarget) {
+        dispatch('pointerup', endX, endY, mapTarget);
+      }
+    }, degrees);
+
+    await this.page.waitForTimeout(200);
+  }
+
+  /** Confirm a transform operation */
+  async confirmTransform() {
+    const confirm = this.page.locator('.polydraw-transform-confirm');
+    await confirm.waitFor({ state: 'visible' });
+    await confirm.click();
+    await this.page.locator('.polydraw-transform-root').waitFor({ state: 'detached' });
+  }
+
+  /** Undo the last operation */
+  async undo() {
+    await this.page.evaluate(async () => {
+      const ctrl = (window as any).polydrawControl;
+      await ctrl?.undo?.();
+    });
+    await this.page.waitForTimeout(150);
+  }
+
+  /** Redo the last undone operation */
+  async redo() {
+    await this.page.evaluate(async () => {
+      const ctrl = (window as any).polydrawControl;
+      await ctrl?.redo?.();
+    });
+    await this.page.waitForTimeout(150);
+  }
+
+  /** Return the primary polygon coordinates (GeoJSON order: [lng, lat]) */
+  async getPrimaryPolygonCoordinates(): Promise<GeoCoord[]> {
+    return this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const groups = ctrl?.getFeatureGroups?.() ?? [];
+      if (!groups.length) return [];
+      const geojson = groups[0].toGeoJSON() as any;
+      const features = Array.isArray(geojson?.features) ? geojson.features : [geojson];
+      const geom = features[0]?.geometry;
+      if (!geom || !geom.coordinates) return [];
+      if (geom.type === 'Polygon') {
+        return Array.isArray(geom.coordinates[0]) ? geom.coordinates[0] : [];
+      }
+      if (geom.type === 'MultiPolygon') {
+        return Array.isArray(geom.coordinates[0]?.[0]) ? geom.coordinates[0][0] : [];
+      }
+      return [];
+    });
+  }
+
+  /** Return vertex count for the primary polygon ring */
+  async getPrimaryPolygonVertexCount(): Promise<number> {
+    const coords = await this.getPrimaryPolygonCoordinates();
+    return coords.length;
+  }
+
+  /** Return bounds for the primary polygon ring */
+  async getPrimaryPolygonBounds(): Promise<GeoBounds> {
+    const coords = await this.getPrimaryPolygonCoordinates();
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLng = Infinity;
+    let maxLng = -Infinity;
+    coords.forEach(([lng, lat]) => {
+      minLat = Math.min(minLat, lat);
+      maxLat = Math.max(maxLat, lat);
+      minLng = Math.min(minLng, lng);
+      maxLng = Math.max(maxLng, lng);
+    });
+    return { minLat, maxLat, minLng, maxLng };
   }
 }
 

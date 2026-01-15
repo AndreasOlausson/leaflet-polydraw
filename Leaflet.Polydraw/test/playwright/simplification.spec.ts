@@ -2,25 +2,6 @@ import { test, expect } from '@playwright/test';
 import { DemoFactory } from './mock-factory';
 import { latlngPolys } from './fixtures/polygons';
 
-async function getFirstPolygonVertexCount(page: any): Promise<number> {
-  return page.evaluate(() => {
-    const ctrl = (window as any).polydrawControl;
-    const groups = ctrl?.getFeatureGroups() ?? [];
-    if (!groups.length) return 0;
-    const gj = groups[0].toGeoJSON() as any;
-    const features = Array.isArray(gj?.features) ? gj.features : [gj];
-    const geom = features[0]?.geometry;
-    if (!geom || !geom.coordinates) return 0;
-    if (geom.type === 'Polygon') {
-      return Array.isArray(geom.coordinates[0]) ? geom.coordinates[0].length : 0;
-    }
-    if (geom.type === 'MultiPolygon') {
-      return Array.isArray(geom.coordinates[0]?.[0]) ? geom.coordinates[0][0].length : 0;
-    }
-    return 0;
-  });
-}
-
 test.describe('Simplification sensitivity', () => {
   test.beforeEach(async ({ page }) => {
     const demo = new DemoFactory(page);
@@ -37,7 +18,7 @@ test.describe('Simplification sensitivity', () => {
       const ctrl = (window as any).polydrawControl;
       return (ctrl?.getFeatureGroups().length ?? 0) === 1;
     });
-    const denseVertices = await getFirstPolygonVertexCount(page);
+    const denseVertices = await demo.getPrimaryPolygonVertexCount();
 
     // Sparse polygon (fewer vertices)
     await demo.clearPolygons();
@@ -46,7 +27,7 @@ test.describe('Simplification sensitivity', () => {
       const ctrl = (window as any).polydrawControl;
       return (ctrl?.getFeatureGroups().length ?? 0) === 1;
     });
-    const sparseVertices = await getFirstPolygonVertexCount(page);
+    const sparseVertices = await demo.getPrimaryPolygonVertexCount();
 
     expect(denseVertices).toBeGreaterThan(sparseVertices);
   });

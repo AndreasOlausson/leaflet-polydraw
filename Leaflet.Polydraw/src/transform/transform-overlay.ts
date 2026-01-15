@@ -243,7 +243,11 @@ export class TransformOverlay {
     if (this.supportsPointerEvents && evt instanceof PointerEvent) {
       this.activePointerId = evt.pointerId;
       this.pointerCaptureTarget = this.map.getContainer();
-      this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
+      try {
+        this.pointerCaptureTarget?.setPointerCapture?.(evt.pointerId);
+      } catch {
+        // Pointer capture may fail for synthetic events; continue without it.
+      }
       L.DomEvent.on(doc, 'pointermove', moveHandler);
       L.DomEvent.on(doc, 'pointerup', upHandler);
       L.DomEvent.on(doc, 'pointercancel', upHandler);
@@ -280,7 +284,11 @@ export class TransformOverlay {
       const doc = document as unknown as HTMLElement;
       if (this.supportsPointerEvents && this.pointerCaptureTarget) {
         if (this.activePointerId != null) {
-          this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
+          try {
+            this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
+          } catch {
+            // Ignore release failures; drag cleanup still proceeds.
+          }
         }
         if (this.documentMoveHandler) {
           const moveHandler = this.documentMoveHandler as (e: Event) => void;

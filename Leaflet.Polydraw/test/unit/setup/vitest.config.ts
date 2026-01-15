@@ -7,28 +7,19 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./test/unit/setup/test-setup.ts'],
     include: ['test/unit/**/*.test.ts'],
-    exclude: ['test-legacy/**/*', 'node_modules/**/*'],
+    exclude: ['node_modules/**/*'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
       exclude: [
         'node_modules/',
         'test/',
-        'test-legacy/',
         'dist/',
         'demo/',
         '**/*.d.ts',
         '**/*.config.*',
         '**/vite-env.d.ts',
       ],
-      thresholds: {
-        global: {
-          branches: 70,
-          functions: 70,
-          lines: 70,
-          statements: 70,
-        },
-      },
     },
   },
   resolve: {

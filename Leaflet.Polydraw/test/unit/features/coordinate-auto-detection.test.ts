@@ -2,9 +2,8 @@
  * Coordinate Auto-Detection Tests
  * Tests the CoordinateUtils.convertToLatLng method with various coordinate formats
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { CoordinateUtils } from '../../../src/coordinate-utils';
-import { MockFactory } from '../mocks/factory';
 
 // Mock the leafletAdapter to avoid dependency issues
 vi.mock('../../../src/compatibility/leaflet-adapter', () => ({

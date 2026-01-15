@@ -60,3 +60,14 @@ Full documentation and examples are available on GitHub:
 - [General — Browser Support, License, Acknowledgments](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/GENERAL.md)
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
 - [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/Leaflet.Polydraw/CHANGELOG.md)
+
+## Development
+
+- The legacy `Polydraw_Docker` helper and root shell scripts have been removed.
+- Use `npm run test:playwright` to build the library + demo before running E2E tests.
+
+---
+
+### Disclaimer
+
+This project is provided "as is", without any warranty or guarantee of any kind. See the [MIT License](../Leaflet.Polydraw/LICENSE) for full terms.

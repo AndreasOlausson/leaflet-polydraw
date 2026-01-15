@@ -253,16 +253,23 @@ export class HistoryManager {
 
     featureGroups.forEach((fg) => {
       fg.eachLayer((layer) => {
-        if (layer instanceof L.Polygon) {
-          const polygon = layer as L.Polygon;
-          try {
-            const feature = polygon.toGeoJSON();
-            if (feature) {
-              features.push(feature);
-            }
-          } catch (error) {
-            console.warn('Error converting polygon to GeoJSON:', error);
+        const layerWithGeoJSON = layer as L.Layer & {
+          toGeoJSON?: () => Feature<Polygon | MultiPolygon> | null;
+        };
+        if (!layerWithGeoJSON?.toGeoJSON) {
+          return;
+        }
+        try {
+          const feature = layerWithGeoJSON.toGeoJSON();
+          if (!feature) {
+            return;
           }
+          const geomType = feature?.geometry?.type;
+          if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
+            features.push(feature);
+          }
+        } catch (error) {
+          console.warn('Error converting polygon to GeoJSON:', error);
         }
       });
     });

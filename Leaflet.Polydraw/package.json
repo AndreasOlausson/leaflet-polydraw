@@ -55,7 +55,6 @@
     "test:new": "vitest --config test/unit/setup/vitest.config.ts",
     "test:coverage": "vitest --config test/unit/setup/vitest.config.ts --coverage",
     "test:ui": "vitest --config test/unit/setup/vitest.config.ts --ui",
-    "test:legacy": "vitest --config vitest.config.ts",
     "test:playwright": "npm run build && npm --prefix demo run build && playwright test",
     "test:e2e": "npm run test:playwright",
     "test:types": "tsc --noEmit --project tsconfig.json",

@@ -6,6 +6,7 @@
  */
 
 import * as L from 'leaflet';
+import type { Feature, Polygon, MultiPolygon } from 'geojson';
 // import { LeafletVersionDetector } from '../../src/compatibility/version-detector';
 
 export class MockFactory {
@@ -81,6 +82,13 @@ export class MockFactory {
       clone: vi.fn().mockReturnThis(),
       toString: vi.fn().mockReturnValue(`LatLng(${lat}, ${lng})`),
     } as any;
+  }
+
+  /**
+   * Creates a LatLng literal for production-code inputs
+   */
+  static createLatLngLiteral(lat: number = 58.4, lng: number = 15.6): L.LatLngLiteral {
+    return { lat, lng };
   }
 
   /**
@@ -318,6 +326,34 @@ export class MockFactory {
       off: vi.fn(),
       fire: vi.fn(),
     } as any;
+  }
+
+  /**
+   * Creates a real DOM container for Leaflet map tests
+   */
+  static createMapContainer(options?: { width?: number; height?: number }): HTMLDivElement {
+    const { width = 800, height = 600 } = options || {};
+    const container = document.createElement('div');
+    container.style.width = `${width}px`;
+    container.style.height = `${height}px`;
+
+    Object.defineProperty(container, 'clientWidth', { value: width });
+    Object.defineProperty(container, 'clientHeight', { value: height });
+    container.getBoundingClientRect = () =>
+      ({
+        x: 0,
+        y: 0,
+        width,
+        height,
+        top: 0,
+        left: 0,
+        right: width,
+        bottom: height,
+        toJSON: () => '',
+      }) as DOMRect;
+
+    document.body.appendChild(container);
+    return container;
   }
 
   /**
@@ -598,18 +634,18 @@ export class MockFactory {
       /**
        * Creates an octagon-shaped polygon
        */
-      octagon: (): L.LatLng[][][] => [
+      octagon: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.404493, 15.6),
-            this.createLatLng(58.402928, 15.602928),
-            this.createLatLng(58.4, 15.604493),
-            this.createLatLng(58.397072, 15.602928),
-            this.createLatLng(58.395507, 15.6),
-            this.createLatLng(58.397072, 15.597072),
-            this.createLatLng(58.4, 15.595507),
-            this.createLatLng(58.402928, 15.597072),
-            this.createLatLng(58.404493, 15.6), // Close the polygon
+            this.createLatLngLiteral(58.404493, 15.6),
+            this.createLatLngLiteral(58.402928, 15.602928),
+            this.createLatLngLiteral(58.4, 15.604493),
+            this.createLatLngLiteral(58.397072, 15.602928),
+            this.createLatLngLiteral(58.395507, 15.6),
+            this.createLatLngLiteral(58.397072, 15.597072),
+            this.createLatLngLiteral(58.4, 15.595507),
+            this.createLatLngLiteral(58.402928, 15.597072),
+            this.createLatLngLiteral(58.404493, 15.6), // Close the polygon
           ],
         ],
       ],
@@ -617,23 +653,23 @@ export class MockFactory {
       /**
        * Creates a square with a hole (donut shape)
        */
-      squareWithHole: (): L.LatLng[][][] => [
+      squareWithHole: (): L.LatLngLiteral[][][] => [
         [
           // Outer square (counter-clockwise)
           [
-            this.createLatLng(58.407, 15.597),
-            this.createLatLng(58.407, 15.603),
-            this.createLatLng(58.397, 15.603),
-            this.createLatLng(58.397, 15.597),
-            this.createLatLng(58.407, 15.597),
+            this.createLatLngLiteral(58.407, 15.597),
+            this.createLatLngLiteral(58.407, 15.603),
+            this.createLatLngLiteral(58.397, 15.603),
+            this.createLatLngLiteral(58.397, 15.597),
+            this.createLatLngLiteral(58.407, 15.597),
           ],
           // Inner square (clockwise, as hole)
           [
-            this.createLatLng(58.403, 15.599),
-            this.createLatLng(58.403, 15.601),
-            this.createLatLng(58.401, 15.601),
-            this.createLatLng(58.401, 15.599),
-            this.createLatLng(58.403, 15.599),
+            this.createLatLngLiteral(58.403, 15.599),
+            this.createLatLngLiteral(58.403, 15.601),
+            this.createLatLngLiteral(58.401, 15.601),
+            this.createLatLngLiteral(58.401, 15.599),
+            this.createLatLngLiteral(58.403, 15.599),
           ],
         ],
       ],
@@ -641,23 +677,23 @@ export class MockFactory {
       /**
        * Creates overlapping squares (for merging tests)
        */
-      overlappingSquares: (): L.LatLng[][][] => [
+      overlappingSquares: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.405, 15.595),
-            this.createLatLng(58.405, 15.6),
-            this.createLatLng(58.4, 15.6),
-            this.createLatLng(58.4, 15.595),
-            this.createLatLng(58.405, 15.595),
+            this.createLatLngLiteral(58.405, 15.595),
+            this.createLatLngLiteral(58.405, 15.6),
+            this.createLatLngLiteral(58.4, 15.6),
+            this.createLatLngLiteral(58.4, 15.595),
+            this.createLatLngLiteral(58.405, 15.595),
           ],
         ],
         [
           [
-            this.createLatLng(58.403, 15.598),
-            this.createLatLng(58.403, 15.603),
-            this.createLatLng(58.398, 15.603),
-            this.createLatLng(58.398, 15.598),
-            this.createLatLng(58.403, 15.598),
+            this.createLatLngLiteral(58.403, 15.598),
+            this.createLatLngLiteral(58.403, 15.603),
+            this.createLatLngLiteral(58.398, 15.603),
+            this.createLatLngLiteral(58.398, 15.598),
+            this.createLatLngLiteral(58.403, 15.598),
           ],
         ],
       ],
@@ -665,13 +701,13 @@ export class MockFactory {
       /**
        * Creates a triangle (3 vertices)
        */
-      triangle: (): L.LatLng[][][] => [
+      triangle: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.41, 15.59),
-            this.createLatLng(58.41, 15.595),
-            this.createLatLng(58.405, 15.592),
-            this.createLatLng(58.41, 15.59), // Closing point
+            this.createLatLngLiteral(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.595),
+            this.createLatLngLiteral(58.405, 15.592),
+            this.createLatLngLiteral(58.41, 15.59), // Closing point
           ],
         ],
       ],
@@ -679,31 +715,31 @@ export class MockFactory {
       /**
        * Creates a complex polygon with multiple holes
        */
-      complexWithMultipleHoles: (): L.LatLng[][][] => [
+      complexWithMultipleHoles: (): L.LatLngLiteral[][][] => [
         [
           // Outer boundary
           [
-            this.createLatLng(58.41, 15.59),
-            this.createLatLng(58.41, 15.61),
-            this.createLatLng(58.39, 15.61),
-            this.createLatLng(58.39, 15.59),
-            this.createLatLng(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.61),
+            this.createLatLngLiteral(58.39, 15.61),
+            this.createLatLngLiteral(58.39, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
           ],
           // First hole
           [
-            this.createLatLng(58.405, 15.595),
-            this.createLatLng(58.405, 15.6),
-            this.createLatLng(58.4, 15.6),
-            this.createLatLng(58.4, 15.595),
-            this.createLatLng(58.405, 15.595),
+            this.createLatLngLiteral(58.405, 15.595),
+            this.createLatLngLiteral(58.405, 15.6),
+            this.createLatLngLiteral(58.4, 15.6),
+            this.createLatLngLiteral(58.4, 15.595),
+            this.createLatLngLiteral(58.405, 15.595),
           ],
           // Second hole
           [
-            this.createLatLng(58.402, 15.598),
-            this.createLatLng(58.402, 15.602),
-            this.createLatLng(58.398, 15.602),
-            this.createLatLng(58.398, 15.598),
-            this.createLatLng(58.402, 15.598),
+            this.createLatLngLiteral(58.402, 15.598),
+            this.createLatLngLiteral(58.402, 15.602),
+            this.createLatLngLiteral(58.398, 15.602),
+            this.createLatLngLiteral(58.398, 15.598),
+            this.createLatLngLiteral(58.402, 15.598),
           ],
         ],
       ],
@@ -711,18 +747,18 @@ export class MockFactory {
       /**
        * Creates a C-shape polygon (for merging tests)
        */
-      cShape: (): L.LatLng[][][] => [
+      cShape: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.41, 15.59),
-            this.createLatLng(58.41, 15.61),
-            this.createLatLng(58.405, 15.61),
-            this.createLatLng(58.405, 15.605),
-            this.createLatLng(58.395, 15.605),
-            this.createLatLng(58.395, 15.595),
-            this.createLatLng(58.405, 15.595),
-            this.createLatLng(58.405, 15.59),
-            this.createLatLng(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.61),
+            this.createLatLngLiteral(58.405, 15.61),
+            this.createLatLngLiteral(58.405, 15.605),
+            this.createLatLngLiteral(58.395, 15.605),
+            this.createLatLngLiteral(58.395, 15.595),
+            this.createLatLngLiteral(58.405, 15.595),
+            this.createLatLngLiteral(58.405, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
           ],
         ],
       ],
@@ -730,20 +766,20 @@ export class MockFactory {
       /**
        * Creates a star-shaped polygon
        */
-      star: (): L.LatLng[][][] => [
+      star: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.4, 15.61), // Top point
-            this.createLatLng(58.402, 15.605), // Right upper
-            this.createLatLng(58.408, 15.605), // Right outer
-            this.createLatLng(58.403, 15.6), // Right inner
-            this.createLatLng(58.405, 15.595), // Bottom right
-            this.createLatLng(58.4, 15.598), // Bottom center
-            this.createLatLng(58.395, 15.595), // Bottom left
-            this.createLatLng(58.397, 15.6), // Left inner
-            this.createLatLng(58.392, 15.605), // Left outer
-            this.createLatLng(58.398, 15.605), // Left upper
-            this.createLatLng(58.4, 15.61), // Close
+            this.createLatLngLiteral(58.4, 15.61), // Top point
+            this.createLatLngLiteral(58.402, 15.605), // Right upper
+            this.createLatLngLiteral(58.408, 15.605), // Right outer
+            this.createLatLngLiteral(58.403, 15.6), // Right inner
+            this.createLatLngLiteral(58.405, 15.595), // Bottom right
+            this.createLatLngLiteral(58.4, 15.598), // Bottom center
+            this.createLatLngLiteral(58.395, 15.595), // Bottom left
+            this.createLatLngLiteral(58.397, 15.6), // Left inner
+            this.createLatLngLiteral(58.392, 15.605), // Left outer
+            this.createLatLngLiteral(58.398, 15.605), // Left upper
+            this.createLatLngLiteral(58.4, 15.61), // Close
           ],
         ],
       ],
@@ -751,29 +787,29 @@ export class MockFactory {
       /**
        * Creates multiple separate polygons
        */
-      multipleSimplePolygons: (): L.LatLng[][][] => [
+      multipleSimplePolygons: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.41, 15.59),
-            this.createLatLng(58.41, 15.595),
-            this.createLatLng(58.405, 15.592),
-            this.createLatLng(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.595),
+            this.createLatLngLiteral(58.405, 15.592),
+            this.createLatLngLiteral(58.41, 15.59),
           ],
         ],
         [
           [
-            this.createLatLng(58.42, 15.6),
-            this.createLatLng(58.42, 15.605),
-            this.createLatLng(58.415, 15.602),
-            this.createLatLng(58.42, 15.6),
+            this.createLatLngLiteral(58.42, 15.6),
+            this.createLatLngLiteral(58.42, 15.605),
+            this.createLatLngLiteral(58.415, 15.602),
+            this.createLatLngLiteral(58.42, 15.6),
           ],
         ],
         [
           [
-            this.createLatLng(58.43, 15.61),
-            this.createLatLng(58.43, 15.615),
-            this.createLatLng(58.425, 15.612),
-            this.createLatLng(58.43, 15.61),
+            this.createLatLngLiteral(58.43, 15.61),
+            this.createLatLngLiteral(58.43, 15.615),
+            this.createLatLngLiteral(58.425, 15.612),
+            this.createLatLngLiteral(58.43, 15.61),
           ],
         ],
       ],
@@ -781,29 +817,115 @@ export class MockFactory {
       /**
        * Creates a very complex polygon with many vertices
        */
-      complexPolygon: (): L.LatLng[][][] => [
+      complexPolygon: (): L.LatLngLiteral[][][] => [
         [
           [
-            this.createLatLng(58.41, 15.59),
-            this.createLatLng(58.411, 15.592),
-            this.createLatLng(58.412, 15.595),
-            this.createLatLng(58.413, 15.598),
-            this.createLatLng(58.414, 15.601),
-            this.createLatLng(58.413, 15.604),
-            this.createLatLng(58.412, 15.607),
-            this.createLatLng(58.411, 15.61),
-            this.createLatLng(58.41, 15.613),
-            this.createLatLng(58.409, 15.61),
-            this.createLatLng(58.408, 15.607),
-            this.createLatLng(58.407, 15.604),
-            this.createLatLng(58.406, 15.601),
-            this.createLatLng(58.407, 15.598),
-            this.createLatLng(58.408, 15.595),
-            this.createLatLng(58.409, 15.592),
-            this.createLatLng(58.41, 15.59),
+            this.createLatLngLiteral(58.41, 15.59),
+            this.createLatLngLiteral(58.411, 15.592),
+            this.createLatLngLiteral(58.412, 15.595),
+            this.createLatLngLiteral(58.413, 15.598),
+            this.createLatLngLiteral(58.414, 15.601),
+            this.createLatLngLiteral(58.413, 15.604),
+            this.createLatLngLiteral(58.412, 15.607),
+            this.createLatLngLiteral(58.411, 15.61),
+            this.createLatLngLiteral(58.41, 15.613),
+            this.createLatLngLiteral(58.409, 15.61),
+            this.createLatLngLiteral(58.408, 15.607),
+            this.createLatLngLiteral(58.407, 15.604),
+            this.createLatLngLiteral(58.406, 15.601),
+            this.createLatLngLiteral(58.407, 15.598),
+            this.createLatLngLiteral(58.408, 15.595),
+            this.createLatLngLiteral(58.409, 15.592),
+            this.createLatLngLiteral(58.41, 15.59),
           ],
         ],
       ],
+    };
+  }
+
+  /**
+   * Creates reusable GeoJSON fixtures
+   */
+  static createGeoJSONFixtures() {
+    return {
+      squarePolygon: (): Feature<Polygon> => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [15.597, 58.397],
+              [15.603, 58.397],
+              [15.603, 58.403],
+              [15.597, 58.403],
+              [15.597, 58.397],
+            ],
+          ],
+        },
+        properties: {},
+      }),
+      octagonPolygon: (): Feature<Polygon> => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [15.6, 58.404493],
+              [15.602928, 58.402928],
+              [15.604493, 58.4],
+              [15.602928, 58.397072],
+              [15.6, 58.395507],
+              [15.597072, 58.397072],
+              [15.595507, 58.4],
+              [15.597072, 58.402928],
+              [15.6, 58.404493],
+            ],
+          ],
+        },
+        properties: {},
+      }),
+      trianglePolygon: (): Feature<Polygon> => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [15.6, 58.43],
+              [15.605, 58.42],
+              [15.595, 58.42],
+              [15.6, 58.43],
+            ],
+          ],
+        },
+        properties: {},
+      }),
+      multipolygon: (): Feature<MultiPolygon> => ({
+        type: 'Feature',
+        geometry: {
+          type: 'MultiPolygon',
+          coordinates: [
+            [
+              [
+                [15.59, 58.39],
+                [15.595, 58.39],
+                [15.595, 58.395],
+                [15.59, 58.395],
+                [15.59, 58.39],
+              ],
+            ],
+            [
+              [
+                [15.605, 58.39],
+                [15.61, 58.39],
+                [15.61, 58.395],
+                [15.605, 58.395],
+                [15.605, 58.39],
+              ],
+            ],
+          ],
+        },
+        properties: {},
+      }),
     };
   }
 }
