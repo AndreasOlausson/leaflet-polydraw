@@ -16,6 +16,7 @@ export const defaultConfig: PolydrawConfig = {
     edgeDeletion: true,
   },
   defaultMode: DrawMode.Off,
+  modifierSubtractMode: false,
   dragPolygons: {
     opacity: 0.7,
     dragCursor: 'move',

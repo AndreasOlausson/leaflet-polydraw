@@ -28,6 +28,8 @@ Create holes and complex shapes by subtracting areas from existing polygons. Ide
 
 Click the subtract button and draw over existing polygons to remove those areas, creating holes or splitting polygons into multiple parts.
 
+**Tip**: You can enable `modifierSubtractMode` to hold Cmd/Ctrl and temporarily subtract while staying in Draw or Point-to-Point mode, even if subtract buttons are hidden.
+
 ## Point-to-Point Drawing
 
 [![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/p2p-draw.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/p2p-draw.mp4)

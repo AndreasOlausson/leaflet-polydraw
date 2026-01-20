@@ -31,7 +31,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 - **Point-to-Point Mode**: Optional precise vertex-by-vertex drawing for detailed or structured geometry.
 - **Hole Support**: Create complex polygons with holes and nested structures effortlessly.
 - **Smart Markers**: Adaptive marker placement prevents overlaps and maintains visual clarity.
-- **Modifier Shortcuts**: Hold Ctrl or Cmd to toggle erase, subtract, or advanced edit modes for a smooth workflow.
+- **Modifier Shortcuts**: Hold Ctrl or Cmd (or user defined keys) to toggle erase, subtract, or advanced edit modes for a smooth workflow (temporary subtract via `modifierSubtractMode`).
 - **Performance Optimized**: Efficient rendering and event handling even for large datasets.
 - **GeoJSON Import**: Add Polygon and MultiPolygon features directly from RFC 7946 GeoJSON
 - **Coordinate Auto-Detection**: Accepts multiple coordinate formats automatically (lat/lng, DMS, DDM, N/E, etc.).

@@ -323,6 +323,7 @@ export interface PolydrawConfig {
   mergePolygons: boolean;
   modes: ModeConfig;
   defaultMode: DrawMode;
+  modifierSubtractMode: boolean;
   dragPolygons: DragPolygonConfig;
   edgeDeletion: EdgeDeletionConfig;
   markers: MarkerOptions;

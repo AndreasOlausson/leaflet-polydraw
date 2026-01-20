@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Playwright coverage for dragging polygons with holes to confirm merge and non-merge behavior.
 - Bezier config options for resampling density, max node count, visual optimization level, and ghost markers.
 - Per-action history capture controls via `config.history.capture` (including `polygonActions` for menu tools).
+- `modifierSubtractMode` to temporarily switch Draw/P2P into subtract via the modifier key, even when subtract buttons are hidden.
 
 ### Removed
 
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prevent polygons drawn inside holes from being merged away when dragging a polygon.
 - Bezier smoothing resamples to even spacing to avoid clustered nodes on straight segments.
 - Menu actions (simplify, bbox, double elbows, bezier) now create history entries for undo/redo.
+- Control clicks no longer leak into map drawing, and draw listeners are attached idempotently to avoid stacked handlers.
 
 ## [1.2.1] - 2025-12-31
 
