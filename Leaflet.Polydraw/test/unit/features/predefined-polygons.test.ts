@@ -40,9 +40,10 @@ describe('Predefined Polygons', () => {
       .find((layer) => layer instanceof L.Polygon) as L.Polygon;
 
     const latLngs = polygonLayer.getLatLngs() as L.LatLng[][] | L.LatLng[][][];
-    const rings = Array.isArray(latLngs[0]) && Array.isArray((latLngs as L.LatLng[][][])[0][0])
-      ? (latLngs as L.LatLng[][][])[0]
-      : (latLngs as L.LatLng[][]);
+    const rings =
+      Array.isArray(latLngs[0]) && Array.isArray((latLngs as L.LatLng[][][])[0][0])
+        ? (latLngs as L.LatLng[][][])[0]
+        : (latLngs as L.LatLng[][]);
     expect(rings).toHaveLength(2);
   });
 

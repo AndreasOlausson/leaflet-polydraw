@@ -48,9 +48,7 @@ test.describe('Polygon transforms', () => {
     const changed = afterCoords.some((coord, index) => {
       const before = beforeCoords[index];
       if (!before) return true;
-      return (
-        Math.abs(coord[0] - before[0]) > 0.00001 || Math.abs(coord[1] - before[1]) > 0.00001
-      );
+      return Math.abs(coord[0] - before[0]) > 0.00001 || Math.abs(coord[1] - before[1]) > 0.00001;
     });
     expect(changed).toBe(true);
   });

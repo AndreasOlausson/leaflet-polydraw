@@ -26,10 +26,9 @@ describe('Predefined GeoJSON', () => {
   });
 
   it('adds multiple Polygon features and carries optimization metadata', async () => {
-    await polydraw.addPredefinedGeoJSONs(
-      [fixtures.squarePolygon(), fixtures.trianglePolygon()],
-      { visualOptimizationLevel: 4 },
-    );
+    await polydraw.addPredefinedGeoJSONs([fixtures.squarePolygon(), fixtures.trianglePolygon()], {
+      visualOptimizationLevel: 4,
+    });
 
     expect(polydraw.getFeatureGroups()).toHaveLength(2);
     const featureGroup = polydraw.getFeatureGroups()[0];

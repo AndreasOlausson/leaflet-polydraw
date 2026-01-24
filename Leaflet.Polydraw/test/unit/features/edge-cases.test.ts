@@ -19,9 +19,9 @@ describe('Edge Cases and Error Handling', () => {
   });
 
   it('rejects empty polygon input', async () => {
-    await expect(polydraw.addPredefinedPolygon([] as unknown as L.LatLngLiteral[][][])).rejects.toThrow(
-      'Cannot add empty polygon array',
-    );
+    await expect(
+      polydraw.addPredefinedPolygon([] as unknown as L.LatLngLiteral[][][]),
+    ).rejects.toThrow('Cannot add empty polygon array');
   });
 
   it('rejects polygons with fewer than 3 unique vertices', async () => {
