@@ -71,4 +71,4 @@ Full documentation and examples are available on GitHub:
 
 ### Disclaimer
 
-This project is provided "as is", without any warranty or guarantee of any kind. See the [MIT License](../Leaflet.Polydraw/LICENSE) for full terms.
+This project is provided "as is", without any warranty or guarantee of any kind. See the [MIT License](LICENSE) for full terms.
