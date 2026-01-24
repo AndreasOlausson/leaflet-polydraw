@@ -6,6 +6,7 @@ import iconPolydraw2Svg from './icons/icon-polydraw2.svg?raw';
 import iconP2PSubtractSvg from './icons/icon-p2p-subtract.svg?raw';
 import iconDrawSvg from './icons/icon-draw.svg?raw';
 import iconSubtractSvg from './icons/icon-subtract.svg?raw';
+import iconCloneSvg from './icons/icon-clone.svg?raw';
 import iconP2PDrawSvg from './icons/icon-p2p-draw.svg?raw';
 import iconEraseSvg from './icons/icon-erase.svg?raw';
 import iconCollapseSvg from './icons/icon-collapse.svg?raw';
@@ -18,6 +19,7 @@ const icons = {
   activate: iconPolydraw2Svg.trim(),
   draw: iconDrawSvg.trim(),
   subtract: iconSubtractSvg.trim(),
+  clone: iconCloneSvg.trim(),
   p2p: iconP2PDrawSvg.trim(),
   p2pSubtract: iconP2PSubtractSvg.trim(),
   erase: iconEraseSvg.trim(),
@@ -48,6 +50,7 @@ export function createButtons(
   onActivateToggle: () => void,
   onDrawClick: () => void,
   onSubtractClick: () => void,
+  onCloneClick: () => void,
   onEraseClick: () => void,
   onPointToPointClick: () => void,
   onPointToPointSubtractClick: () => void,
@@ -100,6 +103,23 @@ export function createButtons(
     L.DomEvent.on(subtract, 'click', L.DomEvent.stopPropagation);
     L.DomEvent.on(subtract, 'click', L.DomEvent.stop);
     L.DomEvent.on(subtract, 'click', onSubtractClick);
+  }
+
+  if (config.modes.clonePolygons) {
+    const clone = leafletAdapter.domUtil.create(
+      'a',
+      'icon-clone',
+      subContainer,
+    ) as HTMLAnchorElement;
+    clone.href = '#';
+    clone.title = 'Clone';
+    clone.setAttribute('data-polydraw', 'clone-button');
+    setButtonIcon(clone, icons.clone);
+    L.DomEvent.on(clone, 'mousedown', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'touchstart', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'click', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'click', L.DomEvent.stop);
+    L.DomEvent.on(clone, 'click', onCloneClick);
   }
 
   if (config.modes.p2p) {

@@ -10,12 +10,14 @@ export const defaultConfig: PolydrawConfig = {
     deleteAll: true,
     p2p: true,
     p2pSubtract: true,
+    clonePolygons: true,
     attachElbow: true,
     dragElbow: true,
     dragPolygons: true,
     edgeDeletion: true,
   },
   defaultMode: DrawMode.Off,
+  modifierSubtractMode: true,
   dragPolygons: {
     opacity: 0.7,
     dragCursor: 'move',
@@ -203,6 +205,10 @@ export const defaultConfig: PolydrawConfig = {
   bezier: {
     resolution: 10000,
     sharpness: 0.75,
+    resampleMultiplier: 10,
+    maxNodes: 1000,
+    visualOptimizationLevel: 10,
+    ghostMarkers: false,
   },
   colors: {
     dragPolygons: {
@@ -243,6 +249,31 @@ export const defaultConfig: PolydrawConfig = {
       p2pMarker: {
         backgroundColor: '#fff',
         borderColor: '#50622b',
+      },
+    },
+  },
+  history: {
+    capture: {
+      freehand: true,
+      pointToPoint: true,
+      addPredefinedPolygon: true,
+      eraseAll: true,
+      markerDrag: true,
+      polygonDrag: true,
+      polygonClone: true,
+      addVertex: true,
+      removeVertex: true,
+      removeHole: true,
+      modifierSubtract: true,
+      deletePolygon: true,
+      polygonActions: {
+        simplify: true,
+        doubleElbows: true,
+        bbox: true,
+        bezier: true,
+        scale: true,
+        rotate: true,
+        toggleOptimization: true,
       },
     },
   },

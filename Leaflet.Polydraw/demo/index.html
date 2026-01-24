@@ -35,6 +35,32 @@
         font-size: 16px;
       }
 
+      .panel-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        text-align: left;
+        background: none;
+        border: 0;
+        padding: 0;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      #polygon-count {
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+
+      #polygon-structure {
+        font-family: monospace;
+        font-size: 12px;
+        color: #666;
+      }
+
       #predefined-controls small {
         display: block;
         margin-top: 6px;
@@ -179,27 +205,32 @@
           Leaflet version detection
         </h3>
         <div id="leaflet-version-detection" style="margin-bottom: 8px; font-weight: bold"></div>
-        <h3>Polygon Status</h3>
-        <div id="polygon-count" style="margin-bottom: 8px; font-weight: bold">
-          Polygons: <span id="count-value">0</span>
-        </div>
-        <div id="polygon-structure" style="font-family: monospace; font-size: 12px; color: #666">
-          Structure: <span id="structure-value">[]</span>
+        <h3>
+          <button type="button" id="status-header" class="panel-toggle" aria-expanded="true">
+            Polygon Status
+            <span data-chevron="status" style="display: inline-flex; transition: transform 0.2s ease">
+              &#x25BC;
+            </span>
+          </button>
+        </h3>
+        <div id="polygon-status-content">
+          <div id="polygon-count">
+            Polygons: <span id="count-value">0</span>
+          </div>
+          <div id="polygon-structure">
+            <div id="structure-value">[]</div>
+          </div>
         </div>
       </div>
 
       <div id="predefined-controls" class="polydraw-panel">
-        <h3
-          id="samples-header"
-          style="cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px"
-          aria-expanded="true"
-          role="button"
-          tabindex="0"
-        >
-          Sample polygons
-          <span data-chevron="sample" style="display: inline-flex; transition: transform 0.2s ease">
-            ▼
-          </span>
+        <h3>
+          <button type="button" id="samples-header" class="panel-toggle" aria-expanded="true">
+            Sample polygons
+            <span data-chevron="sample" style="display: inline-flex; transition: transform 0.2s ease">
+              &#x25BC;
+            </span>
+          </button>
         </h3>
         <div id="samples-content" class="sample-button-grid">
           <button type="button" data-sample="star16">Star (16)</button>

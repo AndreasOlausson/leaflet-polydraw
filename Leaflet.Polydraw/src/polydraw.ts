@@ -24,7 +24,12 @@ import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
 import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
-import type { PolydrawConfig, DrawModeChangeHandler } from './types/polydraw-interfaces';
+import type {
+  PolydrawConfig,
+  DrawModeChangeHandler,
+  HistoryAction,
+  PolygonActionHistory,
+} from './types/polydraw-interfaces';
 
 // Create a local interface that extends L.Map for our specific needs
 interface ExtendedMap extends L.Map {
@@ -47,6 +52,10 @@ type PredefinedOptions = {
   visualOptimizationLevel?: number;
 };
 
+type SetDrawModeOptions = {
+  preserveActiveDraw?: boolean;
+};
+
 class Polydraw extends L.Control {
   private map!: L.Map;
   private tracer: L.Polyline | null = null;
@@ -67,6 +76,12 @@ class Polydraw extends L.Control {
   private _boundKeyDownHandler?: (e: KeyboardEvent) => void;
   private _boundKeyUpHandler?: (e: KeyboardEvent) => void;
   private isModifierKeyHeld: boolean = false;
+  private modifierModeOverride: { from: DrawMode; to: DrawMode } | null = null;
+  private isDrawingInProgress: boolean = false;
+  private mapEventsAttached: boolean = false;
+  private drawEventsAttached: boolean = false;
+  private controlEvents: WeakSet<Event> = new WeakSet();
+  private lastControlPointerDown: { id: number; time: number; pointerType: string } | null = null;
   private _boundTouchMove?: (e: TouchEvent) => void;
   private _boundTouchEnd?: (e: TouchEvent) => void;
   private _boundTouchStart?: (e: TouchEvent) => void;
@@ -261,6 +276,36 @@ class Polydraw extends L.Control {
     }
   }
 
+  private isPolygonAction(action: HistoryAction): action is PolygonActionHistory {
+    return (
+      action === 'simplify' ||
+      action === 'doubleElbows' ||
+      action === 'bbox' ||
+      action === 'bezier' ||
+      action === 'scale' ||
+      action === 'rotate' ||
+      action === 'toggleOptimization'
+    );
+  }
+
+  private shouldCaptureHistory(action: HistoryAction): boolean {
+    const capture = this.config.history?.capture;
+    if (!capture) {
+      return true;
+    }
+    if (this.isPolygonAction(action)) {
+      return capture.polygonActions?.[action] !== false;
+    }
+    return capture[action] !== false;
+  }
+
+  private saveHistory(action: HistoryAction): void {
+    if (!this.shouldCaptureHistory(action)) {
+      return;
+    }
+    this.historyManager.saveState(this.arrayOfFeatureGroups, action);
+  }
+
   /**
    * Redo the last undone action
    */
@@ -318,7 +363,7 @@ class Polydraw extends L.Control {
         const polygon2 = this.turfHelper.getMultiPolygon([coords]);
 
         // Save state before adding polygon
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'addPredefinedPolygon');
+        this.saveHistory('addPredefinedPolygon');
 
         // Use the PolygonMutationManager instead of direct addPolygon
         const result = await this.polygonMutationManager.addPolygon(polygon2, {
@@ -374,24 +419,39 @@ class Polydraw extends L.Control {
    * Sets the current drawing mode.
    * @param mode - The drawing mode to set.
    */
-  public setDrawMode(mode: DrawMode) {
+  public setDrawMode(mode: DrawMode, options?: SetDrawModeOptions) {
     const previousMode = this.drawMode;
     this._updateDrawModeState(mode);
+    const preserveActiveDraw =
+      options?.preserveActiveDraw &&
+      this.isDrawingInProgress &&
+      ((previousMode === DrawMode.Add && mode === DrawMode.Subtract) ||
+        (previousMode === DrawMode.Subtract && mode === DrawMode.Add));
 
     // Only stop draw if we're switching away from PointToPoint modes or going to Off mode
     // Don't reset tracer when entering PointToPoint modes
-    if (
-      (previousMode === DrawMode.PointToPoint || previousMode === DrawMode.PointToPointSubtract) &&
-      mode !== DrawMode.PointToPoint &&
-      mode !== DrawMode.PointToPointSubtract
-    ) {
-      // Clear P2P markers when leaving PointToPoint modes
-      this.polygonDrawManager.clearP2pMarkers();
-      this.stopDraw();
-    } else if (mode === DrawMode.Off) {
-      this.stopDraw();
-    } else if (mode !== DrawMode.PointToPoint && mode !== DrawMode.PointToPointSubtract) {
-      this.stopDraw();
+    if (!preserveActiveDraw) {
+      const switchingToP2P =
+        (mode === DrawMode.PointToPoint || mode === DrawMode.PointToPointSubtract) &&
+        previousMode !== DrawMode.PointToPoint &&
+        previousMode !== DrawMode.PointToPointSubtract;
+      if (switchingToP2P && this.isDrawingInProgress) {
+        this.stopDraw();
+      }
+      if (
+        (previousMode === DrawMode.PointToPoint ||
+          previousMode === DrawMode.PointToPointSubtract) &&
+        mode !== DrawMode.PointToPoint &&
+        mode !== DrawMode.PointToPointSubtract
+      ) {
+        // Clear P2P markers when leaving PointToPoint modes
+        this.polygonDrawManager.clearP2pMarkers();
+        this.stopDraw();
+      } else if (mode === DrawMode.Off) {
+        this.stopDraw();
+      } else if (mode !== DrawMode.PointToPoint && mode !== DrawMode.PointToPointSubtract) {
+        this.stopDraw();
+      }
     }
 
     if (this.map) {
@@ -470,7 +530,33 @@ class Polydraw extends L.Control {
     L.DomEvent.disableClickPropagation(container);
     L.DomEvent.on(container, 'mousedown', L.DomEvent.stopPropagation);
     L.DomEvent.on(container, 'touchstart', L.DomEvent.stopPropagation);
+    L.DomEvent.on(container, 'pointerdown', L.DomEvent.stopPropagation);
+    L.DomEvent.on(container, 'pointerup', L.DomEvent.stopPropagation);
     L.DomEvent.on(container, 'click', L.DomEvent.stopPropagation);
+    const markControlEvent = (event: Event) => {
+      this.controlEvents.add(event);
+      this.markControlPointerDown(event);
+    };
+    const clearControlEvent = (event: Event) => {
+      this.clearControlPointerDown(event);
+    };
+    if (this.pointerEventsHandled) {
+      container.addEventListener('pointerdown', markControlEvent, { capture: true, passive: true });
+      container.addEventListener('pointerup', clearControlEvent, { capture: true, passive: true });
+      container.addEventListener('pointercancel', clearControlEvent, {
+        capture: true,
+        passive: true,
+      });
+    } else {
+      container.addEventListener('mousedown', markControlEvent, { capture: true, passive: true });
+      container.addEventListener('mouseup', clearControlEvent, { capture: true, passive: true });
+      container.addEventListener('touchstart', markControlEvent, { capture: true, passive: true });
+      container.addEventListener('touchend', clearControlEvent, { capture: true, passive: true });
+      container.addEventListener('touchcancel', clearControlEvent, {
+        capture: true,
+        passive: true,
+      });
+    }
     container.style.display = 'flex';
     container.style.flexDirection = 'column-reverse';
 
@@ -496,6 +582,7 @@ class Polydraw extends L.Control {
       this._handleActivateToggle,
       this._handleDrawClick,
       this._handleSubtractClick,
+      this._handleCloneClick,
       this._handleEraseClick,
       this._handlePointToPointClick,
       this._handlePointToPointSubtractClick,
@@ -512,8 +599,10 @@ class Polydraw extends L.Control {
     const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
+      const cloneButton = container.querySelector('.icon-clone') as HTMLElement;
       if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
+      if (cloneButton) cloneButton.classList.toggle('active', mode === DrawMode.Clone);
     };
     this.drawModeListeners.push(uiUpdateListener);
   }
@@ -565,7 +654,7 @@ class Polydraw extends L.Control {
       this.stopDraw();
       if (data.isPointToPoint) {
         // Save state before P2P operation
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'pointToPoint');
+        this.saveHistory('pointToPoint');
 
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
@@ -688,8 +777,8 @@ class Polydraw extends L.Control {
       modeManager: this.modeManager,
       eventManager: this.eventManager,
       getFeatureGroups: () => this.arrayOfFeatureGroups,
-      saveHistoryState: () => {
-        this.historyManager.saveState(this.arrayOfFeatureGroups, 'vertexDrag');
+      saveHistoryState: (action: HistoryAction) => {
+        this.saveHistory(action);
       },
     });
   }
@@ -820,6 +909,19 @@ class Polydraw extends L.Control {
     this.polygonInformation.saveCurrentState();
   };
 
+  private _handleCloneClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (this.modeManager.getCurrentMode() === DrawMode.Clone) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.Clone);
+    this.polygonInformation.saveCurrentState();
+  };
+
   private _handleEraseClick = (e?: Event) => {
     // Close any open popup before erasing polygons
     this.map.closePopup();
@@ -833,7 +935,7 @@ class Polydraw extends L.Control {
       return;
     }
     // Save state before erasing all
-    this.historyManager.saveState(this.arrayOfFeatureGroups, 'eraseAll');
+    this.saveHistory('eraseAll');
     this.removeAllFeatureGroups();
   };
 
@@ -881,12 +983,21 @@ class Polydraw extends L.Control {
     this.redo();
   };
 
+  private shouldEnableDrawEvents(mode: DrawMode): boolean {
+    return (
+      mode === DrawMode.Add ||
+      mode === DrawMode.Subtract ||
+      mode === DrawMode.PointToPoint ||
+      mode === DrawMode.PointToPointSubtract
+    );
+  }
+
   private _updateMapInteractions() {
     const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
     const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
     const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
 
-    this.events(this.drawMode !== DrawMode.Off);
+    this.events(this.shouldEnableDrawEvents(this.drawMode));
     this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
   }
 
@@ -980,6 +1091,7 @@ class Polydraw extends L.Control {
    * Stops the current drawing operation and resets the tracer.
    */
   private stopDraw() {
+    this.isDrawingInProgress = false;
     this.resetTracker();
     this.drawStartedEvents(false);
   }
@@ -1026,21 +1138,45 @@ class Polydraw extends L.Control {
    * @param onoff - A boolean indicating whether to attach or detach the events.
    */
   private drawStartedEvents(onoff: boolean) {
+    if (this.drawEventsAttached === onoff) {
+      return;
+    }
+    this.drawEventsAttached = onoff;
+    const usePointerEvents = this.pointerEventsHandled;
     const onoroff = onoff ? 'on' : 'off';
 
     // Bind move and end events - use specific Leaflet event types
-    this.map[onoroff]('mousemove', this.mouseMove, this);
-    this.map[onoroff]('mouseup', this.mouseUpLeave, this);
+    if (!usePointerEvents) {
+      this.map[onoroff]('mousemove', this.mouseMove, this);
+      this.map[onoroff]('mouseup', this.mouseUpLeave, this);
+    }
 
     // Handle touch events separately for backward compatibility
     if (onoff) {
-      this._boundTouchMove = (e) => this.mouseMove(e);
-      this._boundTouchEnd = (e) => this.mouseUpLeave(e);
+      if (!usePointerEvents) {
+        if (!this._boundTouchMove) {
+          this._boundTouchMove = (e) => this.mouseMove(e);
+        }
+        if (!this._boundTouchEnd) {
+          this._boundTouchEnd = (e) => this.mouseUpLeave(e);
+        }
 
-      // Add pointer events for Leaflet v2
-      if (LeafletVersionDetector.isV2()) {
-        this._boundPointerMove = (e) => this.mouseMove(e);
-        this._boundPointerUp = (e) => this.mouseUpLeave(e);
+        this.map
+          .getContainer()
+          .addEventListener('touchmove', this._boundTouchMove, { passive: false });
+        this.map
+          .getContainer()
+          .addEventListener('touchend', this._boundTouchEnd, { passive: false });
+      }
+
+      // Add pointer events for Leaflet v2 when supported
+      if (usePointerEvents) {
+        if (!this._boundPointerMove) {
+          this._boundPointerMove = (e) => this.mouseMove(e);
+        }
+        if (!this._boundPointerUp) {
+          this._boundPointerUp = (e) => this.mouseUpLeave(e);
+        }
 
         this.map
           .getContainer()
@@ -1049,11 +1185,6 @@ class Polydraw extends L.Control {
           .getContainer()
           .addEventListener('pointerup', this._boundPointerUp, { passive: false });
       }
-
-      this.map
-        .getContainer()
-        .addEventListener('touchmove', this._boundTouchMove, { passive: false });
-      this.map.getContainer().addEventListener('touchend', this._boundTouchEnd, { passive: false });
     } else {
       if (this._boundTouchMove) {
         this.map.getContainer().removeEventListener('touchmove', this._boundTouchMove);
@@ -1075,29 +1206,42 @@ class Polydraw extends L.Control {
    * @param onoff - A boolean indicating whether to attach or detach the events.
    */
   private events(onoff: boolean) {
+    if (this.mapEventsAttached === onoff) {
+      return;
+    }
+    this.mapEventsAttached = onoff;
+    const usePointerEvents = this.pointerEventsHandled;
     const onoroff = onoff ? 'on' : 'off';
 
     // Bind start events - use specific Leaflet event types
-    this.map[onoroff]('mousedown', this.mouseDown, this);
+    if (!usePointerEvents) {
+      this.map[onoroff]('mousedown', this.mouseDown, this);
+    }
 
     // Add double-click event for Point-to-Point mode
     this.map[onoroff]('dblclick', this.handleDoubleClick, this);
 
     // Handle touch and pointer events separately for backward compatibility
     if (onoff) {
-      this._boundTouchStart = (e) => this.handleTouchStart(e);
+      if (!usePointerEvents) {
+        if (!this._boundTouchStart) {
+          this._boundTouchStart = (e) => this.handleTouchStart(e);
+        }
 
-      // Only add pointer events for Leaflet v2
-      if (LeafletVersionDetector.isV2()) {
-        this._boundPointerDown = (e) => this.mouseDown(e);
+        this.map
+          .getContainer()
+          .addEventListener('touchstart', this._boundTouchStart, { passive: false });
+      }
+
+      // Only add pointer events for Leaflet v2 when supported
+      if (usePointerEvents) {
+        if (!this._boundPointerDown) {
+          this._boundPointerDown = (e) => this.mouseDown(e);
+        }
         this.map
           .getContainer()
           .addEventListener('pointerdown', this._boundPointerDown, { passive: false });
       }
-
-      this.map
-        .getContainer()
-        .addEventListener('touchstart', this._boundTouchStart, { passive: false });
     } else {
       if (this._boundTouchStart) {
         this.map.getContainer().removeEventListener('touchstart', this._boundTouchStart);
@@ -1163,6 +1307,9 @@ class Polydraw extends L.Control {
   private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
+    if (this.isEventFromControl(normalizedEvent)) {
+      return;
+    }
 
     // Safeguard against unintended browser actions
     if (EventAdapter.shouldPreventDefault(normalizedEvent)) {
@@ -1194,8 +1341,130 @@ class Polydraw extends L.Control {
     if (!this.tracer) {
       return;
     }
+    if (this.isDrawingInProgress) {
+      return;
+    }
     this.tracer.setLatLngs([clickLatLng]);
     this.startDraw();
+  }
+
+  private isEventFromControl(event: unknown): boolean {
+    const container = this.getContainer();
+    if (!container) return false;
+    const originalEvent = (event as { originalEvent?: Event })?.originalEvent;
+    if (originalEvent && this.controlEvents.has(originalEvent)) return true;
+    if (event instanceof Event && this.controlEvents.has(event)) return true;
+    if (this.isRecentControlPointer(event)) return true;
+    const composedPath =
+      originalEvent?.composedPath?.() ??
+      (event as { composedPath?: () => EventTarget[] })?.composedPath?.();
+    if (
+      composedPath &&
+      composedPath.some((node) => node instanceof Node && container.contains(node))
+    ) {
+      return true;
+    }
+    const target =
+      (originalEvent as { target?: EventTarget | null })?.target ??
+      (event as { target?: EventTarget | null })?.target;
+    if (target instanceof Node && container.contains(target)) return true;
+
+    const extractClientPoint = (sourceEvent: unknown): { x: number; y: number } | null => {
+      if (!sourceEvent || typeof sourceEvent !== 'object') return null;
+      const withTouches = sourceEvent as {
+        touches?: ArrayLike<{ clientX: number; clientY: number }>;
+      };
+      if (withTouches.touches && withTouches.touches.length > 0) {
+        return {
+          x: withTouches.touches[0].clientX,
+          y: withTouches.touches[0].clientY,
+        };
+      }
+      const withClient = sourceEvent as { clientX?: number; clientY?: number };
+      if (typeof withClient.clientX === 'number' && typeof withClient.clientY === 'number') {
+        return { x: withClient.clientX, y: withClient.clientY };
+      }
+      const withContainerPoint = sourceEvent as { containerPoint?: { x: number; y: number } };
+      if (withContainerPoint.containerPoint && this.map) {
+        const mapRect = this.map.getContainer().getBoundingClientRect();
+        return {
+          x: mapRect.left + withContainerPoint.containerPoint.x,
+          y: mapRect.top + withContainerPoint.containerPoint.y,
+        };
+      }
+      const withLatLng = sourceEvent as { latlng?: L.LatLng };
+      if (withLatLng.latlng && this.map) {
+        const mapPoint = this.map.latLngToContainerPoint(withLatLng.latlng);
+        const mapRect = this.map.getContainer().getBoundingClientRect();
+        return { x: mapRect.left + mapPoint.x, y: mapRect.top + mapPoint.y };
+      }
+      return null;
+    };
+
+    const clientPoint =
+      extractClientPoint((event as { originalEvent?: unknown })?.originalEvent) ??
+      extractClientPoint(event);
+
+    if (!clientPoint) return false;
+    const rect = container.getBoundingClientRect();
+    const inRect =
+      clientPoint.x >= rect.left &&
+      clientPoint.x <= rect.right &&
+      clientPoint.y >= rect.top &&
+      clientPoint.y <= rect.bottom;
+    if (inRect) return true;
+    const hitElement = document.elementFromPoint(clientPoint.x, clientPoint.y);
+    return !!(hitElement && container.contains(hitElement));
+  }
+
+  private extractPointerInfo(event: unknown): { id: number; pointerType: string } | null {
+    if (!event || typeof event !== 'object') return null;
+    const withPointer = event as { pointerId?: number; pointerType?: string; type?: string };
+    if (typeof withPointer.pointerId === 'number') {
+      return {
+        id: withPointer.pointerId,
+        pointerType:
+          typeof withPointer.pointerType === 'string' ? withPointer.pointerType : 'unknown',
+      };
+    }
+    if (typeof withPointer.type === 'string') {
+      if (withPointer.type.startsWith('touch')) {
+        return { id: -2, pointerType: 'touch' };
+      }
+      if (withPointer.type.startsWith('mouse')) {
+        return { id: -1, pointerType: 'mouse' };
+      }
+    }
+    return null;
+  }
+
+  private markControlPointerDown(event: Event): void {
+    const info = this.extractPointerInfo(event);
+    if (!info) return;
+    this.lastControlPointerDown = { ...info, time: Date.now() };
+  }
+
+  private clearControlPointerDown(event: Event): void {
+    if (!this.lastControlPointerDown) return;
+    const info = this.extractPointerInfo(event);
+    if (!info) return;
+    if (info.id === this.lastControlPointerDown.id) {
+      this.lastControlPointerDown = null;
+    }
+  }
+
+  private isRecentControlPointer(event: unknown): boolean {
+    if (!this.lastControlPointerDown) return false;
+    const originalEvent = (event as { originalEvent?: unknown })?.originalEvent;
+    const info = this.extractPointerInfo(originalEvent) ?? this.extractPointerInfo(event);
+    if (!info) return false;
+    const thresholdMs = this.lastControlPointerDown.pointerType === 'touch' ? 450 : 80;
+    if (Date.now() - this.lastControlPointerDown.time > thresholdMs) return false;
+    if (info.pointerType !== this.lastControlPointerDown.pointerType) return false;
+    if (info.pointerType === 'mouse') {
+      return true;
+    }
+    return info.id === this.lastControlPointerDown.id;
   }
 
   /**
@@ -1203,6 +1472,9 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
+    if (!this.isDrawingInProgress) {
+      return;
+    }
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
@@ -1223,6 +1495,9 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
+    if (!this.isDrawingInProgress) {
+      return;
+    }
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
 
@@ -1311,7 +1586,7 @@ class Polydraw extends L.Control {
   private async handleFreehandDrawCompletion(geoPos: Feature<Polygon | MultiPolygon>) {
     try {
       // Save state before freehand operation
-      this.historyManager.saveState(this.arrayOfFeatureGroups, 'freehand');
+      this.saveHistory('freehand');
 
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
@@ -1345,6 +1620,10 @@ class Polydraw extends L.Control {
    * Starts a drawing operation by attaching the necessary event listeners.
    */
   private startDraw() {
+    if (this.isDrawingInProgress) {
+      return;
+    }
+    this.isDrawingInProgress = true;
     this.drawStartedEvents(true);
   }
 
@@ -1409,6 +1688,7 @@ class Polydraw extends L.Control {
       this.isModifierKeyHeld = true;
       this.polygonDrawManager.setModifierKey(true);
       this.updateAllMarkersForEdgeDeletion(true);
+      this.applyModifierModeOverride(true);
     }
   }
 
@@ -1423,6 +1703,30 @@ class Polydraw extends L.Control {
       this.isModifierKeyHeld = false;
       this.polygonDrawManager.setModifierKey(false);
       this.updateAllMarkersForEdgeDeletion(false);
+      this.applyModifierModeOverride(false);
+    }
+  }
+
+  private applyModifierModeOverride(isHeld: boolean): void {
+    if (isHeld) {
+      if (this.modifierModeOverride) return;
+      if (!this.config.modifierSubtractMode) return;
+      const currentMode = this.modeManager.getCurrentMode();
+      if (currentMode === DrawMode.Add) {
+        this.modifierModeOverride = { from: currentMode, to: DrawMode.Subtract };
+        this.setDrawMode(DrawMode.Subtract, { preserveActiveDraw: true });
+      } else if (currentMode === DrawMode.PointToPoint) {
+        this.modifierModeOverride = { from: currentMode, to: DrawMode.PointToPointSubtract };
+        this.setDrawMode(DrawMode.PointToPointSubtract, { preserveActiveDraw: true });
+      }
+      return;
+    }
+
+    if (!this.modifierModeOverride) return;
+    const { from, to } = this.modifierModeOverride;
+    this.modifierModeOverride = null;
+    if (this.modeManager.getCurrentMode() === to) {
+      this.setDrawMode(from, { preserveActiveDraw: true });
     }
   }
 

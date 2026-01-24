@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-01-25
+
+### Added
+
+- **Clone Drag Mode**: New interaction mode for duplicating polygons via drag-and-drop.
+  - Includes dashed ghost outline for visual feedback during drag operations.
+  - Preserves full polygon geometry, including holes (inner rings), and retains optimization metadata.
+  - New configuration flags: `config.modes.clonePolygons` and `config.history.capture.polygonClone`.
+- Playwright coverage for dragging polygons with holes to confirm merge and non-merge behavior.
+- Bezier config options for resampling density, max node count, visual optimization level, and ghost markers.
+- Per-action history capture controls via `config.history.capture` (including `polygonActions` for menu tools).
+- `modifierSubtractMode` to temporarily switch Draw/P2P into subtract via the modifier key, even when subtract buttons are hidden.
+
+### Removed
+
+- Removed the unmaintained `Polydraw_Docker` helper project, Docker scripts, and `docs/DOCKER.md`.
+- Removed the legacy `test-legacy` suite and `test:legacy` script.
+
+### Fixed
+
+- Prevent polygons drawn inside holes from being merged away when dragging a polygon.
+- Bezier smoothing resamples to even spacing to avoid clustered nodes on straight segments.
+- Menu actions (simplify, bbox, double elbows, bezier) now create history entries for undo/redo.
+- Control clicks no longer leak into map drawing, and draw listeners are attached idempotently to avoid stacked handlers.
+
 ## [1.2.1] - 2025-12-31
 
 ### Added

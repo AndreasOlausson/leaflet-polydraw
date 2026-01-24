@@ -5,8 +5,6 @@ There is no strict priority order — features and fixes are developed based on 
 Contributions, ideas, and discussions are always welcome.
 
 ## Core Fixes & Improvements
-
-- **Bezier Curve Refinement**: Improve the bezier curve algorithm for more intuitive and natural shapes.
 - **Playwright E2E Tests**: Add full end-to-end coverage for interactive drawing and regression validation.
 - **Improved Unit Tests**: Expand test coverage and reliability across core modules.
 

@@ -97,10 +97,13 @@ export class ModeManager {
       case DrawMode.PointToPointSubtract:
         this.setPointToPointModeState();
         break;
+      case DrawMode.Clone:
+        this.setCloneModeState();
+        break;
     }
 
     // Update drawing active state
-    this.state.isDrawingActive = mode !== DrawMode.Off;
+    this.state.isDrawingActive = mode !== DrawMode.Off && mode !== DrawMode.Clone;
 
     this.eventManager.emit('polydraw:mode:change', { mode });
   }
@@ -175,6 +178,26 @@ export class ModeManager {
     // Visual feedback
     this.state.showCrosshairCursor = true;
     this.state.showDragCursor = false;
+  }
+
+  /**
+   * Set interaction state for clone mode (drag to duplicate)
+   */
+  private setCloneModeState(): void {
+    this.state.polygonDragging = this.config.modes.clonePolygons ?? false;
+    this.state.markerDragging = false;
+    this.state.edgeClicking = false;
+    this.state.polygonClicking = false;
+
+    this.state.canStartDrawing = false;
+    this.state.canCompletePolygon = false;
+
+    this.state.mapDragging = true;
+    this.state.mapZooming = true;
+    this.state.mapDoubleClickZoom = true;
+
+    this.state.showCrosshairCursor = false;
+    this.state.showDragCursor = true;
   }
 
   /**

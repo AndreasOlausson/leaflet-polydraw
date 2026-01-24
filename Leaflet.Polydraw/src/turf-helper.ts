@@ -1122,6 +1122,52 @@ export class TurfHelper {
       return [...ring, [first[0], first[1]]];
     };
 
+    const resampleRing = (ring: Position[], targetCount: number): Position[] => {
+      const closed = ensureClosedRing(ring);
+      if (!closed || closed.length < 2) return closed;
+
+      const distance = (a: Position, b: Position): number => {
+        const dx = a[0] - b[0];
+        const dy = a[1] - b[1];
+        return Math.sqrt(dx * dx + dy * dy);
+      };
+
+      let total = 0;
+      for (let i = 1; i < closed.length; i++) {
+        total += distance(closed[i - 1], closed[i]);
+      }
+
+      if (!Number.isFinite(total) || total <= 0) {
+        return closed;
+      }
+
+      const step = total / Math.max(targetCount, 4);
+      const resampled: Position[] = [closed[0]];
+      let carry = 0;
+
+      for (let i = 1; i < closed.length; i++) {
+        let prev = closed[i - 1];
+        const curr = closed[i];
+        let segLen = distance(prev, curr);
+
+        while (carry + segLen >= step && segLen > 0) {
+          const t = (step - carry) / segLen;
+          const interp: Position = [
+            prev[0] + (curr[0] - prev[0]) * t,
+            prev[1] + (curr[1] - prev[1]) * t,
+          ];
+          resampled.push(interp);
+          prev = interp;
+          segLen = distance(prev, curr);
+          carry = 0;
+        }
+
+        carry += segLen;
+      }
+
+      return ensureClosedRing(resampled);
+    };
+
     const dedupeRing = (ring: Position[]): Position[] => {
       if (!ring || ring.length === 0) return ring;
       const tolerance = 0.000001;
@@ -1149,8 +1195,13 @@ export class TurfHelper {
             sharpness: this.config.bezier.sharpness,
           });
           const coords = (bez.geometry.coordinates as Position[]) ?? safeRing;
-          const closed = ensureClosedRing(coords);
-          const deduped = dedupeRing(closed);
+          const baseCount = Math.max(2, safeRing.length - 1);
+          const resampleMultiplier = Math.max(1, this.config.bezier.resampleMultiplier ?? 10);
+          const maxNodes = Math.max(4, this.config.bezier.maxNodes ?? coords.length);
+          const targetCount = Math.max(4, Math.min(maxNodes, baseCount * resampleMultiplier));
+          // Resample to even spacing to avoid bezier-spline cluster artifacts.
+          const resampled = resampleRing(coords, targetCount);
+          const deduped = dedupeRing(resampled);
           return deduped.length >= 4 ? deduped : safeRing;
         } catch (error) {
           if (!isTestEnvironment()) {

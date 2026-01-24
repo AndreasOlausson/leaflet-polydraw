@@ -139,6 +139,19 @@ export class PolygonDrawManager {
     this.isModifierKeyHeld = isHeld;
   }
 
+  private shouldAllowP2PMarkerDeletion(): boolean {
+    if (!this.isModifierKeyHeld || !this.config.modes.edgeDeletion) {
+      return false;
+    }
+    if (this.config.modifierSubtractMode) {
+      const mode = this.modeManager.getCurrentMode();
+      if (mode === DrawMode.PointToPoint || mode === DrawMode.PointToPointSubtract) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /**
    * Handle point-to-point click
    */
@@ -219,7 +232,7 @@ export class PolygonDrawManager {
       // Handle marker deletion on click with modifier key
       pointMarker.on('click', (e) => {
         // console.log('p2p marker click');
-        if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+        if (this.shouldAllowP2PMarkerDeletion()) {
           this.deleteP2PMarker(pointMarker);
           L.DomEvent.stopPropagation(e);
         }
@@ -256,7 +269,7 @@ export class PolygonDrawManager {
         // Add click handler to complete polygon when clicking first marker
         pointMarker.on('click', (e) => {
           // console.log('p2p first marker click');
-          if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+          if (this.shouldAllowP2PMarkerDeletion()) {
             this.deleteP2PMarker(pointMarker);
             L.DomEvent.stopPropagation(e);
             return;
@@ -588,7 +601,7 @@ export class PolygonDrawManager {
 
     // Add click handler to complete polygon when clicking first marker
     firstMarker.on('click', (e) => {
-      if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+      if (this.shouldAllowP2PMarkerDeletion()) {
         this.deleteP2PMarker(firstMarker);
         L.DomEvent.stopPropagation(e);
         return;
@@ -645,7 +658,7 @@ export class PolygonDrawManager {
         //Save the input parameter, but make lint happy...
         void e;
 
-        if (this.isModifierKeyHeld && this.config.modes.edgeDeletion) {
+        if (this.shouldAllowP2PMarkerDeletion()) {
           element.classList.add('edge-deletion-hover');
           try {
             const container = this.map.getContainer();

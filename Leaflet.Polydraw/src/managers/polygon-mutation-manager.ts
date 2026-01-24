@@ -9,6 +9,7 @@ import type {
   PolygonUpdatedEventData,
   Position,
   PolydrawPolygon,
+  HistoryAction,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import {
@@ -46,7 +47,7 @@ export interface MutationManagerDependencies {
   modeManager: ModeManager;
   eventManager: EventManager;
   getFeatureGroups: () => L.FeatureGroup[];
-  saveHistoryState?: () => void;
+  saveHistoryState?: (action: HistoryAction) => void;
 }
 
 /**
@@ -60,6 +61,7 @@ export class PolygonMutationManager {
   private config: PolydrawConfig;
   private eventManager: EventManager;
   private getFeatureGroups: () => L.FeatureGroup[];
+  private saveHistoryState?: (action: HistoryAction) => void;
 
   // Specialized managers
   private geometryManager!: PolygonGeometryManager;
@@ -72,6 +74,7 @@ export class PolygonMutationManager {
     this.config = dependencies.config;
     this.eventManager = dependencies.eventManager;
     this.getFeatureGroups = dependencies.getFeatureGroups;
+    this.saveHistoryState = dependencies.saveHistoryState;
 
     // Initialize specialized managers
     this.initializeSpecializedManagers(dependencies);
@@ -157,6 +160,7 @@ export class PolygonMutationManager {
       'addVertex',
       'markerDrag',
       'polygonDrag',
+      'polygonClone',
       'toggleOptimization',
     ]);
     const shouldSimplify = !data.operation || !skipSimplifyOperations.has(data.operation);
@@ -183,6 +187,10 @@ export class PolygonMutationManager {
    */
   private async handleMenuAction(data: MenuActionData): Promise<void> {
     // console.log('PolygonMutationManager handleMenuAction');
+
+    if (this.saveHistoryState) {
+      this.saveHistoryState(data.action);
+    }
 
     // Get the complete polygon GeoJSON including holes before removing the feature group
     const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);
@@ -220,11 +228,33 @@ export class PolygonMutationManager {
     }
 
     if (result.success && result.result) {
-      await this.addPolygon(result.result, {
+      const bezierLevel =
+        data.action === 'bezier'
+          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          : optimizationLevel;
+      const bezierOriginal =
+        data.action === 'bezier'
+          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          : originalOptimizationLevel;
+      const addResult = await this.addPolygon(result.result, {
         simplify: false,
-        visualOptimizationLevel: optimizationLevel,
-        originalOptimizationLevel,
+        visualOptimizationLevel: bezierLevel,
+        originalOptimizationLevel: bezierOriginal,
       });
+      if (data.action === 'bezier' && this.config.bezier?.ghostMarkers) {
+        const ghostOpacity = 0.001;
+        addResult.featureGroups?.forEach((featureGroup) => {
+          featureGroup.eachLayer((layer) => {
+            if (layer instanceof L.Polygon) {
+              const polygon = layer as PolydrawPolygon;
+              polygon.setStyle({ opacity: ghostOpacity, fillOpacity: ghostOpacity });
+              if (polygon._polydrawDragData) {
+                polygon._polydrawDragData.originalOpacity = ghostOpacity;
+              }
+            }
+          });
+        });
+      }
     }
   }
 

@@ -15,6 +15,7 @@
     deleteAll: true,
     p2p: true,
     p2pSubtract: true,
+    clonePolygons: false,
     attachElbow: true,
     dragElbow: true,
     dragPolygons: true,
@@ -208,6 +209,10 @@
   bezier: {
     resolution: 10000,
     sharpness: 0.75,
+    resampleMultiplier: 10,
+    maxNodes: 1000,
+    visualOptimizationLevel: 10,
+    ghostMarkers: false,
   },
   colors: {
     dragPolygons: {
@@ -251,6 +256,32 @@
       },
     },
   },
+  history: {
+    capture: {
+      freehand: true,
+      pointToPoint: true,
+      addPredefinedPolygon: true,
+      eraseAll: true,
+      markerDrag: true,
+      polygonDrag: true,
+      polygonClone: true,
+      addVertex: true,
+      removeVertex: true,
+      removeHole: true,
+      modifierSubtract: true,
+      deletePolygon: true,
+      polygonActions: {
+        simplify: true,
+        doubleElbows: true,
+        bbox: true,
+        bezier: true,
+        scale: true,
+        rotate: true,
+        toggleOptimization: true,
+      },
+    },
+  },
+  maxHistorySize: 50,
 }
 ```
 
@@ -293,6 +324,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;deleteAll                                              | boolean | `true`                            | Enable delete all button                                                                                                                                 |
 | &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode                                                                                                                       |
 | &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode                                                                                                                      |
+| &nbsp;&nbsp;clonePolygons                                          | boolean | `false`                           | Enable clone mode button for drag-duplicating polygons                                                                                                   |
 | &nbsp;&nbsp;attachElbow                                            | boolean | `true`                            | Enable clicking on edges to add vertices                                                                                                                 |
 | &nbsp;&nbsp;dragElbow                                              | boolean | `true`                            | Enable dragging vertices                                                                                                                                 |
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                            | Enable dragging entire polygons                                                                                                                          |
@@ -426,6 +458,33 @@ const polydraw = L.control.polydraw({
 | **bezier**                                                         | object  |                                   | Bezier curve settings                                                                                                                                    |
 | &nbsp;&nbsp;resolution                                             | number  | `10000`                           | Bezier curve resolution                                                                                                                                  |
 | &nbsp;&nbsp;sharpness                                              | number  | `0.75`                            | Bezier curve sharpness                                                                                                                                   |
+| &nbsp;&nbsp;resampleMultiplier                                     | number  | `10`                              | Output points per input vertex when resampling                                                                                                           |
+| &nbsp;&nbsp;maxNodes                                               | number  | `1000`                            | Maximum number of nodes after bezier smoothing                                                                                                           |
+| &nbsp;&nbsp;visualOptimizationLevel                                | number  | `10`                              | Visual optimization level applied after bezier                                                                                                           |
+| &nbsp;&nbsp;ghostMarkers                                           | boolean | `false`                           | Make the bezier result almost invisible while keeping it draggable                                                                                       |
+| **history**                                                        | object  |                                   | History capture settings                                                                                                                                 |
+| &nbsp;&nbsp;**capture**                                            | object  |                                   | Toggle which actions create undo/redo snapshots                                                                                                          |
+| &nbsp;&nbsp;&nbsp;&nbsp;freehand                                   | boolean | `true`                            | Save history for freehand drawing                                                                                                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;pointToPoint                               | boolean | `true`                            | Save history for point-to-point drawing                                                                                                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;addPredefinedPolygon                       | boolean | `true`                            | Save history for predefined polygons                                                                                                                     |
+| &nbsp;&nbsp;&nbsp;&nbsp;eraseAll                                   | boolean | `true`                            | Save history for erase-all                                                                                                                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;markerDrag                                 | boolean | `true`                            | Save history when dragging markers                                                                                                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;polygonDrag                                | boolean | `true`                            | Save history when dragging polygons                                                                                                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;polygonClone                               | boolean | `true`                            | Save history when cloning polygons                                                                                                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;addVertex                                  | boolean | `true`                            | Save history when adding vertices                                                                                                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;removeVertex                               | boolean | `true`                            | Save history when removing vertices                                                                                                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;removeHole                                 | boolean | `true`                            | Save history when deleting holes                                                                                                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;modifierSubtract                           | boolean | `true`                            | Save history for modifier-key subtract drags                                                                                                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;deletePolygon                              | boolean | `true`                            | Save history when deleting polygons                                                                                                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;**polygonActions**                         | object  |                                   | History toggles for polygon menu actions                                                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;simplify                        | boolean | `true`                            | Save history for simplify                                                                                                                                |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doubleElbows                    | boolean | `true`                            | Save history for double elbows                                                                                                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bbox                            | boolean | `true`                            | Save history for bounding box                                                                                                                            |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bezier                          | boolean | `true`                            | Save history for bezier                                                                                                                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;scale                           | boolean | `true`                            | Save history for scale                                                                                                                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rotate                          | boolean | `true`                            | Save history for rotate                                                                                                                                   |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;toggleOptimization              | boolean | `true`                            | Save history for visual optimization toggle                                                                                                              |
+| **maxHistorySize**                                                 | number  | `50`                              | Maximum number of snapshots stored in undo history                                                                                                       |
 | **menuOperations**                                                 | object  |                                   | Menu operation toggles                                                                                                                                   |
 | &nbsp;&nbsp;**simplify**                                           | object  |                                   | Simplify operation configuration                                                                                                                         |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable simplify operation                                                                                                                                |

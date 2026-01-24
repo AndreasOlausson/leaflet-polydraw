@@ -3,7 +3,7 @@ import { TurfHelper } from '../turf-helper';
 import { PolygonInformationService } from '../polygon-information.service';
 import { IconFactory } from '../icon-factory';
 import { PolygonUtil } from '../polygon.util';
-import { MarkerPosition } from '../enums';
+import { DrawMode, MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import { LeafletVersionDetector } from '../compatibility/version-detector';
@@ -13,6 +13,7 @@ import type {
   PolydrawPolygon,
   PolydrawEdgePolyline,
   PolygonUpdatedEventData,
+  HistoryAction,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -34,7 +35,7 @@ export interface PolygonInteractionManagerDependencies {
   config: PolydrawConfig;
   modeManager: ModeManager;
   eventManager: EventManager;
-  saveHistoryState?: () => void;
+  saveHistoryState?: (action: HistoryAction) => void;
 }
 
 interface MarkerImportanceOptions {
@@ -67,12 +68,15 @@ export class PolygonInteractionManager {
   private config: PolydrawConfig;
   private modeManager: ModeManager;
   private eventManager: EventManager;
-  private saveHistoryState?: () => void;
+  private saveHistoryState?: (action: HistoryAction) => void;
 
   // Polygon drag state
   private currentDragPolygon: PolydrawPolygon | null = null;
+  private currentDragIsClone: boolean = false;
   private currentModifierDragMode: boolean = false;
   private isModifierKeyHeld: boolean = false;
+  private currentCloneGhost: L.Polygon | null = null;
+  private dragCancelHandlersAttached: boolean = false;
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
@@ -84,14 +88,26 @@ export class PolygonInteractionManager {
   private emitPolygonUpdated(data: PolygonUpdatedEventData): void {
     // Save history state before modification for all operations except drag operations
     // (markerDrag and polygonDrag already save state on dragstart)
-    if (
-      data.operation !== 'markerDrag' &&
-      data.operation !== 'polygonDrag' &&
-      this.saveHistoryState
-    ) {
-      this.saveHistoryState();
+    const historyAction = this.getHistoryActionForOperation(data.operation);
+    if (historyAction && this.saveHistoryState) {
+      this.saveHistoryState(historyAction);
     }
     this.eventManager.emit('polydraw:polygon:updated', data);
+  }
+
+  private getHistoryActionForOperation(operation: string): HistoryAction | null {
+    switch (operation) {
+      case 'addVertex':
+      case 'removeVertex':
+      case 'removeHole':
+      case 'toggleOptimization':
+        return operation;
+      case 'modifierSubtract':
+      case 'modifierSubtractFallback':
+        return 'modifierSubtract';
+      default:
+        return null;
+    }
   }
 
   // Read-only access to feature groups
@@ -106,7 +122,6 @@ export class PolygonInteractionManager {
       removeFeatureGroup: (fg: L.FeatureGroup) => void;
     },
   ) {
-    // console.log('PolygonInteractionManager constructor');
     this.turfHelper = dependencies.turfHelper;
     this.polygonInformation = dependencies.polygonInformation;
     this.map = dependencies.map;
@@ -118,6 +133,12 @@ export class PolygonInteractionManager {
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
     this.removeFeatureGroup = featureGroupAccess.removeFeatureGroup;
+
+    this.eventManager.on('polydraw:mode:change', () => {
+      if (this.currentCloneGhost || this.isPolygonDragActive()) {
+        this.cancelActivePolygonDrag();
+      }
+    });
   }
 
   private getTimestamp(): number {
@@ -143,7 +164,6 @@ export class PolygonInteractionManager {
     featureGroup: L.FeatureGroup,
     options: { optimizationLevel?: number; originalOptimizationLevel?: number } = {},
   ): void {
-    // console.log('PolygonInteractionManager addMarkers');
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
     let deleteMarkerIdx = this.getMarkerIndex(
@@ -229,7 +249,7 @@ export class PolygonInteractionManager {
       marker.on('dragstart', () => {
         // Save history state before dragging
         if (this.saveHistoryState) {
-          this.saveHistoryState();
+          this.saveHistoryState('markerDrag');
         }
         this.isDraggingMarker = true;
         this._activeMarker = marker;
@@ -249,11 +269,9 @@ export class PolygonInteractionManager {
       const el = marker.getElement();
       if (el) {
         const touchstartHandler = (e: Event) => {
-          // console.log('marker touchstart');
           e.stopPropagation();
         };
         const touchendHandler = (e: Event) => {
-          // console.log('marker touchend');
           e.preventDefault();
           e.stopPropagation();
           marker.fire('click');
@@ -346,7 +364,6 @@ export class PolygonInteractionManager {
           }
         });
         marker.on('popupclose', () => {
-          // console.log('popupclose, resetting touchAction');
           const container = this.map.getContainer();
           if (container) {
             container.style.touchAction = '';
@@ -394,7 +411,6 @@ export class PolygonInteractionManager {
           }
         });
         marker.on('popupclose', () => {
-          // console.log('popupclose, resetting touchAction');
           const container = this.map.getContainer();
           if (container) {
             container.style.touchAction = '';
@@ -413,7 +429,6 @@ export class PolygonInteractionManager {
 
       // Generic click handler for all markers
       marker.on('click', (e) => {
-        // console.log('marker click');
         if (this.modeManager.isInOffMode()) {
           if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
             const polygonLayer = featureGroup
@@ -434,7 +449,7 @@ export class PolygonInteractionManager {
               this.map.closePopup();
               // Save state before deleting polygon
               if (this.saveHistoryState) {
-                this.saveHistoryState();
+                this.saveHistoryState('deletePolygon');
               }
               this.cleanupFeatureGroup(featureGroup);
               this.removeFeatureGroup(featureGroup);
@@ -461,8 +476,6 @@ export class PolygonInteractionManager {
    * Add hole markers to a polygon feature group, with configurable special markers.
    */
   addHoleMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager addHoleMarkers');
-
     // Determine if special markers for holes are enabled
     const holeMenuEnabled = this.config.markers.holeMarkers?.menuMarker ?? false;
     const holeDeleteEnabled = this.config.markers.holeMarkers?.deleteMarker ?? false;
@@ -531,6 +544,9 @@ export class PolygonInteractionManager {
       });
 
       marker.on('dragstart', () => {
+        if (this.saveHistoryState) {
+          this.saveHistoryState('markerDrag');
+        }
         this.isDraggingMarker = true;
         this._activeMarker = marker;
       });
@@ -769,7 +785,6 @@ export class PolygonInteractionManager {
    * Add edge click listeners to a polygon
    */
   addEdgeClickListeners(polygon: L.Polygon, featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager addEdgeClickListeners');
     const rawLatLngs = polygon.getLatLngs();
 
     // Handle different polygon structures
@@ -848,11 +863,26 @@ export class PolygonInteractionManager {
   }
 
   /**
+   * Check whether polygon dragging is allowed for the current mode.
+   */
+  private isPolygonDragModeActive(): boolean {
+    const mode = this.modeManager.getCurrentMode();
+    return mode === DrawMode.Off || mode === DrawMode.Clone;
+  }
+
+  private isPolygonDragActive(): boolean {
+    return !!(
+      this.currentDragPolygon &&
+      this.currentDragPolygon._polydrawDragData &&
+      this.currentDragPolygon._polydrawDragData.isDragging
+    );
+  }
+
+  /**
    * Enable polygon dragging functionality
    */
   enablePolygonDragging(polygon: PolydrawPolygon, latlngs: Feature<Polygon | MultiPolygon>): void {
-    // console.log('PolygonInteractionManager enablePolygonDragging');
-    if (!this.config.modes.dragPolygons) return;
+    if (!this.config.modes.dragPolygons && !this.config.modes.clonePolygons) return;
 
     polygon._polydrawOriginalLatLngs = latlngs;
     polygon._polydrawDragData = {
@@ -863,9 +893,7 @@ export class PolygonInteractionManager {
     };
 
     polygon.on('mousedown', (e: L.LeafletMouseEvent) => {
-      // console.log('polygon mousedown');
-      // If not in off mode, it's a drawing click. Forward to map and stop.
-      if (!this.modeManager.isInOffMode()) {
+      if (!this.isPolygonDragModeActive()) {
         // Stop this event from becoming a drag, but fire it on the map for drawing.
         L.DomEvent.stopPropagation(e);
         this.map.fire('mousedown', e);
@@ -878,19 +906,30 @@ export class PolygonInteractionManager {
       L.DomEvent.stopPropagation(e.originalEvent);
       L.DomEvent.preventDefault(e.originalEvent);
 
-      const isModifierPressed = this.detectDragSubtractModifierKey(e.originalEvent);
+      const isCloneMode = this.modeManager.getCurrentMode() === DrawMode.Clone;
+      const isModifierPressed = isCloneMode
+        ? false
+        : this.detectDragSubtractModifierKey(e.originalEvent);
+      this.currentDragIsClone = isCloneMode;
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
       // Save state before polygon drag
       if (this.saveHistoryState) {
-        this.saveHistoryState();
+        this.saveHistoryState(isCloneMode ? 'polygonClone' : 'polygonDrag');
       }
 
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
       polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+      if (isCloneMode) {
+        this.showCloneGhost(
+          polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+        );
+      } else {
+        this.clearCloneGhost();
+      }
 
       if (this.map.dragging) {
         this.map.dragging.disable();
@@ -919,6 +958,7 @@ export class PolygonInteractionManager {
         this.onPolygonMouseUp as L.LeafletEventHandlerFn,
         this,
       );
+      this.attachDragCancelHandlers();
 
       this.currentDragPolygon = polygon;
     });
@@ -930,7 +970,7 @@ export class PolygonInteractionManager {
         return;
       }
       // If not in off mode, it's a drawing click. Forward to map and stop.
-      if (!this.modeManager.isInOffMode()) {
+      if (!this.isPolygonDragModeActive()) {
         const originalEvent = (e.originalEvent ?? e) as Event;
         L.DomEvent.stopPropagation(originalEvent);
         (this.map as L.Evented).fire('pointerdown', e);
@@ -945,21 +985,30 @@ export class PolygonInteractionManager {
       L.DomEvent.stopPropagation(orig);
       L.DomEvent.preventDefault(orig);
 
-      const isModifierPressed = this.detectDragSubtractModifierKey(
-        orig as MouseEvent | PointerEvent,
-      );
+      const isCloneMode = this.modeManager.getCurrentMode() === DrawMode.Clone;
+      const isModifierPressed = isCloneMode
+        ? false
+        : this.detectDragSubtractModifierKey(orig as MouseEvent | PointerEvent);
+      this.currentDragIsClone = isCloneMode;
       this.currentModifierDragMode = isModifierPressed;
       this.isModifierKeyHeld = isModifierPressed;
 
       // Save state before polygon drag
       if (this.saveHistoryState) {
-        this.saveHistoryState();
+        this.saveHistoryState(isCloneMode ? 'polygonClone' : 'polygonDrag');
       }
 
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
       polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+      if (isCloneMode) {
+        this.showCloneGhost(
+          polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+        );
+      } else {
+        this.clearCloneGhost();
+      }
 
       if (this.map.dragging) {
         this.map.dragging.disable();
@@ -987,6 +1036,7 @@ export class PolygonInteractionManager {
         this.onPolygonMouseUp as L.LeafletEventHandlerFn,
         this,
       );
+      this.attachDragCancelHandlers();
 
       this.currentDragPolygon = polygon;
     }) as L.LeafletEventHandlerFn);
@@ -1018,7 +1068,6 @@ export class PolygonInteractionManager {
    * Update marker draggable state based on current mode
    */
   updateMarkerDraggableState(): void {
-    // console.log('PolygonInteractionManager updateMarkerDraggableState');
     const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.getFeatureGroups().forEach((featureGroup) => {
@@ -1049,7 +1098,6 @@ export class PolygonInteractionManager {
    * Update all markers for edge deletion visual feedback
    */
   updateAllMarkersForEdgeDeletion(showFeedback: boolean): void {
-    // console.log('PolygonInteractionManager updateAllMarkersForEdgeDeletion');
     this.getFeatureGroups().forEach((featureGroup) => {
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -1063,7 +1111,6 @@ export class PolygonInteractionManager {
    * Update individual marker for edge deletion visual feedback
    */
   updateMarkerForEdgeDeletion(marker: L.Marker, showFeedback: boolean): void {
-    // console.log('PolygonInteractionManager updateMarkerForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -1093,7 +1140,6 @@ export class PolygonInteractionManager {
    * Set modifier key held state
    */
   setModifierKeyHeld(isHeld: boolean): void {
-    // console.log('PolygonInteractionManager setModifierKeyHeld');
     this.isModifierKeyHeld = isHeld;
   }
 
@@ -1102,8 +1148,6 @@ export class PolygonInteractionManager {
    * This method ensures proper cleanup of event listeners and WeakMap entries
    */
   cleanupMarker(marker: L.Marker): void {
-    // console.log('PolygonInteractionManager cleanupMarker');
-
     const element = marker.getElement();
 
     // Always clean up document-level listeners first (DOM-optional)
@@ -1146,8 +1190,6 @@ export class PolygonInteractionManager {
    * This method ensures proper cleanup of all markers and associated resources
    */
   cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
-    // console.log('PolygonInteractionManager cleanupFeatureGroup');
-
     // Clean up all markers in the feature group
     featureGroup.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
@@ -1171,9 +1213,6 @@ export class PolygonInteractionManager {
   }
 
   private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
-    // console.log('onEdgeClick');
-    // console.log('PolygonInteractionManager onEdgeClick');
-    // Enforce the configuration setting for attaching elbows.
     if (!this.config.modes.attachElbow) {
       return;
     }
@@ -1220,7 +1259,6 @@ export class PolygonInteractionManager {
   }
 
   private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
-    // console.log('PolygonInteractionManager highlightEdgeOnHover');
     if (isHovering) {
       edgePolyline.setStyle({
         color: this.config.colors.edgeHover,
@@ -1657,7 +1695,6 @@ export class PolygonInteractionManager {
   }
 
   private async markerDragEnd(featureGroup: L.FeatureGroup): Promise<void> {
-    // console.log('PolygonInteractionManager markerDragEnd');
     this.polygonInformation.deletePolygonInformationStorage();
     const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<Polygon | MultiPolygon>;
 
@@ -1739,7 +1776,6 @@ export class PolygonInteractionManager {
 
   // Polygon dragging methods
   private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
-    // console.log('PolygonInteractionManager onPolygonMouseMove');
     if (
       !this.currentDragPolygon ||
       !this.currentDragPolygon._polydrawDragData ||
@@ -1750,10 +1786,12 @@ export class PolygonInteractionManager {
     const polygon = this.currentDragPolygon;
     const dragData = polygon._polydrawDragData;
 
-    const eventToCheck = e.originalEvent && 'metaKey' in e.originalEvent ? e.originalEvent : e;
-    const currentModifierState = this.detectDragSubtractModifierKey(eventToCheck as MouseEvent);
-    if (currentModifierState !== this.currentModifierDragMode) {
-      this.handleModifierToggleDuringDrag(eventToCheck as MouseEvent);
+    if (!this.currentDragIsClone) {
+      const eventToCheck = e.originalEvent && 'metaKey' in e.originalEvent ? e.originalEvent : e;
+      const currentModifierState = this.detectDragSubtractModifierKey(eventToCheck as MouseEvent);
+      if (currentModifierState !== this.currentModifierDragMode) {
+        this.handleModifierToggleDuringDrag(eventToCheck as MouseEvent);
+      }
     }
 
     const startPos = dragData!.startPosition;
@@ -1768,7 +1806,6 @@ export class PolygonInteractionManager {
   };
 
   private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
-    // console.log('PolygonInteractionManager onPolygonMouseUp');
     void e; // mark parameter as used to satisfy ESLint while keeping the name
     if (
       !this.currentDragPolygon ||
@@ -1814,7 +1851,16 @@ export class PolygonInteractionManager {
       // Handle DOM errors
     }
 
-    this.updatePolygonAfterDrag(polygon);
+    this.clearCloneGhost();
+    this.detachDragCancelHandlers();
+
+    const wasCloneDrag = this.currentDragIsClone;
+    this.currentDragIsClone = false;
+    if (wasCloneDrag) {
+      this.updatePolygonAfterCloneDrag(polygon, dragData);
+    } else {
+      this.updatePolygonAfterDrag(polygon);
+    }
 
     if (polygon._polydrawOriginalMarkerPositions) {
       polygon._polydrawOriginalMarkerPositions.clear();
@@ -1831,12 +1877,134 @@ export class PolygonInteractionManager {
     this.currentDragPolygon = null;
   };
 
+  private onPolygonDragCancel = () => {
+    this.cancelActivePolygonDrag();
+  };
+
+  private onPolygonDragKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') return;
+    this.cancelActivePolygonDrag();
+  };
+
+  private attachDragCancelHandlers(): void {
+    if (this.dragCancelHandlersAttached) return;
+    this.dragCancelHandlersAttached = true;
+    document.addEventListener('keydown', this.onPolygonDragKeyDown);
+    (this.map as L.Evented).on(
+      'pointercancel',
+      this.onPolygonDragCancel as L.LeafletEventHandlerFn,
+      this,
+    );
+    (this.map as L.Evented).on(
+      'touchcancel',
+      this.onPolygonDragCancel as L.LeafletEventHandlerFn,
+      this,
+    );
+  }
+
+  private detachDragCancelHandlers(): void {
+    if (!this.dragCancelHandlersAttached) return;
+    this.dragCancelHandlersAttached = false;
+    document.removeEventListener('keydown', this.onPolygonDragKeyDown);
+    (this.map as L.Evented).off(
+      'pointercancel',
+      this.onPolygonDragCancel as L.LeafletEventHandlerFn,
+      this,
+    );
+    (this.map as L.Evented).off(
+      'touchcancel',
+      this.onPolygonDragCancel as L.LeafletEventHandlerFn,
+      this,
+    );
+  }
+
+  private cancelActivePolygonDrag(): void {
+    if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData) {
+      this.clearCloneGhost();
+      return;
+    }
+
+    const polygon = this.currentDragPolygon;
+    const dragData = polygon._polydrawDragData;
+    if (!dragData) {
+      this.clearCloneGhost();
+      return;
+    }
+    if (!dragData.isDragging) {
+      this.clearCloneGhost();
+      return;
+    }
+
+    dragData.isDragging = false;
+
+    this.map.off('mousemove', this.onPolygonMouseMove, this);
+    this.map.off('mouseup', this.onPolygonMouseUp, this);
+    (this.map as L.Evented).off(
+      'pointermove',
+      this.onPolygonMouseMove as L.LeafletEventHandlerFn,
+      this,
+    );
+    (this.map as L.Evented).off(
+      'pointerup',
+      this.onPolygonMouseUp as L.LeafletEventHandlerFn,
+      this,
+    );
+
+    if (this.map.dragging) {
+      this.map.dragging.enable();
+    }
+
+    if (dragData.startLatLngs) {
+      polygon.setLatLngs(dragData.startLatLngs);
+    }
+
+    if (polygon._polydrawOriginalMarkerPositions) {
+      polygon._polydrawOriginalMarkerPositions.forEach((pos, marker) => {
+        marker.setLatLng(pos);
+      });
+      polygon._polydrawOriginalMarkerPositions.clear();
+      delete polygon._polydrawOriginalMarkerPositions;
+    }
+
+    if (polygon._polydrawOriginalHoleLinePositions) {
+      polygon._polydrawOriginalHoleLinePositions.forEach((positions, line) => {
+        line.setLatLngs(positions);
+      });
+      polygon._polydrawOriginalHoleLinePositions.clear();
+      delete polygon._polydrawOriginalHoleLinePositions;
+    }
+
+    if (polygon._polydrawCurrentDragSession) {
+      delete polygon._polydrawCurrentDragSession;
+    }
+
+    if (dragData.originalOpacity != null) {
+      polygon.setStyle({ fillOpacity: dragData.originalOpacity });
+    }
+
+    this.setSubtractVisualMode(polygon, false);
+    this.setMarkerVisibility(polygon, true);
+
+    try {
+      const container = this.map.getContainer();
+      container.style.cursor = '';
+    } catch {
+      // Handle DOM errors
+    }
+
+    this.clearCloneGhost();
+    this.detachDragCancelHandlers();
+    this.currentDragIsClone = false;
+    this.currentModifierDragMode = false;
+    this.isModifierKeyHeld = false;
+    this.currentDragPolygon = null;
+  }
+
   private offsetPolygonCoordinates(
     latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
     offsetLat: number,
     offsetLng: number,
   ): L.LatLng[] | L.LatLng[][] | L.LatLng[][][] {
-    // console.log('PolygonInteractionManager offsetPolygonCoordinates');
     if (!latLngs) return latLngs as unknown as L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
 
     // If nested arrays, recurse until we reach arrays of LatLng
@@ -1857,7 +2025,6 @@ export class PolygonInteractionManager {
     offsetLat: number,
     offsetLng: number,
   ): void {
-    // console.log('PolygonInteractionManager updateMarkersAndHoleLinesDuringDrag');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -1943,7 +2110,6 @@ export class PolygonInteractionManager {
   }
 
   private async updatePolygonAfterDrag(polygon: PolydrawPolygon): Promise<void> {
-    // console.log('PolygonInteractionManager updatePolygonAfterDrag');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -1989,6 +2155,113 @@ export class PolygonInteractionManager {
     }
   }
 
+  private updatePolygonAfterCloneDrag(
+    polygon: PolydrawPolygon,
+    dragData: PolydrawPolygon['_polydrawDragData'],
+  ): void {
+    try {
+      let featureGroup: L.FeatureGroup | null = null;
+
+      for (const fg of this.getFeatureGroups()) {
+        fg.eachLayer((layer) => {
+          if (layer === polygon) {
+            featureGroup = fg;
+          }
+        });
+        if (featureGroup) break;
+      }
+
+      if (!featureGroup) {
+        return;
+      }
+
+      const newGeoJSON = polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+      const originalLatLngs = (dragData?.startLatLngs ?? null) as
+        | L.LatLng[]
+        | L.LatLng[][]
+        | L.LatLng[][][]
+        | null;
+      const originalGeoJSON = originalLatLngs
+        ? this.createPolygonFeatureFromLatLngs(originalLatLngs)
+        : null;
+
+      const { level: optimizationLevel, original: originalOptimizationLevel } =
+        this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+
+      this.cleanupFeatureGroup(featureGroup);
+      this.removeFeatureGroup(featureGroup);
+
+      const movedFeature = this.turfHelper.getTurfPolygon(newGeoJSON);
+      this.emitPolygonUpdated({
+        operation: 'polygonDrag',
+        polygon: movedFeature,
+        allowMerge: true,
+        optimizationLevel,
+        originalOptimizationLevel,
+      });
+
+      if (originalGeoJSON) {
+        const originalFeature = this.turfHelper.getTurfPolygon(originalGeoJSON);
+        this.emitPolygonUpdated({
+          operation: 'polygonClone',
+          polygon: originalFeature,
+          allowMerge: true,
+          optimizationLevel,
+          originalOptimizationLevel,
+        });
+      }
+
+      this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
+    } catch {
+      // Handle errors
+    } finally {
+      this.currentModifierDragMode = false;
+      this.isModifierKeyHeld = false;
+    }
+  }
+
+  private showCloneGhost(latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][] | null): void {
+    this.clearCloneGhost();
+    if (!latLngs) return;
+
+    try {
+      const ghost = leafletAdapter.createPolygon(latLngs, {
+        color: this.config.colors.polygon.border,
+        weight: this.config.polygonOptions.weight,
+        opacity: 0.9,
+        fill: false,
+        fillOpacity: 0,
+        dashArray: '4,6',
+        interactive: false,
+      });
+      ghost.addTo(this.map);
+      this.currentCloneGhost = ghost;
+    } catch {
+      // Handle ghost creation errors
+    }
+  }
+
+  private clearCloneGhost(): void {
+    if (!this.currentCloneGhost) return;
+    try {
+      this.map.removeLayer(this.currentCloneGhost);
+    } catch {
+      // Ignore removal errors
+    }
+    this.currentCloneGhost = null;
+  }
+
+  private createPolygonFeatureFromLatLngs(
+    latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+  ): Feature<Polygon | MultiPolygon> | null {
+    try {
+      const polygon = leafletAdapter.createPolygon(latLngs);
+      return polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
+    } catch {
+      return null;
+    }
+  }
+
   private getDragSubtractModifierKey(): string {
     const { keys } = this.config.dragPolygons.modifierSubtract;
     const userAgent = navigator.userAgent.toLowerCase();
@@ -2017,7 +2290,6 @@ export class PolygonInteractionManager {
   }
 
   private setSubtractVisualMode(polygon: L.Polygon, enabled: boolean): void {
-    // console.log('PolygonInteractionManager setSubtractVisualMode');
     if (!polygon || !polygon.setStyle) {
       return;
     }
@@ -2039,7 +2311,6 @@ export class PolygonInteractionManager {
   }
 
   private updateMarkerColorsForSubtractMode(polygon: L.Polygon, subtractMode: boolean): void {
-    // console.log('PolygonInteractionManager updateMarkerColorsForSubtractMode');
     try {
       let featureGroup: L.FeatureGroup | null = null;
 
@@ -2091,7 +2362,6 @@ export class PolygonInteractionManager {
   }
 
   private handleModifierToggleDuringDrag(event: MouseEvent): void {
-    // console.log('PolygonInteractionManager handleModifierToggleDuringDrag');
     const isModifierPressed = this.detectDragSubtractModifierKey(event);
 
     this.currentModifierDragMode = isModifierPressed;
@@ -2103,7 +2373,6 @@ export class PolygonInteractionManager {
   }
 
   private isModifierDragActive(): boolean {
-    // console.log('PolygonInteractionManager isModifierDragActive');
     return this.currentModifierDragMode;
   }
 
@@ -2111,7 +2380,6 @@ export class PolygonInteractionManager {
     draggedGeoJSON: Feature<Polygon | MultiPolygon>,
     originalFeatureGroup: L.FeatureGroup,
   ): void {
-    // console.log('PolygonInteractionManager performModifierSubtract');
     try {
       const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
@@ -2257,7 +2525,6 @@ export class PolygonInteractionManager {
   }
 
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {
-    // console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletion');
     const element = marker.getElement();
     if (!element) return;
 
@@ -2327,7 +2594,6 @@ export class PolygonInteractionManager {
   }
 
   private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
-    // console.log('PolygonInteractionManager onMarkerHoverForEdgeDeletionEvent');
     if (!this.isModifierKeyHeld) return;
 
     const element = e.target as HTMLElement;
@@ -2339,7 +2605,6 @@ export class PolygonInteractionManager {
   };
 
   private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
-    // console.log('PolygonInteractionManager onMarkerLeaveForEdgeDeletionEvent');
     const element = e.target as HTMLElement;
     if (element) {
       element.style.backgroundColor = '';
@@ -2350,7 +2615,6 @@ export class PolygonInteractionManager {
 
   // Helper methods
   private getMarkerIndex(latlngs: L.LatLngLiteral[], position: MarkerPosition): number {
-    // console.log('PolygonInteractionManager getMarkerIndex');
     const bounds: L.LatLngBounds = PolyDrawUtil.getBounds(latlngs, Math.sqrt(2) / 2);
     const compass = new Compass(
       bounds.getSouth(),
@@ -2380,8 +2644,6 @@ export class PolygonInteractionManager {
       info: { index: number; enabled: boolean };
     },
   ): { menu: number; delete: number; info: number } {
-    // console.log('PolygonInteractionManager ensureMarkerSeparation');
-    // Get list of enabled markers with their indices
     const enabledMarkers: Array<{ type: string; index: number }> = [];
 
     if (markers.menu.enabled) {
@@ -2441,9 +2703,6 @@ export class PolygonInteractionManager {
     originalIndex: number,
     usedIndices: Set<number>,
   ): number {
-    // console.log('PolygonInteractionManager findAlternativeMarkerPosition');
-    // Strategy: Try positions at regular intervals around the polygon
-    // Start with positions that are far from the original
     const maxAttempts = polygonLength;
     const step = Math.max(1, Math.floor(polygonLength / 8)); // Try every 1/8th of polygon
 
@@ -2474,12 +2733,10 @@ export class PolygonInteractionManager {
   }
 
   private createDivIcon(processedClasses: string[]): L.DivIcon {
-    // console.log('PolygonInteractionManager createDivIcon');
     return IconFactory.createDivIcon(processedClasses);
   }
 
   private getLatLngInfoString(latlng: L.LatLngLiteral): string {
-    // console.log('PolygonInteractionManager getLatLngInfoString');
     return 'Latitude: ' + latlng.lat + ' Longitude: ' + latlng.lng;
   }
 
@@ -2533,11 +2790,7 @@ export class PolygonInteractionManager {
 
     // Bezier button
     if (menuOps.bezier.enabled) {
-      buttons.push(
-        PopupFactory.createMenuButton('bezier', 'Curve', ['bezier'], {
-          alphaBanner: true,
-        }),
-      );
+      buttons.push(PopupFactory.createMenuButton('bezier', 'Curve', ['bezier']));
     }
 
     // Scale button
@@ -2646,6 +2899,9 @@ export class PolygonInteractionManager {
               return;
             }
 
+            if (this.saveHistoryState) {
+              this.saveHistoryState(mode);
+            }
             const newGeoJSON = polygonLayer.toGeoJSON();
             const { level: optimizationLevel, original: originalOptimizationLevel } =
               this.getOptimizationMetadataFromFeatureGroup(featureGroup);
@@ -2776,7 +3032,6 @@ export class PolygonInteractionManager {
   private getPolygonGeoJSONFromFeatureGroup(
     featureGroup: L.FeatureGroup,
   ): Feature<Polygon | MultiPolygon> {
-    // console.log('PolygonInteractionManager getPolygonGeoJSONFromFeatureGroup');
     try {
       // Find the polygon layer in the feature group (use getLayers + find for clearer typing)
       const polygonLayer = featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as
@@ -2818,7 +3073,6 @@ export class PolygonInteractionManager {
   }
 
   private getTotalPolygonPerimeter(polygonGeoJSON: Feature<Polygon | MultiPolygon>): number {
-    // console.log('PolygonInteractionManager getTotalPolygonPerimeter');
     try {
       if (!polygonGeoJSON || !polygonGeoJSON.geometry) {
         return 0;

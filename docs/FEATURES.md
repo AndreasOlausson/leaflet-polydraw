@@ -28,6 +28,8 @@ Create holes and complex shapes by subtracting areas from existing polygons. Ide
 
 Click the subtract button and draw over existing polygons to remove those areas, creating holes or splitting polygons into multiple parts.
 
+**Tip**: You can enable `modifierSubtractMode` to hold Cmd/Ctrl and temporarily subtract while staying in Draw or Point-to-Point mode, even if subtract buttons are hidden.
+
 ## Point-to-Point Drawing
 
 [![Point-to-Point Drawing](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/p2p-draw.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/p2p-draw.mp4)
@@ -61,6 +63,28 @@ Use point-to-point with subtraction to cut precise holes or remove segments:
 
 This mode mirrors point-to-point drawing but applies the shape as a subtraction instead of an addition.
 
+## Clone Drag Mode
+[![Clone Drag Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/clone.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/clone.mp4)
+
+Duplicate existing polygons by dragging out a copy while the original stays in place:
+
+- Creating multiple similar polygons
+- Duplicating complex shapes with holes
+- Quick area replication
+- Template-based polygon creation
+- Opt-in interaction: Clone Drag Mode is available only when explicitly enabled via `config.modes.clonePolygons`.
+
+Clone Drag Mode operates independently of the standard polygon dragging setting (`dragPolygons`). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
+
+Simply click the clone button in the toolbar and drag any polygon on the map. A dashed ghost outline indicates the original position during the drag operation. Upon release, a new polygon is created at the drop location, and the original returns to its starting coordinates.
+
+**Key Features**:
+
+- **Hole Integrity**: Clones preserve all inner rings and optimization metadata.
+- **Merge Support**: Respects `config.mergePolygons` — clones will merge with intersecting shapes if enabled.
+- **Independence**: Operates even if global polygon dragging (`dragPolygons`) is disabled.
+- **History Capture**: Each clone is recorded as a distinct action for easy undo/redo (configurable via `config.history.capture.polygonClone`).
+
 ## Undo & Redo
 
 [![Undo and Redo](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/undo.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/undo.mp4)
@@ -68,8 +92,10 @@ This mode mirrors point-to-point drawing but applies the shape as a subtraction 
 Step backward or forward through edits:
 
 - Undo/redo polygon drawing, subtraction, vertex edits, and transforms
+- Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier)
 - Accessible via toolbar buttons or keyboard shortcuts
 - History is capped to keep memory under control (`config.maxHistorySize`)
+- You can opt out of specific action types via `config.history.capture` (snapshots still store full state)
 
 ## Smart Polygon Merging
 

@@ -196,6 +196,7 @@ export interface ModeConfig {
   deleteAll: boolean;
   p2p: boolean;
   p2pSubtract: boolean;
+  clonePolygons: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
@@ -263,6 +264,60 @@ export interface MenuOperationsConfig {
   };
 }
 
+export type PolygonActionHistory =
+  | 'simplify'
+  | 'doubleElbows'
+  | 'bbox'
+  | 'bezier'
+  | 'scale'
+  | 'rotate'
+  | 'toggleOptimization';
+
+export type HistoryAction =
+  | 'freehand'
+  | 'pointToPoint'
+  | 'addPredefinedPolygon'
+  | 'eraseAll'
+  | 'markerDrag'
+  | 'polygonDrag'
+  | 'polygonClone'
+  | 'addVertex'
+  | 'removeVertex'
+  | 'removeHole'
+  | 'modifierSubtract'
+  | 'deletePolygon'
+  | PolygonActionHistory;
+
+export interface PolygonActionsHistoryCaptureConfig {
+  simplify: boolean;
+  doubleElbows: boolean;
+  bbox: boolean;
+  bezier: boolean;
+  scale: boolean;
+  rotate: boolean;
+  toggleOptimization: boolean;
+}
+
+export interface HistoryCaptureConfig {
+  freehand: boolean;
+  pointToPoint: boolean;
+  addPredefinedPolygon: boolean;
+  eraseAll: boolean;
+  markerDrag: boolean;
+  polygonDrag: boolean;
+  polygonClone: boolean;
+  addVertex: boolean;
+  removeVertex: boolean;
+  removeHole: boolean;
+  modifierSubtract: boolean;
+  deletePolygon: boolean;
+  polygonActions?: PolygonActionsHistoryCaptureConfig;
+}
+
+export interface HistoryConfig {
+  capture: HistoryCaptureConfig;
+}
+
 /**
  * Complete Polydraw configuration interface
  */
@@ -271,6 +326,7 @@ export interface PolydrawConfig {
   mergePolygons: boolean;
   modes: ModeConfig;
   defaultMode: DrawMode;
+  modifierSubtractMode: boolean;
   dragPolygons: DragPolygonConfig;
   edgeDeletion: EdgeDeletionConfig;
   markers: MarkerOptions;
@@ -296,6 +352,10 @@ export interface PolydrawConfig {
   bezier: {
     resolution: number;
     sharpness: number;
+    resampleMultiplier: number;
+    maxNodes: number;
+    visualOptimizationLevel: number;
+    ghostMarkers: boolean;
   };
   colors: {
     dragPolygons: {
@@ -339,6 +399,7 @@ export interface PolydrawConfig {
       };
     };
   };
+  history: HistoryConfig;
   maxHistorySize: number;
 }
 
