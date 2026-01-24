@@ -273,7 +273,10 @@ export class DemoFactory {
     const menuMarker = this.page.locator('.polygon-marker.menu').first();
     await menuMarker.waitFor({ state: 'visible' });
     await menuMarker.click();
-    await this.page.locator('.menu-popup .marker-menu-button').first().waitFor({ state: 'visible' });
+    await this.page
+      .locator('.menu-popup .marker-menu-button')
+      .first()
+      .waitFor({ state: 'visible' });
   }
 
   /** Click a polygon menu action by data-action-id */

@@ -35,10 +35,8 @@ test.describe('Polygon menu actions', () => {
     expect(uniqueLngs.size).toBeGreaterThanOrEqual(2);
     expect(uniqueLngs.size).toBeLessThanOrEqual(3);
     afterCoords.forEach(([lng, lat]) => {
-      const latOnEdge =
-        Math.abs(lat - after.minLat) < 1e-6 || Math.abs(lat - after.maxLat) < 1e-6;
-      const lngOnEdge =
-        Math.abs(lng - after.minLng) < 1e-6 || Math.abs(lng - after.maxLng) < 1e-6;
+      const latOnEdge = Math.abs(lat - after.minLat) < 1e-6 || Math.abs(lat - after.maxLat) < 1e-6;
+      const lngOnEdge = Math.abs(lng - after.minLng) < 1e-6 || Math.abs(lng - after.maxLng) < 1e-6;
       expect(latOnEdge || lngOnEdge).toBe(true);
     });
   });
