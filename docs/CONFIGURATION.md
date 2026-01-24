@@ -15,6 +15,7 @@
     deleteAll: true,
     p2p: true,
     p2pSubtract: true,
+    clonePolygons: false,
     attachElbow: true,
     dragElbow: true,
     dragPolygons: true,
@@ -263,6 +264,7 @@
       eraseAll: true,
       markerDrag: true,
       polygonDrag: true,
+      polygonClone: true,
       addVertex: true,
       removeVertex: true,
       removeHole: true,
@@ -322,6 +324,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;deleteAll                                              | boolean | `true`                            | Enable delete all button                                                                                                                                 |
 | &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode                                                                                                                       |
 | &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode                                                                                                                      |
+| &nbsp;&nbsp;clonePolygons                                          | boolean | `false`                           | Enable clone mode button for drag-duplicating polygons                                                                                                   |
 | &nbsp;&nbsp;attachElbow                                            | boolean | `true`                            | Enable clicking on edges to add vertices                                                                                                                 |
 | &nbsp;&nbsp;dragElbow                                              | boolean | `true`                            | Enable dragging vertices                                                                                                                                 |
 | &nbsp;&nbsp;dragPolygons                                           | boolean | `true`                            | Enable dragging entire polygons                                                                                                                          |
@@ -467,6 +470,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;eraseAll                                   | boolean | `true`                            | Save history for erase-all                                                                                                                               |
 | &nbsp;&nbsp;&nbsp;&nbsp;markerDrag                                 | boolean | `true`                            | Save history when dragging markers                                                                                                                       |
 | &nbsp;&nbsp;&nbsp;&nbsp;polygonDrag                                | boolean | `true`                            | Save history when dragging polygons                                                                                                                      |
+| &nbsp;&nbsp;&nbsp;&nbsp;polygonClone                               | boolean | `true`                            | Save history when cloning polygons                                                                                                                       |
 | &nbsp;&nbsp;&nbsp;&nbsp;addVertex                                  | boolean | `true`                            | Save history when adding vertices                                                                                                                        |
 | &nbsp;&nbsp;&nbsp;&nbsp;removeVertex                               | boolean | `true`                            | Save history when removing vertices                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;removeHole                                 | boolean | `true`                            | Save history when deleting holes                                                                                                                         |

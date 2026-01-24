@@ -47,8 +47,11 @@ export class LeafletAdapter {
   /**
    * Creates a polygon compatible with both Leaflet versions
    */
-  createPolygon(latlngs: L.LatLng[] | L.LatLng[][], options?: L.PolylineOptions): L.Polygon {
-    return new L.Polygon(latlngs, options);
+  createPolygon(
+    latlngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+    options?: L.PolylineOptions,
+  ): L.Polygon {
+    return new L.Polygon(latlngs as L.LatLngExpression[] | L.LatLngExpression[][], options);
   }
 
   /**

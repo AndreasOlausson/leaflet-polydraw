@@ -196,6 +196,7 @@ export interface ModeConfig {
   deleteAll: boolean;
   p2p: boolean;
   p2pSubtract: boolean;
+  clonePolygons: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
@@ -279,6 +280,7 @@ export type HistoryAction =
   | 'eraseAll'
   | 'markerDrag'
   | 'polygonDrag'
+  | 'polygonClone'
   | 'addVertex'
   | 'removeVertex'
   | 'removeHole'
@@ -303,6 +305,7 @@ export interface HistoryCaptureConfig {
   eraseAll: boolean;
   markerDrag: boolean;
   polygonDrag: boolean;
+  polygonClone: boolean;
   addVertex: boolean;
   removeVertex: boolean;
   removeHole: boolean;

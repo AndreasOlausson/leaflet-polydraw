@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.0] - Unreleased
+## [1.3.0] - 2026-01-15
 
 ### Added
 
+- **Clone Drag Mode**: New interaction mode for duplicating polygons via drag-and-drop.
+  - Includes dashed ghost outline for visual feedback during drag operations.
+  - Preserves full polygon geometry, including holes (inner rings), and retains optimization metadata.
+  - New configuration flags: `config.modes.clonePolygons` and `config.history.capture.polygonClone`.
 - Playwright coverage for dragging polygons with holes to confirm merge and non-merge behavior.
 - Bezier config options for resampling density, max node count, visual optimization level, and ghost markers.
 - Per-action history capture controls via `config.history.capture` (including `polygonActions` for menu tools).

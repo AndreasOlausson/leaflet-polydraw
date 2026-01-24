@@ -160,6 +160,7 @@ export class PolygonMutationManager {
       'addVertex',
       'markerDrag',
       'polygonDrag',
+      'polygonClone',
       'toggleOptimization',
     ]);
     const shouldSimplify = !data.operation || !skipSimplifyOperations.has(data.operation);

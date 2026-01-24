@@ -582,6 +582,7 @@ class Polydraw extends L.Control {
       this._handleActivateToggle,
       this._handleDrawClick,
       this._handleSubtractClick,
+      this._handleCloneClick,
       this._handleEraseClick,
       this._handlePointToPointClick,
       this._handlePointToPointSubtractClick,
@@ -598,8 +599,10 @@ class Polydraw extends L.Control {
     const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
+      const cloneButton = container.querySelector('.icon-clone') as HTMLElement;
       if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
+      if (cloneButton) cloneButton.classList.toggle('active', mode === DrawMode.Clone);
     };
     this.drawModeListeners.push(uiUpdateListener);
   }
@@ -906,6 +909,19 @@ class Polydraw extends L.Control {
     this.polygonInformation.saveCurrentState();
   };
 
+  private _handleCloneClick = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (this.modeManager.getCurrentMode() === DrawMode.Clone) {
+      this.setDrawMode(DrawMode.Off);
+      return;
+    }
+    this.setDrawMode(DrawMode.Clone);
+    this.polygonInformation.saveCurrentState();
+  };
+
   private _handleEraseClick = (e?: Event) => {
     // Close any open popup before erasing polygons
     this.map.closePopup();
@@ -967,12 +983,21 @@ class Polydraw extends L.Control {
     this.redo();
   };
 
+  private shouldEnableDrawEvents(mode: DrawMode): boolean {
+    return (
+      mode === DrawMode.Add ||
+      mode === DrawMode.Subtract ||
+      mode === DrawMode.PointToPoint ||
+      mode === DrawMode.PointToPointSubtract
+    );
+  }
+
   private _updateMapInteractions() {
     const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
     const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
     const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
 
-    this.events(this.drawMode !== DrawMode.Off);
+    this.events(this.shouldEnableDrawEvents(this.drawMode));
     this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
   }
 
