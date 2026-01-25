@@ -50,6 +50,12 @@ export async function getPolygonCount(page: Page): Promise<number> {
   });
 }
 
+async function getP2PMarkerCount(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    return document.querySelectorAll('.leaflet-polydraw-p2p-marker').length;
+  });
+}
+
 export async function waitForPolygonCount(page: Page, expected: number) {
   await page.waitForFunction((exp) => {
     const control = (window as any).polydrawControl;
@@ -73,9 +79,40 @@ export async function drawPointToPointPolygon(
   const box = await getMapBox(page);
   await page.locator('#map').scrollIntoViewIfNeeded();
   const coords = toViewportPoints(box, points);
-  const useTouch = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+  const startCount = await getPolygonCount(page);
+  const browserName = page.context().browser()?.browserType().name();
+  const coarsePointer = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+  const usePointerDispatch = browserName === 'firefox' && coarsePointer;
+  const useTouch = !usePointerDispatch && coarsePointer;
+
+  const dispatchPointerTap = async (point: { x: number; y: number }) => {
+    await page.dispatchEvent('#map', 'pointerdown', {
+      clientX: point.x,
+      clientY: point.y,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    });
+    await page.dispatchEvent('#map', 'pointerup', {
+      clientX: point.x,
+      clientY: point.y,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      bubbles: true,
+      cancelable: true,
+    });
+  };
   for (const point of coords.slice(0, -1)) {
-    if (useTouch) {
+    if (usePointerDispatch) {
+      await dispatchPointerTap(point);
+    } else if (useTouch) {
       await page.touchscreen.tap(point.x, point.y);
     } else {
       await page.mouse.click(point.x, point.y);
@@ -83,7 +120,11 @@ export async function drawPointToPointPolygon(
     await page.waitForTimeout(50);
   }
   const last = coords[coords.length - 1];
-  if (useTouch) {
+  if (usePointerDispatch) {
+    await dispatchPointerTap(last);
+    await page.waitForTimeout(80);
+    await dispatchPointerTap(last);
+  } else if (useTouch) {
     await page.touchscreen.tap(last.x, last.y);
     await page.waitForTimeout(80);
     await page.touchscreen.tap(last.x, last.y);
@@ -92,13 +133,56 @@ export async function drawPointToPointPolygon(
   }
   await page.waitForTimeout(300);
 
-  // Fallback: if touch events didn't register a polygon, send a final mouse double click
+  const afterCount = await getPolygonCount(page);
+  if (afterCount !== startCount) {
+    return;
+  }
+
+  const markerCount = await getP2PMarkerCount(page);
+  if (markerCount > 0) {
+    const firstMarker = page.locator('.leaflet-polydraw-p2p-first-marker-ready').first();
+    if (await firstMarker.count()) {
+      await firstMarker.click({ force: true });
+    } else {
+      const markerPoint = coords[0];
+      await page.mouse.click(markerPoint.x, markerPoint.y);
+    }
+    await page.waitForTimeout(200);
+    const closedCount = await getPolygonCount(page);
+    if (closedCount !== startCount) {
+      return;
+    }
+  }
+
+  await page.dispatchEvent('#map', 'dblclick', {
+    clientX: last.x,
+    clientY: last.y,
+    bubbles: true,
+    cancelable: true,
+  });
+  await page.waitForTimeout(200);
+  const dblClickCount = await getPolygonCount(page);
+  if (dblClickCount !== startCount) {
+    return;
+  }
+
   if (useTouch) {
-    const count = await getPolygonCount(page);
-    if (count === 0) {
+    if (markerCount > 0) {
       await page.mouse.dblclick(last.x, last.y);
       await page.waitForTimeout(300);
+      const closedCount = await getPolygonCount(page);
+      if (closedCount !== startCount) {
+        return;
+      }
     }
+
+    // Fallback: if touch taps didn't create markers, replay with mouse clicks.
+    for (const point of coords.slice(0, -1)) {
+      await page.mouse.click(point.x, point.y);
+      await page.waitForTimeout(50);
+    }
+    await page.mouse.dblclick(last.x, last.y);
+    await page.waitForTimeout(300);
   }
 }
 
