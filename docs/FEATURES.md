@@ -77,6 +77,7 @@ Duplicate existing polygons by dragging out a copy while the original stays in p
 Clone Drag Mode operates independently of the standard polygon dragging setting (`dragPolygons`). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
 
 Simply click the clone button in the toolbar and drag any polygon on the map. A dashed ghost outline indicates the original position during the drag operation. Upon release, a new polygon is created at the drop location, and the original returns to its starting coordinates.
+Press Esc to abort the clone. If history capture is enabled (`config.history.capture.polygonClone`), the clone can be reverted using Undo.
 
 **Key Features**:
 

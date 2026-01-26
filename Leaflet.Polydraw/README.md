@@ -19,14 +19,14 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 
 ---
 
-## Key Features 
+## Key Features
 
 [![Feature Overview](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/feature-overview.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/feature-overview.png)
 
 - **Freehand Drawing**: Draw polygons naturally by sketching directly on the map — click and drag to create shapes in real time.
 - **Smart Polygon Merging**: Automatically detects and merges overlapping polygons (including smooth C-to-O shape completion).
 - **Drag & Drop Editing**: Intuitive polygon repositioning with intelligent spatial interactions.
-- **Clone Drag Mode**: Duplicate polygons instantly by dragging a copy while the original remains in its starting position (preserves holes and optimization metadata).
+- **Clone Drag Mode**: Duplicate polygons instantly by dragging a copy while the original remains in its starting position (preserves holes and metadata).
 - **Advanced Vertex Editing**: Drag vertices, add or remove points, and reshape polygons seamlessly.
 - **Scaling & Rotation Handles**: Transform polygons visually using interactive bounding boxes — scale, rotate, or stretch with precision.
 - **Point-to-Point Mode**: Optional precise vertex-by-vertex drawing for detailed or structured geometry.

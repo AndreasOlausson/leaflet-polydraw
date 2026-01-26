@@ -1,30 +1,46 @@
 # Release Plan
 
-## [1.3.x] - Bezier Tool Production Readiness
+## [1.4.x] - Additional Polygon Metadata
 
 ### Goals
-- Make the Bezier tool reliable and predictable for production use.
-- Treat a Bezier apply as a single, undoable operation.
-- Preserve user expectations (holes, metadata, and visual optimization behavior).
+- Add per-polygon metadata that is not tied to visual optimization (custom text, colors, tags).
+- Preserve backward compatibility with existing polygons and config defaults.
 
 ### Planned Changes
-- Replace on Bezier apply: remove the original polygon and re-add it using its points as a predefined polygon with visual optimization enabled.
-- History: ensure the replace is recorded as one history entry (no intermediate states).
-- Metadata: keep or reattach relevant polygon metadata (e.g., optimization flags, IDs).
-- Algorithm trimming: reduce spikes/loops, keep rings closed, and clamp smoothing to avoid over-simplification.
-- Holes: apply Bezier consistently to outer ring and holes, preserving ring orientation.
-- UX: disable Bezier for insufficient points; keep the menu behavior consistent.
+- Add a dedicated metadata bag per polygon, separate from visual optimization metadata.
+- Allow metadata to flow through core actions (clone, undo/redo, merge, split).
+- Provide lightweight hooks to surface metadata in the info popup and styling.
 
 ### Tests
-- Unit: Bezier keeps ring closed, preserves hole count, and respects min vertices.
-- Integration: Bezier apply -> undo restores original polygon.
-- Visual: sample polygons (dense/sparse) produce stable results.
+- Unit: metadata survives clone and undo/redo.
+- Integration: metadata persists through merge and split workflows.
+- UI: metadata shows in the info popup when configured.
 
 ### Out of Scope
-- New UI controls beyond existing Bezier menu entry.
-- Large refactor of history storage (beyond the single action grouping).
+- Full theming system or complex styling rules.
 
 ### Open Questions
-- Should Bezier preserve polygon IDs or generate new ones?
-- Should visual optimization be forced on, or inherit per-polygon setting?
-- Should Bezier be skipped for very small polygons or only warn?
+- Should metadata be stored on polygon objects or in an external store keyed by ID?
+- How should metadata resolve on merge or split (merge rules vs preserve lists)?
+
+## [1.4.x] - Layered Polygon Sets
+
+### Goals
+- Introduce layered polygon sets so overlaps across layers do not merge or affect each other.
+- Preserve backward compatibility with existing polygons and config defaults.
+
+### Planned Changes
+- Implement layer containers with a single active layer for edits and creation.
+- Ensure merges and topology operations only affect polygons within the same layer.
+- Add simple layer controls for visibility and active selection.
+
+### Tests
+- Unit: merge behavior follows layer boundaries.
+- Integration: overlapping polygons in different layers do not merge or subtract.
+- UI: switching the active layer routes new polygons to that layer.
+
+### Out of Scope
+- Complex layer import/export workflows beyond existing formats.
+
+### Open Questions
+- How should layer ordering and selection priority behave when layers overlap?
