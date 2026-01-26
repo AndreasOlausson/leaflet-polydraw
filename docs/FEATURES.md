@@ -64,6 +64,7 @@ Use point-to-point with subtraction to cut precise holes or remove segments:
 This mode mirrors point-to-point drawing but applies the shape as a subtraction instead of an addition.
 
 ## Clone Drag Mode
+
 [![Clone Drag Mode](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/clone.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/clone.mp4)
 
 Duplicate existing polygons by dragging out a copy while the original stays in place:
