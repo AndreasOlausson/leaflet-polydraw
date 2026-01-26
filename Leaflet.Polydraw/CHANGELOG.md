@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.1] - 2026-01-26
+
+### Fixed
+
+- Corrected the `build:types` export line so published types include `leafletAdapter` and `defaultConfig`.
+
 ## [1.3.0] - 2026-01-26
 
 ### Added
