@@ -14,6 +14,8 @@ Contributions, ideas, and discussions are always welcome.
 - **Polygon Splitting Tool**: Enable splitting polygons by drawing a cross-cutting line.
 - **Measurement Tool**: Add an optional measuring tool for temporary distance and area visualization.
 - **Multi-Select Editing**: Enable batch selection and transformation of multiple polygons.
+- **Additional Polygon Metadata**: Store extra, non-optimization props per polygon (custom info-popup text, custom color, tags, etc.).
+- **Layered Polygon Sets**: Support multiple independent layers so overlapping polygons in different layers do not merge or affect each other.
 
 ## Experimental & Long-Term Ideas
 
