@@ -42,6 +42,16 @@ export default [
     rules: baseRules,
   },
   {
+    files: ['scripts/**/*.mjs', 'scripts/**/*.js'],
+    languageOptions: {
+      parserOptions: baseParserOptions,
+      globals: {
+        ...globals.node,
+        ...globals.es2021,
+      },
+    },
+  },
+  {
     files: ['test/**/*.ts', 'test/**/*.tsx', '**/*.test.ts', '**/*.spec.ts'],
     languageOptions: {
       parser: typescriptParser,
