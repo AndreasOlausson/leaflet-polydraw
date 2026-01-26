@@ -51,6 +51,7 @@
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, defaultConfig, registerWithLeaflet } from \"./polydraw\";' > dist/types/index.d.ts",
     "dev": "vite build --watch",
     "preview": "vite preview",
+    "sync:readme": "node scripts/sync-readme.mjs",
     "test": "vitest --config test/unit/setup/vitest.config.ts",
     "test:coverage": "vitest --config test/unit/setup/vitest.config.ts --coverage",
     "test:ui": "vitest --config test/unit/setup/vitest.config.ts --ui",
@@ -61,6 +62,7 @@
     "lint:test": "eslint ./test --ext .ts",
     "lint:demo": "eslint ./demo --ext .ts",
     "lint:fix": "eslint ./src --ext .ts --fix",
+    "prepack": "npm run sync:readme",
     "prepare": "npm run build"
   },
   "devDependencies": {
