@@ -63,10 +63,6 @@ Full documentation and examples are available on GitHub:
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
 - [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/Leaflet.Polydraw/CHANGELOG.md)
 
-## Development
-
-- The legacy `Polydraw_Docker` helper and root shell scripts have been removed.
-- Use `npm run test:playwright` to build the library + demo before running E2E tests.
 
 ---
 
