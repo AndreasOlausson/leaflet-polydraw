@@ -16,6 +16,7 @@ export default defineConfig({
     outDir: 'dist',
   },
   resolve: {
+    dedupe: ['leaflet'],
     alias: {
       'leaflet-polydraw': path.resolve(__dirname, '..'),
     },

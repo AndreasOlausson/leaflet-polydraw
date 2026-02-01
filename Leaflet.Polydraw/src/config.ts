@@ -252,6 +252,13 @@ export const defaultConfig: PolydrawConfig = {
       },
     },
   },
+  tooltips: {
+    enabled: true,
+    delayMs: 500,
+    direction: 'left',
+    backgroundColor: '#645d5d',
+    color: '#ffffff',
+  },
   history: {
     capture: {
       freehand: true,

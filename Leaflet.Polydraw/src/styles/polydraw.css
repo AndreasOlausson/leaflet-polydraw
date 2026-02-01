@@ -506,6 +506,77 @@ body {
   user-select: none;
 }
 
+/* Custom tooltips for Polydraw toolbar buttons */
+.leaflet-control.leaflet-bar a[data-tooltip] {
+  position: relative;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::after,
+.leaflet-control.leaflet-bar a[data-tooltip]::before {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+  transition-delay: 0s;
+  z-index: 2000;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::after {
+  content: attr(data-tooltip);
+  background: var(--polydraw-tooltip-bg, #645d5d);
+  color: var(--polydraw-tooltip-color, #ffffff);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::before {
+  content: '';
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='left'] a[data-tooltip]::after,
+.leaflet-control.leaflet-bar:not([data-tooltip-direction]) a[data-tooltip]::after {
+  right: calc(100% + 10px);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='left'] a[data-tooltip]::before,
+.leaflet-control.leaflet-bar:not([data-tooltip-direction]) a[data-tooltip]::before {
+  right: calc(100% + 4px);
+  border-left: 6px solid var(--polydraw-tooltip-bg, #645d5d);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='right'] a[data-tooltip]::after {
+  left: calc(100% + 10px);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='right'] a[data-tooltip]::before {
+  left: calc(100% + 4px);
+  border-right: 6px solid var(--polydraw-tooltip-bg, #645d5d);
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]:hover::after,
+.leaflet-control.leaflet-bar a[data-tooltip]:hover::before,
+.leaflet-control.leaflet-bar a[data-tooltip]:focus-visible::after,
+.leaflet-control.leaflet-bar a[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: var(--polydraw-tooltip-delay, 500ms);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-enabled='false'] a[data-tooltip]::after,
+.leaflet-control.leaflet-bar[data-tooltip-enabled='false'] a[data-tooltip]::before {
+  display: none;
+}
+
 /* Firefox-specific fixes for touch event handling */
 @-moz-document url-prefix() {
   .leaflet-control.leaflet-bar {

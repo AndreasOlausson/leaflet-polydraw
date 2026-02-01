@@ -32,6 +32,11 @@ const setButtonIcon = (button: HTMLAnchorElement, svgMarkup: string): void => {
   applySvgIcon(button, svgMarkup);
 };
 
+const setButtonTooltip = (button: HTMLAnchorElement, text: string): void => {
+  button.setAttribute('data-tooltip', text);
+  button.setAttribute('aria-label', text);
+};
+
 /**
  * Creates the button elements for the Polydraw control.
  * @param container The main container element.
@@ -65,7 +70,7 @@ export function createButtons(
     container,
   ) as HTMLAnchorElement;
   activate.href = '#';
-  activate.title = 'Activate';
+  setButtonTooltip(activate, 'Activate');
   activate.setAttribute('data-polydraw', 'activate-button');
   setButtonIcon(activate, icons.activate);
   activate.dataset.activeIcon = icons.activate;
@@ -78,7 +83,7 @@ export function createButtons(
   if (config.modes.draw) {
     const draw = leafletAdapter.domUtil.create('a', 'icon-draw', subContainer) as HTMLAnchorElement;
     draw.href = '#';
-    draw.title = 'Draw';
+    setButtonTooltip(draw, 'Draw');
     draw.setAttribute('data-polydraw', 'draw-button');
     setButtonIcon(draw, icons.draw);
     L.DomEvent.on(draw, 'mousedown', L.DomEvent.stopPropagation);
@@ -95,7 +100,7 @@ export function createButtons(
       subContainer,
     ) as HTMLAnchorElement;
     subtract.href = '#';
-    subtract.title = 'Subtract';
+    setButtonTooltip(subtract, 'Subtract');
     subtract.setAttribute('data-polydraw', 'subtract-button');
     setButtonIcon(subtract, icons.subtract);
     L.DomEvent.on(subtract, 'mousedown', L.DomEvent.stopPropagation);
@@ -105,27 +110,10 @@ export function createButtons(
     L.DomEvent.on(subtract, 'click', onSubtractClick);
   }
 
-  if (config.modes.clonePolygons) {
-    const clone = leafletAdapter.domUtil.create(
-      'a',
-      'icon-clone',
-      subContainer,
-    ) as HTMLAnchorElement;
-    clone.href = '#';
-    clone.title = 'Clone';
-    clone.setAttribute('data-polydraw', 'clone-button');
-    setButtonIcon(clone, icons.clone);
-    L.DomEvent.on(clone, 'mousedown', L.DomEvent.stopPropagation);
-    L.DomEvent.on(clone, 'touchstart', L.DomEvent.stopPropagation);
-    L.DomEvent.on(clone, 'click', L.DomEvent.stopPropagation);
-    L.DomEvent.on(clone, 'click', L.DomEvent.stop);
-    L.DomEvent.on(clone, 'click', onCloneClick);
-  }
-
   if (config.modes.p2p) {
     const p2p = leafletAdapter.domUtil.create('a', 'icon-p2p', subContainer) as HTMLAnchorElement;
     p2p.href = '#';
-    p2p.title = 'Point to Point';
+    setButtonTooltip(p2p, 'Point to Point');
     p2p.setAttribute('data-polydraw', 'p2p-button');
     setButtonIcon(p2p, icons.p2p);
     L.DomEvent.on(p2p, 'mousedown', L.DomEvent.stopPropagation);
@@ -142,7 +130,7 @@ export function createButtons(
       subContainer,
     ) as HTMLAnchorElement;
     p2pSubtract.href = '#';
-    p2pSubtract.title = 'Point to Point Subtract';
+    setButtonTooltip(p2pSubtract, 'Point to Point Subtract');
     p2pSubtract.setAttribute('data-polydraw', 'p2p-subtract-button');
     setButtonIcon(p2pSubtract, icons.p2pSubtract);
     L.DomEvent.on(p2pSubtract, 'mousedown', L.DomEvent.stopPropagation);
@@ -152,6 +140,23 @@ export function createButtons(
     L.DomEvent.on(p2pSubtract, 'click', onPointToPointSubtractClick);
   }
 
+  if (config.modes.clonePolygons) {
+    const clone = leafletAdapter.domUtil.create(
+      'a',
+      'icon-clone',
+      subContainer,
+    ) as HTMLAnchorElement;
+    clone.href = '#';
+    setButtonTooltip(clone, 'Clone');
+    clone.setAttribute('data-polydraw', 'clone-button');
+    setButtonIcon(clone, icons.clone);
+    L.DomEvent.on(clone, 'mousedown', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'touchstart', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'click', L.DomEvent.stopPropagation);
+    L.DomEvent.on(clone, 'click', L.DomEvent.stop);
+    L.DomEvent.on(clone, 'click', onCloneClick);
+  }
+
   if (config.modes.deleteAll) {
     const erase = leafletAdapter.domUtil.create(
       'a',
@@ -159,7 +164,7 @@ export function createButtons(
       subContainer,
     ) as HTMLAnchorElement;
     erase.href = '#';
-    erase.title = 'Erase All';
+    setButtonTooltip(erase, 'Erase All');
     erase.setAttribute('data-polydraw', 'erase-button');
     setButtonIcon(erase, icons.erase);
     L.DomEvent.on(erase, 'mousedown', L.DomEvent.stopPropagation);
@@ -172,7 +177,7 @@ export function createButtons(
   // Undo button - always available
   const undo = leafletAdapter.domUtil.create('a', 'icon-undo', subContainer) as HTMLAnchorElement;
   undo.href = '#';
-  undo.title = 'Undo (Ctrl+Z / Cmd+Z)';
+  setButtonTooltip(undo, 'Undo (Ctrl+Z / Cmd+Z)');
   setButtonIcon(undo, icons.undo);
   L.DomEvent.on(undo, 'mousedown', L.DomEvent.stopPropagation);
   L.DomEvent.on(undo, 'touchstart', L.DomEvent.stopPropagation);
@@ -183,7 +188,7 @@ export function createButtons(
   // Redo button - always available
   const redo = leafletAdapter.domUtil.create('a', 'icon-redo', subContainer) as HTMLAnchorElement;
   redo.href = '#';
-  redo.title = 'Redo (Ctrl+Y / Cmd+Shift+Z)';
+  setButtonTooltip(redo, 'Redo (Ctrl+Y / Cmd+Shift+Z)');
   setButtonIcon(redo, icons.redo);
   L.DomEvent.on(redo, 'mousedown', L.DomEvent.stopPropagation);
   L.DomEvent.on(redo, 'touchstart', L.DomEvent.stopPropagation);

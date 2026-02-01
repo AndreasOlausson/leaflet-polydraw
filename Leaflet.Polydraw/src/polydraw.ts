@@ -565,6 +565,16 @@ class Polydraw extends L.Control {
     container.style.position = 'relative';
     container.style.zIndex = '1000';
 
+    const tooltipConfig = this.config.tooltips;
+    if (tooltipConfig) {
+      const delayMs = Math.max(0, tooltipConfig.delayMs);
+      container.setAttribute('data-tooltip-enabled', tooltipConfig.enabled ? 'true' : 'false');
+      container.setAttribute('data-tooltip-direction', tooltipConfig.direction);
+      container.style.setProperty('--polydraw-tooltip-bg', tooltipConfig.backgroundColor);
+      container.style.setProperty('--polydraw-tooltip-color', tooltipConfig.color);
+      container.style.setProperty('--polydraw-tooltip-delay', `${delayMs}ms`);
+    }
+
     this.subContainer = leafletAdapter.domUtil.create('div', 'sub-buttons', container);
     this.subContainer.setAttribute('data-polydraw', 'sub-buttons');
     this.subContainer.style.maxHeight = '0px';
@@ -595,13 +605,21 @@ class Polydraw extends L.Control {
     // Firefox Android fix: Ensure all buttons have proper touch handling
     this.ensureButtonTouchResponsiveness(container);
 
+    // Initialize indicator + clone button state on first render
+    this.updateActivateButtonIndicator();
+
     // Simple UI update listener
     const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
+      const p2pButton = container.querySelector('.icon-p2p') as HTMLElement;
+      const p2pSubtractButton = container.querySelector('.icon-p2p-subtract') as HTMLElement;
       const cloneButton = container.querySelector('.icon-clone') as HTMLElement;
       if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
+      if (p2pButton) p2pButton.classList.toggle('active', mode === DrawMode.PointToPoint);
+      if (p2pSubtractButton)
+        p2pSubtractButton.classList.toggle('active', mode === DrawMode.PointToPointSubtract);
       if (cloneButton) cloneButton.classList.toggle('active', mode === DrawMode.Clone);
     };
     this.drawModeListeners.push(uiUpdateListener);
@@ -868,12 +886,14 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '0px';
+        this.subContainer.style.overflow = 'hidden';
       }
     } else {
       leafletAdapter.domUtil.addClass(activateButton, 'active');
       if (this.subContainer) {
         const targetHeight = this.subContainer.scrollHeight;
         this.subContainer.style.maxHeight = `${targetHeight || 250}px`;
+        this.subContainer.style.overflow = 'visible';
       }
     }
     // Update the indicator state whenever the panel is toggled
@@ -914,6 +934,9 @@ class Polydraw extends L.Control {
       e.preventDefault();
       e.stopPropagation();
     }
+    if (this.arrayOfFeatureGroups.length === 0) {
+      return;
+    }
     if (this.modeManager.getCurrentMode() === DrawMode.Clone) {
       this.setDrawMode(DrawMode.Off);
       return;
@@ -923,8 +946,6 @@ class Polydraw extends L.Control {
   };
 
   private _handleEraseClick = (e?: Event) => {
-    // Close any open popup before erasing polygons
-    this.map.closePopup();
     // Prevent multiple rapid clicks
     if (e) {
       e.preventDefault();
@@ -934,6 +955,8 @@ class Polydraw extends L.Control {
     if (this.arrayOfFeatureGroups.length === 0) {
       return;
     }
+    // Close any open popup before erasing polygons
+    this.map.closePopup();
     // Save state before erasing all
     this.saveHistory('eraseAll');
     this.removeAllFeatureGroups();
@@ -1885,6 +1908,30 @@ class Polydraw extends L.Control {
 
     activateButton.style.backgroundColor = hasIndicator ? indicatorBackground : baseBackground;
     activateButton.style.color = baseColor;
+
+    const setButtonEnabled = (button: HTMLAnchorElement | null, enabled: boolean) => {
+      if (!button) return;
+      if (enabled) {
+        button.style.opacity = '1';
+        button.style.pointerEvents = 'auto';
+        button.setAttribute('aria-disabled', 'false');
+        button.tabIndex = 0;
+      } else {
+        button.style.opacity = '0.3';
+        button.style.pointerEvents = 'none';
+        button.setAttribute('aria-disabled', 'true');
+        button.tabIndex = -1;
+      }
+    };
+
+    const cloneButton = container.querySelector('.icon-clone') as HTMLAnchorElement | null;
+    setButtonEnabled(cloneButton, hasPolygons);
+    if (!hasPolygons && this.modeManager.getCurrentMode() === DrawMode.Clone) {
+      this.setDrawMode(DrawMode.Off);
+    }
+
+    const eraseButton = container.querySelector('.icon-erase') as HTMLAnchorElement | null;
+    setButtonEnabled(eraseButton, hasPolygons);
   }
 
   private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {

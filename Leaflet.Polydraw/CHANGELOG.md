@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- Demo build now dedupes Leaflet to avoid multiple instances breaking polygon status counts on hosted builds.
+- Toolbar button tooltips are now custom (configurable delay, direction, colors, and enable/disable) instead of native title positioning.
+- Clone mode button now disables itself when no polygons exist (matches undo/redo behavior).
+- P2P mode buttons now show the active highlight color when selected.
+- Erase-all button now disables when there are no polygons, and disabled actions no longer clear the active mode.
+
 ## [1.3.1] - 2026-01-26
 
 ### Fixed

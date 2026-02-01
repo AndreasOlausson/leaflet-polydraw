@@ -318,6 +318,14 @@ export interface HistoryConfig {
   capture: HistoryCaptureConfig;
 }
 
+export interface TooltipConfig {
+  enabled: boolean;
+  delayMs: number;
+  direction: 'left' | 'right';
+  backgroundColor: string;
+  color: string;
+}
+
 /**
  * Complete Polydraw configuration interface
  */
@@ -399,6 +407,7 @@ export interface PolydrawConfig {
       };
     };
   };
+  tooltips: TooltipConfig;
   history: HistoryConfig;
   maxHistorySize: number;
 }
