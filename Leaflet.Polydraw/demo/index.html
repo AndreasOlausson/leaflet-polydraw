@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
     <style>
+      /* Demo-only: lock page scroll to prevent iOS drag/viewport takeover. */
       html,
       body {
         height: 100%;
@@ -13,7 +14,6 @@
         padding: 0;
         overflow: hidden;
         overscroll-behavior: none;
-        touch-action: none;
       }
 
       #map {
@@ -23,8 +23,6 @@
       }
 
       @supports (height: 100dvh) {
-        html,
-        body,
         #map {
           height: 100dvh;
           width: 100dvw;
