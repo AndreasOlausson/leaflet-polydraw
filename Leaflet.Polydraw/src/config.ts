@@ -4,13 +4,15 @@ import { PolydrawConfig } from './types/polydraw-interfaces';
 export const defaultConfig: PolydrawConfig = {
   mergePolygons: true,
   kinks: false,
-  modes: {
+  tools: {
     draw: true,
     subtract: true,
-    deleteAll: true,
     p2p: true,
     p2pSubtract: true,
-    clonePolygons: true,
+    clone: true,
+    erase: true,
+  },
+  modes: {
     attachElbow: true,
     dragElbow: true,
     dragPolygons: true,

@@ -179,6 +179,18 @@ export interface SimplificationConfig {
 }
 
 /**
+ * Tool configuration interface (user-selectable modes)
+ */
+export interface ToolConfig {
+  draw: boolean;
+  subtract: boolean;
+  p2p: boolean;
+  p2pSubtract: boolean;
+  clone: boolean;
+  erase: boolean;
+}
+
+/**
  * Polyline style options interface
  */
 export interface PolylineStyleOptions {
@@ -191,12 +203,6 @@ export interface PolylineStyleOptions {
  * Mode configuration interface
  */
 export interface ModeConfig {
-  draw: boolean;
-  subtract: boolean;
-  deleteAll: boolean;
-  p2p: boolean;
-  p2pSubtract: boolean;
-  clonePolygons: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
@@ -332,6 +338,7 @@ export interface TooltipConfig {
 export interface PolydrawConfig {
   kinks: boolean;
   mergePolygons: boolean;
+  tools: ToolConfig;
   modes: ModeConfig;
   defaultMode: DrawMode;
   modifierSubtractMode: boolean;

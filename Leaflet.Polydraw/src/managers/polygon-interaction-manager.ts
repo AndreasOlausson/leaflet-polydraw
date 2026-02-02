@@ -882,7 +882,7 @@ export class PolygonInteractionManager {
    * Enable polygon dragging functionality
    */
   enablePolygonDragging(polygon: PolydrawPolygon, latlngs: Feature<Polygon | MultiPolygon>): void {
-    if (!this.config.modes.dragPolygons && !this.config.modes.clonePolygons) return;
+    if (!this.config.modes.dragPolygons && !this.config.tools.clone) return;
 
     polygon._polydrawOriginalLatLngs = latlngs;
     polygon._polydrawDragData = {

@@ -1943,6 +1943,31 @@ class Polydraw extends L.Control {
       return;
     }
 
+    const legacyToolKeys = config.modes as
+      | {
+          draw?: boolean;
+          subtract?: boolean;
+          deleteAll?: boolean;
+          p2p?: boolean;
+          p2pSubtract?: boolean;
+          clonePolygons?: boolean;
+        }
+      | undefined;
+
+    if (
+      legacyToolKeys &&
+      (legacyToolKeys.draw !== undefined ||
+        legacyToolKeys.subtract !== undefined ||
+        legacyToolKeys.deleteAll !== undefined ||
+        legacyToolKeys.p2p !== undefined ||
+        legacyToolKeys.p2pSubtract !== undefined ||
+        legacyToolKeys.clonePolygons !== undefined)
+    ) {
+      console.warn(
+        '[Leaflet.Polydraw] `config.modes.*` tool toggles are deprecated in v2. Use `config.tools.*` (draw/subtract/p2p/clone/erase) instead.',
+      );
+    }
+
     const legacyPolygon = config.polygonCreation?.simplification;
     const simplification = config.simplification as
       | {

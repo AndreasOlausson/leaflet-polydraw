@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - P2P mode buttons now show the active highlight color when selected.
 - Erase-all button now disables when there are no polygons, and disabled actions no longer clear the active mode.
 
+### Breaking
+
+- Tool toggles moved from `config.modes.*` to `config.tools.*` (draw/subtract/p2p/clone/erase).
+
 ## [1.3.1] - 2026-01-26
 
 ### Fixed

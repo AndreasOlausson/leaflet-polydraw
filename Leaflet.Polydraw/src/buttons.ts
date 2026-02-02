@@ -80,7 +80,7 @@ export function createButtons(
   L.DomEvent.on(activate, 'touchstart', L.DomEvent.stopPropagation);
   L.DomEvent.on(activate, 'click', L.DomEvent.stop).on(activate, 'click', onActivateToggle);
 
-  if (config.modes.draw) {
+  if (config.tools.draw) {
     const draw = leafletAdapter.domUtil.create('a', 'icon-draw', subContainer) as HTMLAnchorElement;
     draw.href = '#';
     setButtonTooltip(draw, 'Draw');
@@ -93,7 +93,7 @@ export function createButtons(
     L.DomEvent.on(draw, 'click', onDrawClick);
   }
 
-  if (config.modes.subtract) {
+  if (config.tools.subtract) {
     const subtract = leafletAdapter.domUtil.create(
       'a',
       'icon-subtract',
@@ -110,7 +110,7 @@ export function createButtons(
     L.DomEvent.on(subtract, 'click', onSubtractClick);
   }
 
-  if (config.modes.p2p) {
+  if (config.tools.p2p) {
     const p2p = leafletAdapter.domUtil.create('a', 'icon-p2p', subContainer) as HTMLAnchorElement;
     p2p.href = '#';
     setButtonTooltip(p2p, 'Point to Point');
@@ -123,7 +123,7 @@ export function createButtons(
     L.DomEvent.on(p2p, 'click', onPointToPointClick);
   }
 
-  if (config.modes.p2pSubtract) {
+  if (config.tools.p2pSubtract) {
     const p2pSubtract = leafletAdapter.domUtil.create(
       'a',
       'icon-p2p-subtract',
@@ -140,7 +140,7 @@ export function createButtons(
     L.DomEvent.on(p2pSubtract, 'click', onPointToPointSubtractClick);
   }
 
-  if (config.modes.clonePolygons) {
+  if (config.tools.clone) {
     const clone = leafletAdapter.domUtil.create(
       'a',
       'icon-clone',
@@ -157,7 +157,7 @@ export function createButtons(
     L.DomEvent.on(clone, 'click', onCloneClick);
   }
 
-  if (config.modes.deleteAll) {
+  if (config.tools.erase) {
     const erase = leafletAdapter.domUtil.create(
       'a',
       'icon-erase',

@@ -122,35 +122,31 @@ describe('deepMerge', () => {
   });
 
   describe('Real PolydrawConfig scenarios', () => {
-    it('should merge modes configuration correctly', () => {
+    it('should merge tools configuration correctly', () => {
       const target: any = {
-        modes: {
+        tools: {
           draw: true,
           subtract: true,
-          deleteAll: true,
           p2p: true,
-          attachElbow: true,
-          dragElbow: true,
-          dragPolygons: true,
-          edgeDeletion: true,
+          p2pSubtract: true,
+          clone: true,
+          erase: true,
         },
       };
       const source = {
-        modes: {
+        tools: {
           draw: false,
           subtract: false,
         },
       };
       const result = deepMerge(target, source as any);
-      expect(result.modes).toEqual({
+      expect(result.tools).toEqual({
         draw: false,
         subtract: false,
-        deleteAll: true,
         p2p: true,
-        attachElbow: true,
-        dragElbow: true,
-        dragPolygons: true,
-        edgeDeletion: true,
+        p2pSubtract: true,
+        clone: true,
+        erase: true,
       });
     });
 
@@ -214,12 +210,12 @@ describe('deepMerge', () => {
     it('should handle empty source objects', () => {
       const target: any = {
         mergePolygons: true,
-        modes: { draw: true },
+        tools: { draw: true },
       };
       const source: Partial<PolydrawConfig> = {};
       const result = deepMerge(target, source);
       expect(result.mergePolygons).toBe(true);
-      expect(result.modes?.draw).toBe(true);
+      expect(result.tools?.draw).toBe(true);
     });
 
     it('should handle null sources gracefully', () => {
@@ -258,11 +254,15 @@ describe('deepMerge', () => {
       const alteredConfig = {
         mergePolygons: false,
         kinks: true,
-        modes: {
+        tools: {
           draw: false,
           subtract: false,
-          deleteAll: false,
           p2p: true,
+          p2pSubtract: true,
+          clone: true,
+          erase: false,
+        },
+        modes: {
           attachElbow: false,
           dragElbow: false,
           dragPolygons: true,
@@ -292,9 +292,9 @@ describe('deepMerge', () => {
       expect(result.kinks).toBe(true);
 
       // Verify nested changes in modes
-      expect(result.modes.draw).toBe(false);
-      expect(result.modes.subtract).toBe(false);
-      expect(result.modes.p2p).toBe(true);
+      expect(result.tools.draw).toBe(false);
+      expect(result.tools.subtract).toBe(false);
+      expect(result.tools.p2p).toBe(true);
 
       // Verify deeply nested changes in dragPolygons
       expect(result.dragPolygons.opacity).toBe(0.5);
@@ -309,7 +309,7 @@ describe('deepMerge', () => {
 
     it('2. should merge with a partial config object and maintain full structure', () => {
       const partialConfig = {
-        modes: {
+        tools: {
           draw: false,
         },
         markers: {
@@ -324,15 +324,15 @@ describe('deepMerge', () => {
       const result = deepMerge(structuredClone(defaultConfig), partialConfig as any);
 
       // Verify partial changes were applied
-      expect(result.modes.draw).toBe(false);
+      expect(result.tools.draw).toBe(false);
       expect(result.markers.zIndexOffset).toBe(100);
       expect(result.markers.markerInfoIcon.showArea).toBe(false);
       expect(result.markers.markerInfoIcon.areaLabel).toBe('Custom Area Label');
 
       // Verify other mode properties remain from default
-      expect(result.modes.subtract).toBe(true);
-      expect(result.modes.deleteAll).toBe(true);
-      expect(result.modes.p2p).toBe(true);
+      expect(result.tools.subtract).toBe(true);
+      expect(result.tools.erase).toBe(true);
+      expect(result.tools.p2p).toBe(true);
 
       // Verify other marker properties remain from default
       expect(result.markers.deleteMarker).toBe(true);
@@ -345,9 +345,9 @@ describe('deepMerge', () => {
       const configWithExtraProps = {
         mergePolygons: false,
         extraProperty: 'should be included',
-        modes: {
+        tools: {
           draw: false,
-          extraModeProperty: 'should be included',
+          extraToolProperty: 'should be included',
         },
         extraNestedObject: {
           value: 'should be included',
@@ -358,16 +358,16 @@ describe('deepMerge', () => {
 
       // Verify valid properties were applied
       expect(result.mergePolygons).toBe(false);
-      expect(result.modes.draw).toBe(false);
+      expect(result.tools.draw).toBe(false);
 
       // Verify extra properties ARE in the result (deepMerge copies all properties)
       expect((result as any).extraProperty).toBe('should be included');
       expect((result as any).extraNestedObject.value).toBe('should be included');
-      expect((result.modes as any).extraModeProperty).toBe('should be included');
+      expect((result.tools as any).extraToolProperty).toBe('should be included');
 
       // Verify default structure is still intact
       expect(result.kinks).toBe(false);
-      expect(result.modes.subtract).toBe(true);
+      expect(result.tools.subtract).toBe(true);
       expect(result.markers.deleteMarker).toBe(true);
     });
 
@@ -408,12 +408,12 @@ describe('deepMerge', () => {
 
     it('should merge multiple partial configs in order', () => {
       const firstPartial = {
-        modes: { draw: false },
+        tools: { draw: false },
         markers: { zIndexOffset: 100 },
       };
 
       const secondPartial = {
-        modes: { subtract: false },
+        tools: { subtract: false },
         markers: { zIndexOffset: 200 },
       };
 
@@ -424,12 +424,12 @@ describe('deepMerge', () => {
       );
 
       // Last source wins
-      expect(result.modes.draw).toBe(false); // From firstPartial
-      expect(result.modes.subtract).toBe(false); // From secondPartial
+      expect(result.tools.draw).toBe(false); // From firstPartial
+      expect(result.tools.subtract).toBe(false); // From secondPartial
       expect(result.markers.zIndexOffset).toBe(200); // Last value wins
 
       // Other values remain from default
-      expect(result.modes.deleteAll).toBe(true);
+      expect(result.tools.erase).toBe(true);
       expect(result.markers.deleteMarker).toBe(true);
     });
   });
