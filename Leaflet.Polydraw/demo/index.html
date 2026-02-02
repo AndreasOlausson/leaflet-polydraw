@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + TS</title>
     <style>
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+        touch-action: none;
+      }
+
+      #map {
+        height: 100%;
+        width: 100%;
+        touch-action: none;
+      }
+
+      @supports (height: 100dvh) {
+        html,
+        body,
+        #map {
+          height: 100dvh;
+          width: 100dvw;
+        }
+      }
+
       /* Stack for demo helper panels (status + sample polygons) */
       #polydraw-panel-stack {
         position: absolute;
