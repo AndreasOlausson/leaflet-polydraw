@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.2] - 2026-02-02
+
+### Fixed
+
+- Demo build now prevents iOS page scroll/viewport takeover while dragging the map (locked scroll + dynamic viewport units).
+
 ## [Unreleased]
 
 ### Fixed
