@@ -7,12 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.3.2] - 2026-02-02
-
-### Fixed
-
-- Demo build now prevents iOS page scroll/viewport takeover while dragging the map (locked scroll + dynamic viewport units).
-
 ## [Unreleased]
 
 ### Fixed
@@ -26,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Breaking
 
 - Tool toggles moved from `config.modes.*` to `config.tools.*` (draw/subtract/p2p/clone/erase).
+
+## [1.3.2] - 2026-02-02
+
+### Fixed
+
+- Demo build now prevents iOS page scroll/viewport takeover while dragging the map (locked scroll + dynamic viewport units).
 
 ## [1.3.1] - 2026-01-26
 
