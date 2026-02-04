@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] - 2026-02-03
+
+### Fixed
+
+- P2P subtract now preserves holes when subtracting inside an existing polygon (no disappearing hole).
+- Touch P2P close is more forgiving: larger touch markers and a short-lived close tolerance for double-tap near the last point.
+
 ## [1.3.2] - 2026-02-02
 
 ### Fixed

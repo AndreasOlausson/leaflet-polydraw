@@ -206,15 +206,23 @@ export class PolygonDrawManager {
 
     // Add a visual marker for the new point
     try {
+      const isTouch = this.isTouchDevice();
       const isFirstMarker = this.p2pMarkers.length === 0;
       const markerClassName = isFirstMarker
         ? 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker'
         : 'leaflet-polydraw-p2p-marker';
+      const iconSize: [number, number] = isFirstMarker
+        ? isTouch
+          ? [24, 24]
+          : [20, 20]
+        : isTouch
+          ? [18, 18]
+          : [16, 16];
 
       const pointMarker = new L.Marker(clickLatLng, {
         icon: leafletAdapter.createDivIcon({
           className: markerClassName,
-          iconSize: isFirstMarker ? [20, 20] : [16, 16],
+          iconSize,
         }),
         draggable: this.config.modes.dragElbow,
       }).addTo(this.map);
@@ -452,7 +460,7 @@ export class PolygonDrawManager {
     const pixelDist = clickPt.distanceTo(firstPt);
 
     const basePxTolerance = 12;
-    const tolerancePx = this.isTouchDevice() ? basePxTolerance * 2 : basePxTolerance;
+    const tolerancePx = this.isTouchDevice() ? basePxTolerance * 3 : basePxTolerance;
 
     const isClicking = pixelDist <= tolerancePx;
 

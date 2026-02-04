@@ -517,11 +517,12 @@ export class PolygonMutationManager {
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
 
       const latLngs = simplify ? this.turfHelper.getSimplified(latlngs, dynamicTolerance) : latlngs;
+      const normalizedLatLngs = this.normalizeSinglePolygonFeature(latLngs);
 
       let polygon: L.Polygon & Record<string, unknown>;
       let effectiveOriginal = visualOptimizationLevel;
       try {
-        polygon = this.getPolygon(latLngs);
+        polygon = this.getPolygon(normalizedLatLngs);
         if (!polygon) {
           return { success: false, error: 'Failed to create polygon' };
         }
@@ -618,10 +619,14 @@ export class PolygonMutationManager {
         // The polygon is still added to arrayOfFeatureGroups for functionality
       }
 
-      this.emit('polygonAdded', { polygon: latLngs, featureGroup });
+      this.emit('polygonAdded', { polygon: normalizedLatLngs, featureGroup });
 
       // Emit completion event to signal that polygon operation is complete
-      this.emit('polygonOperationComplete', { operation: 'add', polygon: latLngs, featureGroup });
+      this.emit('polygonOperationComplete', {
+        operation: 'add',
+        polygon: normalizedLatLngs,
+        featureGroup,
+      });
 
       return {
         success: true,
@@ -981,6 +986,21 @@ export class PolygonMutationManager {
     }
 
     return polygon;
+  }
+
+  private normalizeSinglePolygonFeature(
+    feature: Feature<Polygon | MultiPolygon>,
+  ): Feature<Polygon | MultiPolygon> {
+    if (feature.geometry.type === 'MultiPolygon' && feature.geometry.coordinates.length === 1) {
+      const [coordinates] = feature.geometry.coordinates;
+      try {
+        return this.turfHelper.createPolygon(coordinates);
+      } catch {
+        return feature;
+      }
+    }
+
+    return feature;
   }
 
   /**
