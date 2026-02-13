@@ -117,18 +117,27 @@ export class CoordinateUtils {
     if (Array.isArray(coordinate) && coordinate.length >= 2) {
       const [first, second] = coordinate;
 
-      // Smart detection based on value ranges
+      // Smart detection based on value ranges (use absolute values to handle negative coordinates)
       if (typeof first === 'number' && typeof second === 'number') {
-        // Your examples: 172,1 vs 1,172
-        if (first > 90 || second > 90) {
-          // One value is clearly longitude (>90), use GeoJSON order
-          return leafletAdapter.createLatLng(second, first); // [lng, lat]
+        const absFirst = Math.abs(first);
+        const absSecond = Math.abs(second);
+
+        // If one value has absolute value > 90, it must be longitude
+        // (latitude is always between -90 and 90)
+        if (absFirst > 90 && absSecond <= 90) {
+          // First value is longitude, second is latitude -> GeoJSON [lng, lat] order
+          return leafletAdapter.createLatLng(second, first);
         }
-        if (first > 180 || second > 180) {
-          // One value is clearly longitude (>180), use GeoJSON order
-          return leafletAdapter.createLatLng(second, first); // [lng, lat]
+        if (absSecond > 90 && absFirst <= 90) {
+          // Second value is longitude, first is latitude -> Leaflet [lat, lng] order
+          return leafletAdapter.createLatLng(first, second);
         }
-        // Default to lat,lng for ambiguous cases
+        if (absFirst > 90 || absSecond > 90) {
+          // Both values have abs > 90 (shouldn't happen with valid coords)
+          // but fall back to GeoJSON [lng, lat] order as before
+          return leafletAdapter.createLatLng(second, first);
+        }
+        // Default to lat,lng for ambiguous cases (both values in -90..90 range)
         return leafletAdapter.createLatLng(first, second); // [lat, lng]
       }
     }

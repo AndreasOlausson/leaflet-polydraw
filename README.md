@@ -17,7 +17,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
----
+---4
 
 ## Key Features
 

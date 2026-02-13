@@ -638,7 +638,7 @@ const polyDrawControl = L.control.polydraw({
 
 If the external configuration file fails to load, the plugin will fall back to using the default configuration plus any inline configuration provided.
 
-**Simplification migration**: Polydraw logs a console warning when it detects the legacy structure. Prefer the unified bloc
+**Simplification migration**: Polydraw logs a console warning when it detects the legacy structure. Prefer the unified block:
 
 ```ts
   mode: 'dynamic',
@@ -656,6 +656,6 @@ simplification: {
 }
 ```
 
-#### \*4 (visual optimization
+#### \*4 (visual optimization)
 
 `markers.visualOptimization` is preserved for backward compatibility only. For predefined polygons, prefer the `visualOptimizationLevel` option (0–10) when calling `addPredefinedPolygon`/`addPredefinedGeoJSONs`. Higher levels apply a larger simplification tolerance (between `toleranceMin` and `toleranceMax`) and hide more elbows, while level 0 keeps every handle visible. The polygon geometry itself is never altered.

@@ -7,6 +7,7 @@ import { DrawMode, MarkerPosition } from '../enums';
 import { Compass, PolyDrawUtil, Perimeter, Area } from '../utils';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import { LeafletVersionDetector } from '../compatibility/version-detector';
+import { EventAdapter } from '../compatibility/event-adapter';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
@@ -77,6 +78,9 @@ export class PolygonInteractionManager {
   private isModifierKeyHeld: boolean = false;
   private currentCloneGhost: L.Polygon | null = null;
   private dragCancelHandlersAttached: boolean = false;
+  private _boundDragTouchMove: ((e: TouchEvent) => void) | null = null;
+  private _boundDragTouchEnd: ((e: TouchEvent) => void) | null = null;
+  private polygonTouchStartListeners = new WeakMap<L.Polygon, (e: TouchEvent) => void>();
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
@@ -1041,6 +1045,93 @@ export class PolygonInteractionManager {
       this.currentDragPolygon = polygon;
     }) as L.LeafletEventHandlerFn);
 
+    // Touch support for Leaflet v1 (v1 does not synthesize mouse/pointer events from touch on SVG)
+    if (LeafletVersionDetector.isV1()) {
+      const onTouchStart = (e: TouchEvent) => {
+        if (this.transformModeActive) return;
+
+        if (!this.isPolygonDragModeActive()) {
+          return;
+        }
+
+        if (!this.modeManager.canPerformAction('polygonDrag')) {
+          return;
+        }
+
+        e.stopPropagation();
+        e.preventDefault();
+
+        const latlng = EventAdapter.extractCoordinates(
+          e as unknown as Record<string, unknown>,
+          this.map,
+        );
+        if (!latlng) return;
+
+        const isCloneMode = this.modeManager.getCurrentMode() === DrawMode.Clone;
+        this.currentDragIsClone = isCloneMode;
+        this.currentModifierDragMode = false;
+        this.isModifierKeyHeld = false;
+
+        if (this.saveHistoryState) {
+          this.saveHistoryState(isCloneMode ? 'polygonClone' : 'polygonDrag');
+        }
+
+        polygon._polydrawDragData!.isDragging = true;
+        polygon._polydrawDragData!.startPosition = latlng;
+        polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
+        polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+        if (isCloneMode) {
+          this.showCloneGhost(
+            polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+          );
+        } else {
+          this.clearCloneGhost();
+        }
+
+        if (this.map.dragging) {
+          this.map.dragging.disable();
+        }
+
+        this.setSubtractVisualMode(polygon, false);
+        this.setMarkerVisibility(polygon, false);
+
+        try {
+          const container = this.map.getContainer();
+          container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+        } catch {
+          // Handle DOM errors
+        }
+
+        this.map.on('mousemove', this.onPolygonMouseMove, this);
+        this.map.on('mouseup', this.onPolygonMouseUp, this);
+
+        // Attach native touch listeners on the map container for move/end
+        this.attachDragTouchListeners();
+        this.attachDragCancelHandlers();
+
+        this.currentDragPolygon = polygon;
+      };
+
+      this.polygonTouchStartListeners.set(polygon, onTouchStart);
+
+      // Defer attachment until the SVG element exists on the map
+      const attachTouch = () => {
+        const el = (polygon as unknown as { _path?: SVGElement })._path;
+        if (el) {
+          el.addEventListener('touchstart', onTouchStart as unknown as (e: Event) => void, {
+            passive: false,
+          });
+        }
+      };
+
+      // If already on the map, attach now; otherwise wait for 'add' event
+      if ((polygon as unknown as { _path?: SVGElement })._path) {
+        attachTouch();
+      } else {
+        polygon.once('add', attachTouch);
+      }
+    }
+
     polygon.on('mouseover', () => {
       if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
@@ -1190,10 +1281,12 @@ export class PolygonInteractionManager {
    * This method ensures proper cleanup of all markers and associated resources
    */
   cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
-    // Clean up all markers in the feature group
+    // Clean up all markers and polygon touch listeners in the feature group
     featureGroup.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
         this.cleanupMarker(layer as L.Marker);
+      } else if (layer instanceof L.Polygon) {
+        this.detachPolygonTouchStart(layer);
       }
     });
 
@@ -1852,6 +1945,7 @@ export class PolygonInteractionManager {
     }
 
     this.clearCloneGhost();
+    this.detachDragTouchListeners();
     this.detachDragCancelHandlers();
 
     const wasCloneDrag = this.currentDragIsClone;
@@ -1885,6 +1979,52 @@ export class PolygonInteractionManager {
     if (e.key !== 'Escape') return;
     this.cancelActivePolygonDrag();
   };
+
+  private onDragTouchMove = (e: TouchEvent) => {
+    e.preventDefault();
+    const latlng = EventAdapter.extractCoordinates(
+      e as unknown as Record<string, unknown>,
+      this.map,
+    );
+    if (!latlng) return;
+    this.onPolygonMouseMove({ latlng } as L.LeafletMouseEvent);
+  };
+
+  private onDragTouchEnd = (e: TouchEvent) => {
+    e.preventDefault();
+    this.onPolygonMouseUp({ latlng: null } as unknown as L.LeafletMouseEvent);
+  };
+
+  private attachDragTouchListeners(): void {
+    this.detachDragTouchListeners();
+    this._boundDragTouchMove = this.onDragTouchMove;
+    this._boundDragTouchEnd = this.onDragTouchEnd;
+    const container = this.map.getContainer();
+    container.addEventListener('touchmove', this._boundDragTouchMove, { passive: false });
+    container.addEventListener('touchend', this._boundDragTouchEnd, { passive: false });
+  }
+
+  private detachDragTouchListeners(): void {
+    const container = this.map.getContainer();
+    if (this._boundDragTouchMove) {
+      container.removeEventListener('touchmove', this._boundDragTouchMove);
+      this._boundDragTouchMove = null;
+    }
+    if (this._boundDragTouchEnd) {
+      container.removeEventListener('touchend', this._boundDragTouchEnd);
+      this._boundDragTouchEnd = null;
+    }
+  }
+
+  private detachPolygonTouchStart(polygon: L.Polygon): void {
+    const listener = this.polygonTouchStartListeners.get(polygon);
+    if (!listener) return;
+    const el = (polygon as unknown as { _path?: SVGElement })._path;
+    if (el) {
+      el.removeEventListener('touchstart', listener as unknown as (e: Event) => void);
+    }
+    this.polygonTouchStartListeners.delete(polygon);
+  }
 
   private attachDragCancelHandlers(): void {
     if (this.dragCancelHandlersAttached) return;
@@ -1993,6 +2133,7 @@ export class PolygonInteractionManager {
     }
 
     this.clearCloneGhost();
+    this.detachDragTouchListeners();
     this.detachDragCancelHandlers();
     this.currentDragIsClone = false;
     this.currentModifierDragMode = false;

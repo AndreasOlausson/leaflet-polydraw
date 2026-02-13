@@ -63,7 +63,7 @@ export async function waitForPolygonCount(page: Page, expected: number) {
   }, expected);
 }
 
-async function getMapBox(page: Page) {
+export async function getMapBox(page: Page) {
   const map = page.locator('#map');
   const box = await map.boundingBox();
   if (!box) {
@@ -184,6 +184,55 @@ export async function drawPointToPointPolygon(
     await page.mouse.dblclick(last.x, last.y);
     await page.waitForTimeout(300);
   }
+}
+
+export async function drawPointToPointPolygonWithOffsetDoubleTap(
+  page: Page,
+  options?: { points?: NormalizedPoint[]; offsetPx?: number; tapDelayMs?: number },
+) {
+  const points = options?.points ?? DEFAULT_P2P_POINTS;
+  const offsetPx = options?.offsetPx ?? 20;
+  const tapDelayMs = options?.tapDelayMs ?? 80;
+
+  const box = await getMapBox(page);
+  await page.locator('#map').scrollIntoViewIfNeeded();
+  const coords = toViewportPoints(box, points);
+
+  const dispatchPointerTap = async (point: { x: number; y: number }) => {
+    await page.dispatchEvent('#map', 'pointerdown', {
+      clientX: point.x,
+      clientY: point.y,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 1,
+      bubbles: true,
+      cancelable: true,
+    });
+    await page.dispatchEvent('#map', 'pointerup', {
+      clientX: point.x,
+      clientY: point.y,
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      buttons: 0,
+      bubbles: true,
+      cancelable: true,
+    });
+  };
+
+  for (const point of coords.slice(0, -1)) {
+    await dispatchPointerTap(point);
+    await page.waitForTimeout(50);
+  }
+
+  const last = coords[coords.length - 1];
+  await dispatchPointerTap(last);
+  await page.waitForTimeout(tapDelayMs);
+  await dispatchPointerTap({ x: last.x + offsetPx, y: last.y + offsetPx });
+  await page.waitForTimeout(300);
 }
 
 export async function getPrimaryPolygonRingCount(page: Page): Promise<number> {
