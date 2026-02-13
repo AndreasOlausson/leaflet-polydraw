@@ -429,8 +429,10 @@ export class PolygonMutationManager {
           if (hasIntersection) {
             intersectingFeatureGroups.push(featureGroup);
           }
-        } catch {
-          // Continue with other feature groups
+        } catch (error) {
+          if (!isTestEnvironment()) {
+            console.warn('Skipping feature group during intersection check:', error);
+          }
         }
       });
 
@@ -463,8 +465,10 @@ export class PolygonMutationManager {
               }
             }
           }
-        } catch {
-          // Continue with other feature groups
+        } catch (error) {
+          if (!isTestEnvironment()) {
+            console.warn('Failed subtract operation for one feature group:', error);
+          }
         }
       }
 

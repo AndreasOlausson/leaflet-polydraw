@@ -2,6 +2,8 @@
   "name": "leaflet-polydraw",
   "version": "1.3.3",
   "description": "Advanced Leaflet plugin for freehand polygon drawing, with smart merging and powerful editing tools. Compatible with both Leaflet v1.x and v2.x.",
+  "main": "dist/polydraw.umd.min.js",
+  "module": "dist/polydraw.es.js",
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
@@ -45,7 +47,6 @@
     "node": ">=18",
     "npm": ">=9"
   },
-  "packageManager": "npm@10.7.0",
   "scripts": {
     "build": "npm run lint:fix && vite build && npm run build:types",
     "build:types": "tsc --project tsconfig.build.json && echo 'export { default, leafletAdapter, defaultConfig, registerWithLeaflet } from \"./polydraw\";' > dist/types/index.d.ts",
@@ -93,7 +94,6 @@
     "@turf/boolean-equal": "^7.2.0",
     "@turf/boolean-point-in-polygon": "^7.2.0",
     "@turf/boolean-within": "^7.2.0",
-    "@turf/buffer": "^7.2.0",
     "@turf/center-of-mass": "^7.2.0",
     "@turf/convex": "^7.2.0",
     "@turf/difference": "^7.2.0",

@@ -23,7 +23,6 @@ import intersect from '@turf/intersect';
 import difference from '@turf/difference';
 import convex from '@turf/convex';
 import explode from '@turf/explode';
-import buffer from '@turf/buffer';
 import simplify from '@turf/simplify';
 import kinks from '@turf/kinks';
 import unkinkPolygon from '@turf/unkink-polygon';
@@ -156,7 +155,8 @@ export class TurfHelper {
       case 'direct':
         return this.createDirectPolygon(feature);
       case 'buffer':
-        return this.createBufferedPolygon(feature);
+        // Buffer method is deprecated, fall back to concaveman
+        return this.turfConcaveman(feature);
       default:
         if (!isTestEnvironment()) {
           console.warn(`Unknown polygon creation method: ${method}, falling back to concaveman`);
@@ -224,42 +224,6 @@ export class TurfHelper {
     }
 
     return multiPolygon([[coordinates]]);
-  }
-
-  /**
-   * Create polygon using buffer method (smooth curves)
-   */
-  private createBufferedPolygon(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
-    try {
-      // Convert to line if needed
-      let line: Feature<LineString>;
-
-      if (feature.geometry.type === 'LineString') {
-        line = feature as Feature<LineString>;
-      } else {
-        // Convert polygon or other geometry to line
-        const points = explode(feature);
-        const coordinates = points.features.map((f) => f.geometry.coordinates);
-        line = lineString(coordinates);
-      }
-
-      // Apply small buffer to create polygon
-      const buffered = buffer(line, 0.001, { units: 'kilometers' });
-
-      if (!buffered) {
-        return this.createDirectPolygon(feature);
-      }
-
-      return this.getTurfPolygon(buffered);
-    } catch (error) {
-      if (!isTestEnvironment()) {
-        console.warn(
-          'Buffer polygon creation failed:',
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-      return this.createDirectPolygon(feature);
-    }
   }
 
   getSimplified(
