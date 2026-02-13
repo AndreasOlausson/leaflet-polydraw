@@ -1281,10 +1281,12 @@ export class PolygonInteractionManager {
    * This method ensures proper cleanup of all markers and associated resources
    */
   cleanupFeatureGroup(featureGroup: L.FeatureGroup): void {
-    // Clean up all markers in the feature group
+    // Clean up all markers and polygon touch listeners in the feature group
     featureGroup.eachLayer((layer) => {
       if (layer instanceof L.Marker) {
         this.cleanupMarker(layer as L.Marker);
+      } else if (layer instanceof L.Polygon) {
+        this.detachPolygonTouchStart(layer);
       }
     });
 
@@ -2012,6 +2014,16 @@ export class PolygonInteractionManager {
       container.removeEventListener('touchend', this._boundDragTouchEnd);
       this._boundDragTouchEnd = null;
     }
+  }
+
+  private detachPolygonTouchStart(polygon: L.Polygon): void {
+    const listener = this.polygonTouchStartListeners.get(polygon);
+    if (!listener) return;
+    const el = (polygon as unknown as { _path?: SVGElement })._path;
+    if (el) {
+      el.removeEventListener('touchstart', listener as unknown as (e: Event) => void);
+    }
+    this.polygonTouchStartListeners.delete(polygon);
   }
 
   private attachDragCancelHandlers(): void {
