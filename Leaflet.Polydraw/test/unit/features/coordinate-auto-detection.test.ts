@@ -341,9 +341,11 @@ describe('CoordinateUtils - Auto-Detection', () => {
 
   describe('Performance and Scale', () => {
     it('should handle large numbers efficiently', () => {
+      // [-180, 90]: -180 is clearly longitude (abs > 90), 90 is latitude
+      // Detected as GeoJSON [lng, lat] order
       const result = CoordinateUtils.convertToLatLng([-180, 90]);
-      expect(result.lat).toBe(-180);
-      expect(result.lng).toBe(90);
+      expect(result.lat).toBe(90);
+      expect(result.lng).toBe(-180);
     });
 
     it('should handle small decimal precision', () => {
@@ -363,10 +365,70 @@ describe('CoordinateUtils - Auto-Detection', () => {
       expect(southPole.lat).toBe(-90);
       expect(southPole.lng).toBe(0);
 
-      // International Date Line (180 is clearly longitude, so GeoJSON order)
+      // International Date Line: [0, 180] - 180 is clearly longitude (abs > 90), 0 is latitude
+      // Detected as Leaflet [lat, lng] order since first value (0) is valid lat
       const dateLine = CoordinateUtils.convertToLatLng([0, 180]);
-      expect(dateLine.lat).toBe(180); // GeoJSON order: [lng, lat]
-      expect(dateLine.lng).toBe(0);
+      expect(dateLine.lat).toBe(0);
+      expect(dateLine.lng).toBe(180);
+    });
+
+    it('should handle negative longitudes correctly (US/Western hemisphere)', () => {
+      // San Francisco: GeoJSON order [lng, lat] = [-122.4194, 37.7749]
+      // -122.4194 has abs > 90, so it's detected as longitude
+      const sf = CoordinateUtils.convertToLatLng([-122.4194, 37.7749]);
+      expect(sf.lat).toBeCloseTo(37.7749, 4);
+      expect(sf.lng).toBeCloseTo(-122.4194, 4);
+
+      // Los Angeles: GeoJSON order [lng, lat] = [-118.2437, 34.0522]
+      // -118.2437 has abs > 90, so it's detected as longitude
+      const la = CoordinateUtils.convertToLatLng([-118.2437, 34.0522]);
+      expect(la.lat).toBeCloseTo(34.0522, 4);
+      expect(la.lng).toBeCloseTo(-118.2437, 4);
+
+      // Tokyo: GeoJSON order [lng, lat] = [139.6917, 35.6895]
+      // 139.6917 has abs > 90, so it's detected as longitude
+      const tokyo = CoordinateUtils.convertToLatLng([139.6917, 35.6895]);
+      expect(tokyo.lat).toBeCloseTo(35.6895, 4);
+      expect(tokyo.lng).toBeCloseTo(139.6917, 4);
+    });
+
+    it('should default to [lat, lng] for ambiguous coordinates where both values are in -90..90 range', () => {
+      // New York: GeoJSON order would be [lng, lat] = [-74.006, 40.7128]
+      // But both values have abs <= 90, making this ambiguous
+      // The algorithm defaults to [lat, lng] in this case
+      const nyc = CoordinateUtils.convertToLatLng([-74.006, 40.7128]);
+      expect(nyc.lat).toBeCloseTo(-74.006, 4); // First value treated as lat
+      expect(nyc.lng).toBeCloseTo(40.7128, 4); // Second value treated as lng
+
+      // For unambiguous NYC coordinates, use object format:
+      const nycExplicit = CoordinateUtils.convertToLatLng({ lat: 40.7128, lng: -74.006 });
+      expect(nycExplicit.lat).toBeCloseTo(40.7128, 4);
+      expect(nycExplicit.lng).toBeCloseTo(-74.006, 4);
+    });
+
+    it('should auto-correct wrong order when longitude is detectable', () => {
+      // User passes [lat, lng] but we can detect it's wrong because one value is > 90
+      // Oslo: correct Leaflet order [lat, lng] = [59.9139, 10.7522]
+      // If user accidentally passes GeoJSON order [lng, lat] = [10.7522, 59.9139]
+      // Since neither value is > 90, it stays as-is (ambiguous case)
+      const osloAmbiguous = CoordinateUtils.convertToLatLng([10.7522, 59.9139]);
+      expect(osloAmbiguous.lat).toBeCloseTo(10.7522, 4); // Can't auto-correct, both <= 90
+
+      // Sydney: Leaflet order [lat, lng] = [-33.8688, 151.2093]
+      // If passed correctly as [lat, lng], second value (151) is detected as longitude
+      const sydneyCorrect = CoordinateUtils.convertToLatLng([-33.8688, 151.2093]);
+      expect(sydneyCorrect.lat).toBeCloseTo(-33.8688, 4);
+      expect(sydneyCorrect.lng).toBeCloseTo(151.2093, 4);
+
+      // If passed wrong as GeoJSON [lng, lat] = [151.2093, -33.8688]
+      // First value (151) is detected as longitude, so it flips to correct order
+      const sydneyFlipped = CoordinateUtils.convertToLatLng([151.2093, -33.8688]);
+      expect(sydneyFlipped.lat).toBeCloseTo(-33.8688, 4);
+      expect(sydneyFlipped.lng).toBeCloseTo(151.2093, 4);
+
+      // Both inputs produce the same result - the plugin auto-corrects!
+      expect(sydneyCorrect.lat).toBeCloseTo(sydneyFlipped.lat, 4);
+      expect(sydneyCorrect.lng).toBeCloseTo(sydneyFlipped.lng, 4);
     });
   });
 });

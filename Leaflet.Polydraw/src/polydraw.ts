@@ -89,9 +89,14 @@ class Polydraw extends L.Control {
   private _boundPointerMove?: (e: PointerEvent) => void;
   private _boundPointerUp?: (e: PointerEvent) => void;
   private _lastTapTime: number = 0;
+  private _lastTapLatLng: L.LatLng | null = null;
   private _tapTimeout: number | null = null;
   private pointerEventsHandled: boolean =
     typeof window !== 'undefined' && 'PointerEvent' in window && LeafletVersionDetector.isV2();
+  private _configReady: Promise<void> | null = null;
+  private _componentsInitialized: boolean = false;
+  private _isControlMounted: boolean = false;
+  private _initRequestId: number = 0;
 
   constructor(options?: PolydrawOptions) {
     super(options);
@@ -105,10 +110,11 @@ class Polydraw extends L.Control {
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
-      this.loadExternalConfig(options.configPath, options?.config);
+      this._configReady = this.loadExternalConfig(options.configPath, options?.config);
     } else {
       // Initialize components immediately when no external config is used
       this.initializeComponents();
+      this._configReady = Promise.resolve();
     }
   }
 
@@ -131,6 +137,8 @@ class Polydraw extends L.Control {
       extendedMap.tap = false;
     }
     this.map = _map;
+    this._isControlMounted = true;
+    const initRequestId = ++this._initRequestId;
 
     // Add ESC key handler for Point-to-Point mode
     this.setupKeyboardHandlers();
@@ -142,16 +150,40 @@ class Polydraw extends L.Control {
     // Create tracer polyline
     this.createTracer();
 
-    // Initialize managers now that map is available
-    this.initializeManagers();
-
-    // Apply initial draw mode now that all managers and tracer are ready
-    this.setDrawMode(this.config.defaultMode);
-
-    // Attach event listeners
-    this.setupEventListeners();
+    // Complete initialization (either sync or after config loads)
+    this.completeInitialization(initRequestId);
 
     return container;
+  }
+
+  /**
+   * Completes the initialization after config is ready.
+   * Handles both sync (no configPath) and async (configPath) cases.
+   */
+  private completeInitialization(initRequestId: number): void {
+    const finalizeInitialization = () => {
+      // Ignore stale async callbacks (e.g. removed/re-added before config load completed)
+      if (!this._isControlMounted || initRequestId !== this._initRequestId) {
+        return;
+      }
+      this.initializeManagers();
+      this.setDrawMode(this.config.defaultMode);
+      this.setupEventListeners();
+    };
+
+    if (this._componentsInitialized) {
+      // Components already initialized (no configPath case), proceed immediately
+      finalizeInitialization();
+    } else {
+      // Wait for external config to load before initializing managers
+      this._configReady
+        ?.then(() => {
+          finalizeInitialization();
+        })
+        .catch(() => {
+          // loadExternalConfig already handles fallback and logging
+        });
+    }
   }
 
   /**
@@ -161,6 +193,8 @@ class Polydraw extends L.Control {
    */
   public onRemove(_map: L.Map) {
     void _map; // make lint happy
+    this._isControlMounted = false;
+    this._initRequestId += 1; // Invalidate any pending async initialization callbacks
     this.comprehensiveCleanup();
   }
 
@@ -1031,6 +1065,9 @@ class Polydraw extends L.Control {
   }
 
   private initializeComponents() {
+    if (this._componentsInitialized) return;
+    this._componentsInitialized = true;
+
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
     this.eventManager = new EventManager();
@@ -1260,6 +1297,30 @@ class Polydraw extends L.Control {
     const currentTime = Date.now();
     const timeDiff = currentTime - this._lastTapTime;
 
+    const isPointToPointMode =
+      this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
+      this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract;
+
+    if (isPointToPointMode) {
+      if (this._tapTimeout) {
+        clearTimeout(this._tapTimeout);
+        this._tapTimeout = null;
+      }
+
+      const tapLatLng = EventAdapter.extractCoordinates(event, this.map);
+      if (this.isP2PDoubleTapClose(tapLatLng, timeDiff)) {
+        this.handleDoubleTap(event);
+        this._lastTapTime = 0;
+        this._lastTapLatLng = null;
+        return;
+      }
+
+      this._lastTapTime = currentTime;
+      this._lastTapLatLng = tapLatLng;
+      this.mouseDown(event);
+      return;
+    }
+
     // Clear any existing timeout
     if (this._tapTimeout) {
       clearTimeout(this._tapTimeout);
@@ -1274,6 +1335,7 @@ class Polydraw extends L.Control {
     } else {
       // Single tap - set timeout to handle as single tap if no second tap comes
       this._lastTapTime = currentTime;
+      this._lastTapLatLng = EventAdapter.extractCoordinates(event, this.map);
       if (!this.pointerEventsHandled) {
         this._tapTimeout = window.setTimeout(() => {
           this.mouseDown(event);
@@ -1281,6 +1343,17 @@ class Polydraw extends L.Control {
         }, 300);
       }
     }
+  }
+
+  private isP2PDoubleTapClose(tapLatLng: L.LatLng | null, timeDiff: number): boolean {
+    if (!tapLatLng || !this._lastTapLatLng) return false;
+    if (timeDiff <= 0 || timeDiff > 300) return false;
+
+    const lastTapPoint = this.map.latLngToLayerPoint(this._lastTapLatLng);
+    const currentTapPoint = this.map.latLngToLayerPoint(tapLatLng);
+    const doubleTapTolerancePx = 36;
+
+    return lastTapPoint.distanceTo(currentTapPoint) <= doubleTapTolerancePx;
   }
 
   /**
@@ -1328,11 +1401,25 @@ class Polydraw extends L.Control {
       return;
     }
 
-    // Handle Point-to-Point modes differently
-    if (
+    const isP2PMode =
       this.modeManager.getCurrentMode() === DrawMode.PointToPoint ||
-      this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
-    ) {
+      this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract;
+
+    if (isP2PMode && normalizedEvent.pointerType === 'touch') {
+      const now = Date.now();
+      const timeDiff = now - this._lastTapTime;
+      if (this.isP2PDoubleTapClose(clickLatLng, timeDiff)) {
+        this.handleDoubleTap(event as TouchEvent);
+        this._lastTapTime = 0;
+        this._lastTapLatLng = null;
+        return;
+      }
+      this._lastTapTime = now;
+      this._lastTapLatLng = clickLatLng;
+    }
+
+    // Handle Point-to-Point modes differently
+    if (isP2PMode) {
       this.polygonDrawManager.handlePointToPointClick(clickLatLng);
       return;
     }
@@ -1928,6 +2015,13 @@ class Polydraw extends L.Control {
     if (deprecatedVisualOptimizationKeys) {
       console.warn(
         '[Leaflet.Polydraw] `markers.visualOptimization` is deprecated. Prefer `visualOptimizationLevel` when adding predefined polygons.',
+      );
+    }
+
+    // Check for deprecated buffer polygon creation method
+    if (config.polygonCreation?.method === 'buffer') {
+      console.warn(
+        '[Leaflet.Polydraw] `polygonCreation.method: "buffer"` is deprecated and no longer supported. Falling back to "concaveman". Use "concaveman" or "direct" instead.',
       );
     }
   }

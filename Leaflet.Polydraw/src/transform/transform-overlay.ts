@@ -33,6 +33,7 @@ export class TransformOverlay {
   private currentBBox: PixelBBox | null = null;
   private currentRotation: number = 0;
   private buttonsHidden: boolean = false;
+  private destroyed: boolean = false;
   private readonly supportsPointerEvents: boolean =
     typeof window !== 'undefined' && 'PointerEvent' in window;
 
@@ -66,17 +67,24 @@ export class TransformOverlay {
   }
 
   destroy(): void {
+    if (this.destroyed) return;
+    this.destroyed = true;
+
     if (this.rafId != null) {
       cancelAnimationFrame(this.rafId);
       this.rafId = null;
     }
+    this.draggingHandle = null;
+    this.detachDocumentDragHandlers();
     this.root.remove();
   }
 
   update(bbox: PixelBBox, pivot: PixelPoint, rotation: number = 0): void {
+    if (this.destroyed) return;
     if (this.rafId != null) return;
     this.rafId = requestAnimationFrame(() => {
       this.rafId = null;
+      if (this.destroyed) return;
       this.render(bbox, pivot, rotation);
       // Update button positions if buttons exist (they'll stay hidden while dragging)
       if (this.cancelBtn || this.confirmBtn) {
@@ -229,6 +237,7 @@ export class TransformOverlay {
   }
 
   private startDrag(type: TransformHandleType, start: PixelPoint, evt: Event): void {
+    if (this.destroyed) return;
     L.DomEvent.stop(evt);
     this.draggingHandle = type;
 
@@ -271,52 +280,60 @@ export class TransformOverlay {
     if (this.draggingHandle == null) return;
     const type = this.draggingHandle;
     this.draggingHandle = null;
-    const pos = this.getMouseLayerPoint(evt);
-    this.callbacks.onEndHandleDrag(type, pos, evt as TransformHandleEvent);
+    try {
+      const pos = this.getMouseLayerPoint(evt);
+      this.callbacks.onEndHandleDrag(type, pos, evt as TransformHandleEvent);
 
-    // Restore buttons near top-right handle when drag completes
-    if (this.currentBBox) {
-      this.updateButtonPositions(this.currentBBox, this.currentRotation);
+      // Restore buttons near top-right handle when drag completes
+      if (this.currentBBox) {
+        this.updateButtonPositions(this.currentBBox, this.currentRotation);
+      }
+      this.showButtons();
+    } finally {
+      this.detachDocumentDragHandlers();
     }
-    this.showButtons();
+  }
 
-    if (this.documentMoveHandler || this.documentUpHandler) {
-      const doc = document as unknown as HTMLElement;
-      if (this.supportsPointerEvents && this.pointerCaptureTarget) {
-        if (this.activePointerId != null) {
-          try {
-            this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
-          } catch {
-            // Ignore release failures; drag cleanup still proceeds.
-          }
-        }
-        if (this.documentMoveHandler) {
-          const moveHandler = this.documentMoveHandler as (e: Event) => void;
-          L.DomEvent.off(doc, 'pointermove', moveHandler);
-        }
-        if (this.documentUpHandler) {
-          const upHandler = this.documentUpHandler as (e: Event) => void;
-          L.DomEvent.off(doc, 'pointerup', upHandler);
-          L.DomEvent.off(doc, 'pointercancel', upHandler);
-        }
-        this.pointerCaptureTarget = null;
-        this.activePointerId = null;
-      } else {
-        if (this.documentMoveHandler) {
-          const moveHandler = this.documentMoveHandler as (e: Event) => void;
-          L.DomEvent.off(doc, 'mousemove', moveHandler);
-          L.DomEvent.off(doc, 'touchmove', moveHandler);
-        }
-        if (this.documentUpHandler) {
-          const upHandler = this.documentUpHandler as (e: Event) => void;
-          L.DomEvent.off(doc, 'mouseup', upHandler);
-          L.DomEvent.off(doc, 'touchend', upHandler);
-          L.DomEvent.off(doc, 'touchcancel', upHandler);
+  private detachDocumentDragHandlers(): void {
+    if (!this.documentMoveHandler && !this.documentUpHandler && !this.pointerCaptureTarget) {
+      return;
+    }
+
+    const doc = document as unknown as HTMLElement;
+    if (this.supportsPointerEvents && this.pointerCaptureTarget) {
+      if (this.activePointerId != null) {
+        try {
+          this.pointerCaptureTarget.releasePointerCapture?.(this.activePointerId);
+        } catch {
+          // Ignore release failures; drag cleanup still proceeds.
         }
       }
-      this.documentMoveHandler = null;
-      this.documentUpHandler = null;
+      if (this.documentMoveHandler) {
+        const moveHandler = this.documentMoveHandler as (e: Event) => void;
+        L.DomEvent.off(doc, 'pointermove', moveHandler);
+      }
+      if (this.documentUpHandler) {
+        const upHandler = this.documentUpHandler as (e: Event) => void;
+        L.DomEvent.off(doc, 'pointerup', upHandler);
+        L.DomEvent.off(doc, 'pointercancel', upHandler);
+      }
+      this.pointerCaptureTarget = null;
+      this.activePointerId = null;
+    } else {
+      if (this.documentMoveHandler) {
+        const moveHandler = this.documentMoveHandler as (e: Event) => void;
+        L.DomEvent.off(doc, 'mousemove', moveHandler);
+        L.DomEvent.off(doc, 'touchmove', moveHandler);
+      }
+      if (this.documentUpHandler) {
+        const upHandler = this.documentUpHandler as (e: Event) => void;
+        L.DomEvent.off(doc, 'mouseup', upHandler);
+        L.DomEvent.off(doc, 'touchend', upHandler);
+        L.DomEvent.off(doc, 'touchcancel', upHandler);
+      }
     }
+    this.documentMoveHandler = null;
+    this.documentUpHandler = null;
   }
 
   private getMouseLayerPoint(evt: Event): PixelPoint {

@@ -206,15 +206,23 @@ export class PolygonDrawManager {
 
     // Add a visual marker for the new point
     try {
+      const isTouch = this.isTouchDevice();
       const isFirstMarker = this.p2pMarkers.length === 0;
       const markerClassName = isFirstMarker
         ? 'leaflet-polydraw-p2p-marker leaflet-polydraw-p2p-first-marker'
         : 'leaflet-polydraw-p2p-marker';
+      const iconSize: [number, number] = isFirstMarker
+        ? isTouch
+          ? [24, 24]
+          : [20, 20]
+        : isTouch
+          ? [18, 18]
+          : [16, 16];
 
       const pointMarker = new L.Marker(clickLatLng, {
         icon: leafletAdapter.createDivIcon({
           className: markerClassName,
-          iconSize: isFirstMarker ? [20, 20] : [16, 16],
+          iconSize,
         }),
         draggable: this.config.modes.dragElbow,
       }).addTo(this.map);
@@ -420,7 +428,10 @@ export class PolygonDrawManager {
    */
   clearP2pMarkers(): void {
     // console.log('PolygonDrawManager clearP2pMarkers');
-    this.p2pMarkers.forEach((marker) => this.map.removeLayer(marker));
+    this.p2pMarkers.forEach((marker) => {
+      this.detachMarkerModifierHandler(marker);
+      this.map.removeLayer(marker);
+    });
     this.p2pMarkers = [];
   }
 
@@ -452,7 +463,7 @@ export class PolygonDrawManager {
     const pixelDist = clickPt.distanceTo(firstPt);
 
     const basePxTolerance = 12;
-    const tolerancePx = this.isTouchDevice() ? basePxTolerance * 2 : basePxTolerance;
+    const tolerancePx = this.isTouchDevice() ? basePxTolerance * 3 : basePxTolerance;
 
     const isClicking = pixelDist <= tolerancePx;
 
@@ -515,6 +526,7 @@ export class PolygonDrawManager {
     if (markerIndex > -1) {
       // Remove from array
       this.p2pMarkers.splice(markerIndex, 1);
+      this.detachMarkerModifierHandler(markerToDelete);
       // Remove from map
       this.map.removeLayer(markerToDelete);
       // Update the tracer
@@ -654,6 +666,8 @@ export class PolygonDrawManager {
     if (!element) return;
 
     if (isHovering) {
+      // Guard against duplicate handler registration on repeated hover events.
+      this.detachMarkerModifierHandler(marker);
       const checkModifierAndUpdate = (e: Event) => {
         //Save the input parameter, but make lint happy...
         void e;
@@ -689,13 +703,23 @@ export class PolygonDrawManager {
       } catch {
         // Handle DOM errors
       }
-      const handler = this.markerModifierHandlers.get(marker);
-      if (handler) {
-        document.removeEventListener('keydown', handler);
-        document.removeEventListener('keyup', handler);
-        element.removeEventListener('mousemove', handler);
-        this.markerModifierHandlers.delete(marker);
-      }
+      this.detachMarkerModifierHandler(marker);
     }
+  }
+
+  private detachMarkerModifierHandler(marker: L.Marker): void {
+    const handler = this.markerModifierHandlers.get(marker);
+    if (!handler) return;
+
+    document.removeEventListener('keydown', handler);
+    document.removeEventListener('keyup', handler);
+
+    const element = marker.getElement();
+    if (element) {
+      element.removeEventListener('mousemove', handler);
+      element.classList.remove('edge-deletion-hover');
+    }
+
+    this.markerModifierHandlers.delete(marker);
   }
 }

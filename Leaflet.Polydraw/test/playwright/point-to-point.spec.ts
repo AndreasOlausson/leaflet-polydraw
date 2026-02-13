@@ -6,6 +6,7 @@ import {
   selectors,
   clickToolbarButton,
   drawPointToPointPolygon,
+  drawPointToPointPolygonWithOffsetDoubleTap,
   waitForPolygonCount,
   waitForDrawMode,
   seedPolygon,
@@ -37,5 +38,20 @@ test.describe('Point-to-point modes', () => {
     ]);
 
     await waitForPolygonCount(page, 0);
+  });
+});
+
+test.describe('Point-to-point touch close', () => {
+  test.use({ hasTouch: true });
+
+  test('double-tap near last point closes polygon', async ({ page }) => {
+    await gotoDemo(page);
+    await openToolbar(page);
+
+    await clickToolbarButton(page, selectors.p2p);
+    await waitForDrawMode(page, DrawMode.PointToPoint);
+
+    await drawPointToPointPolygonWithOffsetDoubleTap(page, { offsetPx: 24, tapDelayMs: 80 });
+    await waitForPolygonCount(page, 1);
   });
 });

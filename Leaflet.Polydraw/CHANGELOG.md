@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+## [1.3.3] - 2026-02-03
+
+### Added
+
+- Added `main` and `module` fields to package.json for broader bundler compatibility.
+
+### Deprecated
+
+- `polygonCreation.method: 'buffer'` is deprecated and now falls back to `concaveman`. This reduces bundle size by ~150 KB gzipped.
+
+### Fixed
+
+- Polygon drag on touch devices now works correctly with Leaflet v1 (touch events were not triggering drag start on SVG paths).
+- Demo build now resolves the correct Leaflet version instead of picking up the library's devDependency.
+
+- Async `configPath` loading now waits before `addTo(map)` wires managers, preventing undefined manager crashes when adding the control before config fetch completes.
+- Coordinate auto-detection now correctly handles Western hemisphere coordinates (e.g., `[-122.4194, 37.7749]` for San Francisco) by using absolute-value checks for longitude detection.
+- Stale async init callbacks no longer fire after control removal/re-add cycles during external config loading.
+- Transform overlay drag cleanup is now robust against mid-drag destruction and callback errors.
+- Polygon subtraction now logs warnings in non-test environments instead of silently swallowing errors.
+- P2P marker hover no longer leaks document-level `keydown`/`keyup`/`mousemove` listeners; fixed duplicate registration and ensured proper cleanup.
+- P2P subtract now preserves holes when subtracting inside an existing polygon (no disappearing hole).
+- Touch P2P close is more forgiving: larger touch markers and a short-lived close tolerance for double-tap near the last point.
+
 ## [1.3.2] - 2026-02-02
 
 ### Fixed
