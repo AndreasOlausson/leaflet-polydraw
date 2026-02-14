@@ -1,10 +1,11 @@
-import { DrawMode } from './enums';
+import { DrawMode, MarkerPosition } from './enums';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 
 export const defaultConfig: PolydrawConfig = {
   mergePolygons: true,
   kinks: false,
   tools: {
+    default: DrawMode.Off,
     draw: true,
     subtract: true,
     p2p: true,
@@ -18,30 +19,31 @@ export const defaultConfig: PolydrawConfig = {
     dragPolygons: true,
     edgeDeletion: true,
   },
-  defaultMode: DrawMode.Off,
   modifierSubtractMode: true,
-  dragPolygons: {
-    opacity: 0.7,
-    dragCursor: 'move',
-    hoverCursor: 'grab',
-    markerBehavior: 'hide',
-    markerAnimationDuration: 200,
-    modifierSubtract: {
+  interaction: {
+    drag: {
+      opacity: 0.7,
+      dragCursor: 'move',
+      hoverCursor: 'grab',
+      markerBehavior: 'hide',
+      markerAnimationDuration: 200,
+      modifierSubtract: {
+        keys: {
+          windows: 'ctrlKey',
+          mac: 'metaKey',
+          linux: 'ctrlKey',
+        },
+        hideMarkersOnDrag: true,
+      },
+    },
+    edgeDeletion: {
       keys: {
         windows: 'ctrlKey',
         mac: 'metaKey',
         linux: 'ctrlKey',
       },
-      hideMarkersOnDrag: true,
+      minVertices: 3,
     },
-  },
-  edgeDeletion: {
-    keys: {
-      windows: 'ctrlKey',
-      mac: 'metaKey',
-      linux: 'ctrlKey',
-    },
-    minVertices: 3,
   },
   markers: {
     deleteMarker: true,
@@ -58,7 +60,7 @@ export const defaultConfig: PolydrawConfig = {
       zIndexOffset: null,
     },
     markerInfoIcon: {
-      position: 3,
+      position: MarkerPosition.East,
       showArea: true,
       showPerimeter: true,
       useMetrics: true,
@@ -108,12 +110,12 @@ export const defaultConfig: PolydrawConfig = {
       zIndexOffset: 10000,
     },
     markerMenuIcon: {
-      position: 1,
+      position: MarkerPosition.South,
       styleClasses: ['polygon-marker', 'menu'],
       zIndexOffset: 10000,
     },
     markerDeleteIcon: {
-      position: 5,
+      position: MarkerPosition.North,
       styleClasses: ['polygon-marker', 'delete'],
       zIndexOffset: 10000,
     },
@@ -126,44 +128,44 @@ export const defaultConfig: PolydrawConfig = {
       toleranceMin: 0.000005,
       toleranceMax: 0.005,
       curve: 1.35,
-      sharpAngleThreshold: 30,
-      thresholdBoundingBox: 0.05,
-      thresholdDistance: 0.05,
-      useDistance: true,
-      useBoundingBox: false,
-      useAngles: true,
     },
   },
-  polyLineOptions: {
-    opacity: 1,
-    weight: 2,
-  },
-  subtractLineOptions: {
-    opacity: 1,
-    weight: 2,
-  },
-  polygonOptions: {
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.2,
-    smoothFactor: 0.3,
-    noClip: true,
-  },
-  holeOptions: {
-    weight: 2,
-    opacity: 1,
-    fillOpacity: 0.5,
+  styles: {
+    polyline: { weight: 2, opacity: 1, color: '#50622b' },
+    subtractLine: { weight: 2, opacity: 1, color: '#D9460F' },
+    polygon: {
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.2,
+      smoothFactor: 0.3,
+      noClip: true,
+      color: '#50622b',
+      fillColor: '#b4cd8a',
+    },
+    hole: {
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.5,
+      color: '#aa0000',
+      fillColor: '#ffcccc',
+    },
+    ui: {
+      controlButton: { backgroundColor: '#fff', color: '#000' },
+      controlButtonHover: { backgroundColor: '#f4f4f4' },
+      controlButtonActive: { backgroundColor: 'rgb(128, 218, 255)', color: '#fff' },
+      indicatorActive: { backgroundColor: '#ffcc00' },
+      p2pMarker: { backgroundColor: '#fff', borderColor: '#50622b' },
+      p2pClosingMarker: { color: '#4CAF50' },
+      edgeHover: { color: '#7a9441' },
+      edgeDeletion: { color: '#D9460F' },
+      dragSubtract: { color: '#D9460F' },
+    },
   },
   polygonCreation: {
-    method: 'concaveman',
-    simplification: {
-      mode: 'simple',
-      tolerance: 0.001,
-      highQuality: false,
-    },
+    algorithm: 'concaveman',
   },
   simplification: {
-    mode: 'simple',
+    strategy: 'simple',
     simple: {
       tolerance: 0.0001,
       highQuality: false,
@@ -175,7 +177,7 @@ export const defaultConfig: PolydrawConfig = {
       multiplier: 2,
     },
   },
-  menuOperations: {
+  polygonTools: {
     simplify: {
       enabled: true,
       processHoles: true,
@@ -187,9 +189,16 @@ export const defaultConfig: PolydrawConfig = {
     bbox: {
       enabled: true,
       processHoles: true,
+      addMidPointMarkers: true,
     },
     bezier: {
       enabled: true,
+      resolution: 10000,
+      sharpness: 0.75,
+      resampleMultiplier: 10,
+      maxNodes: 1000,
+      visualOptimizationLevel: 10,
+      ghostMarkers: false,
     },
     scale: {
       enabled: true,
@@ -199,59 +208,6 @@ export const defaultConfig: PolydrawConfig = {
     },
     visualOptimizationToggle: {
       enabled: true,
-    },
-  },
-  boundingBox: {
-    addMidPointMarkers: true,
-  },
-  bezier: {
-    resolution: 10000,
-    sharpness: 0.75,
-    resampleMultiplier: 10,
-    maxNodes: 1000,
-    visualOptimizationLevel: 10,
-    ghostMarkers: false,
-  },
-  colors: {
-    dragPolygons: {
-      subtract: '#D9460F',
-    },
-    p2p: {
-      closingMarker: '#4CAF50',
-    },
-    edgeHover: '#7a9441',
-    edgeDeletion: {
-      hover: '#D9460F',
-    },
-    polyline: '#50622b',
-    subtractLine: '#D9460F',
-    polygon: {
-      border: '#50622b',
-      fill: '#b4cd8a',
-    },
-    hole: {
-      border: '#aa0000',
-      fill: '#ffcccc',
-    },
-    styles: {
-      controlButton: {
-        backgroundColor: '#fff',
-        color: '#000',
-      },
-      controlButtonHover: {
-        backgroundColor: '#f4f4f4',
-      },
-      controlButtonActive: {
-        backgroundColor: 'rgb(128, 218, 255)',
-        color: '#fff',
-      },
-      indicatorActive: {
-        backgroundColor: '#ffcc00',
-      },
-      p2pMarker: {
-        backgroundColor: '#fff',
-        borderColor: '#50622b',
-      },
     },
   },
   tooltips: {
@@ -285,6 +241,6 @@ export const defaultConfig: PolydrawConfig = {
         toggleOptimization: true,
       },
     },
+    maxSize: 50,
   },
-  maxHistorySize: 50,
 };

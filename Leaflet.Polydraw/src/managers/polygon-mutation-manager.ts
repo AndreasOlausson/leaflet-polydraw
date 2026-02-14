@@ -30,7 +30,7 @@ export interface MutationResult {
   error?: string;
 }
 
-export interface AddPolygonOptions {
+interface AddPolygonOptions {
   simplify?: boolean;
   noMerge?: boolean;
   dynamicTolerance?: boolean;
@@ -230,18 +230,18 @@ export class PolygonMutationManager {
     if (result.success && result.result) {
       const bezierLevel =
         data.action === 'bezier'
-          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          ? (this.config.polygonTools.bezier?.visualOptimizationLevel ?? 10)
           : optimizationLevel;
       const bezierOriginal =
         data.action === 'bezier'
-          ? (this.config.bezier?.visualOptimizationLevel ?? 10)
+          ? (this.config.polygonTools.bezier?.visualOptimizationLevel ?? 10)
           : originalOptimizationLevel;
       const addResult = await this.addPolygon(result.result, {
         simplify: false,
         visualOptimizationLevel: bezierLevel,
         originalOptimizationLevel: bezierOriginal,
       });
-      if (data.action === 'bezier' && this.config.bezier?.ghostMarkers) {
+      if (data.action === 'bezier' && this.config.polygonTools.bezier?.ghostMarkers) {
         const ghostOpacity = 0.001;
         addResult.featureGroups?.forEach((featureGroup) => {
           featureGroup.eachLayer((layer) => {
@@ -589,11 +589,11 @@ export class PolygonMutationManager {
             } else {
               // Add red polyline overlay for hole rings
               const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
-                color: this.config.colors.hole.border,
-                weight: this.config.holeOptions.weight || 2,
-                opacity: this.config.holeOptions.opacity || 1,
-                fillColor: this.config.colors.hole.fill,
-                fillOpacity: this.config.holeOptions.fillOpacity || 0.5,
+                color: this.config.styles.hole.color,
+                weight: this.config.styles.hole.weight || 2,
+                opacity: this.config.styles.hole.opacity || 1,
+                fillColor: this.config.styles.hole.fillColor,
+                fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
               });
               featureGroup.addLayer(holePolyline);
 
@@ -963,13 +963,11 @@ export class PolygonMutationManager {
     // Force the polygon to always use regular polygon styling (green)
     // This ensures that polygons drawn inside holes are styled correctly
     const polygonStyle = {
-      ...this.config.polygonOptions,
-      color: this.config.colors.polygon.border,
-      fillColor: this.config.colors.polygon.fill,
+      ...this.config.styles.polygon,
       // Force these values to ensure they override any default styling
-      weight: this.config.polygonOptions.weight || 2,
-      opacity: this.config.polygonOptions.opacity || 1,
-      fillOpacity: this.config.polygonOptions.fillOpacity || 0.2,
+      weight: this.config.styles.polygon.weight || 2,
+      opacity: this.config.styles.polygon.opacity || 1,
+      fillOpacity: this.config.styles.polygon.fillOpacity || 0.2,
     };
 
     polygon.setStyle(polygonStyle);

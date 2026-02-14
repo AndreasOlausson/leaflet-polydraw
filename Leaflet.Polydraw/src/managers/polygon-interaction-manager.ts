@@ -15,6 +15,7 @@ import type {
   PolydrawEdgePolyline,
   PolygonUpdatedEventData,
   HistoryAction,
+  ModifierKey,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -926,7 +927,7 @@ export class PolygonInteractionManager {
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
-      polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+      polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
       if (isCloneMode) {
         this.showCloneGhost(
           polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
@@ -944,7 +945,7 @@ export class PolygonInteractionManager {
 
       try {
         const container = this.map.getContainer();
-        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+        container.style.cursor = this.config.interaction.drag.dragCursor || 'move';
       } catch {
         // Handle DOM errors
       }
@@ -1005,7 +1006,7 @@ export class PolygonInteractionManager {
       polygon._polydrawDragData!.isDragging = true;
       polygon._polydrawDragData!.startPosition = e.latlng;
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
-      polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+      polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
       if (isCloneMode) {
         this.showCloneGhost(
           polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
@@ -1023,7 +1024,7 @@ export class PolygonInteractionManager {
 
       try {
         const container = this.map.getContainer();
-        container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+        container.style.cursor = this.config.interaction.drag.dragCursor || 'move';
       } catch {
         // Handle DOM errors
       }
@@ -1079,7 +1080,7 @@ export class PolygonInteractionManager {
         polygon._polydrawDragData!.isDragging = true;
         polygon._polydrawDragData!.startPosition = latlng;
         polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
-        polygon.setStyle({ fillOpacity: this.config.dragPolygons.opacity });
+        polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
         if (isCloneMode) {
           this.showCloneGhost(
             polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
@@ -1097,7 +1098,7 @@ export class PolygonInteractionManager {
 
         try {
           const container = this.map.getContainer();
-          container.style.cursor = this.config.dragPolygons.dragCursor || 'move';
+          container.style.cursor = this.config.interaction.drag.dragCursor || 'move';
         } catch {
           // Handle DOM errors
         }
@@ -1136,7 +1137,7 @@ export class PolygonInteractionManager {
       if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
           const container = this.map.getContainer();
-          container.style.cursor = this.config.dragPolygons.hoverCursor || 'grab';
+          container.style.cursor = this.config.interaction.drag.hoverCursor || 'grab';
         } catch {
           // Handle DOM errors
         }
@@ -1354,7 +1355,7 @@ export class PolygonInteractionManager {
   private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
     if (isHovering) {
       edgePolyline.setStyle({
-        color: this.config.colors.edgeHover,
+        color: this.config.styles.ui.edgeHover.color,
         weight: 4,
         opacity: 1,
       });
@@ -1685,7 +1686,7 @@ export class PolygonInteractionManager {
 
     const targetRing = rings[targetRingIndex];
     // Require at least 4 points (3 corners + close) – in Leaflet rings are usually open, so use 4 as minimum vertices
-    if (targetRing.length <= this.config.edgeDeletion.minVertices) {
+    if (targetRing.length <= this.config.interaction.edgeDeletion.minVertices) {
       return;
     }
 
@@ -2367,8 +2368,8 @@ export class PolygonInteractionManager {
 
     try {
       const ghost = leafletAdapter.createPolygon(latLngs, {
-        color: this.config.colors.polygon.border,
-        weight: this.config.polygonOptions.weight,
+        color: this.config.styles.polygon.color,
+        weight: this.config.styles.polygon.weight,
         opacity: 0.9,
         fill: false,
         fillOpacity: 0,
@@ -2403,8 +2404,8 @@ export class PolygonInteractionManager {
     }
   }
 
-  private getDragSubtractModifierKey(): string {
-    const { keys } = this.config.dragPolygons.modifierSubtract;
+  private getDragSubtractModifierKey(): ModifierKey {
+    const { keys } = this.config.interaction.drag.modifierSubtract;
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
     const isWindows = userAgent.includes('windows');
@@ -2438,11 +2439,11 @@ export class PolygonInteractionManager {
     try {
       if (enabled) {
         polygon.setStyle({
-          color: this.config.colors.dragPolygons.subtract,
+          color: this.config.styles.ui.dragSubtract.color,
         });
       } else {
         polygon.setStyle({
-          color: this.config.colors.polygon.border,
+          color: this.config.styles.polygon.color,
         });
       }
       this.updateMarkerColorsForSubtractMode(polygon, enabled);
@@ -2467,7 +2468,7 @@ export class PolygonInteractionManager {
       if (!featureGroup) return;
       const fg: L.FeatureGroup = featureGroup;
 
-      const hideMarkersOnDrag = this.config.dragPolygons.modifierSubtract.hideMarkersOnDrag;
+      const hideMarkersOnDrag = this.config.interaction.drag.modifierSubtract.hideMarkersOnDrag;
 
       fg.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -2480,8 +2481,8 @@ export class PolygonInteractionManager {
                 element.style.display = 'none';
                 element.classList.add('subtract-mode-hidden');
               } else {
-                element.style.backgroundColor = this.config.colors.dragPolygons.subtract;
-                element.style.borderColor = this.config.colors.dragPolygons.subtract;
+                element.style.backgroundColor = this.config.styles.ui.dragSubtract.color;
+                element.style.borderColor = this.config.styles.ui.dragSubtract.color;
                 element.classList.add('subtract-mode');
               }
             } else {
@@ -2644,8 +2645,8 @@ export class PolygonInteractionManager {
     }
   }
 
-  private getEdgeDeletionModifierKey(): string {
-    const { keys } = this.config.edgeDeletion;
+  private getEdgeDeletionModifierKey(): ModifierKey {
+    const { keys } = this.config.interaction.edgeDeletion;
     const userAgent = navigator.userAgent.toLowerCase();
     const isMac = userAgent.includes('mac');
     const isWindows = userAgent.includes('windows');
@@ -2674,8 +2675,8 @@ export class PolygonInteractionManager {
       const checkModifierAndUpdate = (e: Event) => {
         const isModifierPressed = this.isEdgeDeletionModifierKeyPressed(e as MouseEvent);
         if (isModifierPressed) {
-          element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
-          element.style.borderColor = this.config.colors.edgeDeletion.hover;
+          element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
+          element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
           element.classList.add('edge-deletion-hover');
           // Set cursor to pointer when modifier key is held over marker
           try {
@@ -2739,8 +2740,8 @@ export class PolygonInteractionManager {
 
     const element = e.target as HTMLElement;
     if (element) {
-      element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
-      element.style.borderColor = this.config.colors.edgeDeletion.hover;
+      element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
+      element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
       element.classList.add('edge-deletion-hover');
     }
   };
@@ -2890,8 +2891,8 @@ export class PolygonInteractionManager {
         const marker = layer as L.Marker;
         const element = marker.getElement();
         if (element) {
-          const behavior = this.config.dragPolygons.markerBehavior;
-          const duration = this.config.dragPolygons.markerAnimationDuration;
+          const behavior = this.config.interaction.drag.markerBehavior;
+          const duration = this.config.interaction.drag.markerAnimationDuration;
 
           if (behavior === 'hide') {
             element.style.display = visible ? '' : 'none';
@@ -2910,7 +2911,7 @@ export class PolygonInteractionManager {
   ): L.Popup {
     // Build buttons based on config
     const buttons: HTMLDivElement[] = [];
-    const menuOps = this.config.menuOperations;
+    const menuOps = this.config.polygonTools;
 
     // Simplify button
     if (menuOps.simplify.enabled) {

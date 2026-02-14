@@ -256,8 +256,8 @@ export class PolygonDrawManager {
           if (this.p2pMarkers.length >= 3) {
             const element = pointMarker.getElement();
             if (element) {
-              element.style.backgroundColor = this.config.colors.p2p.closingMarker;
-              element.style.borderColor = this.config.colors.p2p.closingMarker;
+              element.style.backgroundColor = this.config.styles.ui.p2pClosingMarker.color;
+              element.style.borderColor = this.config.styles.ui.p2pClosingMarker.color;
               element.style.cursor = 'pointer';
               element.title = 'Click to close polygon';
             }
@@ -497,8 +497,8 @@ export class PolygonDrawManager {
         const currentMode = this.modeManager.getCurrentMode();
         const lineColor =
           currentMode === DrawMode.PointToPointSubtract
-            ? this.config.colors.subtractLine
-            : this.config.colors.polyline;
+            ? this.config.styles.subtractLine.color
+            : this.config.styles.polyline.color;
         this.tracer.setStyle({
           color: lineColor,
           dashArray: '5, 5',

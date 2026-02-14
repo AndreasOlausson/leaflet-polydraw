@@ -22,6 +22,8 @@ import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
 import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
+import { warnIfUsingDeprecatedConfiguration } from './guards/config-deprecation-guard';
+import { applyRuntimeConfigFallbacks } from './guards/config-runtime-fallback-guard';
 import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import type {
@@ -104,9 +106,14 @@ class Polydraw extends L.Control {
     // Start from a clean clone of the defaults
     const baseDefaults: PolydrawConfig = structuredClone(defaultConfig);
 
+    // Warn and migrate any deprecated configuration before merging
+    if (options?.config) {
+      warnIfUsingDeprecatedConfiguration(options.config);
+    }
+
     // Apply inline config via deep merge (partial configs supported)
     this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
-    this.warnIfUsingDeprecatedConfiguration(options?.config);
+    applyRuntimeConfigFallbacks(this.config);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
@@ -167,7 +174,7 @@ class Polydraw extends L.Control {
         return;
       }
       this.initializeManagers();
-      this.setDrawMode(this.config.defaultMode);
+      this.setDrawMode(this.config.tools.default);
       this.setupEventListeners();
     };
 
@@ -729,7 +736,7 @@ class Polydraw extends L.Control {
     // Listen for drawing cancellation events
     this.eventManager.on('polydraw:draw:cancel', () => {
       this.stopDraw();
-      this.setDrawMode(this.config.defaultMode);
+      this.setDrawMode(this.config.tools.default);
     });
   }
 
@@ -738,8 +745,7 @@ class Polydraw extends L.Control {
    */
   private createTracer(): void {
     this.tracer = leafletAdapter.createPolyline([], {
-      ...this.config.polyLineOptions,
-      color: this.config.colors.polyline,
+      ...this.config.styles.polyline,
     });
     try {
       this.tracer.addTo(this.map);
@@ -763,19 +769,19 @@ class Polydraw extends L.Control {
 
       switch (mode) {
         case DrawMode.Add:
-          color = this.config.colors.polyline;
+          color = this.config.styles.polyline.color;
           dashArray = undefined;
           break;
         case DrawMode.Subtract:
-          color = this.config.colors.subtractLine;
+          color = this.config.styles.subtractLine.color;
           dashArray = undefined;
           break;
         case DrawMode.PointToPoint:
-          color = this.config.colors.polyline;
+          color = this.config.styles.polyline.color;
           dashArray = '5, 5';
           break;
         case DrawMode.PointToPointSubtract:
-          color = this.config.colors.subtractLine;
+          color = this.config.styles.subtractLine.color;
           dashArray = '5, 5';
           break;
         case DrawMode.Off:
@@ -799,7 +805,7 @@ class Polydraw extends L.Control {
    * Returns base tracer styles depending on whether we're in subtract mode.
    */
   private getTracerBaseStyle(isSubtractMode: boolean): Pick<L.PathOptions, 'weight' | 'opacity'> {
-    const options = isSubtractMode ? this.config.subtractLineOptions : this.config.polyLineOptions;
+    const options = isSubtractMode ? this.config.styles.subtractLine : this.config.styles.polyline;
     return {
       weight: options.weight,
       opacity: options.opacity,
@@ -852,9 +858,9 @@ class Polydraw extends L.Control {
       // Expect external to be a partial config
       const externalConfig: Partial<PolydrawConfig> = await response.json();
 
-      this.warnIfUsingDeprecatedConfiguration(externalConfig);
+      warnIfUsingDeprecatedConfiguration(externalConfig);
       if (inlineConfig) {
-        this.warnIfUsingDeprecatedConfiguration(inlineConfig);
+        warnIfUsingDeprecatedConfiguration(inlineConfig);
       }
 
       // Merge precedence: defaults < external < inline
@@ -863,6 +869,7 @@ class Polydraw extends L.Control {
         externalConfig ?? {},
         inlineConfig ?? {},
       );
+      applyRuntimeConfigFallbacks(this.config);
 
       this.initializeComponents();
     } catch (error) {
@@ -872,6 +879,7 @@ class Polydraw extends L.Control {
       );
       // Fallback to defaults < inline
       this.config = deepMerge<PolydrawConfig>(structuredClone(defaultConfig), inlineConfig ?? {});
+      applyRuntimeConfigFallbacks(this.config);
       this.initializeComponents();
     }
   }
@@ -1096,7 +1104,7 @@ class Polydraw extends L.Control {
     this.eventManager = new EventManager();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
     this.modeManager = new ModeManager(this.config, this.eventManager);
-    this.historyManager = new HistoryManager(this.eventManager, this.config.maxHistorySize);
+    this.historyManager = new HistoryManager(this.eventManager, this.config.history.maxSize);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       void _k; // make lint happy
       // This is the perfect central place to keep the indicator in sync.
@@ -1881,8 +1889,8 @@ class Polydraw extends L.Control {
 
     const element = e.target as HTMLElement;
     if (element) {
-      element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
-      element.style.borderColor = this.config.colors.edgeDeletion.hover;
+      element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
+      element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
       element.classList.add('edge-deletion-hover');
     }
   };
@@ -1989,9 +1997,9 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
 
-    const baseBackground = this.config.colors.styles.controlButton.backgroundColor;
-    const baseColor = this.config.colors.styles.controlButton.color;
-    const indicatorBackground = this.config.colors.styles.indicatorActive.backgroundColor;
+    const baseBackground = this.config.styles.ui.controlButton.backgroundColor;
+    const baseColor = this.config.styles.ui.controlButton.color;
+    const indicatorBackground = this.config.styles.ui.indicatorActive.backgroundColor;
 
     activateButton.style.backgroundColor = hasIndicator ? indicatorBackground : baseBackground;
     activateButton.style.color = baseColor;
@@ -2023,79 +2031,6 @@ class Polydraw extends L.Control {
 
   private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {
     applySvgIcon(button, svgMarkup);
-  }
-
-  private warnIfUsingDeprecatedConfiguration(config?: Partial<PolydrawConfig>) {
-    if (!config) {
-      return;
-    }
-
-    const legacyToolKeys = config.modes as
-      | {
-          draw?: boolean;
-          subtract?: boolean;
-          deleteAll?: boolean;
-          p2p?: boolean;
-          p2pSubtract?: boolean;
-          clonePolygons?: boolean;
-        }
-      | undefined;
-
-    if (
-      legacyToolKeys &&
-      (legacyToolKeys.draw !== undefined ||
-        legacyToolKeys.subtract !== undefined ||
-        legacyToolKeys.deleteAll !== undefined ||
-        legacyToolKeys.p2p !== undefined ||
-        legacyToolKeys.p2pSubtract !== undefined ||
-        legacyToolKeys.clonePolygons !== undefined)
-    ) {
-      console.warn(
-        '[Leaflet.Polydraw] `config.modes.*` tool toggles are deprecated in v2. Use `config.tools.*` (draw/subtract/p2p/clone/erase) instead.',
-      );
-    }
-
-    const legacyPolygon = config.polygonCreation?.simplification;
-    const simplification = config.simplification as
-      | {
-          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
-          dynamicMode?: { fractionGuard?: number; multiplier?: number };
-        }
-      | undefined;
-
-    const hasLegacySimplifyTolerance =
-      !!simplification &&
-      (Object.prototype.hasOwnProperty.call(simplification, 'simplifyTolerance') ||
-        Object.prototype.hasOwnProperty.call(simplification, 'dynamicMode'));
-
-    if (legacyPolygon || hasLegacySimplifyTolerance) {
-      console.warn(
-        '[Leaflet.Polydraw] Legacy simplification settings detected. Please migrate to `config.simplification` with `mode`, `simple`, and `dynamic` blocks.',
-      );
-    }
-
-    const visualOptimization = config.markers?.visualOptimization;
-    const deprecatedVisualOptimizationKeys =
-      visualOptimization &&
-      (visualOptimization.useAngles !== undefined ||
-        visualOptimization.useBoundingBox !== undefined ||
-        visualOptimization.useDistance !== undefined ||
-        visualOptimization.thresholdBoundingBox !== undefined ||
-        visualOptimization.thresholdDistance !== undefined ||
-        visualOptimization.sharpAngleThreshold !== undefined);
-
-    if (deprecatedVisualOptimizationKeys) {
-      console.warn(
-        '[Leaflet.Polydraw] `markers.visualOptimization` is deprecated. Prefer `visualOptimizationLevel` when adding predefined polygons.',
-      );
-    }
-
-    // Check for deprecated buffer polygon creation method
-    if (config.polygonCreation?.method === 'buffer') {
-      console.warn(
-        '[Leaflet.Polydraw] `polygonCreation.method: "buffer"` is deprecated and no longer supported. Falling back to "concaveman". Use "concaveman" or "direct" instead.',
-      );
-    }
   }
 }
 

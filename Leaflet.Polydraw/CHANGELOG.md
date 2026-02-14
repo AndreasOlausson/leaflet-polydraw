@@ -16,10 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clone mode button now disables itself when no polygons exist (matches undo/redo behavior).
 - P2P mode buttons now show the active highlight color when selected.
 - Erase-all button now disables when there are no polygons, and disabled actions no longer clear the active mode.
+- Config fallback paths now emit clear one-time warnings in non-test environments (invalid simplification values/strategy, deprecated or unknown polygon creation algorithms, and convex-hull fallback behavior).
+
+### Changed
+
+- Simplification config resolution now validates and normalizes invalid values at runtime:
+  - Invalid `simplification.strategy` falls back to `"simple"`.
+  - Invalid/negative tolerances fall back to safe defaults.
+  - `simplification.dynamic.fractionGuard` is clamped to `[0, 1]`.
+  - `simplification.dynamic.multiplier` must be `> 1`, otherwise defaults are used.
 
 ### Breaking
 
 - Tool toggles moved from `config.modes.*` to `config.tools.*` (draw/subtract/p2p/clone/erase).
+- Renamed `polygonCreation.method` to `polygonCreation.algorithm`.
+- Renamed `simplification.mode` to `simplification.strategy`.
+- Removed deprecated legacy simplification support from runtime/type defaults (`polygonCreation.simplification`, `simplifyTolerance`, `dynamicMode`).
+- `markers.visualOptimization` now only exposes `toleranceMin`, `toleranceMax`, and `curve` in the public config/types.
+- `buffer` was removed from the public `PolygonCreationAlgorithm` union type (runtime still warns and falls back to `concaveman`).
+- `dynamicTolerance` is now internal-only (removed from public config option types).
 
 ## [1.3.3] - 2026-02-03
 

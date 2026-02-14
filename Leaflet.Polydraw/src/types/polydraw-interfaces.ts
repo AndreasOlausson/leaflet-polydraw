@@ -123,12 +123,6 @@ export interface MarkerOptions {
     toleranceMin?: number;
     toleranceMax?: number;
     curve?: number;
-    sharpAngleThreshold?: number;
-    thresholdBoundingBox?: number;
-    thresholdDistance?: number;
-    useDistance?: boolean;
-    useBoundingBox?: boolean;
-    useAngles?: boolean;
   };
 }
 
@@ -152,13 +146,79 @@ export interface HoleStyleOptions {
   dashArray?: string;
 }
 
-export type SimplificationMode = 'simple' | 'dynamic' | 'none';
-
-export interface LegacySimplificationOptions {
-  mode?: string;
-  tolerance?: number;
-  highQuality?: boolean;
+/**
+ * Unified styles configuration interface
+ */
+export interface PolylineStyle {
+  weight: number;
+  opacity: number;
+  color: string;
+  dashArray?: string;
 }
+
+export interface PolygonStyle {
+  weight: number;
+  opacity: number;
+  fillOpacity: number;
+  smoothFactor: number;
+  noClip: boolean;
+  color: string;
+  fillColor: string;
+}
+
+export interface HoleStyle {
+  weight: number;
+  opacity: number;
+  fillOpacity: number;
+  color: string;
+  fillColor: string;
+  dashArray?: string;
+}
+
+export interface UIStyles {
+  controlButton: {
+    backgroundColor: string;
+    color: string;
+  };
+  controlButtonHover: {
+    backgroundColor: string;
+  };
+  controlButtonActive: {
+    backgroundColor: string;
+    color: string;
+  };
+  indicatorActive: {
+    backgroundColor: string;
+  };
+  p2pMarker: {
+    backgroundColor: string;
+    borderColor: string;
+  };
+  p2pClosingMarker: {
+    color: string;
+  };
+  edgeHover: {
+    color: string;
+  };
+  edgeDeletion: {
+    color: string;
+  };
+  dragSubtract: {
+    color: string;
+  };
+}
+
+export interface StylesConfig {
+  polyline: PolylineStyle;
+  subtractLine: PolylineStyle;
+  polygon: PolygonStyle;
+  hole: HoleStyle;
+  ui: UIStyles;
+}
+
+export type PolygonCreationAlgorithm = 'concaveman' | 'convex' | 'direct';
+export type SimplificationStrategy = 'simple' | 'dynamic' | 'none';
+export type ModifierKey = 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey';
 
 export interface SimplificationSimpleOptions {
   tolerance: number;
@@ -173,7 +233,7 @@ export interface SimplificationDynamicOptions {
 }
 
 export interface SimplificationConfig {
-  mode: SimplificationMode;
+  strategy: SimplificationStrategy;
   simple: SimplificationSimpleOptions;
   dynamic: SimplificationDynamicOptions;
 }
@@ -182,6 +242,7 @@ export interface SimplificationConfig {
  * Tool configuration interface (user-selectable modes)
  */
 export interface ToolConfig {
+  default: DrawMode;
   draw: boolean;
   subtract: boolean;
   p2p: boolean;
@@ -220,9 +281,9 @@ export interface DragPolygonConfig {
   markerAnimationDuration: number;
   modifierSubtract: {
     keys: {
-      windows: string;
-      mac: string;
-      linux: string;
+      windows: ModifierKey;
+      mac: ModifierKey;
+      linux: ModifierKey;
     };
     hideMarkersOnDrag: boolean;
   };
@@ -233,17 +294,25 @@ export interface DragPolygonConfig {
  */
 export interface EdgeDeletionConfig {
   keys: {
-    windows: string;
-    mac: string;
-    linux: string;
+    windows: ModifierKey;
+    mac: ModifierKey;
+    linux: ModifierKey;
   };
   minVertices: number;
 }
 
 /**
- * Menu operations configuration interface
+ * Interaction configuration interface (drag + edge deletion)
  */
-export interface MenuOperationsConfig {
+export interface InteractionConfig {
+  drag: DragPolygonConfig;
+  edgeDeletion: EdgeDeletionConfig;
+}
+
+/**
+ * Polygon tools configuration interface (per-polygon operations)
+ */
+export interface PolygonToolsConfig {
   simplify: {
     enabled: boolean;
     processHoles: boolean;
@@ -255,9 +324,16 @@ export interface MenuOperationsConfig {
   bbox: {
     enabled: boolean;
     processHoles: boolean;
+    addMidPointMarkers: boolean;
   };
   bezier: {
     enabled: boolean;
+    resolution: number;
+    sharpness: number;
+    resampleMultiplier: number;
+    maxNodes: number;
+    visualOptimizationLevel: number;
+    ghostMarkers: boolean;
   };
   scale: {
     enabled: boolean;
@@ -322,6 +398,7 @@ export interface HistoryCaptureConfig {
 
 export interface HistoryConfig {
   capture: HistoryCaptureConfig;
+  maxSize: number;
 }
 
 export interface TooltipConfig {
@@ -340,83 +417,17 @@ export interface PolydrawConfig {
   mergePolygons: boolean;
   tools: ToolConfig;
   modes: ModeConfig;
-  defaultMode: DrawMode;
   modifierSubtractMode: boolean;
-  dragPolygons: DragPolygonConfig;
-  edgeDeletion: EdgeDeletionConfig;
+  interaction: InteractionConfig;
   markers: MarkerOptions;
-  polyLineOptions: PolylineStyleOptions;
-  subtractLineOptions: PolylineStyleOptions;
-  polygonOptions: {
-    weight: number;
-    opacity: number;
-    fillOpacity: number;
-    smoothFactor: number;
-    noClip: boolean;
-  };
-  holeOptions: HoleStyleOptions;
+  styles: StylesConfig;
   polygonCreation: {
-    method: string;
-    simplification?: LegacySimplificationOptions;
+    algorithm: PolygonCreationAlgorithm;
   };
   simplification: SimplificationConfig;
-  menuOperations: MenuOperationsConfig;
-  boundingBox: {
-    addMidPointMarkers: boolean;
-  };
-  bezier: {
-    resolution: number;
-    sharpness: number;
-    resampleMultiplier: number;
-    maxNodes: number;
-    visualOptimizationLevel: number;
-    ghostMarkers: boolean;
-  };
-  colors: {
-    dragPolygons: {
-      subtract: string;
-    };
-    p2p: {
-      closingMarker: string;
-    };
-    edgeHover: string;
-    edgeDeletion: {
-      hover: string;
-    };
-    polyline: string;
-    subtractLine: string;
-    polygon: {
-      border: string;
-      fill: string;
-    };
-    hole: {
-      border: string;
-      fill: string;
-    };
-    styles: {
-      controlButton: {
-        backgroundColor: string;
-        color: string;
-      };
-      controlButtonHover: {
-        backgroundColor: string;
-      };
-      controlButtonActive: {
-        backgroundColor: string;
-        color: string;
-      };
-      indicatorActive: {
-        backgroundColor: string;
-      };
-      p2pMarker: {
-        backgroundColor: string;
-        borderColor: string;
-      };
-    };
-  };
+  polygonTools: PolygonToolsConfig;
   tooltips: TooltipConfig;
   history: HistoryConfig;
-  maxHistorySize: number;
 }
 
 /**
@@ -656,15 +667,6 @@ export interface PointImportance {
   distanceFromLine: number;
   isExtreme: boolean;
   distanceFromCentroid: number;
-}
-
-/**
- * Simplification options interface
- */
-export interface SimplificationOptions {
-  tolerance: number;
-  highQuality: boolean;
-  dynamicTolerance: boolean;
 }
 
 /**

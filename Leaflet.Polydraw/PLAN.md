@@ -5,44 +5,44 @@
 ### Goals
 
 - Reduce the public config surface to the most common, stable options.
-- Separate "internal defaults" from user overrides to make configuration easier to maintain.
+- ~~Separate "internal defaults" from user overrides to make configuration easier to maintain.~~ 🚫 Decision: keep a single config object for now (no "second config" split).
 - Ship a complete Playwright E2E suite that covers core drawing/editing workflows.
 - Add polygon metadata and layered polygon sets as first-class v2 features.
 
 ### Planned Changes
 
-- Introduce a smaller, focused public config interface.
-- Move rarely changed behavior (e.g., tooltip defaults, internal tuning knobs) into code-owned defaults.
+- ~~Introduce a smaller, focused public config interface.~~
+- ~~Move rarely changed behavior (e.g., tooltip defaults, internal tuning knobs) into code-owned defaults.~~ 🚫 Decision: not now; keep `tooltips` public for this cycle.
 - Provide a clear migration guide from v1 config keys to v2 equivalents (including deprecations).
 - Define a v2 config schema (grouped by use-case) and remove deprecated keys from runtime merging.
-- Add a migration helper or codemod to map common v1 configs to v2.
+- ~~Add a migration helper or codemod to map common v1 configs to v2.~~ ✅ `src/guards/config-deprecation-guard.ts` — runtime migration for `modes.*` → `tools.*` with deprecation warnings.
 - Document a strict vs. advanced override mode (if we keep any escape hatches).
 - Formalize a polygon metadata system inspired by the Angular `addAutoPolygon` flow.
 - Introduce layered polygon sets so overlaps across layers do not merge or affect each other.
 - Update docs/examples to reference `config.tools.*` (remove `modes.draw/subtract/p2p/...` references).
 - Add a short v2 migration section (breaking config changes + renamed keys).
-- Audit type exports/examples to ensure `ModeConfig` no longer includes tool flags.
-- Add a minimal test that asserts a warning is logged when legacy `modes.*` tool keys are provided.
+- ~~Audit type exports/examples to ensure `ModeConfig` no longer includes tool flags.~~ ✅ `ModeConfig` now contains behavior flags only (no tool toggles).
+- ~~Add a minimal test that asserts a warning is logged when legacy `modes.*` tool keys are provided.~~ ✅ `test/unit/guards/config-deprecation-guard.test.ts` — 56 tests covering all warning categories + migration logic.
 
 ### Draft Config Mapping (WIP)
 
-- `modes.*` -> `tools.*` (draw, subtract, p2p, p2pSubtract, clone, erase)
-- `defaultMode` -> `tools.default`
+- ~~`modes.*` -> `tools.*` (draw, subtract, p2p, p2pSubtract, clone, erase)~~ ✅ Implemented.
+- ~~`defaultMode` -> `tools.default`~~ ✅ Implemented.
 - `modifierSubtractMode` -> `modifiers.temporarySubtract`
-- `dragPolygons.*` -> `interaction.drag.*`
-- `edgeDeletion.*` -> `interaction.edgeDeletion.*`
+- ~~`dragPolygons.*` -> `interaction.drag.*`~~ ✅ Implemented.
+- ~~`edgeDeletion.*` -> `interaction.edgeDeletion.*`~~ ✅ Implemented.
 - `markers.*` -> `markers.*` (keep simple toggles public, move advanced metrics/units to internal defaults)
-- `polyLineOptions` -> `styles.drawLine`
-- `subtractLineOptions` -> `styles.subtractLine`
-- `polygonOptions` -> `styles.polygon`
-- `holeOptions` -> `styles.hole`
+- ~~`polyLineOptions` -> `styles.drawLine`~~ ✅ Implemented via unified `styles.polyline`.
+- ~~`subtractLineOptions` -> `styles.subtractLine`~~ ✅ Implemented.
+- ~~`polygonOptions` -> `styles.polygon`~~ ✅ Implemented.
+- ~~`holeOptions` -> `styles.hole`~~ ✅ Implemented.
 - `polygonCreation.*` -> `creation.*`
 - `simplification.*` -> `simplify.*`
 - `menuOperations.*` -> `menu.*`
 - `boundingBox.*` -> `transform.boundingBox.*`
 - `bezier.*` -> `smooth.bezier.*`
-- `colors.*` -> `theme.*` (keep public palette small, move per-state styles to internal defaults)
-- `tooltips.*` -> `ui.tooltips.*` (or internal defaults only)
+- ~~`colors.*` -> `theme.*` (keep public palette small, move per-state styles to internal defaults)~~ ✅ Implemented via unified `styles.*` (including `styles.ui.*`).
+- ~~`tooltips.*` -> `ui.tooltips.*` (or internal defaults only)~~ 🚫 Decision: keep `tooltips.*` public for now.
 
 ### Polygon Metadata (v2)
 
@@ -73,3 +73,10 @@
 - Should the Playwright suite validate both Leaflet v1 and v2 builds?
 - How should metadata resolve on merge or split (merge rules vs preserve lists)?
 - How should layer ordering and selection priority behave when layers overlap?
+
+### Rethink Notes
+
+- ~~`dynamicTolerance` should be totally internal.~~ ✅
+- ~~Do not expose `dynamicTolerance` as a public config key or option type.~~ ✅
+- ~~Keep dynamic-iteration behavior controlled by internal code paths only.~~ ✅
+- If needed for debugging, gate it behind a dev-only/internal flag (not documented in public API).

@@ -179,32 +179,30 @@ describe('deepMerge', () => {
       expect(result.markers?.deleteMarker).toBe(true);
     });
 
-    it('should merge colors configuration with nested objects', () => {
+    it('should merge styles configuration with nested objects', () => {
       const target: any = {
-        colors: {
-          dragPolygons: {
-            subtract: '#D9460F',
-          },
-          p2p: {
-            closingMarker: '#4CAF50',
+        styles: {
+          ui: {
+            dragSubtract: { color: '#D9460F' },
+            p2pClosingMarker: { color: '#4CAF50' },
           },
           polygon: {
-            border: '#50622b',
-            fill: '#b4cd8a',
+            color: '#50622b',
+            fillColor: '#b4cd8a',
           },
         },
       };
       const source = {
-        colors: {
+        styles: {
           polygon: {
-            fill: '#custom-color',
+            fillColor: '#custom-color',
           },
         },
       };
       const result = deepMerge(target, source as any);
-      expect(result.colors?.polygon?.border).toBe('#50622b');
-      expect(result.colors?.polygon?.fill).toBe('#custom-color');
-      expect(result.colors?.dragPolygons?.subtract).toBe('#D9460F');
+      expect(result.styles?.polygon?.color).toBe('#50622b');
+      expect(result.styles?.polygon?.fillColor).toBe('#custom-color');
+      expect(result.styles?.ui?.dragSubtract?.color).toBe('#D9460F');
     });
 
     it('should handle empty source objects', () => {
@@ -268,19 +266,21 @@ describe('deepMerge', () => {
           dragPolygons: true,
           edgeDeletion: false,
         },
-        dragPolygons: {
-          opacity: 0.5,
-          dragCursor: 'grab',
-          hoverCursor: 'pointer',
-          markerBehavior: 'show',
-          markerAnimationDuration: 300,
-          modifierSubtract: {
-            keys: {
-              windows: 'shiftKey',
-              mac: 'shiftKey',
-              linux: 'shiftKey',
+        interaction: {
+          drag: {
+            opacity: 0.5,
+            dragCursor: 'grab',
+            hoverCursor: 'pointer',
+            markerBehavior: 'show',
+            markerAnimationDuration: 300,
+            modifierSubtract: {
+              keys: {
+                windows: 'shiftKey',
+                mac: 'shiftKey',
+                linux: 'shiftKey',
+              },
+              hideMarkersOnDrag: false,
             },
-            hideMarkersOnDrag: false,
           },
         },
       };
@@ -296,15 +296,15 @@ describe('deepMerge', () => {
       expect(result.tools.subtract).toBe(false);
       expect(result.tools.p2p).toBe(true);
 
-      // Verify deeply nested changes in dragPolygons
-      expect(result.dragPolygons.opacity).toBe(0.5);
-      expect(result.dragPolygons.modifierSubtract.keys.windows).toBe('shiftKey');
-      expect(result.dragPolygons.modifierSubtract.hideMarkersOnDrag).toBe(false);
+      // Verify deeply nested changes in interaction.drag
+      expect(result.interaction.drag.opacity).toBe(0.5);
+      expect(result.interaction.drag.modifierSubtract.keys.windows).toBe('shiftKey');
+      expect(result.interaction.drag.modifierSubtract.hideMarkersOnDrag).toBe(false);
 
       // Verify unchanged values from default
       expect(result.markers.deleteMarker).toBe(true);
-      expect(result.polygonOptions.weight).toBe(2);
-      expect(result.colors.polygon.border).toBe('#50622b');
+      expect(result.styles.polygon.weight).toBe(2);
+      expect(result.styles.polygon.color).toBe('#50622b');
     });
 
     it('2. should merge with a partial config object and maintain full structure', () => {
@@ -373,15 +373,15 @@ describe('deepMerge', () => {
 
     it('should handle complex nested partial merge', () => {
       const complexPartial = {
-        colors: {
+        styles: {
           polygon: {
-            border: '#FF0000',
+            color: '#FF0000',
           },
         },
         markers: {
           visualOptimization: {
-            useDistance: false,
-            thresholdDistance: 0.1,
+            toleranceMin: 0.0001,
+            curve: 1.8,
           },
         },
         simplification: {
@@ -394,12 +394,12 @@ describe('deepMerge', () => {
       const result = deepMerge(structuredClone(defaultConfig), complexPartial as any);
 
       // Verify deeply nested partial changes
-      expect(result.colors.polygon.border).toBe('#FF0000');
-      expect(result.colors.polygon.fill).toBe('#b4cd8a'); // Unchanged
+      expect(result.styles.polygon.color).toBe('#FF0000');
+      expect(result.styles.polygon.fillColor).toBe('#b4cd8a'); // Unchanged
 
-      expect(result.markers.visualOptimization.useDistance).toBe(false);
-      expect(result.markers.visualOptimization.thresholdDistance).toBe(0.1);
-      expect(result.markers.visualOptimization.sharpAngleThreshold).toBe(30); // Unchanged
+      expect(result.markers.visualOptimization.toleranceMin).toBe(0.0001);
+      expect(result.markers.visualOptimization.curve).toBe(1.8);
+      expect(result.markers.visualOptimization.toleranceMax).toBe(0.005); // Unchanged
 
       expect(result.simplification.simple.tolerance).toBe(0.001);
       expect(result.simplification.simple.highQuality).toBe(false); // Unchanged
