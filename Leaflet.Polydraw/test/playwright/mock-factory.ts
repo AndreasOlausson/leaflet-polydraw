@@ -186,18 +186,46 @@ export class DemoFactory {
         if (requireHoles && ringSet && ringSet.length > 1) {
           const outer = ringSet[0];
           const hole = ringSet[1];
-          const outerPt = outer?.[0] as LatLngLike | undefined;
-          const holePt = hole?.[0] as LatLngLike | undefined;
-          if (
-            outerPt &&
-            holePt &&
-            typeof outerPt.lat === 'number' &&
-            typeof holePt.lat === 'number'
-          ) {
-            startLatLng = {
+          const mapRect = map.getContainer().getBoundingClientRect();
+          const controlRect = ctrl?.getContainer?.()?.getBoundingClientRect?.() ?? null;
+          const isCoveredByControl = (point: LatLngLike): boolean => {
+            if (!controlRect) return false;
+            const pixel = map.latLngToContainerPoint(point);
+            const clientX = mapRect.left + pixel.x;
+            const clientY = mapRect.top + pixel.y;
+            return (
+              clientX >= controlRect.left &&
+              clientX <= controlRect.right &&
+              clientY >= controlRect.top &&
+              clientY <= controlRect.bottom
+            );
+          };
+
+          const candidateCount = Math.min(outer.length, hole.length);
+          const candidates: LatLngLike[] = [];
+          for (let i = 0; i < candidateCount; i += 1) {
+            const outerPt = outer[i] as LatLngLike | undefined;
+            const holePt = hole[i] as LatLngLike | undefined;
+            if (!outerPt || !holePt) continue;
+            if (
+              typeof outerPt.lat !== 'number' ||
+              typeof outerPt.lng !== 'number' ||
+              typeof holePt.lat !== 'number' ||
+              typeof holePt.lng !== 'number'
+            ) {
+              continue;
+            }
+            candidates.push({
               lat: (outerPt.lat + holePt.lat) / 2,
               lng: (outerPt.lng + holePt.lng) / 2,
-            };
+            });
+          }
+
+          const uncoveredCandidate = candidates.find((point) => !isCoveredByControl(point));
+          if (uncoveredCandidate) {
+            startLatLng = uncoveredCandidate;
+          } else if (candidates.length > 0) {
+            startLatLng = candidates[0];
           }
         }
 
@@ -212,7 +240,9 @@ export class DemoFactory {
         const downTarget =
           pathTarget ?? document.elementFromPoint(start.x, start.y) ?? map.getContainer();
         const moveTarget = map.getContainer();
-        const usePointer = typeof window.PointerEvent === 'function';
+        const leafletVersion = String((window as any).L?.version ?? '');
+        const usePointer =
+          !leafletVersion.startsWith('1.') && typeof window.PointerEvent === 'function';
         const isTouch = (navigator.maxTouchPoints || 0) > 0;
 
         const dispatchPointer = (type: string, x: number, y: number, targetEl: Element) => {
@@ -252,6 +282,8 @@ export class DemoFactory {
           await new Promise((resolve) => setTimeout(resolve, 16));
         }
         dispatchPointer('pointerup', end.x, end.y, moveTarget);
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
       },
       { offsetLat, offsetLng, requireHoles: options.requireHoles ?? false },
     );

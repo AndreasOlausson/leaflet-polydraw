@@ -14,9 +14,9 @@ export const selectors = {
 type NormalizedPoint = [number, number];
 
 const DEFAULT_P2P_POINTS: NormalizedPoint[] = [
-  [0.3, 0.4],
-  [0.7, 0.4],
-  [0.5, 0.7],
+  [0.55, 0.4],
+  [0.8, 0.4],
+  [0.68, 0.7],
 ];
 
 function toViewportPoints(
@@ -82,7 +82,9 @@ export async function drawPointToPointPolygon(
   const startCount = await getPolygonCount(page);
   const browserName = page.context().browser()?.browserType().name();
   const coarsePointer = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
-  const usePointerDispatch = browserName === 'firefox' && coarsePointer;
+  const leafletVersion = await page.evaluate(() => String((window as any).L?.version ?? ''));
+  const isLeafletV1 = leafletVersion.startsWith('1.');
+  const usePointerDispatch = !isLeafletV1 && browserName === 'firefox' && coarsePointer;
   const useTouch = !usePointerDispatch && coarsePointer;
 
   const dispatchPointerTap = async (point: { x: number; y: number }) => {
@@ -109,7 +111,7 @@ export async function drawPointToPointPolygon(
       cancelable: true,
     });
   };
-  for (const point of coords.slice(0, -1)) {
+  for (const point of coords) {
     if (usePointerDispatch) {
       await dispatchPointerTap(point);
     } else if (useTouch) {
@@ -120,17 +122,6 @@ export async function drawPointToPointPolygon(
     await page.waitForTimeout(50);
   }
   const last = coords[coords.length - 1];
-  if (usePointerDispatch) {
-    await dispatchPointerTap(last);
-    await page.waitForTimeout(80);
-    await dispatchPointerTap(last);
-  } else if (useTouch) {
-    await page.touchscreen.tap(last.x, last.y);
-    await page.waitForTimeout(80);
-    await page.touchscreen.tap(last.x, last.y);
-  } else {
-    await page.mouse.dblclick(last.x, last.y);
-  }
   await page.waitForTimeout(300);
 
   const afterCount = await getPolygonCount(page);
@@ -223,15 +214,30 @@ export async function drawPointToPointPolygonWithOffsetDoubleTap(
     });
   };
 
-  for (const point of coords.slice(0, -1)) {
-    await dispatchPointerTap(point);
+  const browserName = page.context().browser()?.browserType().name();
+  const coarsePointer = await page.evaluate(() => matchMedia('(pointer: coarse)').matches);
+  const leafletVersion = await page.evaluate(() => String((window as any).L?.version ?? ''));
+  const isLeafletV1 = leafletVersion.startsWith('1.');
+  const usePointerDispatch = !isLeafletV1 && browserName === 'firefox' && coarsePointer;
+  const tap = async (point: { x: number; y: number }) => {
+    if (usePointerDispatch) {
+      await dispatchPointerTap(point);
+      return;
+    }
+    await page.touchscreen.tap(point.x, point.y);
+  };
+
+  for (const point of coords) {
+    await tap(point);
     await page.waitForTimeout(50);
   }
 
   const last = coords[coords.length - 1];
-  await dispatchPointerTap(last);
+  // Separate the close gesture from the final placement tap.
+  await page.waitForTimeout(350);
+  await tap(last);
   await page.waitForTimeout(tapDelayMs);
-  await dispatchPointerTap({ x: last.x + offsetPx, y: last.y + offsetPx });
+  await tap({ x: last.x + offsetPx, y: last.y + offsetPx });
   await page.waitForTimeout(300);
 }
 

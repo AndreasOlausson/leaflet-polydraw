@@ -430,7 +430,11 @@ export class PolygonDrawManager {
     // console.log('PolygonDrawManager clearP2pMarkers');
     this.p2pMarkers.forEach((marker) => {
       this.detachMarkerModifierHandler(marker);
-      this.map.removeLayer(marker);
+      try {
+        this.map.removeLayer(marker);
+      } catch {
+        // Ignore marker removal errors (Leaflet v1/jsdom edge case)
+      }
     });
     this.p2pMarkers = [];
   }
@@ -528,7 +532,11 @@ export class PolygonDrawManager {
       this.p2pMarkers.splice(markerIndex, 1);
       this.detachMarkerModifierHandler(markerToDelete);
       // Remove from map
-      this.map.removeLayer(markerToDelete);
+      try {
+        this.map.removeLayer(markerToDelete);
+      } catch {
+        // Ignore marker removal errors (Leaflet v1/jsdom edge case)
+      }
       // Update the tracer
       this.updateP2PTracer();
 

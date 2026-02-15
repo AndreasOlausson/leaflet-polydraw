@@ -234,7 +234,7 @@ export class PolygonInteractionManager {
           this.config.markers.markerIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
       });
 
-      featureGroup.addLayer(marker).addTo(this.map);
+      featureGroup.addLayer(marker);
 
       // Attach reference to featureGroup for dragend/touchend logic
       this.markerFeatureGroupMap.set(marker, featureGroup);
@@ -531,7 +531,7 @@ export class PolygonInteractionManager {
         zIndexOffset: this.config.markers.holeIcon.zIndexOffset ?? this.config.markers.zIndexOffset,
       });
 
-      featureGroup.addLayer(marker).addTo(this.map);
+      featureGroup.addLayer(marker);
 
       // Attach reference to featureGroup for dragend/touchend logic
       this.markerFeatureGroupMap.set(marker, featureGroup);

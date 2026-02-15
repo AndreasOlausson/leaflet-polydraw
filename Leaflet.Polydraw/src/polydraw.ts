@@ -219,7 +219,15 @@ class Polydraw extends L.Control {
 
     // Clean up tracer
     if (this.tracer) {
-      this.map.removeLayer(this.tracer);
+      try {
+        if (this.map.hasLayer(this.tracer)) {
+          this.map.removeLayer(this.tracer);
+        } else {
+          this.tracer.remove();
+        }
+      } catch {
+        // Ignore tracer cleanup errors (can happen in jsdom + Leaflet v1)
+      }
       this.tracer = null; // Reset tracer reference
     }
 

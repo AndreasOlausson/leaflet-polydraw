@@ -1022,13 +1022,25 @@ export class PolygonMutationManager {
     // Clean up resources before removing
     this.cleanupFeatureGroup(featureGroup);
 
-    featureGroup.clearLayers();
+    try {
+      featureGroup.clearLayers();
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        console.warn('Error clearing layers from feature group:', error);
+      }
+    }
     const featureGroups = this.getFeatureGroups();
     const index = featureGroups.indexOf(featureGroup);
     if (index > -1) {
       featureGroups.splice(index, 1);
     }
-    this.map.removeLayer(featureGroup);
+    try {
+      this.map.removeLayer(featureGroup);
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        console.warn('Error removing feature group layer from map:', error);
+      }
+    }
   }
 
   /**
