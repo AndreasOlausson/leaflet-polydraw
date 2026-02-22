@@ -198,8 +198,12 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
     warnIfUsingDeprecatedConfiguration(config);
 
     expect(warnSpy).toHaveBeenCalledTimes(4);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('`config.modes.*` tool toggles are deprecated'));
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('`markers.visualOptimization` is deprecated'));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('`config.modes.*` tool toggles are deprecated'),
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('`markers.visualOptimization` is deprecated'),
+    );
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('`polygonCreation.algorithm: "buffer"` is deprecated'),
     );
@@ -350,9 +354,7 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
 
       warnIfUsingDeprecatedConfiguration(config);
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('`polyLineOptions`'),
-      );
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('`polyLineOptions`'));
     });
 
     it('should warn when colors is present', () => {
@@ -361,9 +363,7 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
 
       warnIfUsingDeprecatedConfiguration(config);
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('are deprecated in v2'),
-      );
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('are deprecated in v2'));
     });
 
     it('should migrate polyLineOptions to styles.polyline', () => {
@@ -387,7 +387,9 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
 
     it('should migrate polygonOptions to styles.polygon', () => {
       vi.spyOn(console, 'warn');
-      const config = { polygonOptions: { weight: 5, fillOpacity: 0.3, smoothFactor: 0.5, noClip: false } } as any;
+      const config = {
+        polygonOptions: { weight: 5, fillOpacity: 0.3, smoothFactor: 0.5, noClip: false },
+      } as any;
 
       warnIfUsingDeprecatedConfiguration(config);
 

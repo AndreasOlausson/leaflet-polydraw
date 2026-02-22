@@ -51,7 +51,10 @@ describe('Layer Reordering', () => {
     const moved = polydraw.reorderLayer('Layer A', 'Layer C');
     expect(moved).toBe(true);
 
-    const layerOrder = polydraw.getLayerManager().getAllLayers().map((layer) => layer.id);
+    const layerOrder = polydraw
+      .getLayerManager()
+      .getAllLayers()
+      .map((layer) => layer.id);
     expect(layerOrder).toEqual(['default', 'Layer B', 'Layer C', 'Layer A']);
   });
 

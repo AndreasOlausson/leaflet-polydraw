@@ -18,9 +18,8 @@ function findMenuMarker(featureGroup: L.FeatureGroup): L.Marker | undefined {
     if (el?.classList.contains('menu')) return true;
 
     // Leaflet v1 + jsdom may not always expose a marker element; fall back to icon className.
-    const iconClassName = (
-      layer.options.icon as { options?: { className?: string } } | undefined
-    )?.options?.className;
+    const iconClassName = (layer.options.icon as { options?: { className?: string } } | undefined)
+      ?.options?.className;
     return typeof iconClassName === 'string' && iconClassName.includes('menu');
   }) as L.Marker | undefined;
 }
@@ -29,10 +28,7 @@ function findMenuMarker(featureGroup: L.FeatureGroup): L.Marker | undefined {
  * Opens the menu popup by firing 'click' on the menu marker and returns
  * the set of action IDs present as buttons inside the popup.
  */
-function openMenuAndGetActionIds(
-  map: L.Map,
-  featureGroup: L.FeatureGroup,
-): Set<string> {
+function openMenuAndGetActionIds(map: L.Map, featureGroup: L.FeatureGroup): Set<string> {
   const menuMarker = findMenuMarker(featureGroup);
   if (!menuMarker) throw new Error('Menu marker not found in featureGroup');
 
@@ -53,20 +49,14 @@ function openMenuAndGetActionIds(
 /**
  * Opens the menu popup and clicks a specific action button by its data-action-id.
  */
-function clickMenuButton(
-  map: L.Map,
-  featureGroup: L.FeatureGroup,
-  actionId: string,
-): void {
+function clickMenuButton(map: L.Map, featureGroup: L.FeatureGroup, actionId: string): void {
   const menuMarker = findMenuMarker(featureGroup);
   if (!menuMarker) throw new Error('Menu marker not found in featureGroup');
 
   menuMarker.fire('click');
 
   const container = map.getContainer();
-  const button = container.querySelector(
-    `[data-action-id="${actionId}"]`,
-  ) as HTMLElement | null;
+  const button = container.querySelector(`[data-action-id="${actionId}"]`) as HTMLElement | null;
   if (!button) throw new Error(`Menu button with action "${actionId}" not found`);
 
   button.click();
@@ -330,9 +320,7 @@ describe('Menu Operations Config', () => {
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
 
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonBefore = fg
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonBefore = fg.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsBefore = getPolygonRings(polygonBefore);
         const holeVerticesBefore = ringsBefore[1]?.length ?? 0;
 
@@ -342,9 +330,7 @@ describe('Menu Operations Config', () => {
 
         // After simplify, the polygon should be re-created
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // With processHoles: true, hole should also be simplified (fewer vertices)
@@ -368,9 +354,7 @@ describe('Menu Operations Config', () => {
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
 
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonBefore = fg
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonBefore = fg.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsBefore = getPolygonRings(polygonBefore);
         const holeVerticesBefore = ringsBefore[1]?.length ?? 0;
 
@@ -378,9 +362,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // With processHoles: false, hole should keep its original vertex count
@@ -402,9 +384,7 @@ describe('Menu Operations Config', () => {
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
 
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonBefore = fg
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonBefore = fg.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsBefore = getPolygonRings(polygonBefore);
         const holeVerticesBefore = ringsBefore[1]?.length ?? 0;
 
@@ -412,9 +392,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // With processHoles: true, hole should have more vertices (doubled)
@@ -434,9 +412,7 @@ describe('Menu Operations Config', () => {
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
 
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonBefore = fg
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonBefore = fg.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsBefore = getPolygonRings(polygonBefore);
         const holeVerticesBefore = ringsBefore[1]?.length ?? 0;
 
@@ -444,9 +420,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // With processHoles: false, hole should keep the same vertex count
@@ -474,9 +448,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // Outer ring should be a bbox (4 vertices — Leaflet open rings)
@@ -530,9 +502,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // With addMidPointMarkers, the bbox gets doubled elbows
@@ -560,9 +530,7 @@ describe('Menu Operations Config', () => {
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const ringsAfter = getPolygonRings(polygonAfter);
 
         // Without addMidPointMarkers, bbox has exactly 4 vertices (Leaflet open rings)
@@ -582,18 +550,14 @@ describe('Menu Operations Config', () => {
         );
 
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonBefore = fg
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonBefore = fg.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const verticesBefore = getPolygonRings(polygonBefore)[0].length;
 
         clickMenuButton(harness.map, fg, 'bezier');
         await flushAsync();
 
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
         const verticesAfter = getPolygonRings(polygonAfter)[0].length;
 
         // Bezier smoothing should produce more vertices than the original
@@ -667,9 +631,7 @@ describe('Menu Operations Config', () => {
 
         // When ghostMarkers is true, the polygon should have near-invisible opacity
         const fgAfter = harness.polydraw.getFeatureGroups()[0];
-        const polygonAfter = fgAfter
-          .getLayers()
-          .find((l) => l instanceof L.Polygon) as L.Polygon;
+        const polygonAfter = fgAfter.getLayers().find((l) => l instanceof L.Polygon) as L.Polygon;
 
         // The polygon should have been styled with ghost opacity
         expect(polygonAfter.options.opacity).toBeLessThan(0.01);

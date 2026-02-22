@@ -23,7 +23,10 @@ describe('History Batch Reentrancy', () => {
   it('keeps outer batch suppression when nested batch APIs run', async () => {
     polydraw.beginBatch();
     try {
-      await polydraw.addPredefinedGeoJSONs([geoFixtures.squarePolygon(), geoFixtures.trianglePolygon()]);
+      await polydraw.addPredefinedGeoJSONs([
+        geoFixtures.squarePolygon(),
+        geoFixtures.trianglePolygon(),
+      ]);
       await polydraw.addPredefinedPolygon(fixtures.octagon());
     } finally {
       polydraw.endBatch();
