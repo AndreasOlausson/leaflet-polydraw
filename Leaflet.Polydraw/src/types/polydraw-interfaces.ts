@@ -1,6 +1,11 @@
 import * as L from 'leaflet';
 import { DrawMode, MarkerPosition } from '../enums';
 import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
+import type {
+  PolydrawEvent as ManagerPolydrawEvent,
+  PolydrawEventCallback as ManagerPolydrawEventCallback,
+  PolydrawEventPayloads,
+} from '../managers/event-manager';
 
 export type { Position };
 
@@ -356,6 +361,7 @@ export type PolygonActionHistory =
   | 'toggleOptimization';
 
 export type HistoryAction =
+  | 'batch'
   | 'freehand'
   | 'pointToPoint'
   | 'addPredefinedPolygon'
@@ -368,6 +374,8 @@ export type HistoryAction =
   | 'removeHole'
   | 'modifierSubtract'
   | 'deletePolygon'
+  | 'layerDelete'
+  | 'layerReorder'
   | PolygonActionHistory;
 
 export interface PolygonActionsHistoryCaptureConfig {
@@ -381,6 +389,7 @@ export interface PolygonActionsHistoryCaptureConfig {
 }
 
 export interface HistoryCaptureConfig {
+  batch: boolean;
   freehand: boolean;
   pointToPoint: boolean;
   addPredefinedPolygon: boolean;
@@ -393,6 +402,8 @@ export interface HistoryCaptureConfig {
   removeHole: boolean;
   modifierSubtract: boolean;
   deletePolygon: boolean;
+  layerDelete?: boolean;
+  layerReorder?: boolean;
   polygonActions?: PolygonActionsHistoryCaptureConfig;
 }
 
@@ -439,33 +450,10 @@ export type TouchEventHandler = (event: TouchEvent) => void;
 export type MarkerEventHandler = (event: L.LeafletEvent) => void;
 export type PolygonEventHandler = (event: L.LeafletEvent) => void;
 
-export type PolydrawEvent =
-  | 'polydraw:ready'
-  | 'polydraw:start'
-  | 'polydraw:stop'
-  | 'polydraw:mode:change'
-  | 'polydraw:polygon:created'
-  | 'polydraw:polygon:updated'
-  | 'polydraw:polygon:deleted'
-  | 'polydraw:marker:click'
-  | 'polydraw:marker:dragstart'
-  | 'polydraw:marker:dragend'
-  | 'polydraw:draw:cancel'
-  | 'polydraw:menu:action'
-  | 'polydraw:check:intersection'
-  | 'polydraw:subtract';
-
-export type PolydrawEventData =
-  | undefined
-  | DrawMode
-  | MenuActionData
-  | IntersectionAnalysis
-  | PolygonUpdatedEventData
-  | GeometricOperationResult
-  | { id?: string; polygon?: Feature<Polygon | MultiPolygon> }
-  | L.LeafletEvent;
-
-export type PolydrawEventCallback = (data?: PolydrawEventData) => void;
+export type PolydrawEvent = ManagerPolydrawEvent;
+export type PolydrawEventData<T extends PolydrawEvent = PolydrawEvent> = PolydrawEventPayloads[T];
+export type PolydrawEventCallback<T extends PolydrawEvent = PolydrawEvent> =
+  ManagerPolydrawEventCallback<T>;
 
 /**
  * Data interface for menu actions
@@ -560,6 +548,7 @@ export interface PolydrawFeatureGroup extends L.FeatureGroup {
     hasHoles: boolean;
     createdAt: Date;
     lastModified: Date;
+    layerId?: string;
   };
 }
 
@@ -691,4 +680,30 @@ export interface UnionOptions {
 export interface DifferenceOptions {
   tolerance: number;
   createHoles: boolean;
+}
+
+/**
+ * Layer snapshot entry for history serialization
+ */
+export interface LayerSnapshotEntry {
+  id: string;
+  color: string;
+  visible: boolean;
+  featureIndices: number[];
+}
+
+/**
+ * Complete layer snapshot for history
+ */
+export interface LayerSnapshot {
+  layers: LayerSnapshotEntry[];
+  activeLayerId: string;
+}
+
+/**
+ * Input format for adding polygon groups with layer information
+ */
+export interface PolygonGroupInput {
+  layer: { id: string; color: string };
+  polygons: unknown[][][][];
 }

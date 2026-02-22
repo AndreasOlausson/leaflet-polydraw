@@ -23,6 +23,7 @@ import { isTestEnvironment } from '../utils';
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
 import { PolygonInteractionManager } from './polygon-interaction-manager';
+import type { LayerManager } from './layer-manager';
 
 export interface MutationResult {
   success: boolean;
@@ -37,6 +38,8 @@ interface AddPolygonOptions {
   visualOptimizationLevel?: number;
   originalOptimizationLevel?: number;
   skipKinkProcessing?: boolean;
+  targetLayerId?: string;
+  layerColor?: string;
 }
 
 export interface MutationManagerDependencies {
@@ -48,6 +51,7 @@ export interface MutationManagerDependencies {
   eventManager: EventManager;
   getFeatureGroups: () => L.FeatureGroup[];
   saveHistoryState?: (action: HistoryAction) => void;
+  layerManager?: LayerManager;
 }
 
 /**
@@ -62,10 +66,35 @@ export class PolygonMutationManager {
   private eventManager: EventManager;
   private getFeatureGroups: () => L.FeatureGroup[];
   private saveHistoryState?: (action: HistoryAction) => void;
+  private layerManager?: LayerManager;
 
   // Specialized managers
   private geometryManager!: PolygonGeometryManager;
   private interactionManager!: PolygonInteractionManager;
+  private readonly onDrawCancel = (data: PolydrawEventPayloads['polydraw:draw:cancel']) => {
+    this.emit('drawCancelled', data);
+  };
+  private readonly onPolygonUpdated = (data: PolydrawEventPayloads['polydraw:polygon:updated']) => {
+    void this.handlePolygonModified(data as PolygonUpdatedEventData);
+  };
+  private readonly onMenuAction = (data: PolydrawEventPayloads['polydraw:menu:action']) => {
+    void this.handleMenuAction(data as MenuActionData);
+  };
+  private readonly onCheckIntersection = (
+    data: PolydrawEventPayloads['polydraw:check:intersection'],
+  ) => {
+    const hasIntersection = this.geometryManager.checkPolygonIntersection(
+      data.polygon1,
+      data.polygon2,
+    );
+    data.callback(hasIntersection);
+  };
+  private readonly onSubtract = (data: PolydrawEventPayloads['polydraw:subtract']) => {
+    void this.subtractPolygon(data.subtractPolygon);
+  };
+  private readonly onPolygonDeleted = () => {
+    this.emit('polygonDeleted', undefined);
+  };
 
   constructor(dependencies: MutationManagerDependencies) {
     // console.log('PolygonMutationManager constructor');
@@ -75,6 +104,7 @@ export class PolygonMutationManager {
     this.eventManager = dependencies.eventManager;
     this.getFeatureGroups = dependencies.getFeatureGroups;
     this.saveHistoryState = dependencies.saveHistoryState;
+    this.layerManager = dependencies.layerManager;
 
     // Initialize specialized managers
     this.initializeSpecializedManagers(dependencies);
@@ -104,6 +134,7 @@ export class PolygonMutationManager {
         modeManager: dependencies.modeManager,
         eventManager: this.eventManager,
         saveHistoryState: dependencies.saveHistoryState,
+        layerManager: dependencies.layerManager,
       },
       {
         getFeatureGroups: this.getFeatureGroups,
@@ -121,35 +152,22 @@ export class PolygonMutationManager {
    */
   private setupEventForwarding(): void {
     // console.log('PolygonMutationManager setupEventForwarding');
+    this.eventManager.on('polydraw:draw:cancel', this.onDrawCancel);
+    this.eventManager.on('polydraw:polygon:updated', this.onPolygonUpdated);
+    this.eventManager.on('polydraw:menu:action', this.onMenuAction);
+    this.eventManager.on('polydraw:check:intersection', this.onCheckIntersection);
+    this.eventManager.on('polydraw:subtract', this.onSubtract);
+    this.eventManager.on('polydraw:polygon:deleted', this.onPolygonDeleted);
+  }
 
-    this.eventManager.on('polydraw:draw:cancel', (data) => {
-      this.emit('drawCancelled', data);
-    });
-
-    // Forward interaction manager events
-    this.eventManager.on('polydraw:polygon:updated', (data) => {
-      this.handlePolygonModified(data as PolygonUpdatedEventData);
-    });
-
-    this.eventManager.on('polydraw:menu:action', (data) => {
-      this.handleMenuAction(data as MenuActionData);
-    });
-
-    this.eventManager.on('polydraw:check:intersection', (data) => {
-      const hasIntersection = this.geometryManager.checkPolygonIntersection(
-        data.polygon1,
-        data.polygon2,
-      );
-      data.callback(hasIntersection);
-    });
-
-    this.eventManager.on('polydraw:subtract', (data) => {
-      this.subtractPolygon(data.subtractPolygon);
-    });
-
-    this.eventManager.on('polydraw:polygon:deleted', () => {
-      this.emit('polygonDeleted', undefined);
-    });
+  dispose(): void {
+    this.eventManager.off('polydraw:draw:cancel', this.onDrawCancel);
+    this.eventManager.off('polydraw:polygon:updated', this.onPolygonUpdated);
+    this.eventManager.off('polydraw:menu:action', this.onMenuAction);
+    this.eventManager.off('polydraw:check:intersection', this.onCheckIntersection);
+    this.eventManager.off('polydraw:subtract', this.onSubtract);
+    this.eventManager.off('polydraw:polygon:deleted', this.onPolygonDeleted);
+    this.interactionManager.dispose();
   }
 
   /**
@@ -287,6 +305,16 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     // console.log('PolygonMutationManager addPolygon');
+    if (this.layerManager && options.targetLayerId) {
+      const targetLayer = this.layerManager.getLayer(options.targetLayerId);
+      if (!targetLayer) {
+        return {
+          success: false,
+          error: `Layer "${options.targetLayerId}" does not exist`,
+        };
+      }
+    }
+
     const { polygons, skipMerge } = this.preparePolygonsForAddition(latlngs, options);
     const aggregatedFeatureGroups: L.FeatureGroup[] = [];
 
@@ -404,7 +432,14 @@ export class PolygonMutationManager {
       // Find only the polygons that actually intersect with the subtract area
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
-      this.getFeatureGroups().forEach((featureGroup) => {
+      // Scope subtract to active layer's feature groups when layer manager exists
+      const targetFgs = this.layerManager
+        ? this.layerManager.getFeatureGroupsForLayer(
+            options.targetLayerId || this.layerManager.getActiveLayerId(),
+          )
+        : this.getFeatureGroups();
+
+      targetFgs.forEach((featureGroup) => {
         try {
           const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
             Polygon | MultiPolygon
@@ -510,12 +545,28 @@ export class PolygonMutationManager {
       dynamicTolerance = false,
       visualOptimizationLevel = 0,
       originalOptimizationLevel,
+      targetLayerId,
+      layerColor,
     } = options;
 
     try {
       // Validate input
       if (!latlngs || !latlngs.geometry || !latlngs.geometry.coordinates) {
         return { success: false, error: 'Invalid polygon data' };
+      }
+
+      // Resolve layer color
+      let resolvedLayerColor = layerColor;
+      if (!resolvedLayerColor && this.layerManager && targetLayerId) {
+        const layer = this.layerManager.getLayer(targetLayerId);
+        if (layer) {
+          resolvedLayerColor = layer.color;
+        }
+      } else if (!resolvedLayerColor && this.layerManager) {
+        const activeLayer = this.layerManager.getActiveLayer();
+        if (activeLayer && this.layerManager.getLayerCount() > 1) {
+          resolvedLayerColor = activeLayer.color;
+        }
       }
 
       const featureGroup: L.FeatureGroup = new L.FeatureGroup();
@@ -526,7 +577,7 @@ export class PolygonMutationManager {
       let polygon: L.Polygon & Record<string, unknown>;
       let effectiveOriginal = visualOptimizationLevel;
       try {
-        polygon = this.getPolygon(normalizedLatLngs);
+        polygon = this.getPolygon(normalizedLatLngs, resolvedLayerColor);
         if (!polygon) {
           return { success: false, error: 'Failed to create polygon' };
         }
@@ -616,12 +667,28 @@ export class PolygonMutationManager {
 
       this.getFeatureGroups().push(featureGroup);
 
+      // Register with layer manager
+      if (this.layerManager) {
+        const resolvedLayerId = targetLayerId || this.layerManager.getActiveLayerId();
+        const assigned = this.layerManager.assignFeatureGroupToLayer(featureGroup, resolvedLayerId);
+        if (!assigned) {
+          this.removeFeatureGroupInternal(featureGroup);
+          return {
+            success: false,
+            error: `Failed to assign polygon to layer "${resolvedLayerId}"`,
+          };
+        }
+      }
+
       // Add to map - this should be done after all setup is complete
       try {
         featureGroup.addTo(this.map);
       } catch {
         // The polygon is still added to arrayOfFeatureGroups for functionality
       }
+
+      // Ensure marker draggability reflects current mode + active-layer constraints.
+      this.interactionManager.updateMarkerDraggableState();
 
       this.emit('polygonAdded', { polygon: normalizedLatLngs, featureGroup });
 
@@ -656,7 +723,14 @@ export class PolygonMutationManager {
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
       let polyIntersection: boolean = false;
 
-      this.getFeatureGroups().forEach((featureGroup) => {
+      // Scope merge to active layer's feature groups when layer manager exists
+      const targetFgs = this.layerManager
+        ? this.layerManager.getFeatureGroupsForLayer(
+            options.targetLayerId || this.layerManager.getActiveLayerId(),
+          )
+        : this.getFeatureGroups();
+
+      targetFgs.forEach((featureGroup) => {
         try {
           const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
             Polygon | MultiPolygon
@@ -771,8 +845,13 @@ export class PolygonMutationManager {
    */
   private shouldAllowIntelligentMerge(polygon: Feature<Polygon | MultiPolygon>): boolean {
     try {
+      // Scope to active layer when layer manager exists
+      const targetFgs = this.layerManager
+        ? this.layerManager.getFeatureGroupsForLayer(this.layerManager.getActiveLayerId())
+        : this.getFeatureGroups();
+
       // Check if the polygon intersects with any existing polygons
-      for (const featureGroup of this.getFeatureGroups()) {
+      for (const featureGroup of targetFgs) {
         try {
           const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
             Polygon | MultiPolygon
@@ -811,8 +890,13 @@ export class PolygonMutationManager {
    */
   private isPolygonInsideExistingHole(newPolygon: Feature<Polygon | MultiPolygon>): boolean {
     try {
+      // Scope to active layer when layer manager exists
+      const targetFgs = this.layerManager
+        ? this.layerManager.getFeatureGroupsForLayer(this.layerManager.getActiveLayerId())
+        : this.getFeatureGroups();
+
       // Check each existing feature group to see if the new polygon is inside any holes
-      for (const featureGroup of this.getFeatureGroups()) {
+      for (const featureGroup of targetFgs) {
         try {
           const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
             Polygon | MultiPolygon
@@ -956,14 +1040,19 @@ export class PolygonMutationManager {
    */
   private getPolygon(
     latlngs: Feature<Polygon | MultiPolygon>,
+    layerColor?: string,
   ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
 
     // Force the polygon to always use regular polygon styling (green)
     // This ensures that polygons drawn inside holes are styled correctly
+    const effectiveColor = layerColor || this.config.styles.polygon.color;
+    const effectiveFillColor = this.config.styles.polygon.fillColor;
     const polygonStyle = {
       ...this.config.styles.polygon,
+      color: effectiveColor,
+      fillColor: effectiveFillColor,
       // Force these values to ensure they override any default styling
       weight: this.config.styles.polygon.weight || 2,
       opacity: this.config.styles.polygon.opacity || 1,
@@ -1022,6 +1111,11 @@ export class PolygonMutationManager {
     // Clean up resources before removing
     this.cleanupFeatureGroup(featureGroup);
 
+    // Remove from layer manager
+    if (this.layerManager) {
+      this.layerManager.removeFeatureGroupFromLayer(featureGroup);
+    }
+
     try {
       featureGroup.clearLayers();
     } catch (error) {
@@ -1049,9 +1143,7 @@ export class PolygonMutationManager {
   private getCompletePolygonFromFeatureGroup(
     featureGroup: L.FeatureGroup,
   ): Feature<Polygon | MultiPolygon> {
-    // console.log('PolygonMutationManager getCompletePolygonFromFeatureGroup');
     try {
-      // Find the polygon layer in the feature group
       let polygon: L.Polygon | null = null;
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Polygon) {
@@ -1059,36 +1151,31 @@ export class PolygonMutationManager {
         }
       });
 
-      if (!polygon) {
-        // Fallback: create a simple polygon from the first ring
-        throw new Error('No polygon found in feature group');
+      if (polygon) {
+        return (polygon as L.Polygon).toGeoJSON() as Feature<Polygon | MultiPolygon>;
       }
 
-      // Get the complete GeoJSON including holes
-      return (polygon as L.Polygon).toGeoJSON() as Feature<Polygon | MultiPolygon>;
+      const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
+        Polygon | MultiPolygon
+      >;
+      const polygonFeature = featureCollection.features.find(
+        (feature): feature is Feature<Polygon | MultiPolygon> =>
+          feature.geometry?.type === 'Polygon' || feature.geometry?.type === 'MultiPolygon',
+      );
+      if (polygonFeature) {
+        return polygonFeature;
+      }
+
+      throw new Error('No polygon geometry found in feature group');
     } catch (error) {
       if (!isTestEnvironment()) {
         if (error instanceof Error) {
           console.warn('Error getting complete polygon GeoJSON from feature group:', error.message);
         }
       }
-      // Fallback: return a simple polygon
-      return {
-        type: 'Feature',
-        geometry: {
-          type: 'Polygon',
-          coordinates: [
-            [
-              [0, 0],
-              [0, 1],
-              [1, 1],
-              [1, 0],
-              [0, 0],
-            ],
-          ],
-        },
-        properties: {},
-      };
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to resolve polygon geometry from feature group');
     }
   }
 

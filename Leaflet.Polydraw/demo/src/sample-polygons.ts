@@ -2998,6 +2998,70 @@ const linkoping: L.LatLng[][][] = [
   ],
 ];
 
+// --- Layer demo polygons ---
+
+// Two non-overlapping zones for different layers
+const layerZoneA: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.42, 15.56),
+      leafletAdapter.createLatLng(58.42, 15.58),
+      leafletAdapter.createLatLng(58.41, 15.58),
+      leafletAdapter.createLatLng(58.41, 15.56),
+      leafletAdapter.createLatLng(58.42, 15.56),
+    ],
+  ],
+];
+
+const layerZoneB: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.42, 15.60),
+      leafletAdapter.createLatLng(58.42, 15.62),
+      leafletAdapter.createLatLng(58.41, 15.62),
+      leafletAdapter.createLatLng(58.41, 15.60),
+      leafletAdapter.createLatLng(58.42, 15.60),
+    ],
+  ],
+];
+
+const layerZoneC: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.40, 15.58),
+      leafletAdapter.createLatLng(58.40, 15.60),
+      leafletAdapter.createLatLng(58.39, 15.60),
+      leafletAdapter.createLatLng(58.39, 15.58),
+      leafletAdapter.createLatLng(58.40, 15.58),
+    ],
+  ],
+];
+
+// Two overlapping polygons meant for the SAME layer (to test intra-layer merge)
+const layerMergeLeft: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.415, 15.57),
+      leafletAdapter.createLatLng(58.415, 15.595),
+      leafletAdapter.createLatLng(58.405, 15.595),
+      leafletAdapter.createLatLng(58.405, 15.57),
+      leafletAdapter.createLatLng(58.415, 15.57),
+    ],
+  ],
+];
+
+const layerMergeRight: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.415, 15.585),
+      leafletAdapter.createLatLng(58.415, 15.61),
+      leafletAdapter.createLatLng(58.405, 15.61),
+      leafletAdapter.createLatLng(58.405, 15.585),
+      leafletAdapter.createLatLng(58.415, 15.585),
+    ],
+  ],
+];
+
 type SampleKey =
   | 'octagon'
   | 'star16'
@@ -3064,3 +3128,4 @@ const sampleLibrary: Record<SampleKey, SampleDefinition> = {
 
 export type { SampleKey };
 export { sampleLibrary };
+export { layerZoneA, layerZoneB, layerZoneC, layerMergeLeft, layerMergeRight };

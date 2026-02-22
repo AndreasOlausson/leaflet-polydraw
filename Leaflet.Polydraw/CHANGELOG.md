@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Layer management support with named layers, active-layer tracking, visibility toggling, color updates, delete support, and ordering in `LayerManager`.
+- Layer panel UI control with collapse/expand header, per-layer visibility toggle, delete action, drag-to-reorder behavior, and active-layer highlighting.
+- Public layer APIs for runtime integration: `getLayerManager()` and `reorderLayer(layerId, targetLayerId)`.
+- Unit tests for layer behavior:
+  - inactive-layer markers are read-only/non-draggable
+  - layer reorder updates feature-group order consistently
+- Playwright Leaflet-version matrix scripts: `test:playwright:v1`, `test:playwright:v2`, and `test:playwright:matrix`.
+
 ### Fixed
 
 - Demo build now dedupes Leaflet to avoid multiple instances breaking polygon status counts on hosted builds.
@@ -17,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - P2P mode buttons now show the active highlight color when selected.
 - Erase-all button now disables when there are no polygons, and disabled actions no longer clear the active mode.
 - Config fallback paths now emit clear one-time warnings in non-test environments (invalid simplification values/strategy, deprecated or unknown polygon creation algorithms, and convex-hull fallback behavior).
+- Layer panel no longer hides custom toolbar tooltips when visible (stacking/z-index fix).
+- Default layer row alignment now matches draggable rows while remaining non-draggable/read-only.
 
 ### Changed
 
@@ -25,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Invalid/negative tolerances fall back to safe defaults.
   - `simplification.dynamic.fractionGuard` is clamped to `[0, 1]`.
   - `simplification.dynamic.multiplier` must be `> 1`, otherwise defaults are used.
+- Layer panel sizing and spacing were tightened to align with the 30px toolbox rhythm (rows, header, icon scale, and panel spacing).
+- `test:playwright` now builds the demo with `--ignore-scripts` to avoid recursive `prepare` builds during version-matrix runs.
 
 ### Breaking
 

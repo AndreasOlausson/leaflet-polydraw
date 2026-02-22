@@ -219,6 +219,7 @@ export const defaultConfig: PolydrawConfig = {
   },
   history: {
     capture: {
+      batch: true,
       freehand: true,
       pointToPoint: true,
       addPredefinedPolygon: true,
@@ -231,6 +232,8 @@ export const defaultConfig: PolydrawConfig = {
       removeHole: true,
       modifierSubtract: true,
       deletePolygon: true,
+      layerDelete: true,
+      layerReorder: true,
       polygonActions: {
         simplify: true,
         doubleElbows: true,

@@ -23,6 +23,7 @@ import { isTouchDevice } from './../utils';
 import { isTestEnvironment } from '../utils';
 import { PolygonTransformController } from '../transform/polygon-transform-controller';
 import { PopupFactory } from '../popup-factory';
+import type { LayerManager } from './layer-manager';
 
 export interface InteractionResult {
   success: boolean;
@@ -38,6 +39,7 @@ export interface PolygonInteractionManagerDependencies {
   modeManager: ModeManager;
   eventManager: EventManager;
   saveHistoryState?: (action: HistoryAction) => void;
+  layerManager?: LayerManager;
 }
 
 interface MarkerImportanceOptions {
@@ -53,6 +55,7 @@ interface MarkerImportanceOptions {
  */
 export class PolygonInteractionManager {
   private markerFeatureGroupMap = new WeakMap<L.Marker, L.FeatureGroup>();
+  private polygonFeatureGroupMap = new WeakMap<L.Polygon, L.FeatureGroup>();
   private markerModifierHandlers = new WeakMap<L.Marker, (e: Event) => void>();
   private markerTouchListeners = new WeakMap<
     L.Marker,
@@ -71,6 +74,7 @@ export class PolygonInteractionManager {
   private modeManager: ModeManager;
   private eventManager: EventManager;
   private saveHistoryState?: (action: HistoryAction) => void;
+  private layerManager?: LayerManager;
 
   // Polygon drag state
   private currentDragPolygon: PolydrawPolygon | null = null;
@@ -86,6 +90,11 @@ export class PolygonInteractionManager {
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
   private deleteMarkerSuppressUntil = 0;
+  private readonly onModeChange = () => {
+    if (this.currentCloneGhost || this.isPolygonDragActive()) {
+      this.cancelActivePolygonDrag();
+    }
+  };
   /**
    * Strongly typed helper to emit polygon updated events without casts.
    * Also saves history state before emitting (except for drag operations which save on dragstart).
@@ -134,16 +143,18 @@ export class PolygonInteractionManager {
     this.modeManager = dependencies.modeManager;
     this.eventManager = dependencies.eventManager;
     this.saveHistoryState = dependencies.saveHistoryState;
+    this.layerManager = dependencies.layerManager;
 
     // Store feature group access methods
     this.getFeatureGroups = featureGroupAccess.getFeatureGroups;
     this.removeFeatureGroup = featureGroupAccess.removeFeatureGroup;
 
-    this.eventManager.on('polydraw:mode:change', () => {
-      if (this.currentCloneGhost || this.isPolygonDragActive()) {
-        this.cancelActivePolygonDrag();
-      }
-    });
+    this.eventManager.on('polydraw:mode:change', this.onModeChange);
+  }
+
+  dispose(): void {
+    this.eventManager.off('polydraw:mode:change', this.onModeChange);
+    this.cancelActivePolygonDrag();
   }
 
   private getTimestamp(): number {
@@ -169,6 +180,8 @@ export class PolygonInteractionManager {
     featureGroup: L.FeatureGroup,
     options: { optimizationLevel?: number; originalOptimizationLevel?: number } = {},
   ): void {
+    this.registerPolygonLayerMappings(featureGroup);
+
     // Get initial marker positions
     let menuMarkerIdx = this.getMarkerIndex(latlngs, this.config.markers.markerMenuIcon.position);
     let deleteMarkerIdx = this.getMarkerIndex(
@@ -252,6 +265,15 @@ export class PolygonInteractionManager {
       });
       // Replace dragend binding to use _polydrawFeatureGroup and allow correct logic
       marker.on('dragstart', () => {
+        // Layer guard: skip if not in active layer
+        const fg = this.markerFeatureGroupMap.get(marker);
+        if (fg && !this.isFeatureGroupInActiveLayer(fg)) {
+          // Force-readonly for inactive layers if a stale draggable state slipped through.
+          if (marker.dragging) {
+            marker.dragging.disable();
+          }
+          return;
+        }
         // Save history state before dragging
         if (this.saveHistoryState) {
           this.saveHistoryState('markerDrag');
@@ -261,6 +283,12 @@ export class PolygonInteractionManager {
       });
       marker.on('dragend', (e: L.LeafletEvent) => {
         const fg = this.markerFeatureGroupMap.get(marker);
+        // Layer guard
+        if (fg && !this.isFeatureGroupInActiveLayer(fg)) {
+          this._activeMarker = null;
+          this.isDraggingMarker = false;
+          return;
+        }
         if (this.modeManager.canPerformAction('markerDrag') && fg) {
           this.markerDragEnd(fg);
         }
@@ -283,7 +311,11 @@ export class PolygonInteractionManager {
           // Also fire drag end logic for touch devices
           if (this.isDraggingMarker && !isSpecialMarker) {
             const fg = this.markerFeatureGroupMap.get(marker);
-            if (this.modeManager.canPerformAction('markerDrag') && fg) {
+            if (
+              this.modeManager.canPerformAction('markerDrag') &&
+              fg &&
+              this.isFeatureGroupInActiveLayer(fg)
+            ) {
               this.markerDragEnd(fg);
             }
           }
@@ -310,7 +342,10 @@ export class PolygonInteractionManager {
 
       if (this.config.modes.dragElbow) {
         const createDragHandler = (fg: L.FeatureGroup) => () => {
-          if (this.modeManager.canPerformAction('markerDrag')) {
+          if (
+            this.modeManager.canPerformAction('markerDrag') &&
+            this.isFeatureGroupInActiveLayer(fg)
+          ) {
             this.markerDrag(fg);
           }
         };
@@ -322,6 +357,8 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
+          // Layer guard
+          if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
           const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
           const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
             polygonGeoJSON,
@@ -383,6 +420,8 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
+          // Layer guard: only allow info popup for active layer
+          if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
           const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
           const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
             polygonGeoJSON,
@@ -434,6 +473,10 @@ export class PolygonInteractionManager {
 
       // Generic click handler for all markers
       marker.on('click', (e) => {
+        // Layer guard: only allow interactions for active layer
+        if (!this.isFeatureGroupInActiveLayer(featureGroup)) {
+          return;
+        }
         if (this.modeManager.isInOffMode()) {
           if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
             const polygonLayer = featureGroup
@@ -465,9 +508,14 @@ export class PolygonInteractionManager {
         }
       });
 
-      // Add hover listeners for edge deletion feedback
-      marker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(marker, true));
-      marker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(marker, false));
+      // Add hover listeners for edge deletion feedback (guarded by active layer)
+      marker.on('mouseover', () => {
+        if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
+        this.onMarkerHoverForEdgeDeletion(marker, true);
+      });
+      marker.on('mouseout', () => {
+        this.onMarkerHoverForEdgeDeletion(marker, false);
+      });
     });
 
     // Global fix for iOS: allow interaction with popups and markers
@@ -481,6 +529,8 @@ export class PolygonInteractionManager {
    * Add hole markers to a polygon feature group, with configurable special markers.
    */
   addHoleMarkers(latlngs: L.LatLngLiteral[], featureGroup: L.FeatureGroup): void {
+    this.registerPolygonLayerMappings(featureGroup);
+
     // Determine if special markers for holes are enabled
     const holeMenuEnabled = this.config.markers.holeMarkers?.menuMarker ?? false;
     const holeDeleteEnabled = this.config.markers.holeMarkers?.deleteMarker ?? false;
@@ -549,6 +599,13 @@ export class PolygonInteractionManager {
       });
 
       marker.on('dragstart', () => {
+        const fg = this.markerFeatureGroupMap.get(marker);
+        if (fg && !this.isFeatureGroupInActiveLayer(fg)) {
+          if (marker.dragging) {
+            marker.dragging.disable();
+          }
+          return;
+        }
         if (this.saveHistoryState) {
           this.saveHistoryState('markerDrag');
         }
@@ -558,6 +615,11 @@ export class PolygonInteractionManager {
 
       marker.on('dragend', (e: L.LeafletEvent) => {
         const fg = this.markerFeatureGroupMap.get(marker);
+        if (fg && !this.isFeatureGroupInActiveLayer(fg)) {
+          this._activeMarker = null;
+          this.isDraggingMarker = false;
+          return;
+        }
         if (this.modeManager.canPerformAction('markerDrag') && fg) {
           this.markerDragEnd(fg);
         }
@@ -579,7 +641,11 @@ export class PolygonInteractionManager {
           marker.fire('click');
           if (this.isDraggingMarker && !isSpecialMarker) {
             const fg = this.markerFeatureGroupMap.get(marker);
-            if (this.modeManager.canPerformAction('markerDrag') && fg) {
+            if (
+              this.modeManager.canPerformAction('markerDrag') &&
+              fg &&
+              this.isFeatureGroupInActiveLayer(fg)
+            ) {
               this.markerDragEnd(fg);
             }
           }
@@ -605,7 +671,10 @@ export class PolygonInteractionManager {
 
       if (this.config.modes.dragElbow) {
         const createDragHandler = (fg: L.FeatureGroup) => () => {
-          if (this.modeManager.canPerformAction('markerDrag')) {
+          if (
+            this.modeManager.canPerformAction('markerDrag') &&
+            this.isFeatureGroupInActiveLayer(fg)
+          ) {
             this.markerDrag(fg);
           }
         };
@@ -684,6 +753,8 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
+          // Layer guard: only allow info popup for active layer
+          if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
           const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
           infoPopup.setLatLng(latlng).openOn(this.map);
         });
@@ -698,6 +769,8 @@ export class PolygonInteractionManager {
       });
 
       marker.on('click', (e) => {
+        // Layer guard: only allow interactions for active layer
+        if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
         if (this.modeManager.isInOffMode()) {
           if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
             const polygonLayer = featureGroup
@@ -781,8 +854,13 @@ export class PolygonInteractionManager {
         }
       });
 
-      marker.on('mouseover', () => this.onMarkerHoverForEdgeDeletion(marker, true));
-      marker.on('mouseout', () => this.onMarkerHoverForEdgeDeletion(marker, false));
+      marker.on('mouseover', () => {
+        if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
+        this.onMarkerHoverForEdgeDeletion(marker, true);
+      });
+      marker.on('mouseout', () => {
+        this.onMarkerHoverForEdgeDeletion(marker, false);
+      });
     });
   }
 
@@ -884,6 +962,34 @@ export class PolygonInteractionManager {
   }
 
   /**
+   * Check if a polygon belongs to the active layer.
+   * Returns true if no layer manager exists (backward compat) or if in active layer.
+   */
+  private isPolygonInActiveLayer(polygon: L.Polygon): boolean {
+    if (!this.layerManager) return true;
+    const mappedFeatureGroup = this.polygonFeatureGroupMap.get(polygon);
+    if (mappedFeatureGroup) {
+      return this.layerManager.isInActiveLayer(mappedFeatureGroup);
+    }
+
+    const resolvedFeatureGroup = this.findFeatureGroupForPolygon(polygon);
+    if (resolvedFeatureGroup) {
+      this.polygonFeatureGroupMap.set(polygon, resolvedFeatureGroup);
+      return this.layerManager.isInActiveLayer(resolvedFeatureGroup);
+    }
+    return true; // If not found, allow interaction
+  }
+
+  /**
+   * Check if a feature group belongs to the active layer.
+   * Returns true if no layer manager exists (backward compat).
+   */
+  private isFeatureGroupInActiveLayer(fg: L.FeatureGroup): boolean {
+    if (!this.layerManager) return true;
+    return this.layerManager.isInActiveLayer(fg);
+  }
+
+  /**
    * Enable polygon dragging functionality
    */
   enablePolygonDragging(polygon: PolydrawPolygon, latlngs: Feature<Polygon | MultiPolygon>): void {
@@ -898,6 +1004,14 @@ export class PolygonInteractionManager {
     };
 
     polygon.on('mousedown', (e: L.LeafletMouseEvent) => {
+      if (this.transformModeActive) {
+        return;
+      }
+      // Layer guard: skip if polygon not in active layer
+      if (!this.isPolygonInActiveLayer(polygon)) {
+        return;
+      }
+
       if (!this.isPolygonDragModeActive()) {
         // Stop this event from becoming a drag, but fire it on the map for drawing.
         L.DomEvent.stopPropagation(e);
@@ -972,6 +1086,10 @@ export class PolygonInteractionManager {
     (polygon as L.Evented).on('pointerdown', ((event: L.LeafletEvent) => {
       const e = event as L.LeafletMouseEvent;
       if (this.transformModeActive) {
+        return;
+      }
+      // Layer guard: skip if polygon not in active layer
+      if (!this.isPolygonInActiveLayer(polygon)) {
         return;
       }
       // If not in off mode, it's a drawing click. Forward to map and stop.
@@ -1050,6 +1168,9 @@ export class PolygonInteractionManager {
     if (LeafletVersionDetector.isV1()) {
       const onTouchStart = (e: TouchEvent) => {
         if (this.transformModeActive) return;
+
+        // Layer guard: skip if polygon not in active layer
+        if (!this.isPolygonInActiveLayer(polygon)) return;
 
         if (!this.isPolygonDragModeActive()) {
           return;
@@ -1134,6 +1255,7 @@ export class PolygonInteractionManager {
     }
 
     polygon.on('mouseover', () => {
+      if (!this.isPolygonInActiveLayer(polygon)) return;
       if (!polygon._polydrawDragData || !polygon._polydrawDragData.isDragging) {
         try {
           const container = this.map.getContainer();
@@ -1163,16 +1285,20 @@ export class PolygonInteractionManager {
     const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
 
     this.getFeatureGroups().forEach((featureGroup) => {
+      // Layer guard: only allow drag for active layer markers
+      const isActiveLayer = this.isFeatureGroupInActiveLayer(featureGroup);
+      const effectiveDraggable = shouldBeDraggable && isActiveLayer;
+
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
           const marker = layer as L.Marker;
           try {
             // Update the draggable option
-            marker.options.draggable = shouldBeDraggable;
+            marker.options.draggable = effectiveDraggable;
 
             // If the marker has dragging capability, update its state
             if (marker.dragging) {
-              if (shouldBeDraggable) {
+              if (effectiveDraggable) {
                 marker.dragging.enable();
               } else {
                 marker.dragging.disable();
@@ -1288,6 +1414,7 @@ export class PolygonInteractionManager {
         this.cleanupMarker(layer as L.Marker);
       } else if (layer instanceof L.Polygon) {
         this.detachPolygonTouchStart(layer);
+        this.polygonFeatureGroupMap.delete(layer);
       }
     });
 
@@ -1315,6 +1442,13 @@ export class PolygonInteractionManager {
     }
     const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
     if (!edgeInfo) return;
+    // Layer guard: only allow edge interactions for active layer
+    if (
+      edgeInfo.parentFeatureGroup &&
+      !this.isFeatureGroupInActiveLayer(edgeInfo.parentFeatureGroup)
+    ) {
+      return;
+    }
     const newPoint = e.latlng;
     const parentPolygon = edgeInfo.parentPolygon;
     const parentFeatureGroup = edgeInfo.parentFeatureGroup;
@@ -2525,11 +2659,18 @@ export class PolygonInteractionManager {
     try {
       const draggedPolygon = this.turfHelper.getTurfPolygon(draggedGeoJSON);
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
+      const sourceLayerId = this.layerManager?.getLayerForFeatureGroup(originalFeatureGroup);
 
       // Find all feature groups that intersect with the dragged polygon
       this.getFeatureGroups().forEach((featureGroup) => {
         if (featureGroup === originalFeatureGroup) {
           return;
+        }
+        if (sourceLayerId && this.layerManager) {
+          const candidateLayerId = this.layerManager.getLayerForFeatureGroup(featureGroup);
+          if (candidateLayerId !== sourceLayerId) {
+            return;
+          }
         }
 
         try {
@@ -2664,6 +2805,29 @@ export class PolygonInteractionManager {
     }
     const modifierKey = this.getEdgeDeletionModifierKey();
     return !!event[modifierKey as keyof MouseEvent];
+  }
+
+  private registerPolygonLayerMappings(featureGroup: L.FeatureGroup): void {
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon) {
+        this.polygonFeatureGroupMap.set(layer, featureGroup);
+      }
+    });
+  }
+
+  private findFeatureGroupForPolygon(polygon: L.Polygon): L.FeatureGroup | undefined {
+    for (const featureGroup of this.getFeatureGroups()) {
+      let found = false;
+      featureGroup.eachLayer((layer) => {
+        if (!found && layer === polygon) {
+          found = true;
+        }
+      });
+      if (found) {
+        return featureGroup;
+      }
+    }
+    return undefined;
   }
 
   private onMarkerHoverForEdgeDeletion(marker: L.Marker, isHovering: boolean): void {

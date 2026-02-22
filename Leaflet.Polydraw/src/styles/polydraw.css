@@ -617,3 +617,289 @@ body {
     justify-content: center;
   }
 }
+
+/* Layer panel styles */
+.polydraw-layer-panel {
+  width: 206px;
+  min-width: 206px;
+  max-width: 206px;
+  z-index: 900 !important;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #333;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.leaflet-top.leaflet-right .polydraw-layer-panel.leaflet-control {
+  clear: none;
+  margin-right: 4px;
+}
+
+.polydraw-layer-header {
+  height: 30px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  padding-left: 6px;
+}
+
+.polydraw-layer-header-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #444;
+}
+
+.polydraw-layer-header-count {
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1px solid #d7d7d7;
+  color: #666;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polydraw-layer-header-toggle {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polydraw-layer-header-toggle:hover {
+  background: #f0f0f0;
+}
+
+.polydraw-layer-header-toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-header-toggle svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  transition: transform 0.18s ease;
+}
+
+.polydraw-layer-header-toggle.is-collapsed svg {
+  transform: rotate(180deg);
+}
+
+.polydraw-layer-panel-collapsed {
+  width: 30px;
+  min-width: 30px;
+  max-width: 30px;
+}
+
+.polydraw-layer-panel-collapsed .polydraw-layer-header {
+  border-bottom: none;
+  padding-left: 0;
+}
+
+.polydraw-layer-panel-collapsed .polydraw-layer-header-title,
+.polydraw-layer-panel-collapsed .polydraw-layer-header-count {
+  display: none;
+}
+
+.polydraw-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 4px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.2s;
+  user-select: none;
+  outline: none;
+}
+
+.polydraw-layer-row:hover {
+  background: #f9f9f9;
+}
+
+.polydraw-layer-row[draggable='true'] {
+  cursor: move;
+}
+
+.polydraw-layer-row[draggable='false'] {
+  cursor: pointer;
+}
+
+.polydraw-layer-row:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-row-active {
+  background: #eef5ff;
+}
+
+.polydraw-layer-row-active:hover {
+  background: #e6f0ff;
+}
+
+.polydraw-layer-row-dragging {
+  opacity: 0.5;
+}
+
+.polydraw-layer-row-drag-over {
+  border-top: 2px solid #2196f3;
+}
+
+.polydraw-layer-grip {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.2s;
+}
+
+.polydraw-layer-grip:hover {
+  background: #e0e0e0;
+}
+
+.polydraw-layer-grip svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: #666;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.polydraw-layer-grip-spacer {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+  font-size: 11.5px;
+}
+
+.polydraw-layer-btn {
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.polydraw-layer-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.polydraw-layer-visibility {
+  color: #333;
+}
+
+.polydraw-layer-visibility svg {
+  width: 20px;
+  height: 20px;
+}
+
+.polydraw-layer-btn:hover {
+  background: #e0e0e0;
+}
+
+.polydraw-layer-delete {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.polydraw-layer-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-btn-spacer {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-visibility-hidden {
+  color: #999;
+}
+
+.polydraw-layer-hidden .polydraw-layer-name {
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .polydraw-layer-panel {
+    width: 196px;
+    min-width: 196px;
+    max-width: 196px;
+  }
+
+  .polydraw-layer-row {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 4px;
+  }
+
+  .polydraw-layer-name {
+    font-size: 11.5px;
+  }
+
+  .polydraw-layer-btn {
+    width: 30px;
+    height: 30px;
+  }
+}

@@ -31,4 +31,16 @@ describe('Polygon Operations', () => {
     expect(featureGroups).toHaveLength(0);
     expect(polydraw.getFeatureGroups()).toBe(featureGroups);
   });
+
+  it('resets visible-map-order cache when removing all polygons', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle());
+
+    const internal = polydraw as unknown as { _lastAppliedVisibleMapOrder: unknown[] };
+    internal._lastAppliedVisibleMapOrder = [...polydraw.getFeatureGroups()];
+    expect(internal._lastAppliedVisibleMapOrder.length).toBeGreaterThan(0);
+
+    polydraw.removeAllFeatureGroups();
+
+    expect(internal._lastAppliedVisibleMapOrder).toHaveLength(0);
+  });
 });

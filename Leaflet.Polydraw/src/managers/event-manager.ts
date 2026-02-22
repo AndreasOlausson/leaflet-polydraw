@@ -72,6 +72,40 @@ export type PolydrawEventPayloads = {
     canUndo: boolean;
     canRedo: boolean;
   };
+
+  // Layer events
+  'polydraw:layer:created': {
+    layerId: string;
+    color: string;
+  };
+  'polydraw:layer:deleted': {
+    layerId: string;
+    removedFeatureGroups: FeatureGroup[];
+  };
+  'polydraw:layer:activated': {
+    layerId: string;
+    previousLayerId: string;
+  };
+  'polydraw:layer:visibility': {
+    layerId: string;
+    visible: boolean;
+  };
+  'polydraw:layer:colorChanged': {
+    layerId: string;
+    color: string;
+  };
+  'polydraw:layer:delete-requested': {
+    layerId: string;
+  };
+  'polydraw:layer:reorder-requested': {
+    layerId: string;
+    targetLayerId: string;
+  };
+  'polydraw:layer:reordered': {
+    layerId: string;
+    targetLayerId: string;
+    orderedLayerIds: string[];
+  };
 };
 
 export type PolydrawEvent = keyof PolydrawEventPayloads;
