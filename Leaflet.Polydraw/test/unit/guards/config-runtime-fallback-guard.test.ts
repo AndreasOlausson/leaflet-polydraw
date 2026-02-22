@@ -32,8 +32,12 @@ describe('applyRuntimeConfigFallbacks', () => {
 
     applyRuntimeConfigFallbacks(config);
 
-    expect(config.markers.markerInfoIcon.position).toBe(defaultConfig.markers.markerInfoIcon.position);
-    expect(config.markers.markerMenuIcon.position).toBe(defaultConfig.markers.markerMenuIcon.position);
+    expect(config.markers.markerInfoIcon.position).toBe(
+      defaultConfig.markers.markerInfoIcon.position,
+    );
+    expect(config.markers.markerMenuIcon.position).toBe(
+      defaultConfig.markers.markerMenuIcon.position,
+    );
     expect(config.markers.markerDeleteIcon.position).toBe(
       defaultConfig.markers.markerDeleteIcon.position,
     );
@@ -56,7 +60,9 @@ describe('applyRuntimeConfigFallbacks', () => {
 
     applyRuntimeConfigFallbacks(config);
 
-    expect(config.markers.markerInfoIcon.position).toBe(defaultConfig.markers.markerInfoIcon.position);
+    expect(config.markers.markerInfoIcon.position).toBe(
+      defaultConfig.markers.markerInfoIcon.position,
+    );
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('markers.markerInfoIcon.position'),

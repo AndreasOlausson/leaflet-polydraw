@@ -3016,11 +3016,11 @@ const layerZoneA: L.LatLng[][][] = [
 const layerZoneB: L.LatLng[][][] = [
   [
     [
-      leafletAdapter.createLatLng(58.42, 15.60),
+      leafletAdapter.createLatLng(58.42, 15.6),
       leafletAdapter.createLatLng(58.42, 15.62),
       leafletAdapter.createLatLng(58.41, 15.62),
-      leafletAdapter.createLatLng(58.41, 15.60),
-      leafletAdapter.createLatLng(58.42, 15.60),
+      leafletAdapter.createLatLng(58.41, 15.6),
+      leafletAdapter.createLatLng(58.42, 15.6),
     ],
   ],
 ];
@@ -3028,11 +3028,11 @@ const layerZoneB: L.LatLng[][][] = [
 const layerZoneC: L.LatLng[][][] = [
   [
     [
-      leafletAdapter.createLatLng(58.40, 15.58),
-      leafletAdapter.createLatLng(58.40, 15.60),
-      leafletAdapter.createLatLng(58.39, 15.60),
+      leafletAdapter.createLatLng(58.4, 15.58),
+      leafletAdapter.createLatLng(58.4, 15.6),
+      leafletAdapter.createLatLng(58.39, 15.6),
       leafletAdapter.createLatLng(58.39, 15.58),
-      leafletAdapter.createLatLng(58.40, 15.58),
+      leafletAdapter.createLatLng(58.4, 15.58),
     ],
   ],
 ];
