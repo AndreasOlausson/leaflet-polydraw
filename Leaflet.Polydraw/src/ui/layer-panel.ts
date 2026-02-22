@@ -47,7 +47,7 @@ export function createLayerPanel(
 
     container.innerHTML = '';
 
-    const layers = layerManager.getAllLayers();
+    const layers = layerManager.getPanelLayers();
     const activeLayerId = layerManager.getActiveLayerId();
 
     if (draggedLayerId && !layers.some((layer) => layer.id === draggedLayerId)) {
@@ -112,11 +112,12 @@ export function createLayerPanel(
     };
 
     layers.forEach((layer) => {
+      const displayName = layer.label?.trim() ? layer.label : layer.id;
       const row = L.DomUtil.create('div', 'polydraw-layer-row', container ?? undefined);
       row.setAttribute('tabindex', '0');
       row.setAttribute('role', 'button');
       row.setAttribute('draggable', layer.id === 'default' ? 'false' : 'true');
-      row.setAttribute('aria-label', `Activate layer ${layer.id}`);
+      row.setAttribute('aria-label', `Activate layer ${displayName}`);
       row.setAttribute('data-layer-id', layer.id);
       if (layer.id === activeLayerId) {
         row.classList.add('polydraw-layer-row-active');
@@ -138,8 +139,8 @@ export function createLayerPanel(
       (colorIndicator as HTMLElement).style.backgroundColor = layer.color;
 
       const layerName = L.DomUtil.create('span', 'polydraw-layer-name', row);
-      layerName.textContent = layer.id;
-      layerName.setAttribute('title', layer.id);
+      layerName.textContent = displayName;
+      layerName.setAttribute('title', displayName);
 
       const visibilityButton = L.DomUtil.create(
         'button',
@@ -150,7 +151,7 @@ export function createLayerPanel(
       visibilityButton.setAttribute('title', layer.visible ? 'Hide layer' : 'Show layer');
       visibilityButton.setAttribute(
         'aria-label',
-        layer.visible ? `Hide layer ${layer.id}` : `Show layer ${layer.id}`,
+        layer.visible ? `Hide layer ${displayName}` : `Show layer ${displayName}`,
       );
       applySvgIcon(visibilityButton, layer.visible ? icons.eyeVisible : icons.eyeHidden);
       if (!layer.visible) {
@@ -170,7 +171,7 @@ export function createLayerPanel(
         );
         deleteButton.setAttribute('type', 'button');
         deleteButton.setAttribute('title', 'Delete layer');
-        deleteButton.setAttribute('aria-label', `Delete layer ${layer.id}`);
+        deleteButton.setAttribute('aria-label', `Delete layer ${displayName}`);
         applySvgIcon(deleteButton, icons.delete);
         deleteButton.addEventListener('click', (event) => {
           event.preventDefault();

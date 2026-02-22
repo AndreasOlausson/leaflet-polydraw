@@ -33,6 +33,7 @@ import type {
   DrawModeChangeHandler,
   HistoryAction,
   PolygonActionHistory,
+  PolygonLayerDescriptorInput,
   PolygonGroupInput,
 } from './types/polydraw-interfaces';
 
@@ -55,7 +56,7 @@ type PolydrawOptions = L.ControlOptions & {
 
 type PredefinedOptions = {
   visualOptimizationLevel?: number;
-  layer?: string;
+  layer?: string | PolygonLayerDescriptorInput;
   layerColor?: string;
 };
 
@@ -423,6 +424,99 @@ class Polydraw extends L.Control {
     }
   }
 
+  private resolvePredefinedLayerDescriptor(
+    inputLayer: PredefinedOptions['layer'],
+    layerColorOverride?: string,
+  ): PolygonLayerDescriptorInput | null {
+    if (!inputLayer) {
+      return null;
+    }
+
+    if (typeof inputLayer === 'string') {
+      const id = inputLayer.trim();
+      if (!id) {
+        throw new Error('Layer id cannot be empty');
+      }
+      return {
+        id,
+        color: layerColorOverride,
+      };
+    }
+
+    const id = (inputLayer.id || '').trim();
+    if (!id) {
+      throw new Error('Layer descriptor must include a non-empty id');
+    }
+
+    const descriptor: PolygonLayerDescriptorInput = {
+      ...inputLayer,
+      id,
+      color: layerColorOverride ?? inputLayer.color,
+    };
+
+    if (descriptor.interaction === 'static' && descriptor.panel === undefined) {
+      descriptor.panel = 'hidden';
+    }
+
+    return descriptor;
+  }
+
+  private ensureLayerFromDescriptor(descriptor: PolygonLayerDescriptorInput) {
+    const layerId = descriptor.id.trim();
+    const created = this.layerManager.getOrCreateLayer(layerId, {
+      label: descriptor.label,
+      color: descriptor.color,
+      visible: descriptor.visibility,
+      interaction: descriptor.interaction,
+      panel: descriptor.panel ?? (descriptor.interaction === 'static' ? 'hidden' : undefined),
+      metadata: descriptor.metadata,
+    });
+
+    if (descriptor.label !== undefined) {
+      this.layerManager.setLayerLabel(layerId, descriptor.label);
+    }
+    if (descriptor.color) {
+      this.layerManager.setLayerColor(layerId, descriptor.color);
+    }
+    if (descriptor.visibility !== undefined) {
+      this.layerManager.setLayerVisibility(layerId, descriptor.visibility);
+    }
+    if (descriptor.interaction !== undefined) {
+      this.layerManager.setLayerInteraction(layerId, descriptor.interaction);
+    }
+    if (descriptor.panel !== undefined || descriptor.interaction === 'static') {
+      this.layerManager.setLayerPanelVisibility(
+        layerId,
+        descriptor.panel ?? (descriptor.interaction === 'static' ? 'hidden' : 'visible'),
+      );
+    }
+    if (descriptor.metadata !== undefined) {
+      this.layerManager.setLayerMetadata(layerId, descriptor.metadata);
+    }
+
+    return this.layerManager.getLayer(layerId) ?? created;
+  }
+
+  private getInteractionTargetLayerId(): string | undefined {
+    if (!this.layerManager) {
+      return undefined;
+    }
+
+    const activeLayerId = this.layerManager.getActiveLayerId();
+    if (this.layerManager.isLayerEditable(activeLayerId)) {
+      return activeLayerId;
+    }
+
+    if (this.layerManager.isLayerEditable('default')) {
+      return 'default';
+    }
+
+    const fallback = this.layerManager
+      .getAllLayers()
+      .find((layer) => layer.interaction === 'editable');
+    return fallback?.id;
+  }
+
   /**
    * Adds a predefined polygon to the map.
    * @param geoborders - Flexible coordinate format: objects ({lat, lng}), arrays ([lat, lng] or [lng, lat]), strings ("lat,lng" or "N59 E10")
@@ -467,14 +561,16 @@ class Polydraw extends L.Control {
     // Resolve target layer if specified
     let targetLayerId: string | undefined;
     let layerColor: string | undefined;
+    let forceNoMerge = false;
+
     if (options?.layer) {
-      const ensuredLayer = this.layerManager.getOrCreateLayer(options.layer);
-      if (options.layerColor) {
-        this.layerManager.setLayerColor(ensuredLayer.id, options.layerColor);
+      const descriptor = this.resolvePredefinedLayerDescriptor(options.layer, options.layerColor);
+      if (descriptor) {
+        const layer = this.ensureLayerFromDescriptor(descriptor);
+        targetLayerId = layer.id;
+        layerColor = layer.color;
+        forceNoMerge = layer.interaction !== 'editable';
       }
-      const layer = this.layerManager.getLayer(ensuredLayer.id) ?? ensuredLayer;
-      targetLayerId = layer.id;
-      layerColor = layer.color;
       this.updateLayerPanel();
     } else if (options?.layerColor) {
       // Color specified without explicit layer name - apply to active layer
@@ -494,7 +590,7 @@ class Polydraw extends L.Control {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(polygon2, {
             simplify: false,
-            noMerge: false,
+            noMerge: forceNoMerge,
             visualOptimizationLevel: visualOptimizationLevel,
             targetLayerId,
             layerColor,
@@ -571,18 +667,27 @@ class Polydraw extends L.Control {
     this.startHistoryBatch('addPredefinedPolygon');
 
     try {
-      // Create all layers upfront
-      for (const group of groups) {
-        const layer = this.layerManager.getOrCreateLayer(group.layer.id);
-        this.layerManager.setLayerColor(layer.id, group.layer.color);
+      const resolvedGroups = groups.map((group) => {
+        const descriptor = this.resolvePredefinedLayerDescriptor(group.layer);
+        if (!descriptor) {
+          throw new Error('Polygon group layer descriptor is missing');
+        }
+        return {
+          descriptor,
+          polygons: group.polygons,
+        };
+      });
+
+      // Create/update all layers upfront
+      for (const group of resolvedGroups) {
+        this.ensureLayerFromDescriptor(group.descriptor);
       }
 
       // Add polygons for each group
-      for (const group of groups) {
+      for (const group of resolvedGroups) {
         for (const polygons of group.polygons) {
           await this.addPredefinedPolygon(polygons, {
-            layer: group.layer.id,
-            layerColor: group.layer.color,
+            layer: group.descriptor,
           });
         }
       }
@@ -948,6 +1053,7 @@ class Polydraw extends L.Control {
     // Listen for drawing completion events from the draw manager
     this.addCoreEventListener('polydraw:polygon:created', async (data) => {
       this.stopDraw();
+      const interactionLayerId = this.getInteractionTargetLayerId();
       if (data.isPointToPoint) {
         // Save state before P2P operation
         this.saveHistory('pointToPoint');
@@ -955,12 +1061,16 @@ class Polydraw extends L.Control {
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
           // Use subtraction for P2P subtract mode
-          await this.polygonMutationManager.subtractPolygon(data.polygon, { simplify: false });
+          await this.polygonMutationManager.subtractPolygon(data.polygon, {
+            simplify: false,
+            targetLayerId: interactionLayerId,
+          });
         } else {
           // Use addition for regular P2P mode
           await this.polygonMutationManager.addPolygon(data.polygon, {
             simplify: false,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
         }
       } else {
@@ -1511,7 +1621,7 @@ class Polydraw extends L.Control {
   private updateLayerPanel(): void {
     if (!this.map || !this.layerManager) return;
 
-    const shouldShow = this.layerManager.getLayerCount() > 1;
+    const shouldShow = this.layerManager.getPanelLayerCount() > 1;
 
     if (!shouldShow) {
       if (this.layerPanel) {
@@ -2170,12 +2280,14 @@ class Polydraw extends L.Control {
     this.stopDraw();
 
     try {
+      const interactionLayerId = this.getInteractionTargetLayerId();
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
           if (!result.success) {
             console.error('Error adding polygon via manager:', result.error);
@@ -2184,7 +2296,9 @@ class Polydraw extends L.Control {
         }
         case DrawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
-          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos, {
+            targetLayerId: interactionLayerId,
+          });
           if (!subtractResult.success) {
             console.error('Error subtracting polygon via manager:', subtractResult.error);
           }
@@ -2208,6 +2322,7 @@ class Polydraw extends L.Control {
     try {
       // Save state before freehand operation
       this.saveHistory('freehand');
+      const interactionLayerId = this.getInteractionTargetLayerId();
 
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
@@ -2215,6 +2330,7 @@ class Polydraw extends L.Control {
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
           if (!result.success) {
             console.error('Error adding polygon via manager:', result.error);
@@ -2223,7 +2339,9 @@ class Polydraw extends L.Control {
         }
         case DrawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
-          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos, {
+            targetLayerId: interactionLayerId,
+          });
           if (!subtractResult.success) {
             console.error('Error subtracting polygon via manager:', subtractResult.error);
           }

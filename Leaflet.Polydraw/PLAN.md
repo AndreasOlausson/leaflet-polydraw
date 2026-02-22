@@ -195,3 +195,98 @@
 - Current `getLayerManager()` can remain for advanced users in v2, but high-level methods above should cover common usage.
 - Prefer small DTOs (`CreateLayerInput`, `UpdateLayerInput`, etc.) over many positional args.
 - Keep backwards compatibility for simple `layer: 'id'` and `{ layer: { id, color } }` inputs in predefined polygon APIs.
+
+## Part II.c - Execution Plan (Proposed)
+
+### Phase 1 - Contract Freeze (Types + Rules)
+
+- Finalize and document:
+  - layer interaction policy: `editable | readonly | static`
+  - panel policy: `visible | hidden`
+  - metadata shape: `Record<string, unknown>` at layer and feature level
+- Define precedence and conflict rules:
+  - feature override > layer policy > global defaults
+  - lock wins: readonly/static cannot be elevated to editable by a weaker override
+- Add migration behavior for legacy input forms where needed.
+
+Exit criteria:
+- TypeScript interfaces are finalized and reviewed.
+- Behavior rules are written in docs comments and `PLAN.md`.
+
+### Phase 2 - Input Normalization for Predefined APIs
+
+- Add a single internal normalizer for predefined input:
+  - accepts `layer: 'id'`
+  - accepts `layer: { id, color }`
+  - accepts extended `layer` descriptor (`interaction`, `panel`, `metadata`, etc.)
+- Keep all existing calls working without behavior regressions.
+
+Exit criteria:
+- Existing predefined tests pass unchanged.
+- New tests verify backward-compatible parsing.
+
+### Phase 3 - Layer Policy Plumbing
+
+- Extend layer state with:
+  - `interaction`
+  - `panel`
+  - `metadata`
+- Enforce layer policies in mutation/interaction managers:
+  - `readonly`: no geometry mutation
+  - `static`: no geometry mutation and no edit handles/markers
+- Keep info/selection behaviors explicit and documented.
+
+Exit criteria:
+- Inactive + readonly/static behavior is deterministic across mouse/touch paths.
+- No unguarded mutation path can bypass policy checks.
+
+### Phase 4 - Panel Visibility + Ordering Behavior
+
+- Respect `panel: hidden` in layer panel rendering.
+- Ensure hidden-panel layers still participate in map rendering and z-order rules.
+- Keep reorder behavior consistent between visible panel rows and full map feature-group order.
+
+Exit criteria:
+- Panel order and map order remain in sync.
+- Hidden-panel layers do not create panel/UI inconsistency.
+
+### Phase 5 - Metadata Persistence + Lifecycle
+
+- Persist metadata through:
+  - add predefined
+  - clone
+  - undo/redo
+  - merge/split (with explicit merge strategy)
+- Add helper accessors/setters for layer and feature metadata.
+
+Exit criteria:
+- Snapshot/restore includes metadata deterministically.
+- Merge/split metadata behavior is documented and tested.
+
+### Phase 6 - Public API Surface
+
+- Add high-level `Polydraw` methods for common layer workflows:
+  - read/query
+  - create/update/delete
+  - activation/visibility/order
+  - metadata/policy updates
+- Keep `getLayerManager()` for advanced workflows.
+
+Exit criteria:
+- API methods are typed, documented, and covered by focused unit tests.
+
+### Phase 7 - QA + Docs Gate
+
+- Unit coverage for:
+  - policy enforcement
+  - metadata persistence
+  - panel hidden behavior
+  - compatibility of legacy and v2 input shapes
+- Matrix validation:
+  - `npm run test:leaflet:matrix`
+  - `npm run test:playwright:matrix` (targeted scenarios at minimum)
+- Update changelog and migration notes.
+
+Exit criteria:
+- Green matrix tests and migration notes complete.
+- No unresolved high-severity issues in review pass.

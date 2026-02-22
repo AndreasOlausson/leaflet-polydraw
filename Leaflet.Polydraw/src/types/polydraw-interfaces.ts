@@ -687,8 +687,12 @@ export interface DifferenceOptions {
  */
 export interface LayerSnapshotEntry {
   id: string;
+  label?: string;
   color: string;
   visible: boolean;
+  interaction?: LayerInteraction;
+  panel?: LayerPanelVisibility;
+  metadata?: Record<string, unknown>;
   featureIndices: number[];
 }
 
@@ -700,10 +704,23 @@ export interface LayerSnapshot {
   activeLayerId: string;
 }
 
+export type LayerInteraction = 'editable' | 'readonly' | 'static';
+export type LayerPanelVisibility = 'visible' | 'hidden';
+
+export interface PolygonLayerDescriptorInput {
+  id: string;
+  label?: string;
+  color?: string;
+  visibility?: boolean;
+  panel?: LayerPanelVisibility;
+  interaction?: LayerInteraction;
+  metadata?: Record<string, unknown>;
+}
+
 /**
  * Input format for adding polygon groups with layer information
  */
 export interface PolygonGroupInput {
-  layer: { id: string; color: string };
+  layer: string | PolygonLayerDescriptorInput;
   polygons: unknown[][][][];
 }

@@ -78,7 +78,12 @@ export class PolygonMutationManager {
     void this.handlePolygonModified(data as PolygonUpdatedEventData);
   };
   private readonly onMenuAction = (data: PolydrawEventPayloads['polydraw:menu:action']) => {
-    void this.handleMenuAction(data as MenuActionData);
+    void this.handleMenuAction(data as MenuActionData).catch((error) => {
+      if (!isTestEnvironment()) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Menu action failed: ${message}`);
+      }
+    });
   };
   private readonly onCheckIntersection = (
     data: PolydrawEventPayloads['polydraw:check:intersection'],
@@ -205,18 +210,27 @@ export class PolygonMutationManager {
    */
   private async handleMenuAction(data: MenuActionData): Promise<void> {
     // console.log('PolygonMutationManager handleMenuAction');
-
-    if (this.saveHistoryState) {
-      this.saveHistoryState(data.action);
+    if (!data?.featureGroup) {
+      return;
+    }
+    if (this.layerManager && !this.layerManager.isFeatureGroupEditable(data.featureGroup)) {
+      return;
     }
 
     // Get the complete polygon GeoJSON including holes before removing the feature group
-    const completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);
+    let completePolygonGeoJSON: Feature<Polygon | MultiPolygon>;
+    try {
+      completePolygonGeoJSON = this.getCompletePolygonFromFeatureGroup(data.featureGroup);
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Menu action skipped: unable to resolve polygon geometry (${message}).`);
+      }
+      return;
+    }
+
     const { level: optimizationLevel, original: originalOptimizationLevel } =
       this.getOptimizationMetadataFromFeatureGroup(data.featureGroup);
-
-    // Remove the original polygon
-    this.removeFeatureGroupInternal(data.featureGroup);
 
     let result: GeometryOperationResult;
 
@@ -246,6 +260,13 @@ export class PolygonMutationManager {
     }
 
     if (result.success && result.result) {
+      if (this.saveHistoryState) {
+        this.saveHistoryState(data.action);
+      }
+
+      // Remove the original polygon only after we know the operation produced a result.
+      this.removeFeatureGroupInternal(data.featureGroup);
+
       const bezierLevel =
         data.action === 'bezier'
           ? (this.config.polygonTools.bezier?.visualOptimizationLevel ?? 10)
@@ -433,10 +454,11 @@ export class PolygonMutationManager {
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
 
       // Scope subtract to active layer's feature groups when layer manager exists
-      const targetFgs = this.layerManager
-        ? this.layerManager.getFeatureGroupsForLayer(
-            options.targetLayerId || this.layerManager.getActiveLayerId(),
-          )
+      const layerManager = this.layerManager;
+      const targetFgs = layerManager
+        ? layerManager
+            .getFeatureGroupsForLayer(options.targetLayerId || layerManager.getActiveLayerId())
+            .filter((featureGroup) => layerManager.isFeatureGroupEditable(featureGroup))
         : this.getFeatureGroups();
 
       targetFgs.forEach((featureGroup) => {
@@ -555,10 +577,18 @@ export class PolygonMutationManager {
         return { success: false, error: 'Invalid polygon data' };
       }
 
+      const resolvedLayerId = this.layerManager
+        ? targetLayerId || this.layerManager.getActiveLayerId()
+        : undefined;
+      const isEditableLayer =
+        !this.layerManager || !resolvedLayerId
+          ? true
+          : this.layerManager.isLayerEditable(resolvedLayerId);
+
       // Resolve layer color
       let resolvedLayerColor = layerColor;
-      if (!resolvedLayerColor && this.layerManager && targetLayerId) {
-        const layer = this.layerManager.getLayer(targetLayerId);
+      if (!resolvedLayerColor && this.layerManager && resolvedLayerId) {
+        const layer = this.layerManager.getLayer(resolvedLayerId);
         if (layer) {
           resolvedLayerColor = layer.color;
         }
@@ -577,7 +607,9 @@ export class PolygonMutationManager {
       let polygon: L.Polygon & Record<string, unknown>;
       let effectiveOriginal = visualOptimizationLevel;
       try {
-        polygon = this.getPolygon(normalizedLatLngs, resolvedLayerColor);
+        polygon = this.getPolygon(normalizedLatLngs, resolvedLayerColor, {
+          enableDragging: isEditableLayer,
+        });
         if (!polygon) {
           return { success: false, error: 'Failed to create polygon' };
         }
@@ -602,80 +634,82 @@ export class PolygonMutationManager {
         markerLatlngs = [];
       }
 
-      // Add markers using interaction manager
-      try {
-        markerLatlngs.forEach((polygonRing: L.LatLngExpression[], ringIndex: number) => {
-          if (!polygonRing || !Array.isArray(polygonRing)) {
-            return;
-          }
+      if (isEditableLayer) {
+        // Add markers using interaction manager
+        try {
+          markerLatlngs.forEach((polygonRing: L.LatLngExpression[], ringIndex: number) => {
+            if (!polygonRing || !Array.isArray(polygonRing)) {
+              return;
+            }
 
-          // Convert to LatLngLiteral array for the interaction manager
-          const latLngLiterals: L.LatLngLiteral[] = [];
-          polygonRing.forEach((latlng) => {
-            if (Array.isArray(latlng) && latlng.length >= 2) {
-              latLngLiterals.push({ lat: latlng[1], lng: latlng[0] });
-            } else if (
-              typeof latlng === 'object' &&
-              latlng !== null &&
-              'lat' in latlng &&
-              'lng' in latlng
-            ) {
-              latLngLiterals.push(latlng as L.LatLngLiteral);
+            // Convert to LatLngLiteral array for the interaction manager
+            const latLngLiterals: L.LatLngLiteral[] = [];
+            polygonRing.forEach((latlng) => {
+              if (Array.isArray(latlng) && latlng.length >= 2) {
+                latLngLiterals.push({ lat: latlng[1], lng: latlng[0] });
+              } else if (
+                typeof latlng === 'object' &&
+                latlng !== null &&
+                'lat' in latlng &&
+                'lng' in latlng
+              ) {
+                latLngLiterals.push(latlng as L.LatLngLiteral);
+              }
+            });
+
+            if (latLngLiterals.length === 0) {
+              return;
+            }
+
+            try {
+              // For newly created polygons, always treat the first ring as the main polygon
+              // and subsequent rings as holes. This ensures that polygons drawn inside holes
+              // are styled as regular polygons (green), not as holes (red).
+              if (ringIndex === 0) {
+                this.interactionManager.addMarkers(latLngLiterals, featureGroup, {
+                  optimizationLevel: visualOptimizationLevel,
+                  originalOptimizationLevel: effectiveOriginal,
+                });
+              } else {
+                // Add red polyline overlay for hole rings
+                const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
+                  color: this.config.styles.hole.color,
+                  weight: this.config.styles.hole.weight || 2,
+                  opacity: this.config.styles.hole.opacity || 1,
+                  fillColor: this.config.styles.hole.fillColor,
+                  fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
+                });
+                featureGroup.addLayer(holePolyline);
+
+                this.interactionManager.addHoleMarkers(latLngLiterals, featureGroup);
+              }
+            } catch {
+              // Continue with other elements
             }
           });
+        } catch {
+          // Continue without markers if they fail
+        }
 
-          if (latLngLiterals.length === 0) {
-            return;
-          }
-
-          try {
-            // For newly created polygons, always treat the first ring as the main polygon
-            // and subsequent rings as holes. This ensures that polygons drawn inside holes
-            // are styled as regular polygons (green), not as holes (red).
-            if (ringIndex === 0) {
-              this.interactionManager.addMarkers(latLngLiterals, featureGroup, {
-                optimizationLevel: visualOptimizationLevel,
-                originalOptimizationLevel: effectiveOriginal,
-              });
-            } else {
-              // Add red polyline overlay for hole rings
-              const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
-                color: this.config.styles.hole.color,
-                weight: this.config.styles.hole.weight || 2,
-                opacity: this.config.styles.hole.opacity || 1,
-                fillColor: this.config.styles.hole.fillColor,
-                fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
-              });
-              featureGroup.addLayer(holePolyline);
-
-              this.interactionManager.addHoleMarkers(latLngLiterals, featureGroup);
-            }
-          } catch {
-            // Continue with other elements
-          }
-        });
-      } catch {
-        // Continue without markers if they fail
-      }
-
-      // Add edge click listeners using interaction manager
-      try {
-        this.interactionManager.addEdgeClickListeners(polygon, featureGroup);
-      } catch {
-        // Continue without edge listeners if they fail
+        // Add edge click listeners using interaction manager
+        try {
+          this.interactionManager.addEdgeClickListeners(polygon, featureGroup);
+        } catch {
+          // Continue without edge listeners if they fail
+        }
       }
 
       this.getFeatureGroups().push(featureGroup);
 
       // Register with layer manager
       if (this.layerManager) {
-        const resolvedLayerId = targetLayerId || this.layerManager.getActiveLayerId();
-        const assigned = this.layerManager.assignFeatureGroupToLayer(featureGroup, resolvedLayerId);
+        const assignedLayerId = resolvedLayerId || this.layerManager.getActiveLayerId();
+        const assigned = this.layerManager.assignFeatureGroupToLayer(featureGroup, assignedLayerId);
         if (!assigned) {
           this.removeFeatureGroupInternal(featureGroup);
           return {
             success: false,
-            error: `Failed to assign polygon to layer "${resolvedLayerId}"`,
+            error: `Failed to assign polygon to layer "${assignedLayerId}"`,
           };
         }
       }
@@ -724,10 +758,11 @@ export class PolygonMutationManager {
       let polyIntersection: boolean = false;
 
       // Scope merge to active layer's feature groups when layer manager exists
-      const targetFgs = this.layerManager
-        ? this.layerManager.getFeatureGroupsForLayer(
-            options.targetLayerId || this.layerManager.getActiveLayerId(),
-          )
+      const layerManager = this.layerManager;
+      const targetFgs = layerManager
+        ? layerManager
+            .getFeatureGroupsForLayer(options.targetLayerId || layerManager.getActiveLayerId())
+            .filter((featureGroup) => layerManager.isFeatureGroupEditable(featureGroup))
         : this.getFeatureGroups();
 
       targetFgs.forEach((featureGroup) => {
@@ -846,8 +881,11 @@ export class PolygonMutationManager {
   private shouldAllowIntelligentMerge(polygon: Feature<Polygon | MultiPolygon>): boolean {
     try {
       // Scope to active layer when layer manager exists
-      const targetFgs = this.layerManager
-        ? this.layerManager.getFeatureGroupsForLayer(this.layerManager.getActiveLayerId())
+      const layerManager = this.layerManager;
+      const targetFgs = layerManager
+        ? layerManager
+            .getFeatureGroupsForLayer(layerManager.getActiveLayerId())
+            .filter((featureGroup) => layerManager.isFeatureGroupEditable(featureGroup))
         : this.getFeatureGroups();
 
       // Check if the polygon intersects with any existing polygons
@@ -891,8 +929,11 @@ export class PolygonMutationManager {
   private isPolygonInsideExistingHole(newPolygon: Feature<Polygon | MultiPolygon>): boolean {
     try {
       // Scope to active layer when layer manager exists
-      const targetFgs = this.layerManager
-        ? this.layerManager.getFeatureGroupsForLayer(this.layerManager.getActiveLayerId())
+      const layerManager = this.layerManager;
+      const targetFgs = layerManager
+        ? layerManager
+            .getFeatureGroupsForLayer(layerManager.getActiveLayerId())
+            .filter((featureGroup) => layerManager.isFeatureGroupEditable(featureGroup))
         : this.getFeatureGroups();
 
       // Check each existing feature group to see if the new polygon is inside any holes
@@ -1041,6 +1082,7 @@ export class PolygonMutationManager {
   private getPolygon(
     latlngs: Feature<Polygon | MultiPolygon>,
     layerColor?: string,
+    options: { enableDragging?: boolean } = {},
   ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
@@ -1072,7 +1114,8 @@ export class PolygonMutationManager {
     delete polygon._polydrawOriginalHoleLinePositions;
 
     // Enable polygon dragging using interaction manager
-    if (this.config.modes.dragPolygons) {
+    const enableDragging = options.enableDragging !== false;
+    if (enableDragging && (this.config.modes.dragPolygons || this.config.tools.clone)) {
       this.interactionManager.enablePolygonDragging(polygon, latlngs);
     }
 

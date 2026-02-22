@@ -963,19 +963,25 @@ export class PolygonInteractionManager {
 
   /**
    * Check if a polygon belongs to the active layer.
-   * Returns true if no layer manager exists (backward compat) or if in active layer.
+   * Returns true if no layer manager exists (backward compat) or if in active editable layer.
    */
   private isPolygonInActiveLayer(polygon: L.Polygon): boolean {
     if (!this.layerManager) return true;
     const mappedFeatureGroup = this.polygonFeatureGroupMap.get(polygon);
     if (mappedFeatureGroup) {
-      return this.layerManager.isInActiveLayer(mappedFeatureGroup);
+      return (
+        this.layerManager.isInActiveLayer(mappedFeatureGroup) &&
+        this.layerManager.isFeatureGroupEditable(mappedFeatureGroup)
+      );
     }
 
     const resolvedFeatureGroup = this.findFeatureGroupForPolygon(polygon);
     if (resolvedFeatureGroup) {
       this.polygonFeatureGroupMap.set(polygon, resolvedFeatureGroup);
-      return this.layerManager.isInActiveLayer(resolvedFeatureGroup);
+      return (
+        this.layerManager.isInActiveLayer(resolvedFeatureGroup) &&
+        this.layerManager.isFeatureGroupEditable(resolvedFeatureGroup)
+      );
     }
     return true; // If not found, allow interaction
   }
@@ -986,7 +992,7 @@ export class PolygonInteractionManager {
    */
   private isFeatureGroupInActiveLayer(fg: L.FeatureGroup): boolean {
     if (!this.layerManager) return true;
-    return this.layerManager.isInActiveLayer(fg);
+    return this.layerManager.isInActiveLayer(fg) && this.layerManager.isFeatureGroupEditable(fg);
   }
 
   /**

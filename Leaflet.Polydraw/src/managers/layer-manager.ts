@@ -1,12 +1,29 @@
 import * as L from 'leaflet';
 import type { EventManager } from './event-manager';
-import type { LayerSnapshot } from '../types/polydraw-interfaces';
+import type {
+  LayerSnapshot,
+  LayerInteraction,
+  LayerPanelVisibility,
+} from '../types/polydraw-interfaces';
 
 export interface LayerState {
   id: string;
+  label?: string;
   color: string;
   visible: boolean;
+  interaction: LayerInteraction;
+  panel: LayerPanelVisibility;
+  metadata: Record<string, unknown>;
   featureGroups: L.FeatureGroup[];
+}
+
+export interface LayerCreateOptions {
+  label?: string;
+  color?: string;
+  visible?: boolean;
+  interaction?: LayerInteraction;
+  panel?: LayerPanelVisibility;
+  metadata?: Record<string, unknown>;
 }
 
 export type SetActiveLayerResult = 'activated' | 'already-active' | 'not-found' | 'not-visible';
@@ -36,6 +53,20 @@ export class LayerManager {
     return Array.from(this.layers.values()).map((layer) => this.cloneLayerState(layer));
   }
 
+  getPanelLayers(): LayerState[] {
+    return this.getAllLayers().filter((layer) => layer.panel !== 'hidden');
+  }
+
+  getPanelLayerCount(): number {
+    let count = 0;
+    for (const layer of this.layers.values()) {
+      if (layer.panel !== 'hidden') {
+        count += 1;
+      }
+    }
+    return count;
+  }
+
   getLayer(layerId: string): LayerState | undefined {
     const layer = this.layers.get(this.normalizeLayerId(layerId));
     return layer ? this.cloneLayerState(layer) : undefined;
@@ -49,17 +80,26 @@ export class LayerManager {
     return this.getLayer(this.activeLayerId);
   }
 
-  getOrCreateLayer(layerId: string, color?: string): LayerState {
+  getOrCreateLayer(layerId: string, colorOrOptions?: string | LayerCreateOptions): LayerState {
     const normalizedId = this.normalizeLayerId(layerId);
     const existing = this.layers.get(normalizedId);
     if (existing) {
       return this.cloneLayerState(this.layers.get(normalizedId)!);
     }
 
+    const options: LayerCreateOptions =
+      typeof colorOrOptions === 'string' ? { color: colorOrOptions } : colorOrOptions || {};
+
     const layer: LayerState = {
       id: normalizedId,
-      color: color ? LayerManager.normalizeColor(color, this.defaultColor) : this.defaultColor,
-      visible: true,
+      label: options.label,
+      color: options.color
+        ? LayerManager.normalizeColor(options.color, this.defaultColor)
+        : this.defaultColor,
+      visible: options.visible !== false,
+      interaction: this.normalizeInteraction(options.interaction),
+      panel: this.normalizePanel(options.panel),
+      metadata: this.cloneMetadata(options.metadata),
       featureGroups: [],
     };
     this.layers.set(normalizedId, layer);
@@ -140,6 +180,73 @@ export class LayerManager {
       color: layer.color,
     });
     return true;
+  }
+
+  setLayerLabel(layerId: string, label?: string): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+
+    const normalizedLabel = typeof label === 'string' ? label.trim() : undefined;
+    const nextLabel = normalizedLabel && normalizedLabel.length > 0 ? normalizedLabel : undefined;
+    if (layer.label === nextLabel) {
+      return false;
+    }
+
+    layer.label = nextLabel;
+    return true;
+  }
+
+  setLayerInteraction(layerId: string, interaction: LayerInteraction): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+    const normalized = this.normalizeInteraction(interaction);
+    if (layer.interaction === normalized) {
+      return false;
+    }
+    layer.interaction = normalized;
+    return true;
+  }
+
+  setLayerPanelVisibility(layerId: string, panel: LayerPanelVisibility): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+    const normalized = this.normalizePanel(panel);
+    if (layer.panel === normalized) {
+      return false;
+    }
+    layer.panel = normalized;
+    return true;
+  }
+
+  setLayerMetadata(layerId: string, metadata?: Record<string, unknown>): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+    layer.metadata = this.cloneMetadata(metadata);
+    return true;
+  }
+
+  isLayerEditable(layerId: string): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return true;
+    }
+    return layer.interaction === 'editable';
+  }
+
+  isFeatureGroupEditable(featureGroup: L.FeatureGroup): boolean {
+    const layerId = this.getLayerForFeatureGroup(featureGroup);
+    if (!layerId) {
+      return true;
+    }
+    return this.isLayerEditable(layerId);
   }
 
   /**
@@ -307,8 +414,12 @@ export class LayerManager {
     return {
       layers: this.getAllLayers().map((layer) => ({
         id: layer.id,
+        label: layer.label,
         color: layer.color,
         visible: layer.visible,
+        interaction: layer.interaction,
+        panel: layer.panel,
+        metadata: this.cloneMetadata(layer.metadata),
         featureIndices: layer.featureGroups
           .map((featureGroup) => featureIndexMap.get(featureGroup))
           .filter((index): index is number => typeof index === 'number'),
@@ -330,13 +441,21 @@ export class LayerManager {
       if (!existing) {
         this.layers.set(layerId, {
           id: layerId,
+          label: typeof entry.label === 'string' ? entry.label : undefined,
           color: entry.color ? LayerManager.normalizeColor(entry.color) : this.defaultColor,
           visible: entry.visible !== false,
+          interaction: this.normalizeInteraction(entry.interaction),
+          panel: this.normalizePanel(entry.panel),
+          metadata: this.cloneMetadata(entry.metadata),
           featureGroups: [],
         });
       } else {
+        existing.label = typeof entry.label === 'string' ? entry.label : undefined;
         existing.color = entry.color ? LayerManager.normalizeColor(entry.color) : existing.color;
         existing.visible = entry.visible !== false;
+        existing.interaction = this.normalizeInteraction(entry.interaction);
+        existing.panel = this.normalizePanel(entry.panel);
+        existing.metadata = this.cloneMetadata(entry.metadata);
       }
     });
 
@@ -387,6 +506,9 @@ export class LayerManager {
         id: 'default',
         color: this.defaultColor,
         visible: true,
+        interaction: 'editable',
+        panel: 'visible',
+        metadata: {},
         featureGroups: [],
       });
     }
@@ -412,10 +534,32 @@ export class LayerManager {
   private cloneLayerState(layer: LayerState): LayerState {
     return {
       id: layer.id,
+      label: layer.label,
       color: layer.color,
       visible: layer.visible,
+      interaction: layer.interaction,
+      panel: layer.panel,
+      metadata: this.cloneMetadata(layer.metadata),
       featureGroups: [...layer.featureGroups],
     };
+  }
+
+  private normalizeInteraction(interaction?: LayerInteraction): LayerInteraction {
+    if (interaction === 'readonly' || interaction === 'static') {
+      return interaction;
+    }
+    return 'editable';
+  }
+
+  private normalizePanel(panel?: LayerPanelVisibility): LayerPanelVisibility {
+    return panel === 'hidden' ? 'hidden' : 'visible';
+  }
+
+  private cloneMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
+    if (!metadata) {
+      return {};
+    }
+    return { ...metadata };
   }
 
   /**

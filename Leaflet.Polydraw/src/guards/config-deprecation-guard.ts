@@ -23,6 +23,9 @@ export function warnIfUsingDeprecatedConfiguration(config: Partial<PolydrawConfi
     return;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = config as Record<string, any>;
+
   // --- Legacy modes.* tool toggles -> tools.* migration ---
   const legacyToolKeys = config.modes as LegacyToolKeys | undefined;
 
@@ -146,6 +149,47 @@ export function warnIfUsingDeprecatedConfiguration(config: Partial<PolydrawConfi
   const rawAlgorithm = (config as Record<string, unknown>).polygonCreation as
     | { algorithm?: unknown }
     | undefined;
+
+  // --- Legacy polygonCreation.method -> polygonCreation.algorithm ---
+  const legacyPolygonCreation = raw.polygonCreation as
+    | {
+        method?: unknown;
+        algorithm?: unknown;
+      }
+    | undefined;
+  if (legacyPolygonCreation?.method !== undefined) {
+    console.warn(
+      '[Leaflet.Polydraw] `config.polygonCreation.method` is deprecated in v2. Use `config.polygonCreation.algorithm` instead.',
+    );
+    if (!config.polygonCreation) {
+      config.polygonCreation = {} as PolydrawConfig['polygonCreation'];
+    }
+    const polygonCreationConfig = config.polygonCreation as unknown as Record<string, unknown>;
+    if (polygonCreationConfig.algorithm === undefined) {
+      polygonCreationConfig.algorithm = legacyPolygonCreation.method;
+    }
+  }
+
+  // --- Legacy simplification.mode -> simplification.strategy ---
+  const legacySimplification = raw.simplification as
+    | {
+        mode?: unknown;
+        strategy?: unknown;
+      }
+    | undefined;
+  if (legacySimplification?.mode !== undefined) {
+    console.warn(
+      '[Leaflet.Polydraw] `config.simplification.mode` is deprecated in v2. Use `config.simplification.strategy` instead.',
+    );
+    if (!config.simplification) {
+      config.simplification = {} as PolydrawConfig['simplification'];
+    }
+    const simplificationConfig = config.simplification as unknown as Record<string, unknown>;
+    if (simplificationConfig.strategy === undefined) {
+      simplificationConfig.strategy = legacySimplification.mode;
+    }
+  }
+
   if (rawAlgorithm?.algorithm === 'buffer') {
     console.warn(
       '[Leaflet.Polydraw] `polygonCreation.algorithm: "buffer"` is deprecated and no longer supported. Falling back to "concaveman". Use "concaveman" or "direct" instead.',
@@ -153,9 +197,6 @@ export function warnIfUsingDeprecatedConfiguration(config: Partial<PolydrawConfi
   }
 
   // --- Legacy style keys -> styles.* migration ---
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const raw = config as Record<string, any>;
-
   const hasLegacyPolyLineOptions = raw.polyLineOptions !== undefined;
   const hasLegacySubtractLineOptions = raw.subtractLineOptions !== undefined;
   const hasLegacyPolygonOptions = raw.polygonOptions !== undefined;

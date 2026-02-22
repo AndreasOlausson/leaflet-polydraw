@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { warnIfUsingDeprecatedConfiguration } from '../../../src/guards/config-deprecation-guard';
+import { DrawMode } from '../../../src/enums';
 import type { PolydrawConfig } from '../../../src/types/polydraw-interfaces';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -11,7 +12,15 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
   it('should not warn when a clean v2 config is passed', () => {
     const warnSpy = vi.spyOn(console, 'warn');
     const config: Partial<PolydrawConfig> = {
-      tools: { draw: true, subtract: true, p2p: true, p2pSubtract: true, clone: true, erase: true },
+      tools: {
+        default: DrawMode.Off,
+        draw: true,
+        subtract: true,
+        p2p: true,
+        p2pSubtract: true,
+        clone: true,
+        erase: true,
+      },
     };
 
     warnIfUsingDeprecatedConfiguration(config);
@@ -21,7 +30,15 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
 
   it('should not mutate config when no deprecated keys are present', () => {
     const config: Partial<PolydrawConfig> = {
-      tools: { draw: false, subtract: true, p2p: true, p2pSubtract: true, clone: true, erase: true },
+      tools: {
+        default: DrawMode.Off,
+        draw: false,
+        subtract: true,
+        p2p: true,
+        p2pSubtract: true,
+        clone: true,
+        erase: true,
+      },
     };
     const original = structuredClone(config);
 
@@ -658,6 +675,70 @@ describe('warnIfUsingDeprecatedConfiguration', () => {
       warnIfUsingDeprecatedConfiguration(config);
 
       expect(config.polygonTools.simplify.enabled).toBe(true);
+    });
+  });
+
+  describe('Legacy simplification.mode -> simplification.strategy', () => {
+    it('should warn when simplification.mode is present', () => {
+      const warnSpy = vi.spyOn(console, 'warn');
+      const config = { simplification: { mode: 'dynamic' } } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('`config.simplification.mode` is deprecated'),
+      );
+    });
+
+    it('should migrate simplification.mode to simplification.strategy', () => {
+      vi.spyOn(console, 'warn');
+      const config = { simplification: { mode: 'dynamic' } } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(config.simplification.strategy).toBe('dynamic');
+    });
+
+    it('should not overwrite explicitly set simplification.strategy', () => {
+      vi.spyOn(console, 'warn');
+      const config = { simplification: { mode: 'dynamic', strategy: 'simple' } } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(config.simplification.strategy).toBe('simple');
+    });
+  });
+
+  describe('Legacy polygonCreation.method -> polygonCreation.algorithm', () => {
+    it('should warn when polygonCreation.method is present', () => {
+      const warnSpy = vi.spyOn(console, 'warn');
+      const config = { polygonCreation: { method: 'direct' } } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('`config.polygonCreation.method` is deprecated'),
+      );
+    });
+
+    it('should migrate polygonCreation.method to polygonCreation.algorithm', () => {
+      vi.spyOn(console, 'warn');
+      const config = { polygonCreation: { method: 'direct' } } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(config.polygonCreation.algorithm).toBe('direct');
+    });
+
+    it('should not overwrite explicitly set polygonCreation.algorithm', () => {
+      vi.spyOn(console, 'warn');
+      const config = {
+        polygonCreation: { method: 'direct', algorithm: 'concaveman' },
+      } as any;
+
+      warnIfUsingDeprecatedConfiguration(config);
+
+      expect(config.polygonCreation.algorithm).toBe('concaveman');
     });
   });
 });
