@@ -67,7 +67,9 @@ describe('Layer Descriptor Policies', () => {
 
     const readonlyGroup = polydraw
       .getFeatureGroups()
-      .find((featureGroup) => layerManager.getLayerForFeatureGroup(featureGroup) === 'Readonly Layer');
+      .find(
+        (featureGroup) => layerManager.getLayerForFeatureGroup(featureGroup) === 'Readonly Layer',
+      );
     expect(readonlyGroup).toBeDefined();
 
     const polygon = readonlyGroup!
