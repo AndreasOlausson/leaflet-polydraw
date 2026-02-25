@@ -1,6 +1,11 @@
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { EventManager } from './event-manager';
-import type { LayerSnapshot } from '../types/polydraw-interfaces';
+import type {
+  FeatureMetadataSnapshotEntry,
+  LayerSnapshot,
+  PolydrawFeatureGroup,
+  PolydrawPolygon,
+} from '../types/polydraw-interfaces';
 import type { LayerManager } from './layer-manager';
 import * as L from 'leaflet';
 
@@ -32,6 +37,11 @@ export interface HistorySnapshot {
    * Optional layer snapshot for restoring layer assignments
    */
   layerSnapshot?: LayerSnapshot;
+
+  /**
+   * Optional per-feature metadata snapshot aligned with `features` order.
+   */
+  featureMetadataSnapshot?: FeatureMetadataSnapshotEntry[];
 }
 
 /**
@@ -271,6 +281,7 @@ export class HistoryManager {
     layerManager?: LayerManager,
   ): HistorySnapshot {
     const features: Feature<Polygon | MultiPolygon>[] = [];
+    const featureMetadataSnapshot: FeatureMetadataSnapshotEntry[] = [];
 
     featureGroups.forEach((fg) => {
       fg.eachLayer((layer) => {
@@ -288,6 +299,7 @@ export class HistoryManager {
           const geomType = feature?.geometry?.type;
           if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
             features.push(feature);
+            featureMetadataSnapshot.push(this.captureFeatureMetadataSnapshot(fg, layer));
           }
         } catch (error) {
           console.warn('Error converting polygon to GeoJSON:', error);
@@ -304,6 +316,51 @@ export class HistoryManager {
     // Capture layer snapshot if layer manager is available
     if (layerManager) {
       snapshot.layerSnapshot = layerManager.captureLayerSnapshot(featureGroups);
+    }
+    if (featureMetadataSnapshot.length > 0) {
+      snapshot.featureMetadataSnapshot = featureMetadataSnapshot;
+    }
+
+    return snapshot;
+  }
+
+  private captureFeatureMetadataSnapshot(
+    featureGroup: L.FeatureGroup,
+    polygonLayer?: L.Layer,
+  ): FeatureMetadataSnapshotEntry {
+    const snapshot: FeatureMetadataSnapshotEntry = {};
+    const metadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+
+    if (metadata?.id) {
+      snapshot.id = metadata.id;
+    }
+    if (metadata?.metadata) {
+      snapshot.metadata = { ...metadata.metadata };
+    }
+    if (Array.isArray(metadata?.sourceFeatureIds)) {
+      snapshot.sourceFeatureIds = [...metadata.sourceFeatureIds];
+    }
+    if (typeof metadata?.hasHoles === 'boolean') {
+      snapshot.hasHoles = metadata.hasHoles;
+    }
+    if (typeof metadata?.layerId === 'string') {
+      snapshot.layerId = metadata.layerId;
+    }
+    if (metadata?.createdAt instanceof Date && !Number.isNaN(metadata.createdAt.getTime())) {
+      snapshot.createdAt = metadata.createdAt.toISOString();
+    }
+    if (metadata?.lastModified instanceof Date && !Number.isNaN(metadata.lastModified.getTime())) {
+      snapshot.lastModified = metadata.lastModified.toISOString();
+    }
+
+    if (polygonLayer instanceof L.Polygon) {
+      const polygon = polygonLayer as PolydrawPolygon;
+      if (typeof polygon._polydrawOptimizationLevel === 'number') {
+        snapshot.optimizationLevel = polygon._polydrawOptimizationLevel;
+      }
+      if (typeof polygon._polydrawOptimizationOriginalLevel === 'number') {
+        snapshot.originalOptimizationLevel = polygon._polydrawOptimizationOriginalLevel;
+      }
     }
 
     return snapshot;

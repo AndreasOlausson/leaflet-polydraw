@@ -7,21 +7,21 @@
 - Reduce the public config surface to the most common, stable options.
 - ~~Separate "internal defaults" from user overrides to make configuration easier to maintain.~~ 🚫 Decision: keep a single config object for now (no "second config" split).
 - ~~Ship a complete Playwright E2E suite that covers core drawing/editing workflows.~~ ✅ Playwright suite is in place, including Leaflet v1/v2 matrix commands.
-- Add polygon metadata as a first-class v2 feature.
+- ~~Add polygon metadata as a first-class v2 feature.~~ ✅ Implemented with feature/layer metadata APIs + lifecycle persistence tests.
 - ~~Add layered polygon sets as a first-class v2 feature.~~ ✅ Core layer system is implemented.
 
 ### Planned Changes
 
 - ~~Introduce a smaller, focused public config interface.~~
 - ~~Move rarely changed behavior (e.g., tooltip defaults, internal tuning knobs) into code-owned defaults.~~ 🚫 Decision: not now; keep `tooltips` public for this cycle.
-- Provide a clear migration guide from v1 config keys to v2 equivalents (including deprecations).
-- Define a v2 config schema (grouped by use-case) and remove deprecated keys from runtime merging.
+- ~~Provide a clear migration guide from v1 config keys to v2 equivalents (including deprecations).~~ ✅ `docs/MIGRATION.md` + changelog references are in place.
+- ~~Define a v2 config schema (grouped by use-case) and remove deprecated keys from runtime merging.~~ ✅ Grouped v2 schema is in place; legacy keys are handled via migration/deprecation guards.
 - ~~Add a migration helper or codemod to map common v1 configs to v2.~~ ✅ `src/guards/config-deprecation-guard.ts` — runtime migration for `modes.*` → `tools.*` with deprecation warnings.
 - Document a strict vs. advanced override mode (if we keep any escape hatches).
-- Formalize a polygon metadata system inspired by the Angular `addAutoPolygon` flow.
+- ~~Formalize a polygon metadata system inspired by the Angular `addAutoPolygon` flow.~~ ✅ Implemented through predefined inputs, feature metadata lifecycle, and layer metadata APIs.
 - ~~Introduce layered polygon sets so overlaps across layers do not merge or affect each other.~~ ✅ Implemented with layer-scoped assignment and layer-aware operations.
 - Update docs/examples to reference `config.tools.*` (remove `modes.draw/subtract/p2p/...` references).
-- Add a short v2 migration section (breaking config changes + renamed keys).
+- ~~Add a short v2 migration section (breaking config changes + renamed keys).~~ ✅ Added in docs/changelog.
 - ~~Audit type exports/examples to ensure `ModeConfig` no longer includes tool flags.~~ ✅ `ModeConfig` now contains behavior flags only (no tool toggles).
 - ~~Add a minimal test that asserts a warning is logged when legacy `modes.*` tool keys are provided.~~ ✅ `test/unit/guards/config-deprecation-guard.test.ts` — 56 tests covering all warning categories + migration logic.
 - ~~Add layer reorder support that keeps panel order and map feature-group order in sync.~~ ✅ Implemented (manager + panel drag/drop + feature-group reordering).
@@ -41,21 +41,21 @@
 - ~~`holeOptions` -> `styles.hole`~~ ✅ Implemented.
 - `polygonCreation.*` -> `creation.*`
 - `simplification.*` -> `simplify.*`
-- `menuOperations.*` -> `menu.*`
-- `boundingBox.*` -> `transform.boundingBox.*`
-- `bezier.*` -> `smooth.bezier.*`
+- ~~`menuOperations.*` -> `menu.*`~~ 🚫 Final v2 mapping uses `polygonTools.*`.
+- ~~`boundingBox.*` -> `transform.boundingBox.*`~~ 🚫 Final v2 mapping uses `polygonTools.bbox.*`.
+- ~~`bezier.*` -> `smooth.bezier.*`~~ 🚫 Final v2 mapping uses `polygonTools.bezier.*`.
 - ~~`colors.*` -> `theme.*` (keep public palette small, move per-state styles to internal defaults)~~ ✅ Implemented via unified `styles.*` (including `styles.ui.*`).
 - ~~`tooltips.*` -> `ui.tooltips.*` (or internal defaults only)~~ 🚫 Decision: keep `tooltips.*` public for now.
 
 ### Polygon Metadata (v2)
 
-- Public metadata bag on polygons (typed, minimal by default), with clear merge/split semantics.
+- ~~Public metadata bag on polygons (typed, minimal by default), with clear merge/split semantics.~~ ✅
 - Optional computed fields: `leafletId`, `polygonCheckSum`, `minMaxPositions` (bounds), `isIdentifiable`.
 - Optional control flags per polygon: `mergeable`, `draggable`.
 - Optional UI metadata: `infoMarkerContent` and `customName` (for popups/labels).
-- Allow `general` to carry app-specific data without polluting core.
-- Ensure metadata persists through clone, undo/redo, merge, split, and drag operations.
-- Add hooks to inject metadata on addPredefined/addAuto-like flows.
+- ~~Allow `general` to carry app-specific data without polluting core.~~ ✅ via metadata bag (`Record<string, unknown>`).
+- ~~Ensure metadata persists through clone, undo/redo, merge, split, and drag operations.~~ ✅ covered by metadata lifecycle tests.
+- ~~Add hooks to inject metadata on addPredefined/addAuto-like flows.~~ ✅ via predefined options and grouped inputs.
 
 ### Layered Polygon Sets (v2)
 
@@ -76,7 +76,7 @@
 - Should v2 offer a strict "public config only" mode, or allow advanced overrides behind a flag?
 - ~~Is it worth shipping a transitional helper to auto-migrate v1 configs at runtime?~~ ✅ Yes, runtime migration helper is implemented.
 - ~~Should the Playwright suite validate both Leaflet v1 and v2 builds?~~ ✅ Yes, matrix scripts are in place.
-- How should metadata resolve on merge or split (merge rules vs preserve lists)?
+- ~~How should metadata resolve on merge or split (merge rules vs preserve lists)?~~ ✅ Deterministic rule implemented and documented in Part II metadata notes.
 - How should layer ordering and selection priority behave when layers overlap?
 
 ### Rethink Notes
@@ -86,7 +86,7 @@
 - ~~Keep dynamic-iteration behavior controlled by internal code paths only.~~ ✅
 - If needed for debugging, gate it behind a dev-only/internal flag (not documented in public API).
 
-## Part II - addPredefinedPolygon(s) Input and Layer Policy (Draft, no code yet)
+## Part II - addPredefinedPolygon(s) Input and Layer Policy
 
 ### Why
 
@@ -95,37 +95,45 @@
 
 ### Draft Input Direction
 
-- Expand layer input from simple `name/color` to a layer descriptor:
+- ~~Expand layer input from simple `name/color` to a layer descriptor:~~ ✅
   - `layer: { id, label?, color?, visibility?, panel?, interaction?, metadata? }`
-- Keep backwards compatibility with existing simple layer input.
+- ~~Keep backwards compatibility with existing simple layer input.~~ ✅
 
 ### Draft Interaction Policy
 
-- Use an explicit layer interaction mode:
+- ~~Use an explicit layer interaction mode:~~ ✅
   - `editable`: current behavior (full edit handles/markers/tools where applicable)
   - `readonly`: visible + inspectable, but geometry edits disabled
   - `static`: pure information layer, no edit controls/markers
-- Allow optional per-feature override when needed, but apply precedence:
+- Primary target use case: static information layers (expected majority usage).
+- Keep per-feature overrides intentionally small in MVP:
+  - `interaction?: 'inherit' | 'editable' | 'readonly' | 'static'`
+  - `merge?: 'inherit' | 'allow' | 'block'`
+  - `style?: { color?, fillColor?, fillOpacity?, weight? }`
+- Defer fine-grained vertex toggles for now (`addVertices`, `removeVertices`, `dragVertices`) to avoid inconsistent policy behavior across interaction paths.
+- Allow optional per-feature override when needed, and apply precedence:
   - feature override > layer policy > global defaults
 - Safety rule: lock wins (a readonly/static layer cannot be made editable by per-feature override).
 
 ### Draft Panel Policy
 
-- Add layer panel visibility intent:
+- ~~Add layer panel visibility intent:~~ ✅
   - `panel: "visible" | "hidden"`
 - Supports use cases like hazard/info overlays that should exist on map but not appear in operator layer panel.
 
 ### Draft Metadata Channel
 
-- Add metadata bag at layer and/or feature level:
+- ~~Add metadata bag at layer and/or feature level:~~ ✅
   - `metadata: Record<string, unknown>`
 - Intended for domain data (e.g. erosion risk class, source ID, confidence, timestamps) without polluting core geometry APIs.
+- Keep metadata domain-agnostic.
+- Do not encode behavior policy in metadata; behavior/rendering belongs to explicit override fields.
 
 ### Draft Scope for Part II
 
-- Define/lock TypeScript interfaces first.
+- ~~Define/lock TypeScript interfaces first.~~ ✅
 - Define behavior rules and conflict resolution in docs before implementation.
-- Add focused tests for readonly/static/panel-hidden semantics once interfaces are finalized.
+- ~~Add focused tests for readonly/static/panel-hidden semantics once interfaces are finalized.~~ ✅
 
 ## Part II.b - Layer Public API (Draft, naming-first)
 
@@ -136,39 +144,39 @@
 
 ### Read / Query
 
-- `getAllLayers(): LayerState[]`
-- `getLayerById(layerId: string): LayerState | undefined`
-- `hasLayer(layerId: string): boolean`
-- `getActiveLayer(): LayerState | undefined`
+- ~~`getAllLayers(): LayerState[]`~~ ✅
+- ~~`getLayerById(layerId: string): LayerState | undefined`~~ ✅
+- ~~`hasLayer(layerId: string): boolean`~~ ✅
+- ~~`getActiveLayer(): LayerState | undefined`~~ ✅
 - `getActiveLayerId(): string`
 - `getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined`
-- `getFeatureGroupsByLayer(layerId: string): L.FeatureGroup[]`
+- ~~`getFeatureGroupsByLayer(layerId: string): L.FeatureGroup[]`~~ ✅
 
 ### Create / Upsert / Delete
 
-- `createLayer(input: CreateLayerInput): LayerState`
-- `ensureLayer(input: EnsureLayerInput): LayerState` (idempotent upsert-style)
-- `updateLayer(layerId: string, patch: UpdateLayerInput): LayerState | undefined`
-- `deleteLayer(layerId: string, options?: DeleteLayerOptions): DeleteLayerResult`
+- ~~`createLayer(input: CreateLayerInput): LayerState`~~ ✅
+- ~~`ensureLayer(input: EnsureLayerInput): LayerState` (idempotent upsert-style)~~ ✅
+- ~~`updateLayer(layerId: string, patch: UpdateLayerInput): LayerState | undefined`~~ ✅
+- ~~`deleteLayer(layerId: string, options?: DeleteLayerOptions): DeleteLayerResult`~~ ✅
 - `clearLayers(options?: ClearLayersOptions): void`
 
 ### Activation / Visibility / Order
 
-- `setActiveLayer(layerId: string): boolean`
-- `showLayer(layerId: string): boolean`
-- `hideLayer(layerId: string): boolean`
-- `setLayerVisibility(layerId: string, visible: boolean): boolean`
-- `reorderLayer(layerId: string, targetLayerId: string): boolean`
+- ~~`setActiveLayer(layerId: string): boolean`~~ ✅
+- ~~`showLayer(layerId: string): boolean`~~ ✅
+- ~~`hideLayer(layerId: string): boolean`~~ ✅
+- ~~`setLayerVisibility(layerId: string, visible: boolean): boolean`~~ ✅
+- ~~`reorderLayer(layerId: string, targetLayerId: string): boolean`~~ ✅
 - `moveLayerToIndex(layerId: string, index: number): boolean`
 - `setLayerOrder(layerIds: string[]): boolean`
 
 ### Styling / Policy / Metadata
 
-- `setLayerColor(layerId: string, color: string): boolean`
-- `setLayerInteraction(layerId: string, interaction: 'editable' | 'readonly' | 'static'): boolean`
-- `setLayerPanelVisibility(layerId: string, panel: 'visible' | 'hidden'): boolean`
-- `setLayerMetadata(layerId: string, metadata: Record<string, unknown>): boolean`
-- `patchLayerMetadata(layerId: string, metadataPatch: Record<string, unknown>): boolean`
+- ~~`setLayerColor(layerId: string, color: string): boolean`~~ ✅
+- ~~`setLayerInteraction(layerId: string, interaction: 'editable' | 'readonly' | 'static'): boolean`~~ ✅
+- ~~`setLayerPanelVisibility(layerId: string, panel: 'visible' | 'hidden'): boolean`~~ ✅
+- ~~`setLayerMetadata(layerId: string, metadata: Record<string, unknown>): boolean`~~ ✅
+- ~~`patchLayerMetadata(layerId: string, metadataPatch: Record<string, unknown>): boolean`~~ ✅
 
 ### Feature Assignment Helpers
 
@@ -207,73 +215,80 @@
 - Define precedence and conflict rules:
   - feature override > layer policy > global defaults
   - lock wins: readonly/static cannot be elevated to editable by a weaker override
+- Lock MVP per-feature override scope:
+  - include only `interaction`, `merge`, and `style`
+  - postpone granular vertex-level overrides to a later phase
 - Add migration behavior for legacy input forms where needed.
 
 Exit criteria:
 - TypeScript interfaces are finalized and reviewed.
 - Behavior rules are written in docs comments and `PLAN.md`.
 
-### Phase 2 - Input Normalization for Predefined APIs
+### ~~Phase 2 - Input Normalization for Predefined APIs~~ ✅
 
-- Add a single internal normalizer for predefined input:
+- ~~Add a single internal normalizer for predefined input:~~
   - accepts `layer: 'id'`
   - accepts `layer: { id, color }`
   - accepts extended `layer` descriptor (`interaction`, `panel`, `metadata`, etc.)
-- Keep all existing calls working without behavior regressions.
+- ~~Keep all existing calls working without behavior regressions.~~
 
 Exit criteria:
-- Existing predefined tests pass unchanged.
-- New tests verify backward-compatible parsing.
+- ~~Existing predefined tests pass unchanged.~~
+- ~~New tests verify backward-compatible parsing.~~
 
-### Phase 3 - Layer Policy Plumbing
+### ~~Phase 3 - Layer Policy Plumbing~~ ✅
 
-- Extend layer state with:
+- ~~Extend layer state with:~~
   - `interaction`
   - `panel`
   - `metadata`
-- Enforce layer policies in mutation/interaction managers:
+- ~~Enforce layer policies in mutation/interaction managers:~~
   - `readonly`: no geometry mutation
   - `static`: no geometry mutation and no edit handles/markers
-- Keep info/selection behaviors explicit and documented.
+- ~~Keep info/selection behaviors explicit and documented.~~
 
 Exit criteria:
-- Inactive + readonly/static behavior is deterministic across mouse/touch paths.
-- No unguarded mutation path can bypass policy checks.
+- ~~Inactive + readonly/static behavior is deterministic across mouse/touch paths.~~
+- ~~No unguarded mutation path can bypass policy checks.~~
 
-### Phase 4 - Panel Visibility + Ordering Behavior
+### ~~Phase 4 - Panel Visibility + Ordering Behavior~~ ✅
 
-- Respect `panel: hidden` in layer panel rendering.
-- Ensure hidden-panel layers still participate in map rendering and z-order rules.
-- Keep reorder behavior consistent between visible panel rows and full map feature-group order.
-
-Exit criteria:
-- Panel order and map order remain in sync.
-- Hidden-panel layers do not create panel/UI inconsistency.
-
-### Phase 5 - Metadata Persistence + Lifecycle
-
-- Persist metadata through:
-  - add predefined
-  - clone
-  - undo/redo
-  - merge/split (with explicit merge strategy)
-- Add helper accessors/setters for layer and feature metadata.
+- ~~Respect `panel: hidden` in layer panel rendering.~~
+- ~~Ensure hidden-panel layers still participate in map rendering and z-order rules.~~
+- ~~Keep reorder behavior consistent between visible panel rows and full map feature-group order.~~
 
 Exit criteria:
-- Snapshot/restore includes metadata deterministically.
-- Merge/split metadata behavior is documented and tested.
+- ~~Panel order and map order remain in sync.~~
+- ~~Hidden-panel layers do not create panel/UI inconsistency.~~
 
-### Phase 6 - Public API Surface
+### ~~Phase 5 - Metadata Persistence + Lifecycle~~ ✅
 
-- Add high-level `Polydraw` methods for common layer workflows:
-  - read/query
-  - create/update/delete
-  - activation/visibility/order
-  - metadata/policy updates
-- Keep `getLayerManager()` for advanced workflows.
+- ~~Persist metadata through:~~
+  - ~~add predefined~~
+  - ~~clone~~
+  - ~~undo/redo~~
+  - ~~merge/split (with explicit merge strategy)~~
+- ~~Add helper accessors/setters for layer and feature metadata.~~
+
+Notes:
+- Merge strategy is deterministic: explicit incoming metadata wins; otherwise merged polygons inherit the first intersecting source metadata.
+- Internal provenance (`sourceFeatureIds`) is carried on feature-group metadata for lifecycle tracking.
 
 Exit criteria:
-- API methods are typed, documented, and covered by focused unit tests.
+- ~~Snapshot/restore includes metadata deterministically.~~
+- ~~Merge/split metadata behavior is documented and tested.~~
+
+### ~~Phase 6 - Public API Surface~~ ✅
+
+- ~~Add high-level `Polydraw` methods for common layer workflows:~~
+  - ~~read/query~~
+  - ~~create/update/delete~~
+  - ~~activation/visibility/order~~
+  - ~~metadata/policy updates~~
+- ~~Keep `getLayerManager()` for advanced workflows.~~
+
+Exit criteria:
+- ~~API methods are typed, documented, and covered by focused unit tests.~~
 
 ### Phase 7 - QA + Docs Gate
 
@@ -290,3 +305,15 @@ Exit criteria:
 Exit criteria:
 - Green matrix tests and migration notes complete.
 - No unresolved high-severity issues in review pass.
+
+### Phase 8 - Demo Rebuild + Release Sync
+
+- Rebuild demo assets against the current v2 code before release cut.
+- Keep demo output aligned with package build outputs and latest API/docs links.
+- Run:
+  - `npm run build`
+  - `npm --prefix demo --ignore-scripts run build`
+
+Exit criteria:
+- Demo build completes without errors.
+- Docs, migration notes, and demo references are aligned for release review.

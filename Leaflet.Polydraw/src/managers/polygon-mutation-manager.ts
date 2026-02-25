@@ -8,6 +8,7 @@ import type {
   MenuActionData,
   PolygonUpdatedEventData,
   Position,
+  PolydrawFeatureGroup,
   PolydrawPolygon,
   HistoryAction,
 } from '../types/polydraw-interfaces';
@@ -40,6 +41,11 @@ interface AddPolygonOptions {
   skipKinkProcessing?: boolean;
   targetLayerId?: string;
   layerColor?: string;
+  featureId?: string;
+  featureMetadata?: Record<string, unknown>;
+  sourceFeatureIds?: string[];
+  featureCreatedAt?: string;
+  featureLastModified?: string;
 }
 
 export interface MutationManagerDependencies {
@@ -201,6 +207,11 @@ export class PolygonMutationManager {
       visualOptimizationLevel: data.optimizationLevel || 0,
       originalOptimizationLevel: data.originalOptimizationLevel,
       skipKinkProcessing: data.operation === 'markerDrag',
+      featureId: data.featureId,
+      featureMetadata: data.featureMetadata,
+      sourceFeatureIds: data.sourceFeatureIds,
+      featureCreatedAt: data.featureCreatedAt,
+      featureLastModified: data.featureLastModified,
     };
     await this.addPolygon(data.polygon, options);
   }
@@ -231,6 +242,7 @@ export class PolygonMutationManager {
 
     const { level: optimizationLevel, original: originalOptimizationLevel } =
       this.getOptimizationMetadataFromFeatureGroup(data.featureGroup);
+    const sourceMetadata = this.getFeatureMetadataStateFromFeatureGroup(data.featureGroup);
 
     let result: GeometryOperationResult;
 
@@ -279,6 +291,10 @@ export class PolygonMutationManager {
         simplify: false,
         visualOptimizationLevel: bezierLevel,
         originalOptimizationLevel: bezierOriginal,
+        featureId: sourceMetadata.featureId,
+        featureMetadata: sourceMetadata.metadata,
+        sourceFeatureIds: sourceMetadata.sourceFeatureIds,
+        featureCreatedAt: sourceMetadata.createdAt,
       });
       if (data.action === 'bezier' && this.config.polygonTools.bezier?.ghostMarkers) {
         const ghostOpacity = 0.001;
@@ -498,6 +514,7 @@ export class PolygonMutationManager {
 
       for (const featureGroup of intersectingFeatureGroups) {
         try {
+          const sourceMetadata = this.getFeatureMetadataStateFromFeatureGroup(featureGroup);
           const featureCollection = featureGroup.toGeoJSON() as FeatureCollection<
             Polygon | MultiPolygon
           >;
@@ -516,6 +533,9 @@ export class PolygonMutationManager {
                 simplify,
                 visualOptimizationLevel,
                 originalOptimizationLevel,
+                featureMetadata: sourceMetadata.metadata,
+                sourceFeatureIds: sourceMetadata.sourceFeatureIds,
+                featureCreatedAt: sourceMetadata.createdAt,
               });
               if (addResult.success && addResult.featureGroups) {
                 resultFeatureGroups.push(...addResult.featureGroups);
@@ -569,6 +589,11 @@ export class PolygonMutationManager {
       originalOptimizationLevel,
       targetLayerId,
       layerColor,
+      featureId,
+      featureMetadata,
+      sourceFeatureIds,
+      featureCreatedAt,
+      featureLastModified,
     } = options;
 
     try {
@@ -624,6 +649,18 @@ export class PolygonMutationManager {
       } catch {
         return { success: false, error: 'Failed to create polygon layer' };
       }
+
+      this.setFeatureGroupMetadata(featureGroup, {
+        featureId,
+        metadata: featureMetadata,
+        sourceFeatureIds,
+        optimizationLevel: visualOptimizationLevel,
+        originalOptimizationLevel: effectiveOriginal,
+        hasHoles: this.featureHasHoles(normalizedLatLngs),
+        layerId: resolvedLayerId,
+        createdAt: featureCreatedAt,
+        lastModified: featureLastModified,
+      });
 
       // Safely get marker coordinates with improved structure detection
       let markerLatlngs: L.LatLngExpression[][];
@@ -842,6 +879,10 @@ export class PolygonMutationManager {
     options: AddPolygonOptions = {},
   ): Promise<MutationResult> {
     try {
+      const mergedSourceFeatureIds = this.collectSourceFeatureIds(layers, options.sourceFeatureIds);
+      const mergedFeatureMetadata =
+        options.featureMetadata ?? this.resolvePrimaryFeatureMetadata(layers);
+
       // Remove the intersecting feature groups
       layers.forEach((featureGroup) => {
         this.removeFeatureGroupInternal(featureGroup);
@@ -851,7 +892,11 @@ export class PolygonMutationManager {
       const result = this.geometryManager.unionPolygons(polygonFeature, latlngs);
 
       if (result.success && result.result) {
-        const addResult = await this.addPolygonLayer(result.result, options);
+        const addResult = await this.addPolygonLayer(result.result, {
+          ...options,
+          featureMetadata: mergedFeatureMetadata,
+          sourceFeatureIds: mergedSourceFeatureIds,
+        });
 
         this.emit('polygonsUnioned', {
           originalPolygons: polygonFeature,
@@ -1250,6 +1295,140 @@ export class PolygonMutationManager {
     }
 
     return { level, original };
+  }
+
+  private getFeatureMetadataStateFromFeatureGroup(featureGroup?: L.FeatureGroup): {
+    featureId?: string;
+    metadata: Record<string, unknown>;
+    sourceFeatureIds: string[];
+    createdAt?: string;
+  } {
+    if (!featureGroup) {
+      return {
+        metadata: {},
+        sourceFeatureIds: [],
+      };
+    }
+
+    const metadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+    const featureId = metadata?.id;
+    const sourceFeatureIds = Array.isArray(metadata?.sourceFeatureIds)
+      ? [...metadata.sourceFeatureIds]
+      : featureId
+        ? [featureId]
+        : [];
+    const createdAt =
+      metadata?.createdAt instanceof Date && !Number.isNaN(metadata.createdAt.getTime())
+        ? metadata.createdAt.toISOString()
+        : undefined;
+
+    return {
+      featureId,
+      metadata: this.cloneFeatureMetadata(metadata?.metadata),
+      sourceFeatureIds,
+      createdAt,
+    };
+  }
+
+  private collectSourceFeatureIds(
+    featureGroups: L.FeatureGroup[],
+    seedSourceFeatureIds?: string[],
+  ): string[] {
+    const orderedIds: string[] = [];
+    const seenIds = new Set<string>();
+
+    const addId = (id?: string) => {
+      if (!id || seenIds.has(id)) {
+        return;
+      }
+      seenIds.add(id);
+      orderedIds.push(id);
+    };
+
+    featureGroups.forEach((featureGroup) => {
+      const metadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+      if (Array.isArray(metadata?.sourceFeatureIds) && metadata.sourceFeatureIds.length > 0) {
+        metadata.sourceFeatureIds.forEach((sourceId) => addId(sourceId));
+      } else {
+        addId(metadata?.id);
+      }
+    });
+
+    if (Array.isArray(seedSourceFeatureIds)) {
+      seedSourceFeatureIds.forEach((sourceId) => addId(sourceId));
+    }
+
+    return orderedIds;
+  }
+
+  private resolvePrimaryFeatureMetadata(featureGroups: L.FeatureGroup[]): Record<string, unknown> {
+    for (const featureGroup of featureGroups) {
+      const metadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata?.metadata;
+      if (metadata && Object.keys(metadata).length > 0) {
+        return this.cloneFeatureMetadata(metadata);
+      }
+    }
+    return {};
+  }
+
+  private cloneFeatureMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
+    if (!metadata) {
+      return {};
+    }
+    return { ...metadata };
+  }
+
+  private featureHasHoles(feature: Feature<Polygon | MultiPolygon>): boolean {
+    if (!feature?.geometry) {
+      return false;
+    }
+    if (feature.geometry.type === 'Polygon') {
+      return feature.geometry.coordinates.length > 1;
+    }
+    if (feature.geometry.type === 'MultiPolygon') {
+      return feature.geometry.coordinates.some((polygonRings) => polygonRings.length > 1);
+    }
+    return false;
+  }
+
+  private setFeatureGroupMetadata(
+    featureGroup: L.FeatureGroup,
+    options: {
+      featureId?: string;
+      metadata?: Record<string, unknown>;
+      sourceFeatureIds?: string[];
+      optimizationLevel: number;
+      originalOptimizationLevel: number;
+      hasHoles: boolean;
+      layerId?: string;
+      createdAt?: string;
+      lastModified?: string;
+    },
+  ): void {
+    const now = new Date();
+    const parsedCreatedAt = options.createdAt ? new Date(options.createdAt) : now;
+    const parsedLastModified = options.lastModified ? new Date(options.lastModified) : now;
+    const createdAt = Number.isNaN(parsedCreatedAt.getTime()) ? now : parsedCreatedAt;
+    const lastModified = Number.isNaN(parsedLastModified.getTime()) ? now : parsedLastModified;
+    const featureId =
+      options.featureId ||
+      `fg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    const sourceFeatureIds =
+      options.sourceFeatureIds && options.sourceFeatureIds.length > 0
+        ? [...new Set(options.sourceFeatureIds)]
+        : [featureId];
+
+    (featureGroup as PolydrawFeatureGroup)._polydrawMetadata = {
+      id: featureId,
+      optimizationLevel: options.optimizationLevel,
+      originalOptimizationLevel: options.originalOptimizationLevel,
+      hasHoles: options.hasHoles,
+      createdAt,
+      lastModified,
+      layerId: options.layerId,
+      metadata: this.cloneFeatureMetadata(options.metadata),
+      sourceFeatureIds,
+    };
   }
 
   // Public methods that delegate to interaction manager

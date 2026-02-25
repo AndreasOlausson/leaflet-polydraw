@@ -73,9 +73,9 @@ Duplicate existing polygons by dragging out a copy while the original stays in p
 - Duplicating complex shapes with holes
 - Quick area replication
 - Template-based polygon creation
-- Opt-in interaction: Clone Drag Mode is available only when explicitly enabled via `config.modes.clonePolygons`.
+- Opt-in interaction: Clone Drag Mode is available only when explicitly enabled via `config.tools.clone`.
 
-Clone Drag Mode operates independently of the standard polygon dragging setting (`dragPolygons`). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
+Clone Drag Mode operates independently of the standard polygon dragging setting (`modes.dragPolygons`). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
 
 Simply click the clone button in the toolbar and drag any polygon on the map. A dashed ghost outline indicates the original position during the drag operation. Upon release, a new polygon is created at the drop location, and the original returns to its starting coordinates.
 Press Esc to abort the clone. If history capture is enabled (`config.history.capture.polygonClone`), the clone can be reverted using Undo.
@@ -84,7 +84,7 @@ Press Esc to abort the clone. If history capture is enabled (`config.history.cap
 
 - **Hole Integrity**: Clones preserve all inner rings and optimization metadata.
 - **Merge Support**: Respects `config.mergePolygons` — clones will merge with intersecting shapes if enabled.
-- **Independence**: Operates even if global polygon dragging (`dragPolygons`) is disabled.
+- **Independence**: Operates even if global polygon dragging (`modes.dragPolygons`) is disabled.
 - **History Capture**: Each clone is recorded as a distinct action for easy undo/redo (configurable via `config.history.capture.polygonClone`).
 
 ## Undo & Redo
@@ -96,7 +96,7 @@ Step backward or forward through edits:
 - Undo/redo polygon drawing, subtraction, vertex edits, and transforms
 - Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier)
 - Accessible via toolbar buttons or keyboard shortcuts
-- History is capped to keep memory under control (`config.maxHistorySize`)
+- History is capped to keep memory under control (`config.history.maxSize`)
 - You can opt out of specific action types via `config.history.capture` (snapshots still store full state)
 
 ## Smart Polygon Merging
@@ -123,7 +123,7 @@ The plugin features **two independent merge systems**:
 
 **Drag-to-Merge**: Drag polygons together to automatically merge them
 
-**Drag-to-Hole**: Drag a polygon completely inside another to create a hole (requires a modifier key defined in `config.dragPolygons.modifierSubtract.keys`)
+**Drag-to-Hole**: Drag a polygon completely inside another to create a hole (requires a modifier key defined in `config.interaction.drag.modifierSubtract.keys`)
 
 **Repositioning**: Drag to empty areas to simply reposition polygons
 
@@ -138,7 +138,7 @@ Fine-tune polygon shapes by dragging individual vertices. Perfect for:
 - Correcting polygon edges
 - Detailed polygon editing
 
-Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex, click directly on the line between two existing points. To remove a vertex, hold the configured modifier key (defined in `config.dragPolygons.modifierSubtract.keys`) and click the vertex you want to delete. This provides full control over polygon geometry and shape refinement.
+Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex, click directly on the line between two existing points. To remove a vertex, hold the configured modifier key (defined in `config.interaction.drag.modifierSubtract.keys`) and click the vertex you want to delete. This provides full control over polygon geometry and shape refinement.
 
 ## Advanced Editing Tools
 

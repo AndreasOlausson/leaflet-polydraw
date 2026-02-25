@@ -132,6 +132,86 @@ Update configuration after initialization.
 
 ```typescript
 polydraw.configurate({
-  polygonOptions: { color: "#ff0000" },
+  styles: {
+    polygon: { color: "#ff0000" },
+  },
+});
+```
+
+## Layer and Metadata Examples (v2)
+
+### Add predefined polygon with metadata
+
+```typescript
+await polydraw.addPredefinedPolygon(geoborders, {
+  metadata: {
+    risk: "high",
+    source: "survey-2026",
+    confidence: 0.92,
+  },
+});
+```
+
+### Add GeoJSON and use properties as metadata fallback
+
+```typescript
+await polydraw.addPredefinedGeoJSONs([
+  {
+    type: "Feature",
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [15.597, 58.397],
+          [15.603, 58.397],
+          [15.603, 58.403],
+          [15.597, 58.403],
+          [15.597, 58.397],
+        ],
+      ],
+    },
+    properties: {
+      risk: "medium",
+      source: "imported-geojson",
+    },
+  },
+]);
+```
+
+### Read and update feature metadata
+
+```typescript
+const featureGroup = polydraw.getFeatureGroups()[0];
+
+const current = polydraw.getFeatureMetadata(featureGroup);
+// -> { risk: "high", source: "survey-2026", confidence: 0.92 }
+
+polydraw.patchFeatureMetadata(featureGroup, {
+  reviewedBy: "analyst-a",
+  confidence: 0.95,
+});
+
+polydraw.setFeatureMetadata(featureGroup, {
+  risk: "low",
+  source: "manual-review",
+});
+```
+
+### Create and update layer policy
+
+```typescript
+polydraw.createLayer({
+  id: "Hazard",
+  label: "Hazard Zones",
+  color: "#d32f2f",
+  interaction: "readonly",
+  panel: "visible",
+  metadata: { owner: "gis-team" },
+});
+
+polydraw.updateLayer("Hazard", {
+  interaction: "static",
+  panel: "hidden",
+  visibility: true,
 });
 ```

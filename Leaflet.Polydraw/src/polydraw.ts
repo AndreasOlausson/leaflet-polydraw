@@ -14,7 +14,7 @@ import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import { HistoryManager } from './managers/history-manager';
-import { LayerManager } from './managers/layer-manager';
+import { LayerManager, type LayerState } from './managers/layer-manager';
 import { createLayerPanel, type LayerPanelControl } from './ui/layer-panel';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
@@ -32,7 +32,12 @@ import type {
   PolydrawConfig,
   DrawModeChangeHandler,
   HistoryAction,
+  LayerDeleteResult,
+  LayerInteraction,
+  LayerPanelVisibility,
+  LayerUpdateInput,
   PolygonActionHistory,
+  PolydrawFeatureGroup,
   PolygonLayerDescriptorInput,
   PolygonGroupInput,
 } from './types/polydraw-interfaces';
@@ -58,6 +63,7 @@ type PredefinedOptions = {
   visualOptimizationLevel?: number;
   layer?: string | PolygonLayerDescriptorInput;
   layerColor?: string;
+  metadata?: Record<string, unknown>;
 };
 
 type SetDrawModeOptions = {
@@ -517,6 +523,46 @@ class Polydraw extends L.Control {
     return fallback?.id;
   }
 
+  private ensureFeatureGroupMetadata(
+    featureGroup: L.FeatureGroup,
+  ): NonNullable<PolydrawFeatureGroup['_polydrawMetadata']> {
+    const polydrawFeatureGroup = featureGroup as PolydrawFeatureGroup;
+    if (polydrawFeatureGroup._polydrawMetadata) {
+      return polydrawFeatureGroup._polydrawMetadata;
+    }
+
+    let optimizationLevel = 0;
+    let originalOptimizationLevel = 0;
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) {
+        const polygon = layer as L.Polygon & {
+          _polydrawOptimizationLevel?: number;
+          _polydrawOptimizationOriginalLevel?: number;
+        };
+        if (typeof polygon._polydrawOptimizationLevel === 'number') {
+          optimizationLevel = polygon._polydrawOptimizationLevel;
+        }
+        if (typeof polygon._polydrawOptimizationOriginalLevel === 'number') {
+          originalOptimizationLevel = polygon._polydrawOptimizationOriginalLevel;
+        }
+      }
+    });
+
+    const now = new Date();
+    const featureId = `fg-${leafletAdapter.util.stamp(featureGroup as unknown as L.Layer)}`;
+    polydrawFeatureGroup._polydrawMetadata = {
+      id: featureId,
+      optimizationLevel,
+      originalOptimizationLevel,
+      hasHoles: false,
+      createdAt: now,
+      lastModified: now,
+      metadata: {},
+      sourceFeatureIds: [featureId],
+    };
+    return polydrawFeatureGroup._polydrawMetadata;
+  }
+
   /**
    * Adds a predefined polygon to the map.
    * @param geoborders - Flexible coordinate format: objects ({lat, lng}), arrays ([lat, lng] or [lng, lat]), strings ("lat,lng" or "N59 E10")
@@ -594,6 +640,7 @@ class Polydraw extends L.Control {
             visualOptimizationLevel: visualOptimizationLevel,
             targetLayerId,
             layerColor,
+            featureMetadata: options?.metadata,
           });
 
           if (!result.success) {
@@ -630,6 +677,15 @@ class Polydraw extends L.Control {
     try {
       for (const geojsonFeature of geojsonFeatures) {
         const { type, coordinates } = geojsonFeature.geometry;
+        const metadataFromFeature =
+          options?.metadata ??
+          (geojsonFeature.properties
+            ? ({ ...geojsonFeature.properties } as Record<string, unknown>)
+            : undefined);
+        const perFeatureOptions: PredefinedOptions = {
+          ...options,
+          metadata: metadataFromFeature,
+        };
 
         if (type === 'MultiPolygon') {
           // MultiPolygon: coordinates[polygon][ring][point]
@@ -637,14 +693,14 @@ class Polydraw extends L.Control {
             const latLngs = polygonCoords.map((ring) =>
               ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
             );
-            await this.addPredefinedPolygon([latLngs], options);
+            await this.addPredefinedPolygon([latLngs], perFeatureOptions);
           }
         } else if (type === 'Polygon') {
           // Polygon: coordinates[ring][point]
           const latLngs = coordinates.map((ring) =>
             ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
           );
-          await this.addPredefinedPolygon([latLngs], options);
+          await this.addPredefinedPolygon([latLngs], perFeatureOptions);
         }
       }
     } finally {
@@ -703,6 +759,262 @@ class Polydraw extends L.Control {
    */
   public getLayerManager(): LayerManager {
     return this.layerManager;
+  }
+
+  /**
+   * Returns all configured layers.
+   */
+  public getAllLayers(): LayerState[] {
+    return this.layerManager.getAllLayers();
+  }
+
+  /**
+   * Returns a single layer by id.
+   */
+  public getLayerById(layerId: string): LayerState | undefined {
+    return this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Returns true if a layer exists.
+   */
+  public hasLayer(layerId: string): boolean {
+    return !!this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Returns the active layer state.
+   */
+  public getActiveLayer(): LayerState | undefined {
+    return this.layerManager.getActiveLayer();
+  }
+
+  /**
+   * Returns feature groups assigned to the given layer.
+   */
+  public getFeatureGroupsByLayer(layerId: string): L.FeatureGroup[] {
+    return this.layerManager.getFeatureGroupsForLayer(layerId);
+  }
+
+  /**
+   * Creates a new layer. Throws if the layer already exists.
+   */
+  public createLayer(input: PolygonLayerDescriptorInput): LayerState {
+    const layerId = (input.id || '').trim();
+    if (!layerId) {
+      throw new Error('Layer id cannot be empty');
+    }
+    if (this.layerManager.getLayer(layerId)) {
+      throw new Error(`Layer "${layerId}" already exists`);
+    }
+
+    return this.ensureLayer(input);
+  }
+
+  /**
+   * Creates or updates a layer descriptor idempotently.
+   */
+  public ensureLayer(input: PolygonLayerDescriptorInput): LayerState {
+    const layer = this.ensureLayerFromDescriptor(input);
+    this.updateLayerPanel();
+    this.updateMarkerDraggableState();
+    return layer;
+  }
+
+  /**
+   * Updates layer properties. Returns updated state, or undefined if not found.
+   */
+  public updateLayer(layerId: string, patch: LayerUpdateInput): LayerState | undefined {
+    if (!this.layerManager.getLayer(layerId)) {
+      return undefined;
+    }
+
+    let changed = false;
+
+    if ('label' in patch) {
+      changed = this.layerManager.setLayerLabel(layerId, patch.label) || changed;
+    }
+    if (typeof patch.color === 'string') {
+      changed = this.layerManager.setLayerColor(layerId, patch.color) || changed;
+    }
+    if (typeof patch.visibility === 'boolean') {
+      changed = this.layerManager.setLayerVisibility(layerId, patch.visibility) || changed;
+    }
+    if (patch.interaction !== undefined) {
+      changed = this.layerManager.setLayerInteraction(layerId, patch.interaction) || changed;
+      if (patch.interaction === 'static' && patch.panel === undefined) {
+        changed = this.layerManager.setLayerPanelVisibility(layerId, 'hidden') || changed;
+      }
+    }
+    if (patch.panel !== undefined) {
+      changed = this.layerManager.setLayerPanelVisibility(layerId, patch.panel) || changed;
+    }
+    if (patch.metadata !== undefined) {
+      changed = this.layerManager.setLayerMetadata(layerId, patch.metadata) || changed;
+    }
+
+    if (changed) {
+      this.updateLayerPanel();
+      this.updateMarkerDraggableState();
+      this.syncFeatureGroupOrderWithLayers();
+    }
+
+    return this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Deletes a non-default layer.
+   */
+  public deleteLayer(layerId: string): LayerDeleteResult {
+    const normalizedId = (layerId || '').trim();
+    if (!normalizedId || !this.layerManager.getLayer(normalizedId)) {
+      return {
+        success: false,
+        layerId: normalizedId,
+        removedFeatureGroups: 0,
+        reason: 'not-found',
+      };
+    }
+
+    if (normalizedId === 'default') {
+      return {
+        success: false,
+        layerId: normalizedId,
+        removedFeatureGroups: 0,
+        reason: 'default-layer',
+      };
+    }
+
+    this.saveHistory('layerDelete');
+    const removedFeatureGroups = this.layerManager.deleteLayer(normalizedId);
+    return {
+      success: true,
+      layerId: normalizedId,
+      removedFeatureGroups: removedFeatureGroups.length,
+    };
+  }
+
+  /**
+   * Activates a layer.
+   */
+  public setActiveLayer(layerId: string): boolean {
+    return this.layerManager.setActiveLayer(layerId);
+  }
+
+  /**
+   * Updates visibility for a layer.
+   */
+  public setLayerVisibility(layerId: string, visible: boolean): boolean {
+    return this.layerManager.setLayerVisibility(layerId, visible);
+  }
+
+  /**
+   * Shows a layer.
+   */
+  public showLayer(layerId: string): boolean {
+    return this.setLayerVisibility(layerId, true);
+  }
+
+  /**
+   * Hides a layer.
+   */
+  public hideLayer(layerId: string): boolean {
+    return this.setLayerVisibility(layerId, false);
+  }
+
+  /**
+   * Updates a layer color.
+   */
+  public setLayerColor(layerId: string, color: string): boolean {
+    return this.layerManager.setLayerColor(layerId, color);
+  }
+
+  /**
+   * Updates interaction policy for a layer.
+   */
+  public setLayerInteraction(layerId: string, interaction: LayerInteraction): boolean {
+    const changed = this.layerManager.setLayerInteraction(layerId, interaction);
+    if (changed) {
+      this.updateMarkerDraggableState();
+      this.updateLayerPanel();
+    }
+    return changed;
+  }
+
+  /**
+   * Updates panel visibility policy for a layer.
+   */
+  public setLayerPanelVisibility(layerId: string, panel: LayerPanelVisibility): boolean {
+    const changed = this.layerManager.setLayerPanelVisibility(layerId, panel);
+    if (changed) {
+      this.updateLayerPanel();
+    }
+    return changed;
+  }
+
+  /**
+   * Replaces layer metadata.
+   */
+  public setLayerMetadata(layerId: string, metadata: Record<string, unknown>): boolean {
+    return this.layerManager.setLayerMetadata(layerId, metadata);
+  }
+
+  /**
+   * Shallow-merges metadata into existing layer metadata.
+   */
+  public patchLayerMetadata(layerId: string, metadataPatch: Record<string, unknown>): boolean {
+    const layer = this.layerManager.getLayer(layerId);
+    if (!layer) {
+      return false;
+    }
+    return this.layerManager.setLayerMetadata(layerId, {
+      ...layer.metadata,
+      ...metadataPatch,
+    });
+  }
+
+  /**
+   * Returns a shallow copy of feature metadata for a feature group.
+   */
+  public getFeatureMetadata(featureGroup: L.FeatureGroup): Record<string, unknown> | undefined {
+    const metadataStore = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+    if (!metadataStore?.metadata) {
+      return undefined;
+    }
+    return { ...metadataStore.metadata };
+  }
+
+  /**
+   * Replaces feature metadata for a feature group.
+   */
+  public setFeatureMetadata(
+    featureGroup: L.FeatureGroup,
+    metadata: Record<string, unknown>,
+  ): boolean {
+    if (!featureGroup) {
+      return false;
+    }
+    const metadataStore = this.ensureFeatureGroupMetadata(featureGroup);
+    metadataStore.metadata = { ...metadata };
+    metadataStore.lastModified = new Date();
+    return true;
+  }
+
+  /**
+   * Shallow-merges metadata into feature metadata for a feature group.
+   */
+  public patchFeatureMetadata(
+    featureGroup: L.FeatureGroup,
+    metadataPatch: Record<string, unknown>,
+  ): boolean {
+    if (!featureGroup) {
+      return false;
+    }
+    const current = this.getFeatureMetadata(featureGroup) ?? {};
+    return this.setFeatureMetadata(featureGroup, {
+      ...current,
+      ...metadataPatch,
+    });
   }
 
   /**
@@ -1506,12 +1818,27 @@ class Polydraw extends L.Control {
       this.removeAllFeatureGroups();
 
       // Restore each polygon from the snapshot
-      for (const feature of snapshot.features) {
+      for (const [featureIndex, feature] of snapshot.features.entries()) {
+        const featureSnapshot = snapshot.featureMetadataSnapshot?.[featureIndex];
+        const restoreLayerId =
+          featureSnapshot?.layerId && this.layerManager?.getLayer(featureSnapshot.layerId)
+            ? featureSnapshot.layerId
+            : undefined;
+
         // Add the polygon back to the map using the mutation manager
         // Use noMerge and simplify:false to restore polygons exactly as they were
         await this.polygonMutationManager.addPolygon(feature, {
           noMerge: true,
           simplify: false,
+          skipKinkProcessing: true,
+          targetLayerId: restoreLayerId,
+          visualOptimizationLevel: featureSnapshot?.optimizationLevel ?? 0,
+          originalOptimizationLevel: featureSnapshot?.originalOptimizationLevel,
+          featureId: featureSnapshot?.id,
+          featureMetadata: featureSnapshot?.metadata,
+          sourceFeatureIds: featureSnapshot?.sourceFeatureIds,
+          featureCreatedAt: featureSnapshot?.createdAt,
+          featureLastModified: featureSnapshot?.lastModified,
         });
       }
 

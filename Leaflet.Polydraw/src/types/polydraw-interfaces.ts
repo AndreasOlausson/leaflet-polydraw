@@ -471,6 +471,11 @@ export interface PolygonUpdatedEventData {
   intelligentMerge?: boolean;
   optimizationLevel?: number;
   originalOptimizationLevel?: number;
+  featureId?: string;
+  featureMetadata?: Record<string, unknown>;
+  sourceFeatureIds?: string[];
+  featureCreatedAt?: string;
+  featureLastModified?: string;
 }
 
 /**
@@ -545,10 +550,13 @@ export interface PolydrawFeatureGroup extends L.FeatureGroup {
   _polydrawMetadata?: {
     id: string;
     optimizationLevel: number;
+    originalOptimizationLevel?: number;
     hasHoles: boolean;
     createdAt: Date;
     lastModified: Date;
     layerId?: string;
+    metadata?: Record<string, unknown>;
+    sourceFeatureIds?: string[];
   };
 }
 
@@ -704,6 +712,18 @@ export interface LayerSnapshot {
   activeLayerId: string;
 }
 
+export interface FeatureMetadataSnapshotEntry {
+  id?: string;
+  metadata?: Record<string, unknown>;
+  sourceFeatureIds?: string[];
+  optimizationLevel?: number;
+  originalOptimizationLevel?: number;
+  hasHoles?: boolean;
+  layerId?: string;
+  createdAt?: string;
+  lastModified?: string;
+}
+
 export type LayerInteraction = 'editable' | 'readonly' | 'static';
 export type LayerPanelVisibility = 'visible' | 'hidden';
 
@@ -715,6 +735,22 @@ export interface PolygonLayerDescriptorInput {
   panel?: LayerPanelVisibility;
   interaction?: LayerInteraction;
   metadata?: Record<string, unknown>;
+}
+
+export interface LayerUpdateInput {
+  label?: string;
+  color?: string;
+  visibility?: boolean;
+  panel?: LayerPanelVisibility;
+  interaction?: LayerInteraction;
+  metadata?: Record<string, unknown>;
+}
+
+export interface LayerDeleteResult {
+  success: boolean;
+  layerId: string;
+  removedFeatureGroups: number;
+  reason?: 'not-found' | 'default-layer';
 }
 
 /**

@@ -18,6 +18,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - inactive-layer markers are read-only/non-draggable
   - layer reorder updates feature-group order consistently
 - Playwright Leaflet-version matrix scripts: `test:playwright:v1`, `test:playwright:v2`, and `test:playwright:matrix`.
+- Feature metadata lifecycle support across polygon operations:
+  - metadata can be passed via `addPredefinedPolygon(..., { metadata })`
+  - GeoJSON import uses `feature.properties` as metadata fallback when `options.metadata` is omitted
+  - metadata persists through clone/drag transforms, merge/split/subtract, and undo/redo restore
+- Public feature metadata APIs:
+  - `getFeatureMetadata(featureGroup)`
+  - `setFeatureMetadata(featureGroup, metadata)`
+  - `patchFeatureMetadata(featureGroup, metadataPatch)`
 
 ### Fixed
 
@@ -39,6 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `simplification.dynamic.multiplier` must be `> 1`, otherwise defaults are used.
 - Layer panel sizing and spacing were tightened to align with the 30px toolbox rhythm (rows, header, icon scale, and panel spacing).
 - `test:playwright` now builds the demo with `--ignore-scripts` to avoid recursive `prepare` builds during version-matrix runs.
+- Metadata merge behavior is now deterministic:
+  - explicit incoming metadata wins
+  - otherwise merged polygons inherit the first intersecting source metadata
+  - internal provenance is tracked via `sourceFeatureIds` on feature-group metadata.
+- Added a dedicated `MIGRATION.md` guide covering v1 -> v2 config key renames and metadata APIs.
 
 ### Breaking
 

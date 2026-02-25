@@ -44,6 +44,12 @@ export type PolydrawEventPayloads = {
     operation?: string;
     allowMerge?: boolean;
     optimizationLevel?: number;
+    originalOptimizationLevel?: number;
+    featureId?: string;
+    featureMetadata?: Record<string, unknown>;
+    sourceFeatureIds?: string[];
+    featureCreatedAt?: string;
+    featureLastModified?: string;
   };
   'polydraw:polygon:deleted': undefined;
   'polydraw:mode:change': { mode: DrawMode };

@@ -11,6 +11,7 @@ import { EventAdapter } from '../compatibility/event-adapter';
 import type { Feature, Polygon, MultiPolygon, FeatureCollection, Point } from 'geojson';
 import type {
   PolydrawConfig,
+  PolydrawFeatureGroup,
   PolydrawPolygon,
   PolydrawEdgePolyline,
   PolygonUpdatedEventData,
@@ -838,6 +839,7 @@ export class PolygonInteractionManager {
 
                   const { level: optimizationLevel, original: originalOptimizationLevel } =
                     this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+                  const featureMetadataState = this.getFeatureMetadataState(featureGroup);
                   const newPolygon = this.turfHelper.getMultiPolygon([coords]);
                   this.cleanupFeatureGroup(featureGroup);
                   this.removeFeatureGroup(featureGroup);
@@ -846,6 +848,10 @@ export class PolygonInteractionManager {
                     polygon: newPolygon,
                     optimizationLevel,
                     originalOptimizationLevel,
+                    featureId: featureMetadataState.featureId,
+                    featureMetadata: featureMetadataState.metadata,
+                    sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+                    featureCreatedAt: featureMetadataState.createdAt,
                   });
                 }
               }
@@ -1475,6 +1481,7 @@ export class PolygonInteractionManager {
             const optimizationLevel = polydrawPolygon._polydrawOptimizationLevel || 0;
             const originalOptimizationLevel =
               polydrawPolygon._polydrawOptimizationOriginalLevel || optimizationLevel;
+            const featureMetadataState = this.getFeatureMetadataState(parentFeatureGroup);
             this.cleanupFeatureGroup(parentFeatureGroup);
             this.removeFeatureGroup(parentFeatureGroup);
             this.emitPolygonUpdated({
@@ -1482,6 +1489,10 @@ export class PolygonInteractionManager {
               polygon: newPolygon,
               optimizationLevel,
               originalOptimizationLevel,
+              featureId: featureMetadataState.featureId,
+              featureMetadata: featureMetadataState.metadata,
+              sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureCreatedAt: featureMetadataState.createdAt,
             });
           }
         }
@@ -1703,6 +1714,35 @@ export class PolygonInteractionManager {
     return { level, original };
   }
 
+  private getFeatureMetadataState(featureGroup?: L.FeatureGroup): {
+    featureId?: string;
+    metadata?: Record<string, unknown>;
+    sourceFeatureIds?: string[];
+    createdAt?: string;
+  } {
+    if (!featureGroup) {
+      return {};
+    }
+
+    const featureMetadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+    const createdAt =
+      featureMetadata?.createdAt instanceof Date &&
+      !Number.isNaN(featureMetadata.createdAt.getTime())
+        ? featureMetadata.createdAt.toISOString()
+        : undefined;
+
+    return {
+      featureId: featureMetadata?.id,
+      metadata: featureMetadata?.metadata ? { ...featureMetadata.metadata } : undefined,
+      sourceFeatureIds: Array.isArray(featureMetadata?.sourceFeatureIds)
+        ? [...featureMetadata.sourceFeatureIds]
+        : featureMetadata?.id
+          ? [featureMetadata.id]
+          : undefined,
+      createdAt,
+    };
+  }
+
   private getOptimizationMetadataFromPolygonLayer(polygon?: L.Polygon): {
     level: number;
     original: number;
@@ -1866,6 +1906,7 @@ export class PolygonInteractionManager {
     const metadata = currentFeatureGroup
       ? this.getOptimizationMetadataFromFeatureGroup(currentFeatureGroup)
       : this.getOptimizationMetadataFromPolygonLayer(polygonLayer);
+    const featureMetadataState = this.getFeatureMetadataState(currentFeatureGroup ?? undefined);
     const { level: optimizationLevel, original: originalOptimizationLevel } = metadata;
 
     if (currentFeatureGroup) {
@@ -1878,6 +1919,10 @@ export class PolygonInteractionManager {
       polygon: newPolygon,
       optimizationLevel,
       originalOptimizationLevel,
+      featureId: featureMetadataState.featureId,
+      featureMetadata: featureMetadataState.metadata,
+      sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureCreatedAt: featureMetadataState.createdAt,
     });
   }
 
@@ -1940,6 +1985,7 @@ export class PolygonInteractionManager {
 
     const { level: optimizationLevel, original: originalOptimizationLevel } =
       this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+    const featureMetadataState = this.getFeatureMetadataState(featureGroup);
 
     // Remove the current feature group first to avoid duplication
     this.cleanupFeatureGroup(featureGroup);
@@ -1981,6 +2027,10 @@ export class PolygonInteractionManager {
           allowMerge,
           optimizationLevel: opts.optimizationLevel,
           originalOptimizationLevel: opts.originalOptimizationLevel,
+          featureId: featureMetadataState.featureId,
+          featureMetadata: featureMetadataState.metadata,
+          sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+          featureCreatedAt: featureMetadataState.createdAt,
         });
       });
     };
@@ -2419,6 +2469,7 @@ export class PolygonInteractionManager {
 
       const { level: optimizationLevel, original: originalOptimizationLevel } =
         this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+      const featureMetadataState = this.getFeatureMetadataState(featureGroup);
       this.cleanupFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
@@ -2429,6 +2480,10 @@ export class PolygonInteractionManager {
         allowMerge: true,
         optimizationLevel,
         originalOptimizationLevel,
+        featureId: featureMetadataState.featureId,
+        featureMetadata: featureMetadataState.metadata,
+        sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+        featureCreatedAt: featureMetadataState.createdAt,
       });
 
       this.polygonInformation.createPolygonInformationStorage(this.getFeatureGroups());
@@ -2469,6 +2524,7 @@ export class PolygonInteractionManager {
 
       const { level: optimizationLevel, original: originalOptimizationLevel } =
         this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+      const featureMetadataState = this.getFeatureMetadataState(featureGroup);
 
       this.cleanupFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
@@ -2480,6 +2536,10 @@ export class PolygonInteractionManager {
         allowMerge: true,
         optimizationLevel,
         originalOptimizationLevel,
+        featureId: featureMetadataState.featureId,
+        featureMetadata: featureMetadataState.metadata,
+        sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+        featureCreatedAt: featureMetadataState.createdAt,
       });
 
       if (originalGeoJSON) {
@@ -2490,6 +2550,10 @@ export class PolygonInteractionManager {
           allowMerge: true,
           optimizationLevel,
           originalOptimizationLevel,
+          featureId: featureMetadataState.featureId,
+          featureMetadata: featureMetadataState.metadata,
+          sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+          featureCreatedAt: featureMetadataState.createdAt,
         });
       }
 
@@ -2735,6 +2799,7 @@ export class PolygonInteractionManager {
           const existingPolygon = this.turfHelper.getTurfPolygon(featureCollection.features[0]);
           const { level: optimizationLevel, original: originalOptimizationLevel } =
             this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+          const featureMetadataState = this.getFeatureMetadataState(featureGroup);
 
           // Remove the existing polygon before creating the result
           this.cleanupFeatureGroup(featureGroup);
@@ -2760,6 +2825,10 @@ export class PolygonInteractionManager {
                   allowMerge: false, // Don't merge the result of subtract operations
                   optimizationLevel,
                   originalOptimizationLevel,
+                  featureId: featureMetadataState.featureId,
+                  featureMetadata: featureMetadataState.metadata,
+                  sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+                  featureCreatedAt: featureMetadataState.createdAt,
                 });
               }
             }
@@ -2774,6 +2843,10 @@ export class PolygonInteractionManager {
               allowMerge: false,
               optimizationLevel,
               originalOptimizationLevel,
+              featureId: featureMetadataState.featureId,
+              featureMetadata: featureMetadataState.metadata,
+              sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureCreatedAt: featureMetadataState.createdAt,
             });
           }
         } catch (error) {
@@ -3217,6 +3290,7 @@ export class PolygonInteractionManager {
             const newGeoJSON = polygonLayer.toGeoJSON();
             const { level: optimizationLevel, original: originalOptimizationLevel } =
               this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+            const featureMetadataState = this.getFeatureMetadataState(featureGroup);
             this.cleanupFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
             this.emitPolygonUpdated({
@@ -3225,6 +3299,10 @@ export class PolygonInteractionManager {
               allowMerge: true,
               optimizationLevel,
               originalOptimizationLevel,
+              featureId: featureMetadataState.featureId,
+              featureMetadata: featureMetadataState.metadata,
+              sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureCreatedAt: featureMetadataState.createdAt,
             });
           },
         );
@@ -3330,6 +3408,7 @@ export class PolygonInteractionManager {
       return;
     }
     const newGeoJSON = polygonLayer.toGeoJSON();
+    const featureMetadataState = this.getFeatureMetadataState(featureGroup);
     this.cleanupFeatureGroup(featureGroup);
     this.removeFeatureGroup(featureGroup);
     this.emitPolygonUpdated({
@@ -3338,6 +3417,10 @@ export class PolygonInteractionManager {
       allowMerge: true,
       optimizationLevel: targetLevel,
       originalOptimizationLevel: metadata.original || targetLevel,
+      featureId: featureMetadataState.featureId,
+      featureMetadata: featureMetadataState.metadata,
+      sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureCreatedAt: featureMetadataState.createdAt,
     });
   }
 

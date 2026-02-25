@@ -17,7 +17,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
----4
+---
 
 ## Key Features
 
@@ -62,6 +62,7 @@ Full documentation and examples are available on GitHub:
 - [General — Browser Support, License, Acknowledgments](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/GENERAL.md)
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
 - [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/Leaflet.Polydraw/CHANGELOG.md)
+- [Migration Guide (v1 -> v2)](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/MIGRATION.md)
 
 
 ---
