@@ -48,6 +48,13 @@ export type PolydrawEventPayloads = {
     featureId?: string;
     featureMetadata?: Record<string, unknown>;
     sourceFeatureIds?: string[];
+    featureInteractionOverride?: 'editable' | 'readonly' | 'static';
+    featureStyleOverrides?: {
+      color?: string;
+      fillColor?: string;
+      fillOpacity?: number;
+      weight?: number;
+    };
     featureCreatedAt?: string;
     featureLastModified?: string;
   };

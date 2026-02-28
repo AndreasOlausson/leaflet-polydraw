@@ -17,6 +17,8 @@ import type {
   PolygonUpdatedEventData,
   HistoryAction,
   ModifierKey,
+  LayerInteraction,
+  PolygonStyleOverrides,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -851,6 +853,8 @@ export class PolygonInteractionManager {
                     featureId: featureMetadataState.featureId,
                     featureMetadata: featureMetadataState.metadata,
                     sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+                    featureInteractionOverride: featureMetadataState.interactionOverride,
+                    featureStyleOverrides: featureMetadataState.styleOverrides,
                     featureCreatedAt: featureMetadataState.createdAt,
                   });
                 }
@@ -1492,6 +1496,8 @@ export class PolygonInteractionManager {
               featureId: featureMetadataState.featureId,
               featureMetadata: featureMetadataState.metadata,
               sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureInteractionOverride: featureMetadataState.interactionOverride,
+              featureStyleOverrides: featureMetadataState.styleOverrides,
               featureCreatedAt: featureMetadataState.createdAt,
             });
           }
@@ -1718,6 +1724,8 @@ export class PolygonInteractionManager {
     featureId?: string;
     metadata?: Record<string, unknown>;
     sourceFeatureIds?: string[];
+    interactionOverride?: LayerInteraction;
+    styleOverrides?: PolygonStyleOverrides;
     createdAt?: string;
   } {
     if (!featureGroup) {
@@ -1739,6 +1747,10 @@ export class PolygonInteractionManager {
         : featureMetadata?.id
           ? [featureMetadata.id]
           : undefined,
+      interactionOverride: featureMetadata?.interactionOverride,
+      styleOverrides: featureMetadata?.styleOverrides
+        ? { ...featureMetadata.styleOverrides }
+        : undefined,
       createdAt,
     };
   }
@@ -1922,6 +1934,8 @@ export class PolygonInteractionManager {
       featureId: featureMetadataState.featureId,
       featureMetadata: featureMetadataState.metadata,
       sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureInteractionOverride: featureMetadataState.interactionOverride,
+      featureStyleOverrides: featureMetadataState.styleOverrides,
       featureCreatedAt: featureMetadataState.createdAt,
     });
   }
@@ -2030,6 +2044,8 @@ export class PolygonInteractionManager {
           featureId: featureMetadataState.featureId,
           featureMetadata: featureMetadataState.metadata,
           sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+          featureInteractionOverride: featureMetadataState.interactionOverride,
+          featureStyleOverrides: featureMetadataState.styleOverrides,
           featureCreatedAt: featureMetadataState.createdAt,
         });
       });
@@ -2483,6 +2499,8 @@ export class PolygonInteractionManager {
         featureId: featureMetadataState.featureId,
         featureMetadata: featureMetadataState.metadata,
         sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+        featureInteractionOverride: featureMetadataState.interactionOverride,
+        featureStyleOverrides: featureMetadataState.styleOverrides,
         featureCreatedAt: featureMetadataState.createdAt,
       });
 
@@ -2539,6 +2557,8 @@ export class PolygonInteractionManager {
         featureId: featureMetadataState.featureId,
         featureMetadata: featureMetadataState.metadata,
         sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+        featureInteractionOverride: featureMetadataState.interactionOverride,
+        featureStyleOverrides: featureMetadataState.styleOverrides,
         featureCreatedAt: featureMetadataState.createdAt,
       });
 
@@ -2553,6 +2573,8 @@ export class PolygonInteractionManager {
           featureId: featureMetadataState.featureId,
           featureMetadata: featureMetadataState.metadata,
           sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+          featureInteractionOverride: featureMetadataState.interactionOverride,
+          featureStyleOverrides: featureMetadataState.styleOverrides,
           featureCreatedAt: featureMetadataState.createdAt,
         });
       }
@@ -2828,6 +2850,8 @@ export class PolygonInteractionManager {
                   featureId: featureMetadataState.featureId,
                   featureMetadata: featureMetadataState.metadata,
                   sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+                  featureInteractionOverride: featureMetadataState.interactionOverride,
+                  featureStyleOverrides: featureMetadataState.styleOverrides,
                   featureCreatedAt: featureMetadataState.createdAt,
                 });
               }
@@ -2846,6 +2870,8 @@ export class PolygonInteractionManager {
               featureId: featureMetadataState.featureId,
               featureMetadata: featureMetadataState.metadata,
               sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureInteractionOverride: featureMetadataState.interactionOverride,
+              featureStyleOverrides: featureMetadataState.styleOverrides,
               featureCreatedAt: featureMetadataState.createdAt,
             });
           }
@@ -3302,6 +3328,8 @@ export class PolygonInteractionManager {
               featureId: featureMetadataState.featureId,
               featureMetadata: featureMetadataState.metadata,
               sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+              featureInteractionOverride: featureMetadataState.interactionOverride,
+              featureStyleOverrides: featureMetadataState.styleOverrides,
               featureCreatedAt: featureMetadataState.createdAt,
             });
           },
@@ -3420,6 +3448,8 @@ export class PolygonInteractionManager {
       featureId: featureMetadataState.featureId,
       featureMetadata: featureMetadataState.metadata,
       sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureInteractionOverride: featureMetadataState.interactionOverride,
+      featureStyleOverrides: featureMetadataState.styleOverrides,
       featureCreatedAt: featureMetadataState.createdAt,
     });
   }

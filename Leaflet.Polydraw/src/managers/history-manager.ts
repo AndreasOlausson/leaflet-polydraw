@@ -340,6 +340,12 @@ export class HistoryManager {
     if (Array.isArray(metadata?.sourceFeatureIds)) {
       snapshot.sourceFeatureIds = [...metadata.sourceFeatureIds];
     }
+    if (metadata?.interactionOverride) {
+      snapshot.interactionOverride = metadata.interactionOverride;
+    }
+    if (metadata?.styleOverrides) {
+      snapshot.styleOverrides = { ...metadata.styleOverrides };
+    }
     if (typeof metadata?.hasHoles === 'boolean') {
       snapshot.hasHoles = metadata.hasHoles;
     }

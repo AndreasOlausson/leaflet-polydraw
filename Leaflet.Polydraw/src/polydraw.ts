@@ -36,6 +36,7 @@ import type {
   LayerInteraction,
   LayerPanelVisibility,
   LayerUpdateInput,
+  PredefinedPolygonOptions,
   PolygonActionHistory,
   PolydrawFeatureGroup,
   PolygonLayerDescriptorInput,
@@ -57,13 +58,6 @@ type ExtendedBrowser = typeof L.Browser & {
 type PolydrawOptions = L.ControlOptions & {
   config?: Partial<PolydrawConfig>;
   configPath?: string;
-};
-
-type PredefinedOptions = {
-  visualOptimizationLevel?: number;
-  layer?: string | PolygonLayerDescriptorInput;
-  layerColor?: string;
-  metadata?: Record<string, unknown>;
 };
 
 type SetDrawModeOptions = {
@@ -431,7 +425,7 @@ class Polydraw extends L.Control {
   }
 
   private resolvePredefinedLayerDescriptor(
-    inputLayer: PredefinedOptions['layer'],
+    inputLayer: PredefinedPolygonOptions['layer'],
     layerColorOverride?: string,
   ): PolygonLayerDescriptorInput | null {
     if (!inputLayer) {
@@ -570,7 +564,7 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedPolygon(
     geoborders: unknown[][][],
-    options?: PredefinedOptions,
+    options?: PredefinedPolygonOptions,
   ): Promise<void> {
     // Convert input to L.LatLng[][][] using smart coordinate detection
     const geographicBorders = CoordinateUtils.convertToLatLngArray(geoborders);
@@ -603,6 +597,12 @@ class Polydraw extends L.Control {
 
     // Extract options with defaults
     const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
+    const interactionOverride =
+      options?.overrides?.interaction && options.overrides.interaction !== 'inherit'
+        ? options.overrides.interaction
+        : undefined;
+    const styleOverrides = options?.overrides?.style ? { ...options.overrides.style } : undefined;
+    const mergeOverride = options?.overrides?.merge ?? 'inherit';
 
     // Resolve target layer if specified
     let targetLayerId: string | undefined;
@@ -634,13 +634,18 @@ class Polydraw extends L.Control {
           const polygon2 = this.turfHelper.getMultiPolygon([coords]);
 
           // Use the PolygonMutationManager instead of direct addPolygon
+          const noMerge =
+            mergeOverride === 'allow' ? false : mergeOverride === 'block' ? true : forceNoMerge;
           const result = await this.polygonMutationManager.addPolygon(polygon2, {
             simplify: false,
-            noMerge: forceNoMerge,
+            noMerge,
+            mergeEditableOnly: mergeOverride === 'allow' ? false : true,
             visualOptimizationLevel: visualOptimizationLevel,
             targetLayerId,
             layerColor,
             featureMetadata: options?.metadata,
+            featureInteractionOverride: interactionOverride,
+            featureStyleOverrides: styleOverrides,
           });
 
           if (!result.success) {
@@ -666,7 +671,7 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedGeoJSONs(
     geojsonFeatures: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>[],
-    options?: PredefinedOptions,
+    options?: PredefinedPolygonOptions,
   ): Promise<void> {
     if (!Array.isArray(geojsonFeatures) || geojsonFeatures.length === 0) {
       throw new Error('Cannot add empty GeoJSON feature array');
@@ -682,7 +687,7 @@ class Polydraw extends L.Control {
           (geojsonFeature.properties
             ? ({ ...geojsonFeature.properties } as Record<string, unknown>)
             : undefined);
-        const perFeatureOptions: PredefinedOptions = {
+        const perFeatureOptions: PredefinedPolygonOptions = {
           ...options,
           metadata: metadataFromFeature,
         };
@@ -731,6 +736,7 @@ class Polydraw extends L.Control {
         return {
           descriptor,
           polygons: group.polygons,
+          options: group.options,
         };
       });
 
@@ -744,6 +750,7 @@ class Polydraw extends L.Control {
         for (const polygons of group.polygons) {
           await this.addPredefinedPolygon(polygons, {
             layer: group.descriptor,
+            ...group.options,
           });
         }
       }
@@ -1837,6 +1844,8 @@ class Polydraw extends L.Control {
           featureId: featureSnapshot?.id,
           featureMetadata: featureSnapshot?.metadata,
           sourceFeatureIds: featureSnapshot?.sourceFeatureIds,
+          featureInteractionOverride: featureSnapshot?.interactionOverride,
+          featureStyleOverrides: featureSnapshot?.styleOverrides,
           featureCreatedAt: featureSnapshot?.createdAt,
           featureLastModified: featureSnapshot?.lastModified,
         });
@@ -1855,11 +1864,15 @@ class Polydraw extends L.Control {
         for (const layer of this.layerManager.getAllLayers()) {
           // Re-apply the layer color to all polygons in this layer
           for (const fg of layer.featureGroups) {
+            const styleOverrides = (fg as PolydrawFeatureGroup)._polydrawMetadata?.styleOverrides;
             fg.eachLayer((l: L.Layer) => {
               if (l instanceof L.Polygon && !(l instanceof L.Rectangle)) {
                 l.setStyle({
-                  color: layer.color,
-                  fillColor: this.config.styles.polygon.fillColor,
+                  color: styleOverrides?.color ?? layer.color,
+                  fillColor: styleOverrides?.fillColor ?? this.config.styles.polygon.fillColor,
+                  fillOpacity:
+                    styleOverrides?.fillOpacity ?? this.config.styles.polygon.fillOpacity,
+                  weight: styleOverrides?.weight ?? this.config.styles.polygon.weight,
                 });
               }
             });

@@ -11,6 +11,8 @@ import type {
   PolydrawFeatureGroup,
   PolydrawPolygon,
   HistoryAction,
+  LayerInteraction,
+  PolygonStyleOverrides,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import {
@@ -35,6 +37,7 @@ export interface MutationResult {
 interface AddPolygonOptions {
   simplify?: boolean;
   noMerge?: boolean;
+  mergeEditableOnly?: boolean;
   dynamicTolerance?: boolean;
   visualOptimizationLevel?: number;
   originalOptimizationLevel?: number;
@@ -44,6 +47,8 @@ interface AddPolygonOptions {
   featureId?: string;
   featureMetadata?: Record<string, unknown>;
   sourceFeatureIds?: string[];
+  featureInteractionOverride?: LayerInteraction;
+  featureStyleOverrides?: PolygonStyleOverrides;
   featureCreatedAt?: string;
   featureLastModified?: string;
 }
@@ -210,6 +215,8 @@ export class PolygonMutationManager {
       featureId: data.featureId,
       featureMetadata: data.featureMetadata,
       sourceFeatureIds: data.sourceFeatureIds,
+      featureInteractionOverride: data.featureInteractionOverride,
+      featureStyleOverrides: data.featureStyleOverrides,
       featureCreatedAt: data.featureCreatedAt,
       featureLastModified: data.featureLastModified,
     };
@@ -294,6 +301,8 @@ export class PolygonMutationManager {
         featureId: sourceMetadata.featureId,
         featureMetadata: sourceMetadata.metadata,
         sourceFeatureIds: sourceMetadata.sourceFeatureIds,
+        featureInteractionOverride: sourceMetadata.interactionOverride,
+        featureStyleOverrides: sourceMetadata.styleOverrides,
         featureCreatedAt: sourceMetadata.createdAt,
       });
       if (data.action === 'bezier' && this.config.polygonTools.bezier?.ghostMarkers) {
@@ -535,6 +544,8 @@ export class PolygonMutationManager {
                 originalOptimizationLevel,
                 featureMetadata: sourceMetadata.metadata,
                 sourceFeatureIds: sourceMetadata.sourceFeatureIds,
+                featureInteractionOverride: sourceMetadata.interactionOverride,
+                featureStyleOverrides: sourceMetadata.styleOverrides,
                 featureCreatedAt: sourceMetadata.createdAt,
               });
               if (addResult.success && addResult.featureGroups) {
@@ -592,6 +603,8 @@ export class PolygonMutationManager {
       featureId,
       featureMetadata,
       sourceFeatureIds,
+      featureInteractionOverride,
+      featureStyleOverrides,
       featureCreatedAt,
       featureLastModified,
     } = options;
@@ -605,10 +618,14 @@ export class PolygonMutationManager {
       const resolvedLayerId = this.layerManager
         ? targetLayerId || this.layerManager.getActiveLayerId()
         : undefined;
-      const isEditableLayer =
+      const isLayerEditable =
         !this.layerManager || !resolvedLayerId
           ? true
           : this.layerManager.isLayerEditable(resolvedLayerId);
+      const isEditableLayer =
+        featureInteractionOverride === undefined
+          ? isLayerEditable
+          : featureInteractionOverride === 'editable';
 
       // Resolve layer color
       let resolvedLayerColor = layerColor;
@@ -634,6 +651,7 @@ export class PolygonMutationManager {
       try {
         polygon = this.getPolygon(normalizedLatLngs, resolvedLayerColor, {
           enableDragging: isEditableLayer,
+          styleOverrides: featureStyleOverrides,
         });
         if (!polygon) {
           return { success: false, error: 'Failed to create polygon' };
@@ -654,6 +672,8 @@ export class PolygonMutationManager {
         featureId,
         metadata: featureMetadata,
         sourceFeatureIds,
+        interactionOverride: featureInteractionOverride,
+        styleOverrides: featureStyleOverrides,
         optimizationLevel: visualOptimizationLevel,
         originalOptimizationLevel: effectiveOriginal,
         hasHoles: this.featureHasHoles(normalizedLatLngs),
@@ -793,13 +813,16 @@ export class PolygonMutationManager {
       const polygonFeature: Feature<Polygon | MultiPolygon>[] = [];
       const intersectingFeatureGroups: L.FeatureGroup[] = [];
       let polyIntersection: boolean = false;
+      const mergeEditableOnly = options.mergeEditableOnly !== false;
 
       // Scope merge to active layer's feature groups when layer manager exists
       const layerManager = this.layerManager;
       const targetFgs = layerManager
         ? layerManager
             .getFeatureGroupsForLayer(options.targetLayerId || layerManager.getActiveLayerId())
-            .filter((featureGroup) => layerManager.isFeatureGroupEditable(featureGroup))
+            .filter((featureGroup) =>
+              mergeEditableOnly ? layerManager.isFeatureGroupEditable(featureGroup) : true,
+            )
         : this.getFeatureGroups();
 
       targetFgs.forEach((featureGroup) => {
@@ -882,6 +905,10 @@ export class PolygonMutationManager {
       const mergedSourceFeatureIds = this.collectSourceFeatureIds(layers, options.sourceFeatureIds);
       const mergedFeatureMetadata =
         options.featureMetadata ?? this.resolvePrimaryFeatureMetadata(layers);
+      const mergedInteractionOverride =
+        options.featureInteractionOverride ?? this.resolvePrimaryFeatureInteractionOverride(layers);
+      const mergedStyleOverrides =
+        options.featureStyleOverrides ?? this.resolvePrimaryFeatureStyleOverrides(layers);
 
       // Remove the intersecting feature groups
       layers.forEach((featureGroup) => {
@@ -896,6 +923,8 @@ export class PolygonMutationManager {
           ...options,
           featureMetadata: mergedFeatureMetadata,
           sourceFeatureIds: mergedSourceFeatureIds,
+          featureInteractionOverride: mergedInteractionOverride,
+          featureStyleOverrides: mergedStyleOverrides,
         });
 
         this.emit('polygonsUnioned', {
@@ -1127,7 +1156,7 @@ export class PolygonMutationManager {
   private getPolygon(
     latlngs: Feature<Polygon | MultiPolygon>,
     layerColor?: string,
-    options: { enableDragging?: boolean } = {},
+    options: { enableDragging?: boolean; styleOverrides?: PolygonStyleOverrides } = {},
   ): L.Polygon & Record<string, unknown> {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
@@ -1136,14 +1165,15 @@ export class PolygonMutationManager {
     // This ensures that polygons drawn inside holes are styled correctly
     const effectiveColor = layerColor || this.config.styles.polygon.color;
     const effectiveFillColor = this.config.styles.polygon.fillColor;
+    const { styleOverrides } = options;
     const polygonStyle = {
       ...this.config.styles.polygon,
-      color: effectiveColor,
-      fillColor: effectiveFillColor,
+      color: styleOverrides?.color ?? effectiveColor,
+      fillColor: styleOverrides?.fillColor ?? effectiveFillColor,
       // Force these values to ensure they override any default styling
-      weight: this.config.styles.polygon.weight || 2,
+      weight: styleOverrides?.weight ?? this.config.styles.polygon.weight ?? 2,
       opacity: this.config.styles.polygon.opacity || 1,
-      fillOpacity: this.config.styles.polygon.fillOpacity || 0.2,
+      fillOpacity: styleOverrides?.fillOpacity ?? this.config.styles.polygon.fillOpacity ?? 0.2,
     };
 
     polygon.setStyle(polygonStyle);
@@ -1301,6 +1331,8 @@ export class PolygonMutationManager {
     featureId?: string;
     metadata: Record<string, unknown>;
     sourceFeatureIds: string[];
+    interactionOverride?: LayerInteraction;
+    styleOverrides?: PolygonStyleOverrides;
     createdAt?: string;
   } {
     if (!featureGroup) {
@@ -1326,6 +1358,8 @@ export class PolygonMutationManager {
       featureId,
       metadata: this.cloneFeatureMetadata(metadata?.metadata),
       sourceFeatureIds,
+      interactionOverride: metadata?.interactionOverride,
+      styleOverrides: this.cloneStyleOverrides(metadata?.styleOverrides),
       createdAt,
     };
   }
@@ -1371,11 +1405,44 @@ export class PolygonMutationManager {
     return {};
   }
 
+  private resolvePrimaryFeatureInteractionOverride(
+    featureGroups: L.FeatureGroup[],
+  ): LayerInteraction | undefined {
+    for (const featureGroup of featureGroups) {
+      const interaction = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata
+        ?.interactionOverride;
+      if (interaction) {
+        return interaction;
+      }
+    }
+    return undefined;
+  }
+
+  private resolvePrimaryFeatureStyleOverrides(
+    featureGroups: L.FeatureGroup[],
+  ): PolygonStyleOverrides | undefined {
+    for (const featureGroup of featureGroups) {
+      const styleOverrides = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata
+        ?.styleOverrides;
+      if (styleOverrides) {
+        return this.cloneStyleOverrides(styleOverrides);
+      }
+    }
+    return undefined;
+  }
+
   private cloneFeatureMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
     if (!metadata) {
       return {};
     }
     return { ...metadata };
+  }
+
+  private cloneStyleOverrides(style?: PolygonStyleOverrides): PolygonStyleOverrides | undefined {
+    if (!style) {
+      return undefined;
+    }
+    return { ...style };
   }
 
   private featureHasHoles(feature: Feature<Polygon | MultiPolygon>): boolean {
@@ -1397,6 +1464,8 @@ export class PolygonMutationManager {
       featureId?: string;
       metadata?: Record<string, unknown>;
       sourceFeatureIds?: string[];
+      interactionOverride?: LayerInteraction;
+      styleOverrides?: PolygonStyleOverrides;
       optimizationLevel: number;
       originalOptimizationLevel: number;
       hasHoles: boolean;
@@ -1428,6 +1497,8 @@ export class PolygonMutationManager {
       layerId: options.layerId,
       metadata: this.cloneFeatureMetadata(options.metadata),
       sourceFeatureIds,
+      interactionOverride: options.interactionOverride,
+      styleOverrides: this.cloneStyleOverrides(options.styleOverrides),
     };
   }
 

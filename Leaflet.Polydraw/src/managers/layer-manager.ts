@@ -168,9 +168,14 @@ export class LayerManager {
 
     layer.color = normalizedColor;
     layer.featureGroups.forEach((featureGroup) => {
+      const styleColorOverride = (
+        featureGroup as unknown as {
+          _polydrawMetadata?: { styleOverrides?: { color?: string } };
+        }
+      )._polydrawMetadata?.styleOverrides?.color;
       featureGroup.eachLayer((layerItem: L.Layer) => {
         if (layerItem instanceof L.Polygon && !(layerItem instanceof L.Rectangle)) {
-          layerItem.setStyle({ color: normalizedColor });
+          layerItem.setStyle({ color: styleColorOverride ?? normalizedColor });
         }
       });
     });
@@ -242,6 +247,13 @@ export class LayerManager {
   }
 
   isFeatureGroupEditable(featureGroup: L.FeatureGroup): boolean {
+    const interactionOverride = (
+      featureGroup as unknown as { _polydrawMetadata?: { interactionOverride?: LayerInteraction } }
+    )._polydrawMetadata?.interactionOverride;
+    if (interactionOverride) {
+      return interactionOverride === 'editable';
+    }
+
     const layerId = this.getLayerForFeatureGroup(featureGroup);
     if (!layerId) {
       return true;

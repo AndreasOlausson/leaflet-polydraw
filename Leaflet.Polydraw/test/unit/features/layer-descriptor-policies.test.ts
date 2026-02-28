@@ -107,4 +107,30 @@ describe('Layer Descriptor Policies', () => {
     expect(layerManager.getLayer('Layer B')?.interaction).toBe('static');
     expect(layerManager.getLayer('Layer B')?.panel).toBe('hidden');
   });
+
+  it('forwards per-group options metadata/overrides to predefined polygon flow', async () => {
+    await polydraw.addPredefinedPolygonGroups([
+      {
+        layer: 'Layer C',
+        polygons: [fixtures.triangle()],
+        options: {
+          metadata: { source: 'group-import' },
+          overrides: {
+            interaction: 'readonly',
+            merge: 'block',
+          },
+        },
+      },
+    ]);
+
+    expect(polydraw.getFeatureGroups()).toHaveLength(1);
+    const featureGroup = polydraw.getFeatureGroups()[0];
+    expect(polydraw.getFeatureMetadata(featureGroup)).toEqual({
+      source: 'group-import',
+    });
+    const markers = featureGroup
+      .getLayers()
+      .filter((layer) => layer instanceof L.Marker) as L.Marker[];
+    expect(markers).toHaveLength(0);
+  });
 });

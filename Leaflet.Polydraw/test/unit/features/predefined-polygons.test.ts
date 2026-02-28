@@ -61,4 +61,61 @@ describe('Predefined Polygons', () => {
     expect(polygonLayer._polydrawOptimizationLevel).toBe(6);
     expect(polygonLayer._polydrawOptimizationOriginalLevel).toBe(6);
   });
+
+  it('accepts metadata and overrides in predefined options', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), {
+      metadata: { category: 'demo', rank: 1 },
+      overrides: {
+        interaction: 'readonly',
+        merge: 'block',
+        style: { color: '#ff0000', fillColor: '#ffeeee', fillOpacity: 0.4, weight: 3 },
+      },
+    });
+
+    expect(polydraw.getFeatureGroups()).toHaveLength(1);
+    const featureGroup = polydraw.getFeatureGroups()[0];
+    expect(polydraw.getFeatureMetadata(featureGroup)).toEqual({
+      category: 'demo',
+      rank: 1,
+    });
+
+    const markers = featureGroup
+      .getLayers()
+      .filter((layer) => layer instanceof L.Marker) as L.Marker[];
+    expect(markers).toHaveLength(0);
+
+    const polygonLayer = featureGroup
+      .getLayers()
+      .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as L.Polygon;
+    expect((polygonLayer.options.color as string).toLowerCase()).toBe('#ff0000');
+    expect((polygonLayer.options.fillColor as string).toLowerCase()).toBe('#ffeeee');
+    expect(polygonLayer.options.fillOpacity).toBe(0.4);
+    expect(polygonLayer.options.weight).toBe(3);
+  });
+
+  it('supports merge overrides for predefined polygons', async () => {
+    const [first, second] = fixtures.overlappingSquares();
+
+    await polydraw.addPredefinedPolygon([first]);
+    await polydraw.addPredefinedPolygon([second], {
+      overrides: { merge: 'block' },
+    });
+    expect(polydraw.getFeatureGroups()).toHaveLength(2);
+
+    await polydraw.addPredefinedPolygon([first], {
+      layer: {
+        id: 'Readonly Merge Layer',
+        interaction: 'readonly',
+      },
+    });
+    await polydraw.addPredefinedPolygon([second], {
+      layer: {
+        id: 'Readonly Merge Layer',
+        interaction: 'readonly',
+      },
+      overrides: { merge: 'allow' },
+    });
+    const readonlyLayerFeatureGroups = polydraw.getFeatureGroupsByLayer('Readonly Merge Layer');
+    expect(readonlyLayerFeatureGroups).toHaveLength(1);
+  });
 });

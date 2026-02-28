@@ -474,6 +474,8 @@ export interface PolygonUpdatedEventData {
   featureId?: string;
   featureMetadata?: Record<string, unknown>;
   sourceFeatureIds?: string[];
+  featureInteractionOverride?: LayerInteraction;
+  featureStyleOverrides?: PolygonStyleOverrides;
   featureCreatedAt?: string;
   featureLastModified?: string;
 }
@@ -557,6 +559,8 @@ export interface PolydrawFeatureGroup extends L.FeatureGroup {
     layerId?: string;
     metadata?: Record<string, unknown>;
     sourceFeatureIds?: string[];
+    interactionOverride?: LayerInteraction;
+    styleOverrides?: PolygonStyleOverrides;
   };
 }
 
@@ -716,6 +720,8 @@ export interface FeatureMetadataSnapshotEntry {
   id?: string;
   metadata?: Record<string, unknown>;
   sourceFeatureIds?: string[];
+  interactionOverride?: LayerInteraction;
+  styleOverrides?: PolygonStyleOverrides;
   optimizationLevel?: number;
   originalOptimizationLevel?: number;
   hasHoles?: boolean;
@@ -726,6 +732,30 @@ export interface FeatureMetadataSnapshotEntry {
 
 export type LayerInteraction = 'editable' | 'readonly' | 'static';
 export type LayerPanelVisibility = 'visible' | 'hidden';
+export type PolydrawMetadata = Record<string, unknown>;
+export type PolygonOverrideInteraction = 'inherit' | LayerInteraction;
+export type PolygonOverrideMerge = 'inherit' | 'allow' | 'block';
+
+export interface PolygonStyleOverrides {
+  color?: string;
+  fillColor?: string;
+  fillOpacity?: number;
+  weight?: number;
+}
+
+export interface PolygonOverridesInput {
+  interaction?: PolygonOverrideInteraction;
+  merge?: PolygonOverrideMerge;
+  style?: PolygonStyleOverrides;
+}
+
+export interface PredefinedPolygonOptions {
+  visualOptimizationLevel?: number;
+  layer?: string | PolygonLayerDescriptorInput;
+  layerColor?: string;
+  metadata?: PolydrawMetadata;
+  overrides?: PolygonOverridesInput;
+}
 
 export interface PolygonLayerDescriptorInput {
   id: string;
@@ -734,7 +764,7 @@ export interface PolygonLayerDescriptorInput {
   visibility?: boolean;
   panel?: LayerPanelVisibility;
   interaction?: LayerInteraction;
-  metadata?: Record<string, unknown>;
+  metadata?: PolydrawMetadata;
 }
 
 export interface LayerUpdateInput {
@@ -743,7 +773,7 @@ export interface LayerUpdateInput {
   visibility?: boolean;
   panel?: LayerPanelVisibility;
   interaction?: LayerInteraction;
-  metadata?: Record<string, unknown>;
+  metadata?: PolydrawMetadata;
 }
 
 export interface LayerDeleteResult {
@@ -759,4 +789,5 @@ export interface LayerDeleteResult {
 export interface PolygonGroupInput {
   layer: string | PolygonLayerDescriptorInput;
   polygons: unknown[][][][];
+  options?: Omit<PredefinedPolygonOptions, 'layer' | 'layerColor'>;
 }
