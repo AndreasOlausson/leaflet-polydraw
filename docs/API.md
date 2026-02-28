@@ -4,7 +4,7 @@ For most use cases, simply add the plugin and use the built-in buttons. However,
 
 ## Essential Methods
 
-### `addPredefinedPolygon(geographicBorders: unknown[][][])`
+git sta### `addPredefinedPolygon(geographicBorders: unknown[][][], options?: PredefinedPolygonOptions)`
 
 Add polygons programmatically with smart coordinate auto-detection (useful for loading saved data).
 
@@ -21,7 +21,7 @@ const polygon = [
     ],
   ],
 ];
-polydraw.addPredefinedPolygon(polygon);
+await polydraw.addPredefinedPolygon(polygon);
 ```
 
 **Supported Coordinate Formats:**
@@ -30,7 +30,7 @@ polydraw.addPredefinedPolygon(polygon);
 - Arrays: `[lat, lng]`, `[lng, lat]` (with smart detection)
 - Strings: `"lat,lng"`, `"59°54'N 10°43'E"` (DMS), `"N59 E10"` (N/E format)
 
-### `addPredefinedGeoJSONs(geojsonFeatures: GeoJSON.Feature<Polygon | MultiPolygon>[], options?)`
+### `addPredefinedGeoJSONs(geojsonFeatures: GeoJSON.Feature<Polygon | MultiPolygon>[], options?: PredefinedPolygonOptions)`
 
 Add polygons from GeoJSON format (useful for loading data from APIs, files, or GIS systems).
 
@@ -93,6 +93,28 @@ await polydraw.addPredefinedGeoJSONs([polygonFeature], {
 });
 ```
 
+### `addPredefinedPolygonGroups(groups: PolygonGroupInput[])`
+
+Add multiple polygon groups where each group declares a layer and one or more polygons.
+
+```typescript
+await polydraw.addPredefinedPolygonGroups([
+  {
+    layer: {
+      id: "Hazard",
+      color: "#d32f2f",
+      interaction: "readonly",
+      panel: "visible",
+    },
+    polygons: [hazardPolygonA, hazardPolygonB],
+    options: {
+      visualOptimizationLevel: 4,
+      metadata: { source: "import-batch-7" },
+    },
+  },
+]);
+```
+
 ### Visual Optimization
 
 [![Visual Optimization](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/gifs/vo.gif)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/mp4/vo.mp4)
@@ -105,6 +127,62 @@ Visual optimization reduces elbow marker density on complex polygons while prese
 - `Feature<MultiPolygon>`: Multiple polygons (all polygons are processed)
 - Automatically converts GeoJSON `[lng, lat]` to Leaflet `[lat, lng]` format
 - Preserves polygon holes (inner rings)
+
+## Option Contracts (v2)
+
+This section is the runtime contract for import/layer option objects.
+
+### `PredefinedPolygonOptions`
+
+| Property | Type | Behavior |
+| --- | --- | --- |
+| `visualOptimizationLevel` | `number` | Optimization level stored on created polygons. Default: `0`. |
+| `layer` | `string | PolygonLayerDescriptorInput` | Selects (or creates) target layer. String is treated as layer id. Descriptor can create/update layer fields (`label`, `color`, `visibility`, `interaction`, `panel`, `metadata`) before polygon add. Empty/blank id throws. |
+| `layerColor` | `string` | Color precedence: if `layer` is provided, this overrides descriptor color and updates that layer color; if `layer` is omitted, it only colors polygons being added (no layer creation/update). Invalid hex values fall back to layer/default color normalization. |
+| `metadata` | `Record<string, unknown>` | Feature metadata payload for each added polygon feature group (stored as a shallow clone). |
+| `overrides` | `{ interaction?: 'inherit' \| 'editable' \| 'readonly' \| 'static'; merge?: 'inherit' \| 'allow' \| 'block'; style?: { color?; fillColor?; fillOpacity?; weight? } }` | Runtime per-feature overrides for interaction, merge, and style; also forwarded through group imports. |
+
+### `PolygonGroupInput`
+
+| Property | Type | Behavior |
+| --- | --- | --- |
+| `layer` | `string | PolygonLayerDescriptorInput` | Required. Resolved once per group, layer ensured first, then all polygons in group are added to that layer. |
+| `polygons` | `unknown[][][][]` | Required. Each item is passed to `addPredefinedPolygon`. |
+| `options` | `Omit<PredefinedPolygonOptions, 'layer' \| 'layerColor'>` | Optional per-group options forwarded to each polygon add in the group. |
+
+### `PolygonLayerDescriptorInput`
+
+| Property | Type | Behavior |
+| --- | --- | --- |
+| `id` | `string` | Required non-empty layer id (trimmed). |
+| `label` | `string` | Optional display label in panel. Empty/whitespace is normalized to unset. |
+| `color` | `string` | Layer stroke color. Applied to existing layer polygons when changed. Hex normalization supports `#rgb` / `#rrggbb` forms. |
+| `visibility` | `boolean` | Layer visibility policy (`true` by default for new layers). |
+| `interaction` | `'editable' \| 'readonly' \| 'static'` | `editable`: full edit interactions. `readonly`: visible/selectable but no edit handles/drag. `static`: non-editable and defaults panel to hidden unless `panel` is explicitly set. |
+| `panel` | `'visible' \| 'hidden'` | Controls layer panel visibility for this layer. |
+| `metadata` | `Record<string, unknown>` | Replaces layer metadata object (shallow clone). |
+
+### `LayerUpdateInput`
+
+| Property | Type | Behavior |
+| --- | --- | --- |
+| `label` | `string` | Updates/clears label (`""` or whitespace clears). |
+| `color` | `string` | Updates layer color and restyles polygons in that layer. |
+| `visibility` | `boolean` | Shows/hides layer. Active layer cannot be hidden if no visible fallback layer exists. |
+| `interaction` | `'editable' \| 'readonly' \| 'static'` | Updates interaction policy. If set to `static` and `panel` omitted, panel is auto-set to `hidden`. |
+| `panel` | `'visible' \| 'hidden'` | Explicit panel policy override. |
+| `metadata` | `Record<string, unknown>` | Replaces layer metadata object. |
+
+### Precedence and Defaults
+
+- If both `layer.color` and top-level `layerColor` are set in `addPredefinedPolygon`, `layerColor` wins.
+- For `addPredefinedGeoJSONs`, metadata precedence is: `options.metadata` first, otherwise GeoJSON `feature.properties`.
+- Adding to non-editable target layers (`readonly` or `static`) disables merge-on-add by default (`merge: inherit`).
+- `overrides.merge: block` always disables merge-on-add for the incoming polygon.
+- `overrides.merge: allow` forces merge attempts for the incoming polygon, including against non-editable polygons in the target layer.
+- `overrides.interaction` applies per-feature editability, independent of the layer interaction policy.
+- `overrides.style` is persisted per feature and reapplied across history restore operations.
+- `static` without explicit `panel` is normalized to `panel: 'hidden'`.
 
 ### `getAllPolygons()`
 
