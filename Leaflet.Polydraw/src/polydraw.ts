@@ -1044,6 +1044,157 @@ class Polydraw extends L.Control {
   }
 
   /**
+   * Returns the id of the currently active layer.
+   */
+  public getActiveLayerId(): string {
+    return this.layerManager.getActiveLayerId();
+  }
+
+  /**
+   * Returns the layer id that the given feature group is assigned to, or undefined.
+   */
+  public getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined {
+    return this.layerManager.getLayerForFeatureGroup(featureGroup);
+  }
+
+  /**
+   * Assigns a feature group to a layer. If the feature group is already
+   * assigned to another layer it is moved. Returns false if the target layer
+   * does not exist.
+   */
+  public assignFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean {
+    const normalizedLayerId = (layerId || '').trim();
+    if (!featureGroup || !normalizedLayerId) {
+      return false;
+    }
+    if (!this.layerManager.getLayer(normalizedLayerId)) {
+      return false;
+    }
+    if (this.layerManager.getLayerForFeatureGroup(featureGroup) === normalizedLayerId) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    const changed = this.layerManager.assignFeatureGroupToLayer(featureGroup, normalizedLayerId);
+    if (changed) {
+      this.refreshAfterLayerStructureChange();
+    }
+    return changed;
+  }
+
+  /**
+   * Moves a feature group from its current layer to the given layer.
+   * Alias for {@link assignFeatureGroupToLayer}.
+   */
+  public moveFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean {
+    return this.assignFeatureGroupToLayer(featureGroup, layerId);
+  }
+
+  /**
+   * Removes a feature group from whatever layer it is currently assigned to.
+   */
+  public removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void {
+    if (!featureGroup || !this.layerManager.getLayerForFeatureGroup(featureGroup)) {
+      return;
+    }
+
+    this.saveHistory('layerReorder');
+    this.layerManager.removeFeatureGroupFromLayer(featureGroup);
+    this.refreshAfterLayerStructureChange();
+  }
+
+  /**
+   * Deletes all non-default layers and removes their feature groups from the map.
+   * The default layer is left empty. A single history snapshot is saved before clearing.
+   */
+  public clearLayers(): void {
+    const nonDefault = this.layerManager
+      .getAllLayers()
+      .filter((l) => l.id !== 'default')
+      .map((l) => l.id);
+    if (nonDefault.length === 0) {
+      return;
+    }
+    this.saveHistory('layerDelete');
+    for (const layerId of nonDefault) {
+      this.layerManager.deleteLayer(layerId);
+    }
+    this.updateLayerPanel();
+  }
+
+  /**
+   * Moves a layer to a specific 0-based position in the layer order.
+   * The default layer always occupies index 0; valid target indices for
+   * non-default layers start at 1. The index is clamped to the valid range.
+   */
+  public moveLayerToIndex(layerId: string, index: number): boolean {
+    const normalizedLayerId = (layerId || '').trim();
+    if (normalizedLayerId === 'default' || !Number.isFinite(index)) {
+      return false;
+    }
+    const orderedLayerIds = this.layerManager.getAllLayers().map((layer) => layer.id);
+    const currentIndex = orderedLayerIds.indexOf(normalizedLayerId);
+    if (currentIndex < 0) {
+      return false;
+    }
+    const clampedIndex = Math.max(1, Math.min(Math.trunc(index), orderedLayerIds.length - 1));
+    if (currentIndex === clampedIndex) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    return this.layerManager.moveLayerToIndex(normalizedLayerId, index);
+  }
+
+  /**
+   * Sets the full layer order by providing an ordered list of layer IDs.
+   * The default layer always stays first. Layers not included in the list are
+   * appended after the specified layers in their current relative order.
+   * Returns false if any specified ID does not exist or equals 'default'.
+   */
+  public setLayerOrder(layerIds: string[]): boolean {
+    if (!layerIds || layerIds.length === 0) {
+      return false;
+    }
+
+    const currentOrder = this.layerManager.getAllLayers().map((layer) => layer.id);
+    const normalizedIds = layerIds.map((layerId) => (layerId || '').trim());
+    if (normalizedIds.some((layerId) => layerId.length === 0 || layerId === 'default')) {
+      return false;
+    }
+    if (new Set(normalizedIds).size !== normalizedIds.length) {
+      return false;
+    }
+    if (normalizedIds.some((layerId) => !currentOrder.includes(layerId))) {
+      return false;
+    }
+
+    const specifiedIds = new Set(normalizedIds);
+    const fullOrder = [
+      'default',
+      ...normalizedIds,
+      ...currentOrder.filter((layerId) => layerId !== 'default' && !specifiedIds.has(layerId)),
+    ];
+    if (
+      currentOrder.length === fullOrder.length &&
+      currentOrder.every((id, index) => id === fullOrder[index])
+    ) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    return this.layerManager.setLayerOrder(normalizedIds);
+  }
+
+  private refreshAfterLayerStructureChange(): void {
+    this.syncFeatureGroupOrderWithLayers();
+    this.polygonInformation.deletePolygonInformationStorage();
+    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    this.updateMarkerDraggableState();
+    this.updateLayerPanel();
+  }
+
+  /**
    * Begin a batch operation. A single history snapshot is saved before the
    * batch starts; all individual history saves inside the batch are suppressed.
    * Must be paired with {@link endBatch}.

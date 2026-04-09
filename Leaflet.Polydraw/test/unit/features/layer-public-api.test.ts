@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createPolydrawHarness } from '../helpers/polydraw-harness';
 import { MockFactory } from '../mocks/factory';
 
@@ -17,6 +17,12 @@ describe('Layer Public API', () => {
   afterEach(() => {
     cleanup();
   });
+
+  const getLayerOrder = () => polydraw.getAllLayers().map((layer) => layer.id);
+  const getFeatureLayerIds = () =>
+    polydraw
+      .getFeatureGroups()
+      .map((featureGroup) => polydraw.getLayerForFeatureGroup(featureGroup));
 
   it('creates and queries layers through high-level API methods', () => {
     const created = polydraw.createLayer({
@@ -75,5 +81,117 @@ describe('Layer Public API', () => {
 
   it('returns false when patching metadata for missing layer', () => {
     expect(polydraw.patchLayerMetadata('missing', { x: 1 })).toBe(false);
+  });
+
+  it('moves layers by index and skips history for no-op or invalid requests', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Layer A' });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Layer B' });
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), { layer: 'Layer C' });
+
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveState: (...args: unknown[]) => void;
+      };
+    };
+    const saveStateSpy = vi.spyOn(internal.historyManager, 'saveState');
+    saveStateSpy.mockClear();
+
+    expect(polydraw.moveLayerToIndex('Layer A', 1)).toBe(false);
+    expect(polydraw.moveLayerToIndex('missing', 1)).toBe(false);
+    expect(polydraw.moveLayerToIndex('Layer B', Number.NaN)).toBe(false);
+    expect(saveStateSpy).not.toHaveBeenCalled();
+
+    expect(polydraw.moveLayerToIndex('Layer C', 1)).toBe(true);
+    expect(saveStateSpy).toHaveBeenCalledTimes(1);
+    expect(getLayerOrder()).toEqual(['default', 'Layer C', 'Layer A', 'Layer B']);
+    expect(getFeatureLayerIds()).toEqual(['Layer C', 'Layer A', 'Layer B']);
+
+    await polydraw.undo();
+    expect(getLayerOrder()).toEqual(['default', 'Layer A', 'Layer B', 'Layer C']);
+    expect(getFeatureLayerIds()).toEqual(['Layer A', 'Layer B', 'Layer C']);
+  });
+
+  it('sets full layer order and skips history for unchanged or invalid orders', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Layer A' });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Layer B' });
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), { layer: 'Layer C' });
+
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveState: (...args: unknown[]) => void;
+      };
+    };
+    const saveStateSpy = vi.spyOn(internal.historyManager, 'saveState');
+    saveStateSpy.mockClear();
+
+    expect(polydraw.setLayerOrder(['Layer A', 'Layer B', 'Layer C'])).toBe(false);
+    expect(polydraw.setLayerOrder(['Layer A', 'missing'])).toBe(false);
+    expect(polydraw.setLayerOrder(['Layer A', 'Layer A'])).toBe(false);
+    expect(saveStateSpy).not.toHaveBeenCalled();
+
+    expect(polydraw.setLayerOrder(['Layer C', 'Layer A'])).toBe(true);
+    expect(saveStateSpy).toHaveBeenCalledTimes(1);
+    expect(getLayerOrder()).toEqual(['default', 'Layer C', 'Layer A', 'Layer B']);
+    expect(getFeatureLayerIds()).toEqual(['Layer C', 'Layer A', 'Layer B']);
+
+    await polydraw.undo();
+    expect(getLayerOrder()).toEqual(['default', 'Layer A', 'Layer B', 'Layer C']);
+
+    await polydraw.redo();
+    expect(getLayerOrder()).toEqual(['default', 'Layer C', 'Layer A', 'Layer B']);
+  });
+
+  it('assigns feature groups to layers with undo/redo support', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Layer A' });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Layer B' });
+
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveState: (...args: unknown[]) => void;
+      };
+    };
+    const saveStateSpy = vi.spyOn(internal.historyManager, 'saveState');
+    const layerBFeatureGroup = polydraw.getFeatureGroups()[1];
+    saveStateSpy.mockClear();
+
+    expect(polydraw.assignFeatureGroupToLayer(layerBFeatureGroup, 'Layer B')).toBe(false);
+    expect(saveStateSpy).not.toHaveBeenCalled();
+
+    expect(polydraw.assignFeatureGroupToLayer(layerBFeatureGroup, 'Layer A')).toBe(true);
+    expect(saveStateSpy).toHaveBeenCalledTimes(1);
+    expect(getFeatureLayerIds()).toEqual(['Layer A', 'Layer A']);
+
+    await polydraw.undo();
+    expect(getFeatureLayerIds()).toEqual(['Layer A', 'Layer B']);
+
+    await polydraw.redo();
+    expect(getFeatureLayerIds()).toEqual(['Layer A', 'Layer A']);
+  });
+
+  it('removes layer assignments cleanly and preserves unassigned state through redo', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Layer A' });
+
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveState: (...args: unknown[]) => void;
+      };
+    };
+    const saveStateSpy = vi.spyOn(internal.historyManager, 'saveState');
+    const featureGroup = polydraw.getFeatureGroups()[0] as {
+      _polydrawMetadata?: { layerId?: string };
+    };
+    saveStateSpy.mockClear();
+
+    polydraw.removeFeatureGroupFromLayer(featureGroup as never);
+
+    expect(saveStateSpy).toHaveBeenCalledTimes(1);
+    expect(polydraw.getLayerForFeatureGroup(featureGroup as never)).toBeUndefined();
+    expect(featureGroup._polydrawMetadata?.layerId).toBeUndefined();
+
+    await polydraw.undo();
+    expect(polydraw.getLayerForFeatureGroup(polydraw.getFeatureGroups()[0])).toBe('Layer A');
+
+    await polydraw.redo();
+    expect(polydraw.getLayerForFeatureGroup(polydraw.getFeatureGroups()[0])).toBeUndefined();
   });
 });

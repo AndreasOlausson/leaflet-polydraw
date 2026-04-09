@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - inactive-layer markers are read-only/non-draggable
   - layer reorder updates feature-group order consistently
 - Playwright Leaflet-version matrix scripts: `test:playwright:v1`, `test:playwright:v2`, and `test:playwright:matrix`.
+- Coordinate parser regression tests for `CoordinateUtils.convertToLatLng` now cover:
+  - directional decimal suffixes (including west/south negative signs)
+  - mixed object key precedence (`lat`/`lng` vs `latitude`/`longitude`)
+  - arrays with extra elements (first two values only)
+  - case-insensitive DMS direction letters
+  - trimmed-input handling in UTM-specific error messages
 - Feature metadata lifecycle support across polygon operations:
   - metadata can be passed via `addPredefinedPolygon(..., { metadata })`
   - GeoJSON import uses `feature.properties` as metadata fallback when `options.metadata` is omitted
@@ -37,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config fallback paths now emit clear one-time warnings in non-test environments (invalid simplification values/strategy, deprecated or unknown polygon creation algorithms, and convex-hull fallback behavior).
 - Layer panel no longer hides custom toolbar tooltips when visible (stacking/z-index fix).
 - Default layer row alignment now matches draggable rows while remaining non-draggable/read-only.
+- `CoordinateUtils.convertToLatLng` now correctly preserves hemisphere signs for directional decimal strings (for example `40.7128 N, 74.0060 W`) and supports signed hemisphere handling for prefixed directional input (`S ... W ...`).
 
 ### Changed
 

@@ -312,6 +312,10 @@ export class LayerManager {
     }
 
     const currentLayerId = this.getLayerForFeatureGroup(featureGroup);
+    if (currentLayerId === targetId) {
+      return false;
+    }
+
     if (currentLayerId) {
       const currentLayer = this.layers.get(currentLayerId);
       if (currentLayer) {
@@ -344,6 +348,12 @@ export class LayerManager {
       layer.featureGroups = layer.featureGroups.filter((fg) => fg !== featureGroup);
     }
     this.featureGroupToLayer.delete(featureGroup);
+
+    const metadata = (featureGroup as unknown as { _polydrawMetadata?: { layerId?: string } })
+      ._polydrawMetadata;
+    if (metadata) {
+      delete metadata.layerId;
+    }
   }
 
   getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined {
@@ -407,6 +417,98 @@ export class LayerManager {
     return removedFeatureGroups;
   }
 
+  /**
+   * Moves a layer to a specific 0-based position in the full layer order.
+   * The default layer always occupies index 0; the minimum valid target for
+   * non-default layers is 1. The index is clamped to the valid range.
+   */
+  moveLayerToIndex(layerId: string, index: number): boolean {
+    const normalizedId = this.normalizeLayerId(layerId);
+    if (normalizedId === 'default' || !this.layers.has(normalizedId) || !Number.isFinite(index)) {
+      return false;
+    }
+
+    const layerOrder = Array.from(this.layers.keys());
+    const currentIndex = layerOrder.indexOf(normalizedId);
+    const targetIndex = Math.trunc(index);
+    const clampedIndex = Math.max(1, Math.min(targetIndex, layerOrder.length - 1));
+
+    if (currentIndex === clampedIndex) {
+      return false;
+    }
+
+    layerOrder.splice(currentIndex, 1);
+    layerOrder.splice(clampedIndex, 0, normalizedId);
+
+    const reordered = new Map<string, LayerState>();
+    for (const id of layerOrder) {
+      const layer = this.layers.get(id);
+      if (layer) {
+        reordered.set(id, layer);
+      }
+    }
+    this.layers = reordered;
+
+    this.eventManager.emit('polydraw:layer:reordered', {
+      layerId: normalizedId,
+      targetLayerId: layerOrder[clampedIndex] ?? normalizedId,
+      orderedLayerIds: layerOrder,
+    });
+    return true;
+  }
+
+  /**
+   * Sets the full layer order by providing an ordered list of layer IDs.
+   * The default layer always stays first. Any layers not included in the
+   * list are appended after the specified layers in their current relative order.
+   * Returns false if any specified ID does not exist or equals 'default'.
+   */
+  setLayerOrder(layerIds: string[]): boolean {
+    if (!layerIds || layerIds.length === 0) {
+      return false;
+    }
+
+    const normalizedIds = layerIds.map((id) => this.normalizeLayerId(id));
+    if (new Set(normalizedIds).size !== normalizedIds.length) {
+      return false;
+    }
+    for (const id of normalizedIds) {
+      if (id === 'default' || !this.layers.has(id)) {
+        return false;
+      }
+    }
+
+    const currentOrder = Array.from(this.layers.keys());
+    const specifiedSet = new Set(normalizedIds);
+    const unspecified = Array.from(this.layers.keys()).filter(
+      (id) => id !== 'default' && !specifiedSet.has(id),
+    );
+    const fullOrder = ['default', ...normalizedIds, ...unspecified];
+
+    if (
+      currentOrder.length === fullOrder.length &&
+      currentOrder.every((id, index) => id === fullOrder[index])
+    ) {
+      return false;
+    }
+
+    const reordered = new Map<string, LayerState>();
+    for (const id of fullOrder) {
+      const layer = this.layers.get(id);
+      if (layer) {
+        reordered.set(id, layer);
+      }
+    }
+    this.layers = reordered;
+
+    this.eventManager.emit('polydraw:layer:reordered', {
+      layerId: normalizedIds[0],
+      targetLayerId: normalizedIds.at(-1)!,
+      orderedLayerIds: fullOrder,
+    });
+    return true;
+  }
+
   clear(defaultColor?: string): void {
     if (defaultColor) {
       this.defaultColor = LayerManager.normalizeColor(defaultColor, this.defaultColor);
@@ -450,7 +552,14 @@ export class LayerManager {
     snapshot.layers.forEach((entry) => {
       const layerId = this.normalizeLayerId(entry.id);
       const existing = this.layers.get(layerId);
-      if (!existing) {
+      if (existing) {
+        existing.label = typeof entry.label === 'string' ? entry.label : undefined;
+        existing.color = entry.color ? LayerManager.normalizeColor(entry.color) : existing.color;
+        existing.visible = entry.visible !== false;
+        existing.interaction = this.normalizeInteraction(entry.interaction);
+        existing.panel = this.normalizePanel(entry.panel);
+        existing.metadata = this.cloneMetadata(entry.metadata);
+      } else {
         this.layers.set(layerId, {
           id: layerId,
           label: typeof entry.label === 'string' ? entry.label : undefined,
@@ -461,13 +570,6 @@ export class LayerManager {
           metadata: this.cloneMetadata(entry.metadata),
           featureGroups: [],
         });
-      } else {
-        existing.label = typeof entry.label === 'string' ? entry.label : undefined;
-        existing.color = entry.color ? LayerManager.normalizeColor(entry.color) : existing.color;
-        existing.visible = entry.visible !== false;
-        existing.interaction = this.normalizeInteraction(entry.interaction);
-        existing.panel = this.normalizePanel(entry.panel);
-        existing.metadata = this.cloneMetadata(entry.metadata);
       }
     });
 
@@ -493,7 +595,7 @@ export class LayerManager {
 
     const desiredActive = this.normalizeLayerId(snapshot.activeLayerId || 'default');
     const desiredLayer = this.layers.get(desiredActive);
-    if (desiredLayer && desiredLayer.visible) {
+    if (desiredLayer?.visible) {
       this.activeLayerId = desiredActive;
       return;
     }

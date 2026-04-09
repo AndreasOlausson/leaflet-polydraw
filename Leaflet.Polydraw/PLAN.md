@@ -148,8 +148,8 @@
 - ~~`getLayerById(layerId: string): LayerState | undefined`~~ ✅
 - ~~`hasLayer(layerId: string): boolean`~~ ✅
 - ~~`getActiveLayer(): LayerState | undefined`~~ ✅
-- `getActiveLayerId(): string`
-- `getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined`
+- ~~`getActiveLayerId(): string`~~ ✅
+- ~~`getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined`~~ ✅
 - ~~`getFeatureGroupsByLayer(layerId: string): L.FeatureGroup[]`~~ ✅
 
 ### Create / Upsert / Delete
@@ -158,7 +158,7 @@
 - ~~`ensureLayer(input: EnsureLayerInput): LayerState` (idempotent upsert-style)~~ ✅
 - ~~`updateLayer(layerId: string, patch: UpdateLayerInput): LayerState | undefined`~~ ✅
 - ~~`deleteLayer(layerId: string, options?: DeleteLayerOptions): DeleteLayerResult`~~ ✅
-- `clearLayers(options?: ClearLayersOptions): void`
+- ~~`clearLayers(): void`~~ ✅
 
 ### Activation / Visibility / Order
 
@@ -167,8 +167,8 @@
 - ~~`hideLayer(layerId: string): boolean`~~ ✅
 - ~~`setLayerVisibility(layerId: string, visible: boolean): boolean`~~ ✅
 - ~~`reorderLayer(layerId: string, targetLayerId: string): boolean`~~ ✅
-- `moveLayerToIndex(layerId: string, index: number): boolean`
-- `setLayerOrder(layerIds: string[]): boolean`
+- ~~`moveLayerToIndex(layerId: string, index: number): boolean`~~ ✅
+- ~~`setLayerOrder(layerIds: string[]): boolean`~~ ✅
 
 ### Styling / Policy / Metadata
 
@@ -180,9 +180,9 @@
 
 ### Feature Assignment Helpers
 
-- `assignFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): void`
-- `moveFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): void`
-- `removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void`
+- ~~`assignFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean`~~ ✅
+- ~~`moveFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean`~~ ✅
+- ~~`removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void`~~ ✅
 
 ### Optional Transaction / Batch Helpers
 
@@ -317,3 +317,57 @@ Exit criteria:
 Exit criteria:
 - Demo build completes without errors.
 - Docs, migration notes, and demo references are aligned for release review.
+
+---
+
+## Remaining Work (Pre-Release Checklist)
+
+### Config Mappings (not yet implemented)
+
+- `modifierSubtractMode` -> `modifiers.temporarySubtract`
+- `markers.*` -> `markers.*` (keep simple toggles public; move advanced metrics/units to internal defaults)
+- `polygonCreation.*` -> `creation.*`
+- `simplification.*` -> `simplify.*`
+
+### Docs
+
+- Update all docs/examples to reference `config.tools.*` (remove `modes.draw/subtract/p2p/...` references).
+- Document strict vs. advanced override mode (if escape hatches are kept).
+
+### Layer Public API ✅
+
+~~Simple reads:~~
+- ~~`getActiveLayerId(): string`~~ ✅
+- ~~`getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined`~~ ✅
+
+~~Mutations:~~
+- ~~`clearLayers(): void`~~ ✅
+- ~~`moveLayerToIndex(layerId: string, index: number): boolean`~~ ✅
+- ~~`setLayerOrder(layerIds: string[]): boolean`~~ ✅
+
+~~Feature-group assignment helpers:~~
+- ~~`assignFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean`~~ ✅
+- ~~`moveFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean`~~ ✅ (alias for assign)
+- ~~`removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void`~~ ✅
+
+Deferred (not needed for alpha):
+- `batchUpdateLayers(fn: (api: LayerBatchApi) => void): void`
+- `suspendLayerEvents<T>(fn: () => T): T`
+- Public event surface (`onLayerCreated`, `onLayerUpdated`, etc.)
+
+### Phase 7 - QA + Docs Gate (in progress)
+
+- Unit coverage: policy enforcement, metadata persistence, panel-hidden behavior, legacy vs. v2 input compatibility.
+- Matrix validation: `npm run test:leaflet:matrix` + `npm run test:playwright:matrix`.
+- Finalize changelog and migration notes for release.
+
+### Phase 8 - Demo Rebuild + Release Sync (in progress)
+
+- Complete demo rebuild against current v2 code.
+- Verify `npm run build` and `npm --prefix demo --ignore-scripts run build` pass cleanly.
+- Align docs, migration notes, and demo references before release cut.
+
+### Open Questions
+
+- Should v2 offer a strict "public config only" mode, or allow advanced overrides behind a flag?
+- How should layer ordering and selection priority behave when layers overlap?

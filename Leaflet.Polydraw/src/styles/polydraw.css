@@ -5,6 +5,16 @@ body {
   height: 100%;
 }
 
+/*
+ * Leaflet 2 alpha applies width/height: 100% to pane SVG elements.
+ * Leaflet's SVG renderer expects its own viewport sizing, so forcing a full-size
+ * SVG can shift vector overlays relative to marker panes while drawing/editing.
+ */
+.leaflet-container .leaflet-overlay-pane > svg.leaflet-zoom-animated {
+  width: auto;
+  height: auto;
+}
+
 #blitz-app {
   height: 100%;
 }
@@ -234,6 +244,8 @@ body {
 }
 
 .marker-menu-button {
+  /* Host apps often apply a global border-box reset; these buttons are sized in content-box terms. */
+  box-sizing: content-box;
   padding: 4px;
   border: 1px solid #aaaaaa;
 }

@@ -1,0 +1,12 @@
+{
+  "name": "@polydraw-demo/shared-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@polydraw-demo/shared-content": "0.1.0"
+  }
+}

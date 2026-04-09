@@ -88,6 +88,9 @@ export class PolygonInteractionManager {
   private dragCancelHandlersAttached: boolean = false;
   private _boundDragTouchMove: ((e: TouchEvent) => void) | null = null;
   private _boundDragTouchEnd: ((e: TouchEvent) => void) | null = null;
+  private _boundDragMoveListener: EventListener | null = null;
+  private _boundDragEndListener: EventListener | null = null;
+  private dragUsesPointerEvents: boolean = false;
   private polygonTouchStartListeners = new WeakMap<L.Polygon, (e: TouchEvent) => void>();
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
@@ -1080,19 +1083,7 @@ export class PolygonInteractionManager {
         // Handle DOM errors
       }
 
-      this.map.on('mousemove', this.onPolygonMouseMove, this);
-      this.map.on('mouseup', this.onPolygonMouseUp, this);
-      // Also register pointer events (Leaflet v2)
-      (this.map as L.Evented).on(
-        'pointermove',
-        this.onPolygonMouseMove as L.LeafletEventHandlerFn,
-        this,
-      );
-      (this.map as L.Evented).on(
-        'pointerup',
-        this.onPolygonMouseUp as L.LeafletEventHandlerFn,
-        this,
-      );
+      this.attachDragDocumentListeners();
       this.attachDragCancelHandlers();
 
       this.currentDragPolygon = polygon;
@@ -1163,18 +1154,7 @@ export class PolygonInteractionManager {
         // Handle DOM errors
       }
 
-      this.map.on('mousemove', this.onPolygonMouseMove, this);
-      this.map.on('mouseup', this.onPolygonMouseUp, this);
-      (this.map as L.Evented).on(
-        'pointermove',
-        this.onPolygonMouseMove as L.LeafletEventHandlerFn,
-        this,
-      );
-      (this.map as L.Evented).on(
-        'pointerup',
-        this.onPolygonMouseUp as L.LeafletEventHandlerFn,
-        this,
-      );
+      this.attachDragDocumentListeners();
       this.attachDragCancelHandlers();
 
       this.currentDragPolygon = polygon;
@@ -1240,11 +1220,9 @@ export class PolygonInteractionManager {
           // Handle DOM errors
         }
 
-        this.map.on('mousemove', this.onPolygonMouseMove, this);
-        this.map.on('mouseup', this.onPolygonMouseUp, this);
-
         // Attach native touch listeners on the map container for move/end
         this.attachDragTouchListeners();
+        this.attachDragDocumentListeners();
         this.attachDragCancelHandlers();
 
         this.currentDragPolygon = polygon;
@@ -2119,20 +2097,6 @@ export class PolygonInteractionManager {
 
     dragData!.isDragging = false;
 
-    this.map.off('mousemove', this.onPolygonMouseMove, this);
-    this.map.off('mouseup', this.onPolygonMouseUp, this);
-    // Also remove pointer listeners (Leaflet v2)
-    (this.map as L.Evented).off(
-      'pointermove',
-      this.onPolygonMouseMove as L.LeafletEventHandlerFn,
-      this,
-    );
-    (this.map as L.Evented).off(
-      'pointerup',
-      this.onPolygonMouseUp as L.LeafletEventHandlerFn,
-      this,
-    );
-
     if (this.map.dragging) {
       this.map.dragging.enable();
     }
@@ -2153,6 +2117,7 @@ export class PolygonInteractionManager {
 
     this.clearCloneGhost();
     this.detachDragTouchListeners();
+    this.detachDragDocumentListeners();
     this.detachDragCancelHandlers();
 
     const wasCloneDrag = this.currentDragIsClone;
@@ -2201,6 +2166,65 @@ export class PolygonInteractionManager {
     e.preventDefault();
     this.onPolygonMouseUp({ latlng: null } as unknown as L.LeafletMouseEvent);
   };
+
+  private onDragDocumentMove = (event: MouseEvent | PointerEvent) => {
+    const latlng = EventAdapter.extractCoordinates(
+      event as unknown as Record<string, unknown>,
+      this.map,
+    );
+    if (!latlng) {
+      return;
+    }
+
+    this.onPolygonMouseMove({ latlng, originalEvent: event } as unknown as L.LeafletMouseEvent);
+  };
+
+  private onDragDocumentEnd = (event: MouseEvent | PointerEvent) => {
+    const latlng =
+      EventAdapter.extractCoordinates(event as unknown as Record<string, unknown>, this.map) ??
+      null;
+
+    this.onPolygonMouseUp({ latlng, originalEvent: event } as unknown as L.LeafletMouseEvent);
+  };
+
+  private attachDragDocumentListeners(): void {
+    this.detachDragDocumentListeners();
+
+    this.dragUsesPointerEvents = EventAdapter.shouldUsePointerEvents();
+    this._boundDragMoveListener = this.onDragDocumentMove as EventListener;
+    this._boundDragEndListener = this.onDragDocumentEnd as EventListener;
+
+    if (this.dragUsesPointerEvents) {
+      document.addEventListener('pointermove', this._boundDragMoveListener);
+      document.addEventListener('pointerup', this._boundDragEndListener);
+      return;
+    }
+
+    document.addEventListener('mousemove', this._boundDragMoveListener);
+    document.addEventListener('mouseup', this._boundDragEndListener);
+  }
+
+  private detachDragDocumentListeners(): void {
+    if (this._boundDragMoveListener) {
+      if (this.dragUsesPointerEvents) {
+        document.removeEventListener('pointermove', this._boundDragMoveListener);
+      } else {
+        document.removeEventListener('mousemove', this._boundDragMoveListener);
+      }
+      this._boundDragMoveListener = null;
+    }
+
+    if (this._boundDragEndListener) {
+      if (this.dragUsesPointerEvents) {
+        document.removeEventListener('pointerup', this._boundDragEndListener);
+      } else {
+        document.removeEventListener('mouseup', this._boundDragEndListener);
+      }
+      this._boundDragEndListener = null;
+    }
+
+    this.dragUsesPointerEvents = false;
+  }
 
   private attachDragTouchListeners(): void {
     this.detachDragTouchListeners();
@@ -2268,6 +2292,7 @@ export class PolygonInteractionManager {
   private cancelActivePolygonDrag(): void {
     if (!this.currentDragPolygon || !this.currentDragPolygon._polydrawDragData) {
       this.clearCloneGhost();
+      this.detachDragDocumentListeners();
       return;
     }
 
@@ -2275,27 +2300,16 @@ export class PolygonInteractionManager {
     const dragData = polygon._polydrawDragData;
     if (!dragData) {
       this.clearCloneGhost();
+      this.detachDragDocumentListeners();
       return;
     }
     if (!dragData.isDragging) {
       this.clearCloneGhost();
+      this.detachDragDocumentListeners();
       return;
     }
 
     dragData.isDragging = false;
-
-    this.map.off('mousemove', this.onPolygonMouseMove, this);
-    this.map.off('mouseup', this.onPolygonMouseUp, this);
-    (this.map as L.Evented).off(
-      'pointermove',
-      this.onPolygonMouseMove as L.LeafletEventHandlerFn,
-      this,
-    );
-    (this.map as L.Evented).off(
-      'pointerup',
-      this.onPolygonMouseUp as L.LeafletEventHandlerFn,
-      this,
-    );
 
     if (this.map.dragging) {
       this.map.dragging.enable();
@@ -2341,6 +2355,7 @@ export class PolygonInteractionManager {
 
     this.clearCloneGhost();
     this.detachDragTouchListeners();
+    this.detachDragDocumentListeners();
     this.detachDragCancelHandlers();
     this.currentDragIsClone = false;
     this.currentModifierDragMode = false;
