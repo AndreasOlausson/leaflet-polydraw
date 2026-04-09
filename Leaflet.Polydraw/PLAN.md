@@ -308,11 +308,11 @@ Exit criteria:
 
 ### Phase 8 - Demo Rebuild + Release Sync
 
-- Rebuild demo assets against the current v2 code before release cut.
+- Rebuild the internal demo harness in `Leaflet.Polydraw/demo` against the current v2 code before release cut.
 - Keep demo output aligned with package build outputs and latest API/docs links.
 - Run:
   - `npm run build`
-  - `npm --prefix demo --ignore-scripts run build`
+  - `npm --prefix ./demo --ignore-scripts run build`
 
 Exit criteria:
 - Demo build completes without errors.
@@ -363,8 +363,8 @@ Deferred (not needed for alpha):
 
 ### Phase 8 - Demo Rebuild + Release Sync (in progress)
 
-- Complete demo rebuild against current v2 code.
-- Verify `npm run build` and `npm --prefix demo --ignore-scripts run build` pass cleanly.
+- Complete demo rebuild for the internal `Leaflet.Polydraw/demo` harness against current v2 code.
+- Verify `npm run build` and `npm --prefix ./demo --ignore-scripts run build` pass cleanly.
 - Align docs, migration notes, and demo references before release cut.
 
 ### Open Questions
