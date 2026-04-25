@@ -1,0 +1,1154 @@
+From 4204a714d7902714818dc0f1839f8e2a865331ac Mon Sep 17 00:00:00 2001
+From: Andreas Olausson <andreas@codepoets.se>
+Date: Fri, 24 Apr 2026 22:32:01 +0200
+Subject: [PATCH] WIP: donut tool on 1.3.x base
+
+---
+ Leaflet.Polydraw/src/config.ts                |   7 +-
+ Leaflet.Polydraw/src/enums.ts                 |   5 +
+ Leaflet.Polydraw/src/icons/icon-donut.svg     |   5 +
+ Leaflet.Polydraw/src/icons/icon-warning.svg   |  22 ++++
+ .../managers/polygon-interaction-manager.ts   | 102 ++++++++++++++-
+ .../src/managers/polygon-mutation-manager.ts  |   1 +
+ Leaflet.Polydraw/src/polydraw.ts              |   1 +
+ Leaflet.Polydraw/src/styles/polydraw.css      |  27 ++++
+ .../src/transform/donut-validation.ts         | 122 ++++++++++++++++++
+ .../transform/polygon-transform-controller.ts |  98 +++++++++++++-
+ .../src/transform/transform-overlay.ts        | 106 +++++++++++++--
+ .../src/types/polydraw-interfaces.ts          |   8 +-
+ .../test/playwright/mock-factory.ts           |  42 +++++-
+ .../test/playwright/transform.spec.ts         |  20 +++
+ .../test/unit/donut-validation.test.ts        |  92 +++++++++++++
+ Leaflet.Polydraw/tsconfig.json                |   5 +-
+ 16 files changed, 638 insertions(+), 25 deletions(-)
+ create mode 100644 Leaflet.Polydraw/src/icons/icon-donut.svg
+ create mode 100644 Leaflet.Polydraw/src/icons/icon-warning.svg
+ create mode 100644 Leaflet.Polydraw/src/transform/donut-validation.ts
+ create mode 100644 Leaflet.Polydraw/test/unit/donut-validation.test.ts
+
+diff --git a/Leaflet.Polydraw/src/config.ts b/Leaflet.Polydraw/src/config.ts
+index ff14f0d..22d913d 100644
+--- a/Leaflet.Polydraw/src/config.ts
++++ b/Leaflet.Polydraw/src/config.ts
+@@ -1,4 +1,4 @@
+-import { DrawMode } from './enums';
++import { DonutDirection, DrawMode } from './enums';
+ import { PolydrawConfig } from './types/polydraw-interfaces';
+ 
+ export const defaultConfig: PolydrawConfig = {
+@@ -195,6 +195,10 @@ export const defaultConfig: PolydrawConfig = {
+     rotate: {
+       enabled: true,
+     },
++    donut: {
++      enabled: true,
++      direction: DonutDirection.Both,
++    },
+     visualOptimizationToggle: {
+       enabled: true,
+     },
+@@ -273,6 +277,7 @@ export const defaultConfig: PolydrawConfig = {
+         bezier: true,
+         scale: true,
+         rotate: true,
++        donut: true,
+         toggleOptimization: true,
+       },
+     },
+diff --git a/Leaflet.Polydraw/src/enums.ts b/Leaflet.Polydraw/src/enums.ts
+index 0648be3..142e239 100644
+--- a/Leaflet.Polydraw/src/enums.ts
++++ b/Leaflet.Polydraw/src/enums.ts
+@@ -39,3 +39,8 @@ export enum MarkerPosition {
+   // CenterOfMass = 9,
+   // BoundingBoxCenter = 10
+ }
++
++export enum DonutDirection {
++  Both = 'both',
++  Inward = 'inward',
++}
+diff --git a/Leaflet.Polydraw/src/icons/icon-donut.svg b/Leaflet.Polydraw/src/icons/icon-donut.svg
+new file mode 100644
+index 0000000..9ba512f
+--- /dev/null
++++ b/Leaflet.Polydraw/src/icons/icon-donut.svg
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++<svg xmlns="http://www.w3.org/2000/svg" id="svg1" width="512" height="512" version="1.1" viewBox="0 0 16 16">
++  <circle cx="8" cy="8" r="6.25" fill="none" stroke="#fff" stroke-width="1.25" style="stroke:#fff;stroke-opacity:1"/>
++  <circle cx="8" cy="8" r="3" fill="none" stroke="#fff" stroke-width="1.25" style="stroke:#fff;stroke-opacity:1"/>
++</svg>
+diff --git a/Leaflet.Polydraw/src/icons/icon-warning.svg b/Leaflet.Polydraw/src/icons/icon-warning.svg
+new file mode 100644
+index 0000000..1f61733
+--- /dev/null
++++ b/Leaflet.Polydraw/src/icons/icon-warning.svg
+@@ -0,0 +1,22 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512.055 512.055">
++  <g transform="translate(-1)">
++    <path
++      fill="#facc15"
++      d="M56.879,469.361L257.028,69.064l200.149,400.297H56.879z"
++    />
++    <path
++      fill="#7f1d1d"
++      fill-rule="evenodd"
++      clip-rule="evenodd"
++      d="M510.775,481.154L276.109,11.82c-7.862-15.724-30.3-15.724-38.162,0L3.28,481.154 c-7.092,14.185,3.222,30.874,19.081,30.874h469.333C507.553,512.028,517.868,495.338,510.775,481.154z M56.879,469.361 L257.028,69.064l200.149,400.297H56.879z"
++    />
++    <path
++      fill="#7f1d1d"
++      d="M235.694,192.028v149.333c0,11.782,9.551,21.333,21.333,21.333s21.333-9.551,21.333-21.333V192.028 c0-11.782-9.551-21.333-21.333-21.333S235.694,180.245,235.694,192.028z"
++    />
++    <path
++      fill="#7f1d1d"
++      d="M257.028,384.028c-11.776,0-21.333,9.557-21.333,21.333s9.557,21.333,21.333,21.333s21.333-9.557,21.333-21.333 S268.804,384.028,257.028,384.028z"
++    />
++  </g>
++</svg>
+diff --git a/Leaflet.Polydraw/src/managers/polygon-interaction-manager.ts b/Leaflet.Polydraw/src/managers/polygon-interaction-manager.ts
+index c98deb8..47cb2fd 100644
+--- a/Leaflet.Polydraw/src/managers/polygon-interaction-manager.ts
++++ b/Leaflet.Polydraw/src/managers/polygon-interaction-manager.ts
+@@ -114,6 +114,75 @@ export class PolygonInteractionManager {
+     }
+   }
+ 
++  /**
++   * True when the polygon in the feature group already has holes, or is a MultiPolygon
++   * with more than one outer ring (donut mode only supports simple single-ring polygons).
++   */
++  private donutTargetHasHoles(featureGroup: L.FeatureGroup): boolean {
++    const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
++      | L.Polygon
++      | undefined;
++    if (!polygonLayer) return true;
++    const latLngs = polygonLayer.getLatLngs() as unknown as
++      | L.LatLng[]
++      | L.LatLng[][]
++      | L.LatLng[][][];
++    if (!Array.isArray(latLngs) || latLngs.length === 0) return true;
++    // LatLng[] -> simple ring, no holes
++    if (!Array.isArray(latLngs[0])) return false;
++    const firstLevel = latLngs as L.LatLng[][] | L.LatLng[][][];
++    // LatLng[][] -> Polygon; holes when there's more than one ring
++    if (!Array.isArray((firstLevel[0] as unknown[])[0])) {
++      return (firstLevel as L.LatLng[][]).length > 1;
++    }
++    // LatLng[][][] -> MultiPolygon; treat as unsupported (hidden)
++    return true;
++  }
++
++  /**
++   * Commit handler for donut mode. Decides inward vs outward via containment, assembles a
++   * polygon-with-hole, and emits the updated event. On partial overlap / degenerate scale
++   * the polygon is restored unchanged.
++   */
++  private handleDonutCommit(
++    controller: PolygonTransformController,
++    featureGroup: L.FeatureGroup,
++    polygonLayer: L.Polygon,
++    optimizationLevel: number,
++    originalOptimizationLevel: number,
++  ): void {
++    const originalOuter = controller.getOriginalOuterLatLngs();
++    const donutValidation = controller.getDonutValidation();
++
++    const restore = () => {
++      polygonLayer.setLatLngs([originalOuter] as unknown as L.LatLngExpression[]);
++      this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
++    };
++
++    if (!donutValidation.submitEnabled || !donutValidation.polygon) {
++      restore();
++      return;
++    }
++
++    // Restore the polygon's layer geometry to the pre-donut shape so the history snapshot
++    // captures the state we're mutating away from (not the live dual-ring preview).
++    polygonLayer.setLatLngs([originalOuter] as unknown as L.LatLngExpression[]);
++
++    if (this.saveHistoryState) {
++      this.saveHistoryState('donut');
++    }
++
++    this.cleanupFeatureGroup(featureGroup);
++    this.removeFeatureGroup(featureGroup);
++    this.emitPolygonUpdated({
++      operation: 'donut',
++      polygon: donutValidation.polygon,
++      allowMerge: donutValidation.allowMerge,
++      optimizationLevel,
++      originalOptimizationLevel,
++    });
++  }
++
+   // Read-only access to feature groups
+   private getFeatureGroups: () => L.FeatureGroup[];
+   private removeFeatureGroup: (fg: L.FeatureGroup) => void;
+@@ -2943,6 +3012,11 @@ export class PolygonInteractionManager {
+     if (menuOps.rotate.enabled) {
+       buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
+     }
++
++    // Donut button — only for simple polygons (no holes, no multi-outer)
++    if (menuOps.donut?.enabled && !this.donutTargetHasHoles(featureGroup)) {
++      buttons.push(PopupFactory.createMenuButton('donut', 'Donut', ['transform-donut']));
++    }
+     if (menuOps.visualOptimizationToggle?.enabled) {
+       const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+       const hasOptimization = original > 0 || level > 0;
+@@ -3010,18 +3084,23 @@ export class PolygonInteractionManager {
+       };
+     };
+ 
+-    const startTransform = (mode: 'scale' | 'rotate') => {
++    const startTransform = (mode: 'scale' | 'rotate' | 'donut') => {
+       const existing = this.transformControllers.get(featureGroup);
+       if (existing) {
+         existing.cancel();
+         existing.destroy();
+         this.transformControllers.delete(featureGroup);
+       }
++      // Defense-in-depth: donut mode requires a simple polygon (no holes, no multi-outer).
++      if (mode === 'donut' && this.donutTargetHasHoles(featureGroup)) {
++        return;
++      }
+       try {
+         const controller = new PolygonTransformController(
+           this.map,
+           featureGroup,
+           mode,
++          this.config.menuOperations.donut.direction,
+           (confirmed) => {
+             if (this.transformControllers.get(featureGroup) === controller) {
+               this.transformControllers.delete(featureGroup);
+@@ -3040,12 +3119,24 @@ export class PolygonInteractionManager {
+               return;
+             }
+ 
++            const { level: optimizationLevel, original: originalOptimizationLevel } =
++              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
++
++            if (mode === 'donut') {
++              this.handleDonutCommit(
++                controller,
++                featureGroup,
++                polygonLayer,
++                optimizationLevel,
++                originalOptimizationLevel,
++              );
++              return;
++            }
++
+             if (this.saveHistoryState) {
+               this.saveHistoryState(mode);
+             }
+             const newGeoJSON = polygonLayer.toGeoJSON();
+-            const { level: optimizationLevel, original: originalOptimizationLevel } =
+-              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+             this.cleanupFeatureGroup(featureGroup);
+             this.removeFeatureGroup(featureGroup);
+             this.emitPolygonUpdated({
+@@ -3068,7 +3159,7 @@ export class PolygonInteractionManager {
+       }
+     };
+ 
+-    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate') => {
++    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate' | 'donut') => {
+       button.addEventListener('touchend', (e) => {
+         e.preventDefault();
+         e.stopPropagation();
+@@ -3114,6 +3205,9 @@ export class PolygonInteractionManager {
+         case 'rotate':
+           attachTransformHandler(button, 'rotate');
+           break;
++        case 'donut':
++          attachTransformHandler(button, 'donut');
++          break;
+         case 'toggleOptimization':
+           attachOptimizationToggleHandler(button);
+           break;
+diff --git a/Leaflet.Polydraw/src/managers/polygon-mutation-manager.ts b/Leaflet.Polydraw/src/managers/polygon-mutation-manager.ts
+index 35d9ad4..b93545b 100644
+--- a/Leaflet.Polydraw/src/managers/polygon-mutation-manager.ts
++++ b/Leaflet.Polydraw/src/managers/polygon-mutation-manager.ts
+@@ -162,6 +162,7 @@ export class PolygonMutationManager {
+       'polygonDrag',
+       'polygonClone',
+       'toggleOptimization',
++      'donut',
+     ]);
+     const shouldSimplify = !data.operation || !skipSimplifyOperations.has(data.operation);
+ 
+diff --git a/Leaflet.Polydraw/src/polydraw.ts b/Leaflet.Polydraw/src/polydraw.ts
+index 9b4accf..35f1a6a 100644
+--- a/Leaflet.Polydraw/src/polydraw.ts
++++ b/Leaflet.Polydraw/src/polydraw.ts
+@@ -318,6 +318,7 @@ class Polydraw extends L.Control {
+       action === 'bezier' ||
+       action === 'scale' ||
+       action === 'rotate' ||
++      action === 'donut' ||
+       action === 'toggleOptimization'
+     );
+   }
+diff --git a/Leaflet.Polydraw/src/styles/polydraw.css b/Leaflet.Polydraw/src/styles/polydraw.css
+index 64a13d8..1e0df1f 100644
+--- a/Leaflet.Polydraw/src/styles/polydraw.css
++++ b/Leaflet.Polydraw/src/styles/polydraw.css
+@@ -223,6 +223,10 @@ body {
+   background-image: url('../icons/icon-rotate.svg');
+ }
+ 
++.marker-menu-content .marker-menu-button.transform-donut {
++  background-image: url('../icons/icon-donut.svg');
++}
++
+ .marker-menu-content
+   .marker-menu-button.toggle-visual-optimization.visual-optimization-state-visible {
+   background-image: url('../icons/icon-visual-optimization-show.svg');
+@@ -337,6 +341,29 @@ body {
+   justify-content: center;
+ }
+ 
++.polydraw-transform-confirm.is-disabled {
++  opacity: 0.4;
++  cursor: not-allowed;
++}
++
++.polydraw-transform-status {
++  display: grid;
++  place-items: center;
++  width: 16px;
++  height: 16px;
++  padding: 0;
++}
++
++.polydraw-transform-status.is-invalid {
++  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.28));
++}
++
++.polydraw-transform-status svg {
++  width: 16px;
++  height: 16px;
++  flex: 0 0 auto;
++}
++
+ .alter-marker-wrapper .row.bottom-separator {
+   border-bottom: 1px dashed #fff;
+ }
+diff --git a/Leaflet.Polydraw/src/transform/donut-validation.ts b/Leaflet.Polydraw/src/transform/donut-validation.ts
+new file mode 100644
+index 0000000..c192ded
+--- /dev/null
++++ b/Leaflet.Polydraw/src/transform/donut-validation.ts
+@@ -0,0 +1,122 @@
++import booleanWithin from '@turf/boolean-within';
++import type { Feature, Polygon, Position } from 'geojson';
++import type * as L from 'leaflet';
++import { DonutDirection } from '../enums';
++
++export type DonutValidity = 'valid-inward' | 'valid-outward' | 'invalid';
++
++export type DonutValidationReason =
++  | 'scale-required'
++  | 'nested-inward'
++  | 'nested-outward'
++  | 'direction-restricted'
++  | 'partial-overlap'
++  | 'invalid-rings';
++
++export interface DonutValidationResult {
++  validity: DonutValidity;
++  reason: DonutValidationReason;
++  submitEnabled: boolean;
++  warning: boolean;
++  statusText: string;
++  polygon?: Feature<Polygon>;
++  allowMerge?: boolean;
++}
++
++const SCALE_EPSILON = 0.01;
++
++function toClosedCoordinates(ring: L.LatLngLiteral[]): Position[] {
++  const coords: Position[] = ring.map((ll) => [ll.lng, ll.lat]);
++  if (coords.length === 0) {
++    return coords;
++  }
++  const [firstLng, firstLat] = coords[0];
++  const [lastLng, lastLat] = coords[coords.length - 1];
++  if (firstLng !== lastLng || firstLat !== lastLat) {
++    coords.push([firstLng, firstLat]);
++  }
++  return coords;
++}
++
++function createPolygonFeature(coordinates: Position[]): Feature<Polygon> {
++  return {
++    type: 'Feature',
++    geometry: {
++      type: 'Polygon',
++      coordinates: [coordinates],
++    },
++    properties: {},
++  };
++}
++
++function invalidResult(reason: DonutValidationReason, statusText: string): DonutValidationResult {
++  return {
++    validity: 'invalid',
++    reason,
++    submitEnabled: false,
++    warning: true,
++    statusText,
++  };
++}
++
++export function validateDonutCandidate(
++  originalOuter: L.LatLngLiteral[],
++  scaledOuter: L.LatLngLiteral[],
++  scaleX: number,
++  scaleY: number,
++  direction: DonutDirection = DonutDirection.Both,
++): DonutValidationResult {
++  if (originalOuter.length < 3 || scaledOuter.length < 3) {
++    return invalidResult('invalid-rings', 'Scale to create a donut');
++  }
++
++  if (Math.abs(scaleX - 1) < SCALE_EPSILON && Math.abs(scaleY - 1) < SCALE_EPSILON) {
++    return invalidResult('scale-required', 'Scale to create a donut');
++  }
++
++  const originalCoords = toClosedCoordinates(originalOuter);
++  const scaledCoords = toClosedCoordinates(scaledOuter);
++  if (originalCoords.length < 4 || scaledCoords.length < 4) {
++    return invalidResult('invalid-rings', 'Scale to create a donut');
++  }
++
++  const originalFeature = createPolygonFeature(originalCoords);
++  const scaledFeature = createPolygonFeature(scaledCoords);
++
++  let inward = false;
++  let outward = false;
++  try {
++    inward = booleanWithin(scaledFeature, originalFeature);
++    outward = booleanWithin(originalFeature, scaledFeature);
++  } catch {
++    return invalidResult('partial-overlap', 'Donut requires one shape to fully contain the other');
++  }
++
++  if (!inward && !outward) {
++    return invalidResult('partial-overlap', 'Donut requires one shape to fully contain the other');
++  }
++
++  if (outward && direction === DonutDirection.Inward) {
++    return invalidResult('direction-restricted', 'Only inward donuts allowed');
++  }
++
++  const outerCoords = outward ? scaledCoords : originalCoords;
++  const innerCoords = outward ? originalCoords : scaledCoords;
++
++  return {
++    validity: outward ? 'valid-outward' : 'valid-inward',
++    reason: outward ? 'nested-outward' : 'nested-inward',
++    submitEnabled: true,
++    warning: false,
++    statusText: 'Valid donut',
++    allowMerge: outward,
++    polygon: {
++      type: 'Feature',
++      geometry: {
++        type: 'Polygon',
++        coordinates: [outerCoords, innerCoords],
++      },
++      properties: {},
++    },
++  };
++}
+diff --git a/Leaflet.Polydraw/src/transform/polygon-transform-controller.ts b/Leaflet.Polydraw/src/transform/polygon-transform-controller.ts
+index 576a2af..043362a 100644
+--- a/Leaflet.Polydraw/src/transform/polygon-transform-controller.ts
++++ b/Leaflet.Polydraw/src/transform/polygon-transform-controller.ts
+@@ -4,6 +4,7 @@
+  */
+ import * as L from 'leaflet';
+ import { TransformOverlay } from './transform-overlay';
++import { DonutDirection } from '../enums';
+ import {
+   TransformState,
+   TransformHandleType,
+@@ -27,6 +28,7 @@ import {
+   unprojectToLatLngs,
+   snapAngleRadians,
+ } from './transform-utils';
++import { validateDonutCandidate, type DonutValidationResult } from './donut-validation';
+ 
+ export class PolygonTransformController {
+   private map: L.Map;
+@@ -35,27 +37,37 @@ export class PolygonTransformController {
+   private state: TransformState;
+   private normalizedLatLngs: L.LatLng[][][];
+   private wasMapDraggingEnabled: boolean = false;
+-  private mode: 'scale' | 'rotate';
++  private mode: 'scale' | 'rotate' | 'donut';
+   private onExit?: (confirmed: boolean) => void;
+   private rotateStartAngle: number | null = null;
+   private rotateBaseRotation: number = 0;
+   private originalTouchAction: string | null = null;
+   private readonly mapDraggingHandler?: MapDraggingHandler;
++  private readonly originalPolygonStyle: Partial<L.PathOptions>;
++  private readonly donutDirection: DonutDirection;
+ 
+   constructor(
+     map: L.Map,
+     featureGroup: L.FeatureGroup,
+-    mode: 'scale' | 'rotate' = 'scale',
++    mode: 'scale' | 'rotate' | 'donut' = 'scale',
++    donutDirection: DonutDirection = DonutDirection.Both,
+     onExit?: (confirmed: boolean) => void,
+   ) {
+     this.map = map;
+     this.mode = mode;
++    this.donutDirection = donutDirection;
+     this.onExit = onExit;
+     const polygon = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+       | L.Polygon
+       | undefined;
+     if (!polygon) throw new Error('FeatureGroup does not contain a polygon');
+     this.polygon = polygon;
++    this.originalPolygonStyle = {
++      color: this.polygon.options.color,
++      fillColor: this.polygon.options.fillColor,
++      opacity: this.polygon.options.opacity,
++      fillOpacity: this.polygon.options.fillOpacity,
++    };
+ 
+     const originalLatLngs = this.polygon.getLatLngs() as unknown as
+       | L.LatLng[]
+@@ -93,6 +105,7 @@ export class PolygonTransformController {
+     );
+ 
+     this.updateOverlay();
++    this.syncDonutValidation();
+     this.map.on('zoom viewreset move', this.updateOverlay, this);
+ 
+     // Disable map dragging during transform for consistent UX
+@@ -115,6 +128,7 @@ export class PolygonTransformController {
+   destroy(): void {
+     document.removeEventListener('keydown', this.onKeyDown);
+     this.map.off('zoom viewreset move', this.updateOverlay, this);
++    this.restorePolygonStyle();
+     this.overlay.destroy();
+     this.state.isActive = false;
+     // Restore map dragging state
+@@ -221,7 +235,7 @@ export class PolygonTransformController {
+     origBBox: PixelBBox,
+     center: PixelPoint,
+   ): void {
+-    if (this.mode !== 'scale') return;
++    if (this.mode === 'rotate') return;
+ 
+     const width = origBBox.maxX - origBBox.minX;
+     const height = origBBox.maxY - origBBox.minY;
+@@ -290,7 +304,17 @@ export class PolygonTransformController {
+       this.state.rotation,
+     );
+     const ll = unprojectToLatLngs(this.map, transformed, this.normalizedLatLngs);
+-    this.polygon.setLatLngs(ll as unknown as L.LatLngExpression[]);
++    if (this.mode === 'donut') {
++      // Render as polygon-with-hole preview: original outer ring + transformed outer as an inner ring.
++      const originalOuter = this.normalizedLatLngs[0]?.[0] ?? [];
++      const transformedOuter = ll[0]?.[0] ?? [];
++      this.polygon.setLatLngs([
++        [originalOuter, transformedOuter],
++      ] as unknown as L.LatLngExpression[]);
++      this.syncDonutValidation();
++    } else {
++      this.polygon.setLatLngs(ll as unknown as L.LatLngExpression[]);
++    }
+     this.updateOverlay();
+   }
+ 
+@@ -300,9 +324,75 @@ export class PolygonTransformController {
+   }
+ 
+   cancel(): void {
++    this.restorePolygonStyle();
+     this.polygon.setLatLngs(this.state.originalLatLngs as unknown as L.LatLngExpression[]);
+   }
+ 
++  getMode(): 'scale' | 'rotate' | 'donut' {
++    return this.mode;
++  }
++
++  getOriginalOuterLatLngs(): L.LatLngLiteral[] {
++    return this.normalizedLatLngs[0]?.[0] ?? [];
++  }
++
++  getScaledOuterLatLngs(): L.LatLngLiteral[] {
++    const transformed = applyTransform(
++      this.state.originalPixelRings,
++      this.state.pivot,
++      this.state.scaleX,
++      this.state.scaleY,
++      this.state.rotation,
++    );
++    const ll = unprojectToLatLngs(this.map, transformed, this.normalizedLatLngs);
++    return ll[0]?.[0] ?? [];
++  }
++
++  getDonutValidation(): DonutValidationResult {
++    return validateDonutCandidate(
++      this.getOriginalOuterLatLngs(),
++      this.getScaledOuterLatLngs(),
++      this.state.scaleX,
++      this.state.scaleY,
++      this.donutDirection,
++    );
++  }
++
++  private syncDonutValidation(): void {
++    if (this.mode !== 'donut') {
++      return;
++    }
++
++    const validation = this.getDonutValidation();
++    const showWarning = validation.warning && validation.reason !== 'scale-required';
++    this.overlay.setDonutValidation(validation, showWarning);
++
++    if (showWarning) {
++      this.polygon.setStyle({
++        color: '#d97706',
++        fillColor: '#f59e0b',
++        opacity: Math.max(this.originalPolygonStyle.opacity ?? 0, 0.95),
++        fillOpacity: Math.max(this.originalPolygonStyle.fillOpacity ?? 0, 0.2),
++      });
++      return;
++    }
++
++    this.restorePolygonStyle();
++  }
++
++  private restorePolygonStyle(): void {
++    if (this.mode !== 'donut') {
++      return;
++    }
++
++    this.polygon.setStyle({
++      color: this.originalPolygonStyle.color,
++      fillColor: this.originalPolygonStyle.fillColor,
++      opacity: this.originalPolygonStyle.opacity,
++      fillOpacity: this.originalPolygonStyle.fillOpacity,
++    });
++  }
++
+   private handleCancel(): void {
+     this.cancel();
+     if (this.onExit) this.onExit(false);
+diff --git a/Leaflet.Polydraw/src/transform/transform-overlay.ts b/Leaflet.Polydraw/src/transform/transform-overlay.ts
+index 51754b6..e3ab5a9 100644
+--- a/Leaflet.Polydraw/src/transform/transform-overlay.ts
++++ b/Leaflet.Polydraw/src/transform/transform-overlay.ts
+@@ -13,6 +13,8 @@ import {
+ } from './transform-types';
+ import cancelIconSvg from '../icons/icon-cancel.svg?raw';
+ import confirmIconSvg from '../icons/icon-confirm.svg?raw';
++import warningIconSvg from '../icons/icon-warning.svg?raw';
++import type { DonutValidationResult } from './donut-validation';
+ 
+ export class TransformOverlay {
+   private map: L.Map;
+@@ -25,22 +27,25 @@ export class TransformOverlay {
+   private activePointerId: number | null = null;
+   private callbacks: TransformOverlayCallbacks;
+   private rafId: number | null = null;
+-  private mode: 'scale' | 'rotate';
++  private mode: 'scale' | 'rotate' | 'donut';
+   private onCancel?: () => void;
+   private onConfirm?: () => void;
+   private cancelBtn: HTMLDivElement | null = null;
+   private confirmBtn: HTMLDivElement | null = null;
++  private statusLabel: HTMLDivElement | null = null;
+   private currentBBox: PixelBBox | null = null;
+   private currentRotation: number = 0;
+   private buttonsHidden: boolean = false;
+   private destroyed: boolean = false;
++  private donutValidation: DonutValidationResult | null = null;
++  private donutWarningVisible: boolean = false;
+   private readonly supportsPointerEvents: boolean =
+     typeof window !== 'undefined' && 'PointerEvent' in window;
+ 
+   constructor(
+     map: L.Map,
+     callbacks: TransformOverlayCallbacks,
+-    mode: 'scale' | 'rotate',
++    mode: 'scale' | 'rotate' | 'donut',
+     onCancel?: () => void,
+     onConfirm?: () => void,
+   ) {
+@@ -79,6 +84,14 @@ export class TransformOverlay {
+     this.root.remove();
+   }
+ 
++  setDonutValidation(
++    validation: DonutValidationResult,
++    warningVisible: boolean = validation.warning,
++  ): void {
++    this.donutValidation = validation;
++    this.donutWarningVisible = warningVisible;
++  }
++
+   update(bbox: PixelBBox, pivot: PixelPoint, rotation: number = 0): void {
+     if (this.destroyed) return;
+     if (this.rafId != null) return;
+@@ -101,6 +114,7 @@ export class TransformOverlay {
+     // Store button elements before clearing
+     const cancelBtn = this.cancelBtn;
+     const confirmBtn = this.confirmBtn;
++    const statusLabel = this.statusLabel;
+ 
+     this.root.innerHTML = '';
+     this.currentBBox = bbox;
+@@ -109,14 +123,19 @@ export class TransformOverlay {
+     // Restore button references
+     this.cancelBtn = cancelBtn;
+     this.confirmBtn = confirmBtn;
++    this.statusLabel = statusLabel;
+ 
+     const width = bbox.maxX - bbox.minX;
+     const height = bbox.maxY - bbox.minY;
+     const centerX = bbox.minX + width / 2;
+     const centerY = bbox.minY + height / 2;
++    const palette = this.getAccentPalette();
+ 
+     const box = document.createElement('div');
+     box.className = 'polydraw-transform-box';
++    if (this.mode === 'donut' && this.donutWarningVisible) {
++      box.classList.add('is-invalid');
++    }
+     Object.assign(box.style, {
+       position: 'absolute',
+       left: `${centerX}px`,
+@@ -125,7 +144,7 @@ export class TransformOverlay {
+       height: `${height}px`,
+       marginLeft: `${-width / 2}px`,
+       marginTop: `${-height / 2}px`,
+-      border: '1px dashed #2b90d9',
++      border: `1px dashed ${palette.boxBorder}`,
+       pointerEvents: 'none',
+       transformOrigin: 'center center',
+       transform: `rotate(${(rotation * 180) / Math.PI}deg)`,
+@@ -150,12 +169,15 @@ export class TransformOverlay {
+         width: '10px',
+         height: '10px',
+         borderRadius: '2px',
+-        background: '#2b90d9',
+-        boxShadow: '0 0 0 1px #fff',
++        background: palette.handleFill,
++        boxShadow: `0 0 0 1px ${palette.handleOutline}`,
+         cursor: this.cursorForHandle(type),
+         pointerEvents: 'auto',
+         touchAction: 'none',
+       } as Partial<CSSStyleDeclaration>);
++      if (this.mode === 'donut' && this.donutWarningVisible) {
++        h.classList.add('is-invalid');
++      }
+       if (this.supportsPointerEvents) {
+         L.DomEvent.on(
+           h,
+@@ -180,7 +202,7 @@ export class TransformOverlay {
+       this.root.appendChild(h);
+     };
+ 
+-    if (this.mode === 'scale') {
++    if (this.mode === 'scale' || this.mode === 'donut') {
+       // Corners
+       makeHandle(TransformHandleType.TopLeft, bbox.minX, bbox.minY);
+       makeHandle(TransformHandleType.TopRight, bbox.maxX, bbox.minY);
+@@ -417,6 +439,8 @@ export class TransformOverlay {
+     const buttonY = rotTopRightY - 28;
+     const confirmX = rotTopRightX + 5;
+     const cancelX = rotTopRightX - 29; // Adjusted for 24px icon width
++    const statusX = cancelX - 12;
++    const statusY = buttonY + 4;
+ 
+     const cancelSvg = cancelIconSvg;
+ 
+@@ -451,21 +475,27 @@ export class TransformOverlay {
+       L.DomEvent.on(this.confirmBtn, 'mousedown', (e: Event) => {
+         e.stopPropagation();
+         e.preventDefault();
+-        if (this.onConfirm) this.onConfirm();
++        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
+       });
+       L.DomEvent.on(this.confirmBtn, 'touchstart', (e: Event) => {
+         e.stopPropagation();
+         e.preventDefault();
+-        if (this.onConfirm) this.onConfirm();
++        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
+       });
+       L.DomEvent.on(this.confirmBtn, 'pointerdown', (e: Event) => {
+         e.stopPropagation();
+         e.preventDefault();
+-        if (this.onConfirm) this.onConfirm();
++        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
+       });
+       this.root.appendChild(this.confirmBtn);
+     }
+ 
++    if (this.mode === 'donut' && !this.statusLabel) {
++      this.statusLabel = document.createElement('div');
++      this.statusLabel.className = 'polydraw-transform-status';
++      this.root.appendChild(this.statusLabel);
++    }
++
+     if (this.cancelBtn) {
+       Object.assign(this.cancelBtn.style, {
+         position: 'absolute',
+@@ -486,13 +516,14 @@ export class TransformOverlay {
+     }
+ 
+     if (this.confirmBtn) {
++      const confirmEnabled = this.isConfirmEnabled();
+       Object.assign(this.confirmBtn.style, {
+         position: 'absolute',
+         left: `${confirmX}px`,
+         top: `${buttonY}px`,
+         display: 'grid',
+         placeItems: 'center',
+-        pointerEvents: 'auto',
++        pointerEvents: confirmEnabled ? 'auto' : 'none',
+         width: '28px',
+         height: '28px',
+       } as Partial<CSSStyleDeclaration>);
+@@ -501,8 +532,32 @@ export class TransformOverlay {
+         svg.setAttribute('width', '24');
+         svg.setAttribute('height', '24');
+       }
++      this.confirmBtn.classList.toggle('is-disabled', !confirmEnabled);
++      this.confirmBtn.setAttribute('aria-disabled', String(!confirmEnabled));
+       this.confirmBtn.style.display = this.buttonsHidden ? 'none' : 'grid';
+     }
++
++    if (this.statusLabel) {
++      const isInvalid = this.mode === 'donut' && this.donutWarningVisible;
++      this.statusLabel.innerHTML = isInvalid ? warningIconSvg : '';
++      this.statusLabel.classList.toggle('is-invalid', isInvalid);
++      this.statusLabel.setAttribute(
++        'data-donut-validity',
++        this.donutValidation?.validity ?? 'invalid',
++      );
++      this.statusLabel.title = isInvalid ? (this.donutValidation?.statusText ?? '') : '';
++      Object.assign(this.statusLabel.style, {
++        position: 'absolute',
++        left: `${statusX}px`,
++        top: `${statusY}px`,
++        transform: 'translateX(-100%)',
++        pointerEvents: 'none',
++        display: isInvalid ? 'grid' : 'none',
++      } as Partial<CSSStyleDeclaration>);
++      if (isInvalid) {
++        this.root.appendChild(this.statusLabel);
++      }
++    }
+   }
+ 
+   private hideButtons(): void {
+@@ -514,6 +569,35 @@ export class TransformOverlay {
+   private showButtons(): void {
+     this.buttonsHidden = false;
+     if (this.cancelBtn) this.cancelBtn.style.display = 'grid';
+-    if (this.confirmBtn) this.confirmBtn.style.display = 'grid';
++    if (this.confirmBtn) {
++      this.confirmBtn.style.display = 'grid';
++      if (!this.isConfirmEnabled()) {
++        this.confirmBtn.style.display = 'grid';
++      }
++    }
++  }
++
++  private getAccentPalette(): { boxBorder: string; handleFill: string; handleOutline: string } {
++    if (this.mode === 'donut' && this.donutWarningVisible) {
++      return {
++        boxBorder: '#d97706',
++        handleFill: '#f59e0b',
++        handleOutline: '#fff7ed',
++      };
++    }
++
++    return {
++      boxBorder: '#2b90d9',
++      handleFill: '#2b90d9',
++      handleOutline: '#fff',
++    };
++  }
++
++  private isConfirmEnabled(): boolean {
++    if (this.mode !== 'donut') {
++      return true;
++    }
++
++    return this.donutValidation?.submitEnabled === true;
+   }
+ }
+diff --git a/Leaflet.Polydraw/src/types/polydraw-interfaces.ts b/Leaflet.Polydraw/src/types/polydraw-interfaces.ts
+index 8d5c016..78c0e50 100644
+--- a/Leaflet.Polydraw/src/types/polydraw-interfaces.ts
++++ b/Leaflet.Polydraw/src/types/polydraw-interfaces.ts
+@@ -1,5 +1,5 @@
+ import * as L from 'leaflet';
+-import { DrawMode, MarkerPosition } from '../enums';
++import { DonutDirection, DrawMode, MarkerPosition } from '../enums';
+ import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
+ 
+ export type { Position };
+@@ -259,6 +259,10 @@ export interface MenuOperationsConfig {
+   rotate: {
+     enabled: boolean;
+   };
++  donut: {
++    enabled: boolean;
++    direction: DonutDirection;
++  };
+   visualOptimizationToggle: {
+     enabled: boolean;
+   };
+@@ -271,6 +275,7 @@ export type PolygonActionHistory =
+   | 'bezier'
+   | 'scale'
+   | 'rotate'
++  | 'donut'
+   | 'toggleOptimization';
+ 
+ export type HistoryAction =
+@@ -295,6 +300,7 @@ export interface PolygonActionsHistoryCaptureConfig {
+   bezier: boolean;
+   scale: boolean;
+   rotate: boolean;
++  donut: boolean;
+   toggleOptimization: boolean;
+ }
+ 
+diff --git a/Leaflet.Polydraw/test/playwright/mock-factory.ts b/Leaflet.Polydraw/test/playwright/mock-factory.ts
+index ce89514..e0e9942 100644
+--- a/Leaflet.Polydraw/test/playwright/mock-factory.ts
++++ b/Leaflet.Polydraw/test/playwright/mock-factory.ts
+@@ -290,7 +290,7 @@ export class DemoFactory {
+   }
+ 
+   /** Start a transform mode from the polygon menu */
+-  async startTransform(mode: 'scale' | 'rotate') {
++  async startTransform(mode: 'scale' | 'rotate' | 'donut') {
+     await this.clickMenuAction(mode);
+     await this.page.locator('.polydraw-transform-handle').first().waitFor({ state: 'visible' });
+   }
+@@ -449,6 +449,26 @@ export class DemoFactory {
+     await this.page.locator('.polydraw-transform-root').waitFor({ state: 'detached' });
+   }
+ 
++  /** Return whether the confirm button is disabled in transform mode */
++  async isTransformConfirmDisabled(): Promise<boolean> {
++    const confirm = this.page.locator('.polydraw-transform-confirm');
++    await confirm.waitFor({ state: 'visible' });
++    const ariaDisabled = await confirm.getAttribute('aria-disabled');
++    return ariaDisabled === 'true';
++  }
++
++  /** Return the transform status text, if any */
++  async getTransformStatusText(): Promise<string> {
++    const status = this.page.locator('.polydraw-transform-status');
++    if ((await status.count()) === 0) {
++      return '';
++    }
++    if (!(await status.first().isVisible())) {
++      return '';
++    }
++    return (await status.first().textContent())?.trim() ?? '';
++  }
++
+   /** Undo the last operation */
+   async undo() {
+     await this.page.evaluate(async () => {
+@@ -508,6 +528,26 @@ export class DemoFactory {
+     });
+     return { minLat, maxLat, minLng, maxLng };
+   }
++
++  /** Return the number of rings for the primary polygon */
++  async getPrimaryPolygonRingCount(): Promise<number> {
++    return this.page.evaluate(() => {
++      const ctrl = (window as any).polydrawControl;
++      const groups = ctrl?.getFeatureGroups?.() ?? [];
++      if (!groups.length) return 0;
++      const geojson = groups[0].toGeoJSON() as any;
++      const features = Array.isArray(geojson?.features) ? geojson.features : [geojson];
++      const geom = features[0]?.geometry;
++      if (!geom || !geom.coordinates) return 0;
++      if (geom.type === 'Polygon') {
++        return Array.isArray(geom.coordinates) ? geom.coordinates.length : 0;
++      }
++      if (geom.type === 'MultiPolygon') {
++        return Array.isArray(geom.coordinates[0]) ? geom.coordinates[0].length : 0;
++      }
++      return 0;
++    });
++  }
+ }
+ 
+ export const selectors = {
+diff --git a/Leaflet.Polydraw/test/playwright/transform.spec.ts b/Leaflet.Polydraw/test/playwright/transform.spec.ts
+index 7cea4a9..3f939a8 100644
+--- a/Leaflet.Polydraw/test/playwright/transform.spec.ts
++++ b/Leaflet.Polydraw/test/playwright/transform.spec.ts
+@@ -52,4 +52,24 @@ test.describe('Polygon transforms', () => {
+     });
+     expect(changed).toBe(true);
+   });
++
++  test('donut transform only enables confirm for valid donuts', async ({ page }) => {
++    const demo = new DemoFactory(page);
++    await demo.addPredefined([latlngPolys.square]);
++    await expect.poll(() => demo.polygonCount()).toBe(1);
++
++    await demo.startTransform('donut');
++    await expect.poll(() => demo.isTransformConfirmDisabled()).toBe(true);
++    await expect.poll(() => demo.getTransformStatusText()).toBe('');
++
++    await demo.dragTransformHandle('top-right', 120, -120);
++
++    await expect.poll(() => demo.isTransformConfirmDisabled()).toBe(false);
++    await expect.poll(() => demo.getTransformStatusText()).toBe('');
++
++    await demo.confirmTransform();
++
++    await expect.poll(() => demo.polygonCount()).toBe(1);
++    await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
++  });
+ });
+diff --git a/Leaflet.Polydraw/test/unit/donut-validation.test.ts b/Leaflet.Polydraw/test/unit/donut-validation.test.ts
+new file mode 100644
+index 0000000..edd9dca
+--- /dev/null
++++ b/Leaflet.Polydraw/test/unit/donut-validation.test.ts
+@@ -0,0 +1,92 @@
++import { describe, expect, it } from 'vitest';
++import type * as L from 'leaflet';
++import { validateDonutCandidate } from '../../src/transform/donut-validation';
++import { DonutDirection } from '../../src/enums';
++
++function scaleRing(
++  ring: L.LatLngLiteral[],
++  scaleX: number,
++  scaleY: number,
++  center: L.LatLngLiteral = { lat: 0, lng: 0 },
++): L.LatLngLiteral[] {
++  return ring.map((point) => ({
++    lat: center.lat + (point.lat - center.lat) * scaleY,
++    lng: center.lng + (point.lng - center.lng) * scaleX,
++  }));
++}
++
++describe('donut-validation', () => {
++  const square: L.LatLngLiteral[] = [
++    { lat: -1, lng: -1 },
++    { lat: -1, lng: 1 },
++    { lat: 1, lng: 1 },
++    { lat: 1, lng: -1 },
++    { lat: -1, lng: -1 },
++  ];
++
++  it('requires scaling before a donut can be confirmed', () => {
++    const result = validateDonutCandidate(square, square, 1, 1);
++
++    expect(result.submitEnabled).toBe(false);
++    expect(result.validity).toBe('invalid');
++    expect(result.reason).toBe('scale-required');
++    expect(result.statusText).toBe('Scale to create a donut');
++  });
++
++  it('accepts inward donuts when the scaled polygon is fully nested', () => {
++    const innerSquare = scaleRing(square, 0.6, 0.6);
++    const result = validateDonutCandidate(square, innerSquare, 0.6, 0.6);
++
++    expect(result.submitEnabled).toBe(true);
++    expect(result.validity).toBe('valid-inward');
++    expect(result.allowMerge).toBe(false);
++    expect(result.polygon?.geometry.coordinates).toHaveLength(2);
++  });
++
++  it('accepts outward donuts when the original polygon becomes the hole', () => {
++    const outerSquare = scaleRing(square, 1.4, 1.4);
++    const result = validateDonutCandidate(square, outerSquare, 1.4, 1.4);
++
++    expect(result.submitEnabled).toBe(true);
++    expect(result.validity).toBe('valid-outward');
++    expect(result.allowMerge).toBe(true);
++    expect(result.polygon?.geometry.coordinates).toHaveLength(2);
++  });
++
++  it('rejects outward donuts when config only allows inward direction', () => {
++    const outerSquare = scaleRing(square, 1.4, 1.4);
++    const result = validateDonutCandidate(
++      square,
++      outerSquare,
++      1.4,
++      1.4,
++      DonutDirection.Inward,
++    );
++
++    expect(result.submitEnabled).toBe(false);
++    expect(result.validity).toBe('invalid');
++    expect(result.reason).toBe('direction-restricted');
++    expect(result.statusText).toBe('Only inward donuts allowed');
++  });
++
++  it('rejects concave shapes that only partially overlap after scaling', () => {
++    const lShape: L.LatLngLiteral[] = [
++      { lat: -2, lng: -2 },
++      { lat: -2, lng: 2 },
++      { lat: -1, lng: 2 },
++      { lat: -1, lng: -1 },
++      { lat: 1, lng: -1 },
++      { lat: 1, lng: 2 },
++      { lat: 2, lng: 2 },
++      { lat: 2, lng: -2 },
++      { lat: -2, lng: -2 },
++    ];
++    const scaledLShape = scaleRing(lShape, 0.8, 0.8);
++    const result = validateDonutCandidate(lShape, scaledLShape, 0.8, 0.8);
++
++    expect(result.submitEnabled).toBe(false);
++    expect(result.validity).toBe('invalid');
++    expect(result.reason).toBe('partial-overlap');
++    expect(result.statusText).toContain('fully contain');
++  });
++});
+diff --git a/Leaflet.Polydraw/tsconfig.json b/Leaflet.Polydraw/tsconfig.json
+index 1e8755e..fcd1b3b 100644
+--- a/Leaflet.Polydraw/tsconfig.json
++++ b/Leaflet.Polydraw/tsconfig.json
+@@ -4,7 +4,7 @@
+     "useDefineForClassFields": true,
+     "module": "ESNext",
+     "lib": ["ESNext", "DOM"],
+-    "moduleResolution": "Node",
++    "moduleResolution": "Bundler",
+     "strict": true,
+     "resolveJsonModule": true,
+     "isolatedModules": true,
+@@ -14,9 +14,8 @@
+     "noUnusedParameters": true,
+     "noImplicitReturns": true,
+     "skipLibCheck": true,
+-    "baseUrl": ".",
+     "paths": {
+-      "@/*": ["src/*"]
++      "@/*": ["./src/*"]
+     },
+     "types": ["vitest/globals", "node"]
+   },
+-- 
+2.50.1 (Apple Git-155)
+

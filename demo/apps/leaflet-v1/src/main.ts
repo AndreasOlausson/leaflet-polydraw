@@ -17,6 +17,8 @@ import {
 } from '@polydraw-demo/shared-content';
 import {
   closeFeatureInspectionDialog,
+  type FeatureInspectionDialogEntry,
+  type FeatureInspectionListEntry,
   mountSharedStyles,
   renderFeatureInspectionList,
   renderMapDemoPage,
@@ -36,12 +38,13 @@ document.title = `Polydraw Demo • Leaflet 1 • ${isLocalSource ? 'Local' : 'P
 const homeHref = import.meta.env.DEV ? 'http://localhost:4173/' : '/';
 
 app.innerHTML = renderMapDemoPage({
-  routeLabel: isDevelopment ? (isLocalSource ? 'Leaflet 1.9.x local route' : 'Leaflet 1.9.x npm route') : 'Leaflet 1.9.x',
+  runtimeLabel: `Leaflet ${L.version}`,
+  sourceLabel: isLocalSource ? 'Workspace source' : undefined,
   subtitle:
     isDevelopment
       ? isLocalSource
-        ? 'Development preview against the workspace source on Leaflet ' + L.version + '.'
-        : 'Development preview against the published npm package on Leaflet ' + L.version + '.'
+        ? 'Development preview wired to the local plugin source.'
+        : 'Development preview against the published package.'
       : 'Compatibility route for teams validating the current stable Leaflet line.',
   homeHref,
   homeLabel: 'Back to compatibility hub',
@@ -80,7 +83,8 @@ const layerCountEl = document.querySelector<HTMLElement>('[data-state="layer-cou
 const activeLayerEl = document.querySelector<HTMLElement>('[data-state="active-layer"]');
 const scenarioTitleEl = document.querySelector<HTMLElement>('[data-state="scenario-title"]');
 const scenarioSummaryEl = document.querySelector<HTMLElement>('[data-state="scenario-summary"]');
-const scenarioDrawerEl = document.querySelector<HTMLDetailsElement>('.demo-scenario-drawer');
+const scenarioLabelEl = document.querySelector<HTMLElement>('[data-state="scenario-label"]');
+const scenarioDrawerEl = document.querySelector<HTMLDetailsElement>('.demo-route-scenario-drawer');
 const featureDrawerEl = document.querySelector<HTMLDetailsElement>('.demo-feature-drawer');
 const featureListEl = document.querySelector<HTMLElement>('[data-state="feature-list"]');
 
@@ -91,6 +95,9 @@ type InspectableFeature = {
 };
 
 let inspectableFeatures = new Map<string, InspectableFeature>();
+let featureInspectionEntries: FeatureInspectionListEntry[] = [];
+let featureDialogEntries: FeatureInspectionDialogEntry[] = [];
+let selectedFeatureId: string | undefined;
 
 const roundNumber = (value: number) => Math.round(value * 1_000_000) / 1_000_000;
 
@@ -164,24 +171,21 @@ const pulsePolygon = (polygon: L.Polygon) => {
   }, 900);
 };
 
-const openFeatureInspection = (feature: InspectableFeature) => {
-  const layerId = polydraw.getLayerForFeatureGroup(feature.featureGroup) || 'default';
-  const geometry = feature.polygon.toGeoJSON() as {
-    geometry?: {
-      type?: string;
-      coordinates?: unknown;
-    };
-  };
+const openFeatureInspection = (featureId?: string) => {
+  const nextSelectedId = featureId && inspectableFeatures.has(featureId) ? featureId : selectedFeatureId;
+  if (!nextSelectedId || featureDialogEntries.length === 0) {
+    return;
+  }
 
-  pulsePolygon(feature.polygon);
+  selectedFeatureId = nextSelectedId;
+  const selectedFeature = inspectableFeatures.get(nextSelectedId);
+  if (selectedFeature) {
+    pulsePolygon(selectedFeature.polygon);
+  }
 
   showFeatureInspectionDialog({
-    title: `Feature ${feature.featureIndex + 1}`,
-    layerId: getLayerDisplayName(layerId),
-    geometryType: geometry.geometry?.type || 'Polygon',
-    latLngs: toRoundedTree(feature.polygon.getLatLngs()),
-    geoJsonCoordinates: toRoundedTree(geometry.geometry?.coordinates ?? []),
-    metadata: polydraw.getFeatureMetadata(feature.featureGroup)
+    entries: featureDialogEntries,
+    selectedFeatureId: nextSelectedId,
   });
 };
 
@@ -191,6 +195,7 @@ const syncFeatureList = () => {
   }
 
   const nextFeatures = new Map<string, InspectableFeature>();
+  const nextDialogEntries: FeatureInspectionDialogEntry[] = [];
   const entries = polydraw.getFeatureGroups().flatMap((featureGroup, featureIndex) => {
     const polygon = featureGroup.getLayers().find((layer): layer is L.Polygon => layer instanceof L.Polygon);
     if (!polygon) {
@@ -210,19 +215,44 @@ const syncFeatureList = () => {
       polygon
     });
 
+    const geometry = polygon.toGeoJSON() as {
+      geometry?: {
+        type?: string;
+        coordinates?: unknown;
+      };
+    };
+
+    nextDialogEntries.push({
+      id: featureId,
+      label: `${layerName} • Feature ${featureIndex + 1}`,
+      title: `Feature ${featureIndex + 1}`,
+      layerId: layerName,
+      geometryType: geometry.geometry?.type || 'Polygon',
+      latLngs: toRoundedTree(polygon.getLatLngs()),
+      geoJsonCoordinates: toRoundedTree(geometry.geometry?.coordinates ?? []),
+      metadata: polydraw.getFeatureMetadata(featureGroup),
+    });
+
     return [{
       id: featureId,
-      title: `${layerName} • Feature ${featureIndex + 1}`,
+      title: layerName,
       summary:
         holeCount > 0
           ? `Polygon with ${outerVertices} outer vertices and ${holeCount} hole${holeCount === 1 ? '' : 's'}.`
           : `Polygon with ${outerVertices} outer vertices.`,
-      actionLabel: 'Inspect'
+      actionLabel: 'Open inspector'
     }];
   });
 
   inspectableFeatures = nextFeatures;
-  featureListEl.innerHTML = renderFeatureInspectionList(entries);
+  featureInspectionEntries = entries;
+  featureDialogEntries = nextDialogEntries;
+
+  if (!selectedFeatureId || !nextFeatures.has(selectedFeatureId)) {
+    selectedFeatureId = entries[0]?.id;
+  }
+
+  featureListEl.innerHTML = renderFeatureInspectionList(featureInspectionEntries);
 };
 
 featureListEl?.addEventListener('click', (event) => {
@@ -231,23 +261,27 @@ featureListEl?.addEventListener('click', (event) => {
     return;
   }
 
-  const button = target.closest<HTMLButtonElement>('[data-feature-id]');
+  const button = target.closest<HTMLButtonElement>('[data-action="open-feature-dialog"]');
   if (!button) {
     return;
   }
 
-  const featureId = button.dataset.featureId;
+  featureDrawerEl?.removeAttribute('open');
+  openFeatureInspection(selectedFeatureId);
+});
+
+document.addEventListener('polydraw:feature-dialog-select', (event) => {
+  const customEvent = event as CustomEvent<{ featureId?: string }>;
+  const featureId = customEvent.detail?.featureId;
   if (!featureId) {
     return;
   }
 
+  selectedFeatureId = featureId;
   const feature = inspectableFeatures.get(featureId);
-  if (!feature) {
-    return;
+  if (feature) {
+    pulsePolygon(feature.polygon);
   }
-
-  featureDrawerEl?.removeAttribute('open');
-  openFeatureInspection(feature);
 });
 
 const syncStatus = () => {
@@ -273,6 +307,7 @@ const setScenarioCopy = (scenarioId?: MapScenarioId) => {
   const scenario = showcaseScenarios.find((entry) => entry.id === scenarioId);
   if (!scenario) {
     if (scenarioTitleEl) scenarioTitleEl.textContent = 'Waiting for scenario';
+    if (scenarioLabelEl) scenarioLabelEl.textContent = 'Load scenario';
     if (scenarioSummaryEl) {
       scenarioSummaryEl.textContent =
         'Choose a scenario to load a curated Polydraw workflow against the Leaflet 1 runtime.';
@@ -280,12 +315,14 @@ const setScenarioCopy = (scenarioId?: MapScenarioId) => {
     return;
   }
   if (scenarioTitleEl) scenarioTitleEl.textContent = scenario.title;
+  if (scenarioLabelEl) scenarioLabelEl.textContent = scenario.title;
   if (scenarioSummaryEl) scenarioSummaryEl.textContent = scenario.summary;
 };
 
 const resetMap = () => {
   closeFeatureInspectionDialog();
   featureDrawerEl?.removeAttribute('open');
+  selectedFeatureId = undefined;
   polydraw.removeAllFeatureGroups();
   map.setView(defaultViewport.center as [number, number], defaultViewport.zoom);
   setScenarioCopy();
