@@ -52,6 +52,8 @@ interface MarkerImportanceOptions {
   optimizationLevel: number;
 }
 
+type DragDocumentListener = (event: MouseEvent | PointerEvent) => void;
+
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
  * This includes dragging polygons, dragging markers, edge interactions, and popup menus.
@@ -88,8 +90,8 @@ export class PolygonInteractionManager {
   private dragCancelHandlersAttached: boolean = false;
   private _boundDragTouchMove: ((e: TouchEvent) => void) | null = null;
   private _boundDragTouchEnd: ((e: TouchEvent) => void) | null = null;
-  private _boundDragMoveListener: EventListener | null = null;
-  private _boundDragEndListener: EventListener | null = null;
+  private _boundDragMoveListener: DragDocumentListener | null = null;
+  private _boundDragEndListener: DragDocumentListener | null = null;
   private dragUsesPointerEvents: boolean = false;
   private polygonTouchStartListeners = new WeakMap<L.Polygon, (e: TouchEvent) => void>();
   private _openMenuPopup: L.Popup | null = null;
@@ -2191,8 +2193,8 @@ export class PolygonInteractionManager {
     this.detachDragDocumentListeners();
 
     this.dragUsesPointerEvents = EventAdapter.shouldUsePointerEvents();
-    this._boundDragMoveListener = this.onDragDocumentMove as EventListener;
-    this._boundDragEndListener = this.onDragDocumentEnd as EventListener;
+    this._boundDragMoveListener = this.onDragDocumentMove;
+    this._boundDragEndListener = this.onDragDocumentEnd;
 
     if (this.dragUsesPointerEvents) {
       document.addEventListener('pointermove', this._boundDragMoveListener);
