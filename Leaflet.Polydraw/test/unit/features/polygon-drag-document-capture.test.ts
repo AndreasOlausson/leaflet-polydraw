@@ -34,7 +34,9 @@ describe('Polygon Drag Document Capture', () => {
 
     expect(polygonLayer).toBeTruthy();
 
-    vi.spyOn(map, 'containerPointToLatLng').mockReturnValue(leafletAdapter.createLatLng(58.45, 15.65));
+    vi.spyOn(map, 'containerPointToLatLng').mockReturnValue(
+      leafletAdapter.createLatLng(58.45, 15.65),
+    );
     const setLatLngsSpy = vi.spyOn(polygonLayer!, 'setLatLngs');
 
     polygonLayer!.fire('mousedown', {
