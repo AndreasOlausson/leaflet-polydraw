@@ -13,6 +13,8 @@ import {
 } from './transform-types';
 import cancelIconSvg from '../icons/icon-cancel.svg?raw';
 import confirmIconSvg from '../icons/icon-confirm.svg?raw';
+import warningIconSvg from '../icons/icon-warning.svg?raw';
+import type { DonutValidationResult } from './donut-validation';
 
 export class TransformOverlay {
   private map: L.Map;
@@ -25,22 +27,25 @@ export class TransformOverlay {
   private activePointerId: number | null = null;
   private callbacks: TransformOverlayCallbacks;
   private rafId: number | null = null;
-  private mode: 'scale' | 'rotate';
+  private mode: 'scale' | 'rotate' | 'donut';
   private onCancel?: () => void;
   private onConfirm?: () => void;
   private cancelBtn: HTMLDivElement | null = null;
   private confirmBtn: HTMLDivElement | null = null;
+  private statusLabel: HTMLDivElement | null = null;
   private currentBBox: PixelBBox | null = null;
   private currentRotation: number = 0;
   private buttonsHidden: boolean = false;
   private destroyed: boolean = false;
+  private donutValidation: DonutValidationResult | null = null;
+  private donutWarningVisible: boolean = false;
   private readonly supportsPointerEvents: boolean =
     typeof window !== 'undefined' && 'PointerEvent' in window;
 
   constructor(
     map: L.Map,
     callbacks: TransformOverlayCallbacks,
-    mode: 'scale' | 'rotate',
+    mode: 'scale' | 'rotate' | 'donut',
     onCancel?: () => void,
     onConfirm?: () => void,
   ) {
@@ -79,6 +84,14 @@ export class TransformOverlay {
     this.root.remove();
   }
 
+  setDonutValidation(
+    validation: DonutValidationResult,
+    warningVisible: boolean = validation.warning,
+  ): void {
+    this.donutValidation = validation;
+    this.donutWarningVisible = warningVisible;
+  }
+
   update(bbox: PixelBBox, pivot: PixelPoint, rotation: number = 0): void {
     if (this.destroyed) return;
     if (this.rafId != null) return;
@@ -101,6 +114,7 @@ export class TransformOverlay {
     // Store button elements before clearing
     const cancelBtn = this.cancelBtn;
     const confirmBtn = this.confirmBtn;
+    const statusLabel = this.statusLabel;
 
     this.root.innerHTML = '';
     this.currentBBox = bbox;
@@ -109,14 +123,19 @@ export class TransformOverlay {
     // Restore button references
     this.cancelBtn = cancelBtn;
     this.confirmBtn = confirmBtn;
+    this.statusLabel = statusLabel;
 
     const width = bbox.maxX - bbox.minX;
     const height = bbox.maxY - bbox.minY;
     const centerX = bbox.minX + width / 2;
     const centerY = bbox.minY + height / 2;
+    const palette = this.getAccentPalette();
 
     const box = document.createElement('div');
     box.className = 'polydraw-transform-box';
+    if (this.mode === 'donut' && this.donutWarningVisible) {
+      box.classList.add('is-invalid');
+    }
     Object.assign(box.style, {
       position: 'absolute',
       left: `${centerX}px`,
@@ -125,7 +144,7 @@ export class TransformOverlay {
       height: `${height}px`,
       marginLeft: `${-width / 2}px`,
       marginTop: `${-height / 2}px`,
-      border: '1px dashed #2b90d9',
+      border: `1px dashed ${palette.boxBorder}`,
       pointerEvents: 'none',
       transformOrigin: 'center center',
       transform: `rotate(${(rotation * 180) / Math.PI}deg)`,
@@ -150,12 +169,15 @@ export class TransformOverlay {
         width: '10px',
         height: '10px',
         borderRadius: '2px',
-        background: '#2b90d9',
-        boxShadow: '0 0 0 1px #fff',
+        background: palette.handleFill,
+        boxShadow: `0 0 0 1px ${palette.handleOutline}`,
         cursor: this.cursorForHandle(type),
         pointerEvents: 'auto',
         touchAction: 'none',
       } as Partial<CSSStyleDeclaration>);
+      if (this.mode === 'donut' && this.donutWarningVisible) {
+        h.classList.add('is-invalid');
+      }
       if (this.supportsPointerEvents) {
         L.DomEvent.on(
           h,
@@ -180,7 +202,7 @@ export class TransformOverlay {
       this.root.appendChild(h);
     };
 
-    if (this.mode === 'scale') {
+    if (this.mode === 'scale' || this.mode === 'donut') {
       // Corners
       makeHandle(TransformHandleType.TopLeft, bbox.minX, bbox.minY);
       makeHandle(TransformHandleType.TopRight, bbox.maxX, bbox.minY);
@@ -417,6 +439,8 @@ export class TransformOverlay {
     const buttonY = rotTopRightY - 28;
     const confirmX = rotTopRightX + 5;
     const cancelX = rotTopRightX - 29; // Adjusted for 24px icon width
+    const statusX = cancelX - 12;
+    const statusY = buttonY + 4;
 
     const cancelSvg = cancelIconSvg;
 
@@ -451,19 +475,25 @@ export class TransformOverlay {
       L.DomEvent.on(this.confirmBtn, 'mousedown', (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
-        if (this.onConfirm) this.onConfirm();
+        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
       });
       L.DomEvent.on(this.confirmBtn, 'touchstart', (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
-        if (this.onConfirm) this.onConfirm();
+        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
       });
       L.DomEvent.on(this.confirmBtn, 'pointerdown', (e: Event) => {
         e.stopPropagation();
         e.preventDefault();
-        if (this.onConfirm) this.onConfirm();
+        if (this.onConfirm && this.isConfirmEnabled()) this.onConfirm();
       });
       this.root.appendChild(this.confirmBtn);
+    }
+
+    if (this.mode === 'donut' && !this.statusLabel) {
+      this.statusLabel = document.createElement('div');
+      this.statusLabel.className = 'polydraw-transform-status';
+      this.root.appendChild(this.statusLabel);
     }
 
     if (this.cancelBtn) {
@@ -486,13 +516,14 @@ export class TransformOverlay {
     }
 
     if (this.confirmBtn) {
+      const confirmEnabled = this.isConfirmEnabled();
       Object.assign(this.confirmBtn.style, {
         position: 'absolute',
         left: `${confirmX}px`,
         top: `${buttonY}px`,
         display: 'grid',
         placeItems: 'center',
-        pointerEvents: 'auto',
+        pointerEvents: confirmEnabled ? 'auto' : 'none',
         width: '28px',
         height: '28px',
       } as Partial<CSSStyleDeclaration>);
@@ -501,7 +532,31 @@ export class TransformOverlay {
         svg.setAttribute('width', '24');
         svg.setAttribute('height', '24');
       }
+      this.confirmBtn.classList.toggle('is-disabled', !confirmEnabled);
+      this.confirmBtn.setAttribute('aria-disabled', String(!confirmEnabled));
       this.confirmBtn.style.display = this.buttonsHidden ? 'none' : 'grid';
+    }
+
+    if (this.statusLabel) {
+      const isInvalid = this.mode === 'donut' && this.donutWarningVisible;
+      this.statusLabel.innerHTML = isInvalid ? warningIconSvg : '';
+      this.statusLabel.classList.toggle('is-invalid', isInvalid);
+      this.statusLabel.setAttribute(
+        'data-donut-validity',
+        this.donutValidation?.validity ?? 'invalid',
+      );
+      this.statusLabel.title = isInvalid ? (this.donutValidation?.statusText ?? '') : '';
+      Object.assign(this.statusLabel.style, {
+        position: 'absolute',
+        left: `${statusX}px`,
+        top: `${statusY}px`,
+        transform: 'translateX(-100%)',
+        pointerEvents: 'none',
+        display: isInvalid ? 'grid' : 'none',
+      } as Partial<CSSStyleDeclaration>);
+      if (isInvalid) {
+        this.root.appendChild(this.statusLabel);
+      }
     }
   }
 
@@ -514,6 +569,35 @@ export class TransformOverlay {
   private showButtons(): void {
     this.buttonsHidden = false;
     if (this.cancelBtn) this.cancelBtn.style.display = 'grid';
-    if (this.confirmBtn) this.confirmBtn.style.display = 'grid';
+    if (this.confirmBtn) {
+      this.confirmBtn.style.display = 'grid';
+      if (!this.isConfirmEnabled()) {
+        this.confirmBtn.style.display = 'grid';
+      }
+    }
+  }
+
+  private getAccentPalette(): { boxBorder: string; handleFill: string; handleOutline: string } {
+    if (this.mode === 'donut' && this.donutWarningVisible) {
+      return {
+        boxBorder: '#d97706',
+        handleFill: '#f59e0b',
+        handleOutline: '#fff7ed',
+      };
+    }
+
+    return {
+      boxBorder: '#2b90d9',
+      handleFill: '#2b90d9',
+      handleOutline: '#fff',
+    };
+  }
+
+  private isConfirmEnabled(): boolean {
+    if (this.mode !== 'donut') {
+      return true;
+    }
+
+    return this.donutValidation?.submitEnabled === true;
   }
 }

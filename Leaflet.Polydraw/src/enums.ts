@@ -39,3 +39,8 @@ export enum MarkerPosition {
   // CenterOfMass = 9,
   // BoundingBoxCenter = 10
 }
+
+export enum DonutDirection {
+  Both = 'both',
+  Inward = 'inward',
+}

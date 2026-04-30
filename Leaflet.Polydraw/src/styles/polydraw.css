@@ -233,6 +233,10 @@ body {
   background-image: url('../icons/icon-rotate.svg');
 }
 
+.marker-menu-content .marker-menu-button.transform-donut {
+  background-image: url('../icons/icon-donut.svg');
+}
+
 .marker-menu-content
   .marker-menu-button.toggle-visual-optimization.visual-optimization-state-visible {
   background-image: url('../icons/icon-visual-optimization-show.svg');
@@ -347,6 +351,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.polydraw-transform-confirm.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.polydraw-transform-status {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.polydraw-transform-status.is-invalid {
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.28));
+}
+
+.polydraw-transform-status svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .alter-marker-wrapper .row.bottom-separator {

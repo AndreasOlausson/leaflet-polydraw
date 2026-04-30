@@ -132,6 +132,75 @@ export class PolygonInteractionManager {
     }
   }
 
+  /**
+   * True when the polygon in the feature group already has holes, or is a MultiPolygon
+   * with more than one outer ring (donut mode only supports simple single-ring polygons).
+   */
+  private donutTargetHasHoles(featureGroup: L.FeatureGroup): boolean {
+    const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
+      | L.Polygon
+      | undefined;
+    if (!polygonLayer) return true;
+    const latLngs = polygonLayer.getLatLngs() as unknown as
+      | L.LatLng[]
+      | L.LatLng[][]
+      | L.LatLng[][][];
+    if (!Array.isArray(latLngs) || latLngs.length === 0) return true;
+    // LatLng[] -> simple ring, no holes
+    if (!Array.isArray(latLngs[0])) return false;
+    const firstLevel = latLngs as L.LatLng[][] | L.LatLng[][][];
+    // LatLng[][] -> Polygon; holes when there's more than one ring
+    if (!Array.isArray((firstLevel[0] as unknown[])[0])) {
+      return (firstLevel as L.LatLng[][]).length > 1;
+    }
+    // LatLng[][][] -> MultiPolygon; treat as unsupported (hidden)
+    return true;
+  }
+
+  /**
+   * Commit handler for donut mode. Decides inward vs outward via containment, assembles a
+   * polygon-with-hole, and emits the updated event. On partial overlap / degenerate scale
+   * the polygon is restored unchanged.
+   */
+  private handleDonutCommit(
+    controller: PolygonTransformController,
+    featureGroup: L.FeatureGroup,
+    polygonLayer: L.Polygon,
+    optimizationLevel: number,
+    originalOptimizationLevel: number,
+  ): void {
+    const originalOuter = controller.getOriginalOuterLatLngs();
+    const donutValidation = controller.getDonutValidation();
+
+    const restore = () => {
+      polygonLayer.setLatLngs([originalOuter] as unknown as L.LatLngExpression[]);
+      this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
+    };
+
+    if (!donutValidation.submitEnabled || !donutValidation.polygon) {
+      restore();
+      return;
+    }
+
+    // Restore the polygon's layer geometry to the pre-donut shape so the history snapshot
+    // captures the state we're mutating away from (not the live dual-ring preview).
+    polygonLayer.setLatLngs([originalOuter] as unknown as L.LatLngExpression[]);
+
+    if (this.saveHistoryState) {
+      this.saveHistoryState('donut');
+    }
+
+    this.cleanupFeatureGroup(featureGroup);
+    this.removeFeatureGroup(featureGroup);
+    this.emitPolygonUpdated({
+      operation: 'donut',
+      polygon: donutValidation.polygon,
+      allowMerge: donutValidation.allowMerge,
+      optimizationLevel,
+      originalOptimizationLevel,
+    });
+  }
+
   // Read-only access to feature groups
   private getFeatureGroups: () => L.FeatureGroup[];
   private removeFeatureGroup: (fg: L.FeatureGroup) => void;
@@ -3230,6 +3299,11 @@ export class PolygonInteractionManager {
     if (menuOps.rotate.enabled) {
       buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
     }
+
+    // Donut button — only for simple polygons (no holes, no multi-outer)
+    if (menuOps.donut?.enabled && !this.donutTargetHasHoles(featureGroup)) {
+      buttons.push(PopupFactory.createMenuButton('donut', 'Donut', ['transform-donut']));
+    }
     if (menuOps.visualOptimizationToggle?.enabled) {
       const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
       const hasOptimization = original > 0 || level > 0;
@@ -3297,18 +3371,23 @@ export class PolygonInteractionManager {
       };
     };
 
-    const startTransform = (mode: 'scale' | 'rotate') => {
+    const startTransform = (mode: 'scale' | 'rotate' | 'donut') => {
       const existing = this.transformControllers.get(featureGroup);
       if (existing) {
         existing.cancel();
         existing.destroy();
         this.transformControllers.delete(featureGroup);
       }
+      // Defense-in-depth: donut mode requires a simple polygon (no holes, no multi-outer).
+      if (mode === 'donut' && this.donutTargetHasHoles(featureGroup)) {
+        return;
+      }
       try {
         const controller = new PolygonTransformController(
           this.map,
           featureGroup,
           mode,
+          this.config.polygonTools.donut.direction,
           (confirmed) => {
             if (this.transformControllers.get(featureGroup) === controller) {
               this.transformControllers.delete(featureGroup);
@@ -3327,12 +3406,24 @@ export class PolygonInteractionManager {
               return;
             }
 
+            const { level: optimizationLevel, original: originalOptimizationLevel } =
+              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+
+            if (mode === 'donut') {
+              this.handleDonutCommit(
+                controller,
+                featureGroup,
+                polygonLayer,
+                optimizationLevel,
+                originalOptimizationLevel,
+              );
+              return;
+            }
+
             if (this.saveHistoryState) {
               this.saveHistoryState(mode);
             }
             const newGeoJSON = polygonLayer.toGeoJSON();
-            const { level: optimizationLevel, original: originalOptimizationLevel } =
-              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
             const featureMetadataState = this.getFeatureMetadataState(featureGroup);
             this.cleanupFeatureGroup(featureGroup);
             this.removeFeatureGroup(featureGroup);
@@ -3362,7 +3453,7 @@ export class PolygonInteractionManager {
       }
     };
 
-    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate') => {
+    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate' | 'donut') => {
       button.addEventListener('touchend', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -3407,6 +3498,9 @@ export class PolygonInteractionManager {
           break;
         case 'rotate':
           attachTransformHandler(button, 'rotate');
+          break;
+        case 'donut':
+          attachTransformHandler(button, 'donut');
           break;
         case 'toggleOptimization':
           attachOptimizationToggleHandler(button);

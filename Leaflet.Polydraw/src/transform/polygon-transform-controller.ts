@@ -4,6 +4,7 @@
  */
 import * as L from 'leaflet';
 import { TransformOverlay } from './transform-overlay';
+import { DonutDirection } from '../enums';
 import {
   TransformState,
   TransformHandleType,
@@ -27,6 +28,7 @@ import {
   unprojectToLatLngs,
   snapAngleRadians,
 } from './transform-utils';
+import { validateDonutCandidate, type DonutValidationResult } from './donut-validation';
 
 export class PolygonTransformController {
   private map: L.Map;
@@ -35,27 +37,37 @@ export class PolygonTransformController {
   private state: TransformState;
   private normalizedLatLngs: L.LatLng[][][];
   private wasMapDraggingEnabled: boolean = false;
-  private mode: 'scale' | 'rotate';
+  private mode: 'scale' | 'rotate' | 'donut';
   private onExit?: (confirmed: boolean) => void;
   private rotateStartAngle: number | null = null;
   private rotateBaseRotation: number = 0;
   private originalTouchAction: string | null = null;
   private readonly mapDraggingHandler?: MapDraggingHandler;
+  private readonly originalPolygonStyle: Partial<L.PathOptions>;
+  private readonly donutDirection: DonutDirection;
 
   constructor(
     map: L.Map,
     featureGroup: L.FeatureGroup,
-    mode: 'scale' | 'rotate' = 'scale',
+    mode: 'scale' | 'rotate' | 'donut' = 'scale',
+    donutDirection: DonutDirection = DonutDirection.Both,
     onExit?: (confirmed: boolean) => void,
   ) {
     this.map = map;
     this.mode = mode;
+    this.donutDirection = donutDirection;
     this.onExit = onExit;
     const polygon = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
       | L.Polygon
       | undefined;
     if (!polygon) throw new Error('FeatureGroup does not contain a polygon');
     this.polygon = polygon;
+    this.originalPolygonStyle = {
+      color: this.polygon.options.color,
+      fillColor: this.polygon.options.fillColor,
+      opacity: this.polygon.options.opacity,
+      fillOpacity: this.polygon.options.fillOpacity,
+    };
 
     const originalLatLngs = this.polygon.getLatLngs() as unknown as
       | L.LatLng[]
@@ -93,6 +105,7 @@ export class PolygonTransformController {
     );
 
     this.updateOverlay();
+    this.syncDonutValidation();
     this.map.on('zoom viewreset move', this.updateOverlay, this);
 
     // Disable map dragging during transform for consistent UX
@@ -115,6 +128,7 @@ export class PolygonTransformController {
   destroy(): void {
     document.removeEventListener('keydown', this.onKeyDown);
     this.map.off('zoom viewreset move', this.updateOverlay, this);
+    this.restorePolygonStyle();
     this.overlay.destroy();
     this.state.isActive = false;
     // Restore map dragging state
@@ -221,7 +235,7 @@ export class PolygonTransformController {
     origBBox: PixelBBox,
     center: PixelPoint,
   ): void {
-    if (this.mode !== 'scale') return;
+    if (this.mode === 'rotate') return;
 
     const width = origBBox.maxX - origBBox.minX;
     const height = origBBox.maxY - origBBox.minY;
@@ -290,7 +304,17 @@ export class PolygonTransformController {
       this.state.rotation,
     );
     const ll = unprojectToLatLngs(this.map, transformed, this.normalizedLatLngs);
-    this.polygon.setLatLngs(ll as unknown as L.LatLngExpression[]);
+    if (this.mode === 'donut') {
+      // Render as polygon-with-hole preview: original outer ring + transformed outer as an inner ring.
+      const originalOuter = this.normalizedLatLngs[0]?.[0] ?? [];
+      const transformedOuter = ll[0]?.[0] ?? [];
+      this.polygon.setLatLngs([
+        [originalOuter, transformedOuter],
+      ] as unknown as L.LatLngExpression[]);
+      this.syncDonutValidation();
+    } else {
+      this.polygon.setLatLngs(ll as unknown as L.LatLngExpression[]);
+    }
     this.updateOverlay();
   }
 
@@ -300,7 +324,73 @@ export class PolygonTransformController {
   }
 
   cancel(): void {
+    this.restorePolygonStyle();
     this.polygon.setLatLngs(this.state.originalLatLngs as unknown as L.LatLngExpression[]);
+  }
+
+  getMode(): 'scale' | 'rotate' | 'donut' {
+    return this.mode;
+  }
+
+  getOriginalOuterLatLngs(): L.LatLngLiteral[] {
+    return this.normalizedLatLngs[0]?.[0] ?? [];
+  }
+
+  getScaledOuterLatLngs(): L.LatLngLiteral[] {
+    const transformed = applyTransform(
+      this.state.originalPixelRings,
+      this.state.pivot,
+      this.state.scaleX,
+      this.state.scaleY,
+      this.state.rotation,
+    );
+    const ll = unprojectToLatLngs(this.map, transformed, this.normalizedLatLngs);
+    return ll[0]?.[0] ?? [];
+  }
+
+  getDonutValidation(): DonutValidationResult {
+    return validateDonutCandidate(
+      this.getOriginalOuterLatLngs(),
+      this.getScaledOuterLatLngs(),
+      this.state.scaleX,
+      this.state.scaleY,
+      this.donutDirection,
+    );
+  }
+
+  private syncDonutValidation(): void {
+    if (this.mode !== 'donut') {
+      return;
+    }
+
+    const validation = this.getDonutValidation();
+    const showWarning = validation.warning && validation.reason !== 'scale-required';
+    this.overlay.setDonutValidation(validation, showWarning);
+
+    if (showWarning) {
+      this.polygon.setStyle({
+        color: '#d97706',
+        fillColor: '#f59e0b',
+        opacity: Math.max(this.originalPolygonStyle.opacity ?? 0, 0.95),
+        fillOpacity: Math.max(this.originalPolygonStyle.fillOpacity ?? 0, 0.2),
+      });
+      return;
+    }
+
+    this.restorePolygonStyle();
+  }
+
+  private restorePolygonStyle(): void {
+    if (this.mode !== 'donut') {
+      return;
+    }
+
+    this.polygon.setStyle({
+      color: this.originalPolygonStyle.color,
+      fillColor: this.originalPolygonStyle.fillColor,
+      opacity: this.originalPolygonStyle.opacity,
+      fillOpacity: this.originalPolygonStyle.fillOpacity,
+    });
   }
 
   private handleCancel(): void {

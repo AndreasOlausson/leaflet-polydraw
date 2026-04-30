@@ -660,6 +660,7 @@ describe('Menu Operations Config', () => {
           },
           scale: { enabled: false },
           rotate: { enabled: false },
+          donut: { enabled: false, direction: 'both' },
           visualOptimizationToggle: { enabled: false },
         },
       });
@@ -675,7 +676,7 @@ describe('Menu Operations Config', () => {
   });
 
   describe('default config shows all standard buttons', () => {
-    it('should show simplify, doubleElbows, bbox, bezier, scale, and rotate with defaults', async () => {
+    it('should show simplify, doubleElbows, bbox, bezier, scale, rotate, and donut with defaults', async () => {
       const harness = createPolydrawHarness();
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
@@ -687,6 +688,7 @@ describe('Menu Operations Config', () => {
         expect(actions.has('bezier')).toBe(true);
         expect(actions.has('scale')).toBe(true);
         expect(actions.has('rotate')).toBe(true);
+        expect(actions.has('donut')).toBe(true);
         // toggleOptimization only shows when polygon has VO metadata
         expect(actions.has('toggleOptimization')).toBe(false);
       } finally {

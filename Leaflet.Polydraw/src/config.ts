@@ -1,4 +1,4 @@
-import { DrawMode, MarkerPosition } from './enums';
+import { DonutDirection, DrawMode, MarkerPosition } from './enums';
 import { PolydrawConfig } from './types/polydraw-interfaces';
 
 export const defaultConfig: PolydrawConfig = {
@@ -206,6 +206,10 @@ export const defaultConfig: PolydrawConfig = {
     rotate: {
       enabled: true,
     },
+    donut: {
+      enabled: true,
+      direction: DonutDirection.Both,
+    },
     visualOptimizationToggle: {
       enabled: true,
     },
@@ -241,6 +245,7 @@ export const defaultConfig: PolydrawConfig = {
         bezier: true,
         scale: true,
         rotate: true,
+        donut: true,
         toggleOptimization: true,
       },
     },

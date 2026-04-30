@@ -196,6 +196,7 @@ export class PolygonMutationManager {
       'polygonDrag',
       'polygonClone',
       'toggleOptimization',
+      'donut',
     ]);
     const shouldSimplify = !data.operation || !skipSimplifyOperations.has(data.operation);
 

@@ -322,7 +322,7 @@ export class DemoFactory {
   }
 
   /** Start a transform mode from the polygon menu */
-  async startTransform(mode: 'scale' | 'rotate') {
+  async startTransform(mode: 'scale' | 'rotate' | 'donut') {
     await this.clickMenuAction(mode);
     await this.page.locator('.polydraw-transform-handle').first().waitFor({ state: 'visible' });
   }
@@ -481,6 +481,26 @@ export class DemoFactory {
     await this.page.locator('.polydraw-transform-root').waitFor({ state: 'detached' });
   }
 
+  /** Return whether the confirm button is disabled in transform mode */
+  async isTransformConfirmDisabled(): Promise<boolean> {
+    const confirm = this.page.locator('.polydraw-transform-confirm');
+    await confirm.waitFor({ state: 'visible' });
+    const ariaDisabled = await confirm.getAttribute('aria-disabled');
+    return ariaDisabled === 'true';
+  }
+
+  /** Return the transform status text, if any */
+  async getTransformStatusText(): Promise<string> {
+    const status = this.page.locator('.polydraw-transform-status');
+    if ((await status.count()) === 0) {
+      return '';
+    }
+    if (!(await status.first().isVisible())) {
+      return '';
+    }
+    return (await status.first().textContent())?.trim() ?? '';
+  }
+
   /** Undo the last operation */
   async undo() {
     await this.page.evaluate(async () => {
@@ -539,6 +559,26 @@ export class DemoFactory {
       maxLng = Math.max(maxLng, lng);
     });
     return { minLat, maxLat, minLng, maxLng };
+  }
+
+  /** Return the number of rings for the primary polygon */
+  async getPrimaryPolygonRingCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const groups = ctrl?.getFeatureGroups?.() ?? [];
+      if (!groups.length) return 0;
+      const geojson = groups[0].toGeoJSON() as any;
+      const features = Array.isArray(geojson?.features) ? geojson.features : [geojson];
+      const geom = features[0]?.geometry;
+      if (!geom || !geom.coordinates) return 0;
+      if (geom.type === 'Polygon') {
+        return Array.isArray(geom.coordinates) ? geom.coordinates.length : 0;
+      }
+      if (geom.type === 'MultiPolygon') {
+        return Array.isArray(geom.coordinates[0]) ? geom.coordinates[0].length : 0;
+      }
+      return 0;
+    });
   }
 }
 

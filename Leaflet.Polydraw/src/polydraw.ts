@@ -368,6 +368,7 @@ class Polydraw extends L.Control {
       action === 'bezier' ||
       action === 'scale' ||
       action === 'rotate' ||
+      action === 'donut' ||
       action === 'toggleOptimization'
     );
   }

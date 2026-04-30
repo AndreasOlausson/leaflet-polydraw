@@ -1,5 +1,5 @@
 import * as L from 'leaflet';
-import { DrawMode, MarkerPosition } from '../enums';
+import { DonutDirection, DrawMode, MarkerPosition } from '../enums';
 import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
 import type {
   PolydrawEvent as ManagerPolydrawEvent,
@@ -346,6 +346,10 @@ export interface PolygonToolsConfig {
   rotate: {
     enabled: boolean;
   };
+  donut: {
+    enabled: boolean;
+    direction: DonutDirection;
+  };
   visualOptimizationToggle: {
     enabled: boolean;
   };
@@ -358,6 +362,7 @@ export type PolygonActionHistory =
   | 'bezier'
   | 'scale'
   | 'rotate'
+  | 'donut'
   | 'toggleOptimization';
 
 export type HistoryAction =
@@ -385,6 +390,7 @@ export interface PolygonActionsHistoryCaptureConfig {
   bezier: boolean;
   scale: boolean;
   rotate: boolean;
+  donut: boolean;
   toggleOptimization: boolean;
 }
 
