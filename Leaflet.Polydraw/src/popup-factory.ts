@@ -14,6 +14,7 @@ export class PopupFactory {
     const button = document.createElement('div');
     button.classList.add('marker-menu-button', ...cssClasses);
     button.title = title;
+    button.setAttribute('aria-label', title);
     button.setAttribute('data-action-id', id);
 
     return button;

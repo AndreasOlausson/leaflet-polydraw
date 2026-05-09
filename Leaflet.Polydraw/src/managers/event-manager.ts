@@ -63,6 +63,7 @@ export type PolydrawEventPayloads = {
   'polydraw:draw:cancel': { mode?: DrawMode };
   'polydraw:menu:action': {
     action: string;
+    menuActionId?: string;
     latLngs?: LatLngExpression[];
     featureGroup?: FeatureGroup;
   };

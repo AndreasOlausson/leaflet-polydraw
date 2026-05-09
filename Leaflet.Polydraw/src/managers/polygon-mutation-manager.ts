@@ -13,6 +13,8 @@ import type {
   HistoryAction,
   LayerInteraction,
   PolygonStyleOverrides,
+  PolygonMenuActionContext,
+  PolygonMenuActionResult,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import {
@@ -253,6 +255,7 @@ export class PolygonMutationManager {
     const sourceMetadata = this.getFeatureMetadataStateFromFeatureGroup(data.featureGroup);
 
     let result: GeometryOperationResult;
+    let shouldSaveHistory = true;
 
     switch (data.action) {
       case 'simplify': {
@@ -275,12 +278,25 @@ export class PolygonMutationManager {
         result = this.geometryManager.bezierifyPolygon(completePolygonGeoJSON);
         break;
       }
+      case 'polygonMenuAction': {
+        result = await this.executePolygonMenuAction(
+          data.menuActionId,
+          completePolygonGeoJSON,
+          data.featureGroup,
+        );
+        const polygonMenuAction =
+          data.menuActionId && this.config.polygonTools.menuActions
+            ? this.config.polygonTools.menuActions.find((a) => a.id === data.menuActionId)
+            : undefined;
+        shouldSaveHistory = polygonMenuAction?.history !== false;
+        break;
+      }
       default:
         return;
     }
 
     if (result.success && result.result) {
-      if (this.saveHistoryState) {
+      if (this.saveHistoryState && shouldSaveHistory) {
         this.saveHistoryState(data.action);
       }
 
@@ -295,8 +311,13 @@ export class PolygonMutationManager {
         data.action === 'bezier'
           ? (this.config.polygonTools.bezier?.visualOptimizationLevel ?? 10)
           : originalOptimizationLevel;
+
+      const noMerge = result.allowMerge === false;
+      const shouldSimplify = result.simplify === true;
+
       const addResult = await this.addPolygon(result.result, {
-        simplify: false,
+        simplify: shouldSimplify,
+        noMerge,
         visualOptimizationLevel: bezierLevel,
         originalOptimizationLevel: bezierOriginal,
         featureId: sourceMetadata.featureId,
@@ -321,6 +342,121 @@ export class PolygonMutationManager {
         });
       }
     }
+  }
+
+  /**
+   * Handle polygon menu action execution
+   */
+  private async executePolygonMenuAction(
+    menuActionId: string | undefined,
+    polygon: Feature<Polygon | MultiPolygon>,
+    featureGroup: L.FeatureGroup,
+  ): Promise<GeometryOperationResult> {
+    if (!menuActionId || !this.config.polygonTools.menuActions) {
+      return { success: false, error: 'Polygon menu action not found' };
+    }
+
+    const polygonMenuAction = this.config.polygonTools.menuActions.find(
+      (a) => a.id === menuActionId,
+    );
+    if (!polygonMenuAction) {
+      return { success: false, error: 'Polygon menu action not found' };
+    }
+
+    try {
+      const actionResult = await polygonMenuAction.apply({
+        polygon,
+        featureGroup,
+        bounds: this.getBoundsForMenuAction(featureGroup, polygon),
+      });
+
+      const normalizedResult = this.normalizeMenuActionResult(actionResult);
+      if (!normalizedResult) {
+        return { success: false, error: 'No change' };
+      }
+
+      if (!this.isPolygonFeature(normalizedResult.polygon)) {
+        return { success: false, error: 'Invalid polygon geometry' };
+      }
+
+      return {
+        success: true,
+        result: normalizedResult.polygon,
+        allowMerge: normalizedResult.allowMerge,
+        simplify: normalizedResult.simplify,
+      };
+    } catch (error) {
+      if (!isTestEnvironment()) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.warn(`Polygon menu action failed: ${message}`);
+      }
+      return { success: false, error: 'Polygon menu action execution failed' };
+    }
+  }
+
+  private normalizeMenuActionResult(actionResult: PolygonMenuActionResult):
+    | {
+        polygon: Feature<Polygon | MultiPolygon>;
+        allowMerge?: boolean;
+        simplify?: boolean;
+      }
+    | undefined {
+    if (actionResult === null || actionResult === undefined || typeof actionResult !== 'object') {
+      return undefined;
+    }
+
+    if (this.isPolygonFeature(actionResult)) {
+      return { polygon: actionResult };
+    }
+
+    if ('polygon' in actionResult && this.isPolygonFeature(actionResult.polygon)) {
+      return {
+        polygon: actionResult.polygon,
+        allowMerge: actionResult.allowMerge,
+        simplify: actionResult.simplify,
+      };
+    }
+
+    return undefined;
+  }
+
+  private isPolygonFeature(value: unknown): value is Feature<Polygon | MultiPolygon> {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const feature = value as Feature;
+    return (
+      feature.type === 'Feature' &&
+      !!feature.geometry &&
+      (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')
+    );
+  }
+
+  private getBoundsForMenuAction(
+    featureGroup: L.FeatureGroup,
+    polygon: Feature<Polygon | MultiPolygon>,
+  ): PolygonMenuActionContext['bounds'] {
+    const polygonLayer = featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as
+      | L.Polygon
+      | undefined;
+    if (polygonLayer) {
+      return polygonLayer.getBounds();
+    }
+
+    const bounds = leafletAdapter.createLatLngBounds();
+    const extend = (coord: number[]) => {
+      if (typeof coord[0] === 'number' && typeof coord[1] === 'number') {
+        bounds.extend(leafletAdapter.createLatLng(coord[1], coord[0]));
+      }
+    };
+
+    if (polygon.geometry.type === 'Polygon') {
+      polygon.geometry.coordinates.forEach((ring) => ring.forEach(extend));
+    } else {
+      polygon.geometry.coordinates.forEach((poly) => poly.forEach((ring) => ring.forEach(extend)));
+    }
+
+    return bounds;
   }
 
   /**

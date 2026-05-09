@@ -247,6 +247,7 @@ export const defaultConfig: PolydrawConfig = {
         rotate: true,
         donut: true,
         toggleOptimization: true,
+        polygonMenuAction: true,
       },
     },
     maxSize: 50,

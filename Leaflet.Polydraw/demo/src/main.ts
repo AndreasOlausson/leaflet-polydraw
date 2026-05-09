@@ -1,7 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polydraw/dist/leaflet-polydraw.css';
 import * as L from 'leaflet';
-import Polydraw from 'leaflet-polydraw';
+import Polydraw, { type PolygonMenuActionContext } from 'leaflet-polydraw';
 import { leafletAdapter } from 'leaflet-polydraw';
 import './version-test';
 import {
@@ -13,6 +13,7 @@ import {
   layerMergeLeft,
   layerMergeRight,
 } from './sample-polygons';
+import type { Feature, Polygon } from 'geojson';
 
 declare global {
   interface Window {
@@ -29,13 +30,54 @@ leafletAdapter
   })
   .addTo(map);
 
-const polydraw = new Polydraw();
+const demoMenuActions = [
+  {
+    id: 'makeTriangle',
+    label: 'Make triangle',
+    apply: ({ bounds }: PolygonMenuActionContext): Feature<Polygon> => {
+      const nw = bounds.getNorthWest();
+      const ne = bounds.getNorthEast();
+      const south = bounds.getSouth();
+      const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+
+      return {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [nw.lng, nw.lat],
+              [ne.lng, ne.lat],
+              [centerLng, south],
+              [nw.lng, nw.lat],
+            ],
+          ],
+        },
+      };
+    },
+  },
+];
+
+type PolydrawConfigInput = NonNullable<ConstructorParameters<typeof Polydraw>[0]>['config'];
+type AdapterLayerGroup = ReturnType<typeof leafletAdapter.createLayerGroup>;
+type AdapterMarker = ReturnType<typeof leafletAdapter.createMarker>;
+
+const polydrawConfig = {
+  polygonTools: {
+    menuActions: demoMenuActions,
+  },
+};
+
+const polydraw = new Polydraw({
+  config: polydrawConfig as unknown as PolydrawConfigInput,
+});
 polydraw.addTo(map as any);
 window.polydrawControl = polydraw;
 
 const pointMarkerState = {
-  layer: null as L.LayerGroup | null,
-  markers: [] as L.Marker[],
+  layer: null as AdapterLayerGroup | null,
+  markers: [] as AdapterMarker[],
   points: [] as L.LatLngLiteral[],
 };
 

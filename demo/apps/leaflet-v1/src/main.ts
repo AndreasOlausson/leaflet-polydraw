@@ -2,6 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-polydraw/leaflet-polydraw.css';
 import * as L from 'leaflet';
 import Polydraw, { leafletAdapter } from 'leaflet-polydraw';
+import type { Feature, Polygon } from 'geojson';
 import {
   defaultViewport,
   metadataGeoJson,
@@ -36,16 +37,20 @@ const isLocalSource = import.meta.env.MODE === 'workspace';
 document.title = `Polydraw Demo • Leaflet 1 • ${isLocalSource ? 'Local' : 'Public'}`;
 
 const homeHref = import.meta.env.DEV ? 'http://localhost:4173/' : '/';
+const getSubtitle = () => {
+  if (!isDevelopment) {
+    return 'Compatibility route for teams validating the current stable Leaflet line.';
+  }
+
+  return isLocalSource
+    ? 'Development preview wired to the local plugin source.'
+    : 'Development preview against the published package.';
+};
 
 app.innerHTML = renderMapDemoPage({
   runtimeLabel: `Leaflet ${L.version}`,
   sourceLabel: isLocalSource ? 'Workspace source' : undefined,
-  subtitle:
-    isDevelopment
-      ? isLocalSource
-        ? 'Development preview wired to the local plugin source.'
-        : 'Development preview against the published package.'
-      : 'Compatibility route for teams validating the current stable Leaflet line.',
+  subtitle: getSubtitle(),
   homeHref,
   homeLabel: 'Back to compatibility hub',
   scenarios: showcaseScenarios
@@ -59,22 +64,62 @@ leafletAdapter
   })
   .addTo(map);
 
-const polydraw = new Polydraw({
-  config: {
-    interaction: {
-      drag: {
-        markerBehavior: 'fade',
-      },
-    },
-    markers: {
-      markerIcon: {
-        styleClasses: ['polygon-marker', 'demo-edit-handle'],
-      },
-      holeIcon: {
-        styleClasses: ['polygon-marker', 'hole', 'demo-edit-handle'],
-      },
+type PolygonMenuActionContext = {
+  bounds: L.LatLngBounds;
+};
+
+const demoMenuActions = [
+  {
+    id: 'makeTriangle',
+    label: 'Make triangle',
+    apply: ({ bounds }: PolygonMenuActionContext): Feature<Polygon> => {
+      const nw = bounds.getNorthWest();
+      const ne = bounds.getNorthEast();
+      const south = bounds.getSouth();
+      const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+
+      return {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [nw.lng, nw.lat],
+              [ne.lng, ne.lat],
+              [centerLng, south],
+              [nw.lng, nw.lat],
+            ],
+          ],
+        },
+      };
     },
   },
+];
+
+type PolydrawConfigInput = NonNullable<ConstructorParameters<typeof Polydraw>[0]>['config'];
+
+const polydrawConfig = {
+  interaction: {
+    drag: {
+      markerBehavior: 'fade',
+    },
+  },
+  markers: {
+    markerIcon: {
+      styleClasses: ['polygon-marker', 'demo-edit-handle'],
+    },
+    holeIcon: {
+      styleClasses: ['polygon-marker', 'hole', 'demo-edit-handle'],
+    },
+  },
+  polygonTools: {
+    menuActions: demoMenuActions,
+  },
+};
+
+const polydraw = new Polydraw({
+  config: polydrawConfig as unknown as PolydrawConfigInput,
 });
 polydraw.addTo(map as any);
 
@@ -164,7 +209,7 @@ const toRoundedTree = (value: unknown): unknown => {
 const pulsePolygon = (polygon: L.Polygon) => {
   const baseWeight = typeof polygon.options.weight === 'number' ? polygon.options.weight : 3;
   polygon.setStyle({ weight: baseWeight + 2 });
-  window.setTimeout(() => {
+  globalThis.setTimeout(() => {
     if (map.hasLayer(polygon)) {
       polygon.setStyle({ weight: baseWeight });
     }
@@ -203,11 +248,16 @@ const syncFeatureList = () => {
     }
 
     const featureId = String(featureIndex);
-    const layerId = polydraw.getLayerForFeatureGroup(featureGroup) || 'default';
+    const layerId = polydraw.getLayerManager().getLayerForFeatureGroup(featureGroup) || 'default';
     const layerName = getLayerDisplayName(layerId);
     const rings = normalizeRings(polygon.getLatLngs());
     const outerVertices = countVertices(rings[0] ?? []);
     const holeCount = Math.max(rings.length - 1, 0);
+    const holeSuffix = holeCount === 1 ? '' : 's';
+    const summary =
+      holeCount > 0
+        ? `Polygon with ${outerVertices} outer vertices and ${holeCount} hole${holeSuffix}.`
+        : `Polygon with ${outerVertices} outer vertices.`;
 
     nextFeatures.set(featureId, {
       featureGroup,
@@ -236,10 +286,7 @@ const syncFeatureList = () => {
     return [{
       id: featureId,
       title: layerName,
-      summary:
-        holeCount > 0
-          ? `Polygon with ${outerVertices} outer vertices and ${holeCount} hole${holeCount === 1 ? '' : 's'}.`
-          : `Polygon with ${outerVertices} outer vertices.`,
+      summary,
       actionLabel: 'Open inspector'
     }];
   });
@@ -504,7 +551,7 @@ if (typeof ResizeObserver !== 'undefined') {
     scheduleMapSync();
   });
   resizeObserver.observe(map.getContainer());
-  window.addEventListener(
+  globalThis.addEventListener(
     'beforeunload',
     () => {
       resizeObserver.disconnect();
@@ -513,7 +560,7 @@ if (typeof ResizeObserver !== 'undefined') {
   );
 }
 
-window.addEventListener('resize', scheduleMapSync);
+globalThis.addEventListener('resize', scheduleMapSync);
 map.whenReady(() => {
   scheduleMapSync();
 });

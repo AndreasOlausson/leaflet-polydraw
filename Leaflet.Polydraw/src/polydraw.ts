@@ -369,7 +369,8 @@ class Polydraw extends L.Control {
       action === 'scale' ||
       action === 'rotate' ||
       action === 'donut' ||
-      action === 'toggleOptimization'
+      action === 'toggleOptimization' ||
+      action === 'polygonMenuAction'
     );
   }
 
@@ -3183,4 +3184,10 @@ if (typeof globalThis !== 'undefined') {
 }
 
 export default Polydraw;
-export { leafletAdapter };
+export { defaultConfig } from './config';
+export { leafletAdapter } from './compatibility/leaflet-adapter';
+export type {
+  PolygonMenuAction,
+  PolygonMenuActionContext,
+  PolygonMenuActionResult,
+} from './types/polydraw-interfaces';
