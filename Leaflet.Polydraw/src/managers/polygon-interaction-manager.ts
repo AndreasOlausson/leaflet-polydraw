@@ -19,6 +19,8 @@ import type {
   ModifierKey,
   LayerInteraction,
   PolygonStyleOverrides,
+  PolygonMenuAction,
+  PolygonMenuActionContext,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -53,6 +55,27 @@ interface MarkerImportanceOptions {
 }
 
 type DragDocumentListener = (event: MouseEvent | PointerEvent) => void;
+type LeafletPolygonLatLngs = L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
+type BuiltInPolygonMenuAction = 'simplify' | 'doubleElbows' | 'bbox' | 'bezier';
+type PolygonTransformMode = 'scale' | 'rotate' | 'donut';
+
+interface BuiltInMenuButtonConfig {
+  enabled: boolean;
+  id: string;
+  label: string;
+  classNames: string[];
+}
+
+const BUILT_IN_POLYGON_MENU_ACTION_IDS = new Set([
+  'simplify',
+  'doubleElbows',
+  'bbox',
+  'bezier',
+  'scale',
+  'rotate',
+  'donut',
+  'toggleOptimization',
+]);
 
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
@@ -141,10 +164,7 @@ export class PolygonInteractionManager {
       | L.Polygon
       | undefined;
     if (!polygonLayer) return true;
-    const latLngs = polygonLayer.getLatLngs() as unknown as
-      | L.LatLng[]
-      | L.LatLng[][]
-      | L.LatLng[][][];
+    const latLngs = polygonLayer.getLatLngs() as unknown as LeafletPolygonLatLngs;
     if (!Array.isArray(latLngs) || latLngs.length === 0) return true;
     // LatLng[] -> simple ring, no holes
     if (!Array.isArray(latLngs[0])) return false;
@@ -1133,9 +1153,7 @@ export class PolygonInteractionManager {
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
       polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
       if (isCloneMode) {
-        this.showCloneGhost(
-          polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
-        );
+        this.showCloneGhost(polygon._polydrawDragData!.startLatLngs as LeafletPolygonLatLngs);
       } else {
         this.clearCloneGhost();
       }
@@ -1204,9 +1222,7 @@ export class PolygonInteractionManager {
       polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
       polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
       if (isCloneMode) {
-        this.showCloneGhost(
-          polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
-        );
+        this.showCloneGhost(polygon._polydrawDragData!.startLatLngs as LeafletPolygonLatLngs);
       } else {
         this.clearCloneGhost();
       }
@@ -1270,9 +1286,7 @@ export class PolygonInteractionManager {
         polygon._polydrawDragData!.startLatLngs = polygon.getLatLngs();
         polygon.setStyle({ fillOpacity: this.config.interaction.drag.opacity });
         if (isCloneMode) {
-          this.showCloneGhost(
-            polygon._polydrawDragData!.startLatLngs as L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
-          );
+          this.showCloneGhost(polygon._polydrawDragData!.startLatLngs as LeafletPolygonLatLngs);
         } else {
           this.clearCloneGhost();
         }
@@ -2238,7 +2252,7 @@ export class PolygonInteractionManager {
     this.onPolygonMouseUp({ latlng: null } as unknown as L.LeafletMouseEvent);
   };
 
-  private onDragDocumentMove = (event: MouseEvent | PointerEvent) => {
+  private readonly onDragDocumentMove = (event: MouseEvent | PointerEvent) => {
     const latlng = EventAdapter.extractCoordinates(
       event as unknown as Record<string, unknown>,
       this.map,
@@ -2250,7 +2264,7 @@ export class PolygonInteractionManager {
     this.onPolygonMouseMove({ latlng, originalEvent: event } as unknown as L.LeafletMouseEvent);
   };
 
-  private onDragDocumentEnd = (event: MouseEvent | PointerEvent) => {
+  private readonly onDragDocumentEnd = (event: MouseEvent | PointerEvent) => {
     const latlng =
       EventAdapter.extractCoordinates(event as unknown as Record<string, unknown>, this.map) ??
       null;
@@ -2435,11 +2449,11 @@ export class PolygonInteractionManager {
   }
 
   private offsetPolygonCoordinates(
-    latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+    latLngs: LeafletPolygonLatLngs,
     offsetLat: number,
     offsetLng: number,
-  ): L.LatLng[] | L.LatLng[][] | L.LatLng[][][] {
-    if (!latLngs) return latLngs as unknown as L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
+  ): LeafletPolygonLatLngs {
+    if (!latLngs) return latLngs as unknown as LeafletPolygonLatLngs;
 
     // If nested arrays, recurse until we reach arrays of LatLng
     if (Array.isArray((latLngs as unknown as unknown[])[0])) {
@@ -2617,11 +2631,7 @@ export class PolygonInteractionManager {
       }
 
       const newGeoJSON = polygon.toGeoJSON() as Feature<Polygon | MultiPolygon>;
-      const originalLatLngs = (dragData?.startLatLngs ?? null) as
-        | L.LatLng[]
-        | L.LatLng[][]
-        | L.LatLng[][][]
-        | null;
+      const originalLatLngs = (dragData?.startLatLngs ?? null) as LeafletPolygonLatLngs | null;
       const originalGeoJSON = originalLatLngs
         ? this.createPolygonFeatureFromLatLngs(originalLatLngs)
         : null;
@@ -2674,7 +2684,7 @@ export class PolygonInteractionManager {
     }
   }
 
-  private showCloneGhost(latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][] | null): void {
+  private showCloneGhost(latLngs: LeafletPolygonLatLngs | null): void {
     this.clearCloneGhost();
     if (!latLngs) return;
 
@@ -2706,7 +2716,7 @@ export class PolygonInteractionManager {
   }
 
   private createPolygonFeatureFromLatLngs(
-    latLngs: L.LatLng[] | L.LatLng[][] | L.LatLng[][][],
+    latLngs: LeafletPolygonLatLngs,
   ): Feature<Polygon | MultiPolygon> | null {
     try {
       const polygon = leafletAdapter.createPolygon(latLngs);
@@ -3260,263 +3270,411 @@ export class PolygonInteractionManager {
     });
   }
 
+  private getBuiltInMenuButtonConfigs(): BuiltInMenuButtonConfig[] {
+    const menuOps = this.config.polygonTools;
+
+    return [
+      {
+        enabled: menuOps.simplify.enabled,
+        id: 'simplify',
+        label: 'Simplify',
+        classNames: ['simplify'],
+      },
+      {
+        enabled: menuOps.doubleElbows.enabled,
+        id: 'doubleElbows',
+        label: 'DoubleElbows',
+        classNames: ['double-elbows'],
+      },
+      {
+        enabled: menuOps.bbox.enabled,
+        id: 'bbox',
+        label: 'Bounding box',
+        classNames: ['bbox'],
+      },
+      {
+        enabled: menuOps.bezier.enabled,
+        id: 'bezier',
+        label: 'Curve',
+        classNames: ['bezier'],
+      },
+      {
+        enabled: menuOps.scale.enabled,
+        id: 'scale',
+        label: 'Scale',
+        classNames: ['transform-scale'],
+      },
+      {
+        enabled: menuOps.rotate.enabled,
+        id: 'rotate',
+        label: 'Rotate',
+        classNames: ['transform-rotate'],
+      },
+    ];
+  }
+
+  private getBuiltInMenuButtons(featureGroup: L.FeatureGroup): HTMLDivElement[] {
+    const buttons = this.getBuiltInMenuButtonConfigs()
+      .filter(({ enabled }) => enabled)
+      .map(({ id, label, classNames }) => PopupFactory.createMenuButton(id, label, classNames));
+
+    const menuOps = this.config.polygonTools;
+    if (menuOps.donut?.enabled && !this.donutTargetHasHoles(featureGroup)) {
+      buttons.push(PopupFactory.createMenuButton('donut', 'Donut', ['transform-donut']));
+    }
+
+    const optimizationButton = this.getVisualOptimizationToggleButton(featureGroup);
+    if (optimizationButton) {
+      buttons.push(optimizationButton);
+    }
+
+    return buttons;
+  }
+
+  private getVisualOptimizationToggleButton(featureGroup: L.FeatureGroup): HTMLDivElement | null {
+    if (!this.config.polygonTools.visualOptimizationToggle?.enabled) {
+      return null;
+    }
+
+    const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+    const hasOptimization = original > 0 || level > 0;
+    if (!hasOptimization) {
+      return null;
+    }
+
+    const isOptimized = typeof level === 'number' && level > 0;
+    const optimizationStateClass = isOptimized
+      ? 'visual-optimization-state-hidden'
+      : 'visual-optimization-state-visible';
+    const toggleTitle = isOptimized ? 'Show all markers' : 'Hide extra markers';
+
+    return PopupFactory.createMenuButton('toggleOptimization', toggleTitle, [
+      'toggle-visual-optimization',
+      optimizationStateClass,
+    ]);
+  }
+
+  private getPolygonMenuActionButtons(featureGroup: L.FeatureGroup): HTMLDivElement[] {
+    const { menuActions } = this.config.polygonTools;
+    if (!Array.isArray(menuActions)) {
+      return [];
+    }
+
+    return menuActions
+      .filter((polygonMenuAction) =>
+        this.shouldShowPolygonMenuActionButton(polygonMenuAction, featureGroup),
+      )
+      .map((polygonMenuAction) =>
+        PopupFactory.createMenuButton(
+          polygonMenuAction.id,
+          polygonMenuAction.label,
+          this.getPolygonMenuActionClassNames(polygonMenuAction),
+        ),
+      );
+  }
+
+  private shouldShowPolygonMenuActionButton(
+    polygonMenuAction: PolygonMenuAction,
+    featureGroup: L.FeatureGroup,
+  ): boolean {
+    if (!polygonMenuAction.id || BUILT_IN_POLYGON_MENU_ACTION_IDS.has(polygonMenuAction.id)) {
+      return false;
+    }
+
+    if (!polygonMenuAction.visible) {
+      return true;
+    }
+
+    try {
+      return polygonMenuAction.visible(this.getMenuActionContext(featureGroup));
+    } catch {
+      return false;
+    }
+  }
+
+  private getPolygonMenuActionClassNames(polygonMenuAction: PolygonMenuAction): string[] {
+    if (Array.isArray(polygonMenuAction.className)) {
+      return polygonMenuAction.className;
+    }
+
+    if (polygonMenuAction.className) {
+      return [polygonMenuAction.className];
+    }
+
+    return ['menu-action-default'];
+  }
+
+  private closeOpenMenuPopup(): void {
+    if (this._openMenuPopup) {
+      this.map.closePopup(this._openMenuPopup);
+      this._openMenuPopup = null;
+    }
+  }
+
+  private attachMenuPopupCloseHandler(outerWrapper: HTMLElement): void {
+    const closeBtn = outerWrapper.querySelector('.marker-menu-close');
+    if (!closeBtn) {
+      return;
+    }
+
+    const handleClose = (event: Event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      if (this._openMenuPopup) {
+        this.closeOpenMenuPopup();
+      } else {
+        this.map.closePopup();
+      }
+    };
+
+    closeBtn.addEventListener('click', handleClose);
+    closeBtn.addEventListener('touchend', handleClose, { passive: false });
+  }
+
+  private emitBuiltInPolygonMenuAction(
+    action: BuiltInPolygonMenuAction,
+    latLngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ): void {
+    this.eventManager.emit('polydraw:menu:action', {
+      action,
+      latLngs,
+      featureGroup,
+    });
+    this.closeOpenMenuPopup();
+  }
+
+  private attachBuiltInMenuActionHandler(
+    button: HTMLDivElement,
+    action: BuiltInPolygonMenuAction,
+    latLngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ): void {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.emitBuiltInPolygonMenuAction(action, latLngs, featureGroup);
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
+  private attachTransformHandler(
+    button: HTMLDivElement,
+    mode: PolygonTransformMode,
+    featureGroup: L.FeatureGroup,
+  ): void {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.startPolygonTransform(featureGroup, mode);
+      this.closeOpenMenuPopup();
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
+  private attachOptimizationToggleHandler(
+    button: HTMLDivElement,
+    featureGroup: L.FeatureGroup,
+  ): void {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleOptimizationVisibility(featureGroup);
+      this.closeOpenMenuPopup();
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
+  private attachCustomPolygonMenuActionHandler(
+    button: HTMLDivElement,
+    actionId: string,
+    latLngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ): void {
+    const polygonMenuAction = this.config.polygonTools.menuActions?.find(
+      ({ id }) => id === actionId,
+    );
+    if (!polygonMenuAction) {
+      return;
+    }
+
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.eventManager.emit('polydraw:menu:action', {
+        action: 'polygonMenuAction',
+        menuActionId: actionId,
+        latLngs,
+        featureGroup,
+      });
+      this.closeOpenMenuPopup();
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
+  private attachMenuButtonHandler(
+    button: HTMLDivElement,
+    latLngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ): void {
+    const actionId = button.dataset.actionId;
+
+    switch (actionId) {
+      case 'simplify':
+      case 'doubleElbows':
+      case 'bbox':
+      case 'bezier':
+        this.attachBuiltInMenuActionHandler(button, actionId, latLngs, featureGroup);
+        return;
+      case 'scale':
+      case 'rotate':
+      case 'donut':
+        this.attachTransformHandler(button, actionId, featureGroup);
+        return;
+      case 'toggleOptimization':
+        this.attachOptimizationToggleHandler(button, featureGroup);
+        return;
+      default:
+        if (actionId) {
+          this.attachCustomPolygonMenuActionHandler(button, actionId, latLngs, featureGroup);
+        }
+    }
+  }
+
+  private startPolygonTransform(featureGroup: L.FeatureGroup, mode: PolygonTransformMode): void {
+    const existing = this.transformControllers.get(featureGroup);
+    if (existing) {
+      existing.cancel();
+      existing.destroy();
+      this.transformControllers.delete(featureGroup);
+    }
+
+    if (mode === 'donut' && this.donutTargetHasHoles(featureGroup)) {
+      return;
+    }
+
+    try {
+      const controller = new PolygonTransformController(
+        this.map,
+        featureGroup,
+        mode,
+        this.config.polygonTools.donut.direction,
+        (confirmed) =>
+          this.handleTransformControllerResult(controller, featureGroup, mode, confirmed),
+      );
+      this.transformControllers.set(featureGroup, controller);
+      const polygonLayer = this.getPolygonLayer(featureGroup);
+      if (polygonLayer) {
+        this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, false);
+      }
+      this.transformModeActive = true;
+    } catch {
+      // ignore
+    }
+  }
+
+  private handleTransformControllerResult(
+    controller: PolygonTransformController,
+    featureGroup: L.FeatureGroup,
+    mode: PolygonTransformMode,
+    confirmed: boolean,
+  ): void {
+    if (this.transformControllers.get(featureGroup) === controller) {
+      this.transformControllers.delete(featureGroup);
+    }
+    this.transformModeActive = false;
+
+    const polygonLayer = this.getPolygonLayer(featureGroup);
+    if (!polygonLayer) {
+      return;
+    }
+
+    if (!confirmed) {
+      this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
+      return;
+    }
+
+    const { level: optimizationLevel, original: originalOptimizationLevel } =
+      this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+
+    if (mode === 'donut') {
+      this.handleDonutCommit(
+        controller,
+        featureGroup,
+        polygonLayer,
+        optimizationLevel,
+        originalOptimizationLevel,
+      );
+      return;
+    }
+
+    if (this.saveHistoryState) {
+      this.saveHistoryState(mode);
+    }
+    const newGeoJSON = polygonLayer.toGeoJSON();
+    const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+    this.cleanupFeatureGroup(featureGroup);
+    this.removeFeatureGroup(featureGroup);
+    this.emitPolygonUpdated({
+      operation: 'transform',
+      polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
+      allowMerge: true,
+      optimizationLevel,
+      originalOptimizationLevel,
+      featureId: featureMetadataState.featureId,
+      featureMetadata: featureMetadataState.metadata,
+      sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureInteractionOverride: featureMetadataState.interactionOverride,
+      featureStyleOverrides: featureMetadataState.styleOverrides,
+      featureCreatedAt: featureMetadataState.createdAt,
+    });
+  }
+
+  private getPolygonLayer(featureGroup: L.FeatureGroup): L.Polygon | undefined {
+    return featureGroup.getLayers().find((layer): layer is L.Polygon => layer instanceof L.Polygon);
+  }
+
+  private attachMenuButtonHandlers(
+    buttons: HTMLDivElement[],
+    latLngs: L.LatLngLiteral[],
+    featureGroup: L.FeatureGroup,
+  ): void {
+    buttons.forEach((button) => this.attachMenuButtonHandler(button, latLngs, featureGroup));
+  }
+
+  private enableMenuButtonPointerEvents(outerWrapper: HTMLElement): void {
+    outerWrapper.querySelectorAll('.marker-menu-button').forEach((btn) => {
+      (btn as HTMLElement).style.pointerEvents = 'auto';
+      btn.addEventListener('click', (event) => event.stopPropagation());
+    });
+  }
+
   private generateMenuMarkerPopup(
     latLngs: L.LatLngLiteral[],
     featureGroup: L.FeatureGroup,
   ): L.Popup {
-    // Build buttons based on config
-    const buttons: HTMLDivElement[] = [];
-    const menuOps = this.config.polygonTools;
+    const buttons = [
+      ...this.getBuiltInMenuButtons(featureGroup),
+      ...this.getPolygonMenuActionButtons(featureGroup),
+    ];
 
-    // Simplify button
-    if (menuOps.simplify.enabled) {
-      buttons.push(PopupFactory.createMenuButton('simplify', 'Simplify', ['simplify']));
-    }
-
-    // Double Elbows button
-    if (menuOps.doubleElbows.enabled) {
-      buttons.push(
-        PopupFactory.createMenuButton('doubleElbows', 'DoubleElbows', ['double-elbows']),
-      );
-    }
-
-    // Bounding Box button
-    if (menuOps.bbox.enabled) {
-      buttons.push(PopupFactory.createMenuButton('bbox', 'Bounding box', ['bbox']));
-    }
-
-    // Bezier button
-    if (menuOps.bezier.enabled) {
-      buttons.push(PopupFactory.createMenuButton('bezier', 'Curve', ['bezier']));
-    }
-
-    // Scale button
-    if (menuOps.scale.enabled) {
-      buttons.push(PopupFactory.createMenuButton('scale', 'Scale', ['transform-scale']));
-    }
-
-    // Rotate button
-    if (menuOps.rotate.enabled) {
-      buttons.push(PopupFactory.createMenuButton('rotate', 'Rotate', ['transform-rotate']));
-    }
-
-    // Donut button — only for simple polygons (no holes, no multi-outer)
-    if (menuOps.donut?.enabled && !this.donutTargetHasHoles(featureGroup)) {
-      buttons.push(PopupFactory.createMenuButton('donut', 'Donut', ['transform-donut']));
-    }
-    if (menuOps.visualOptimizationToggle?.enabled) {
-      const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
-      const hasOptimization = original > 0 || level > 0;
-      if (hasOptimization) {
-        const isOptimized = typeof level === 'number' && level > 0;
-        const toggleClasses = [
-          'toggle-visual-optimization',
-          isOptimized ? 'visual-optimization-state-hidden' : 'visual-optimization-state-visible',
-        ];
-        const toggleTitle = isOptimized ? 'Show all markers' : 'Hide extra markers';
-        buttons.push(
-          PopupFactory.createMenuButton('toggleOptimization', toggleTitle, toggleClasses),
-        );
-      }
-    }
-
-    // Build popup structure using factory
     const outerWrapper = PopupFactory.buildMenuPopup(buttons);
-
-    const closeBtn = outerWrapper.querySelector('.marker-menu-close');
-    if (closeBtn) {
-      const handleClose = (event: Event) => {
-        event.stopPropagation();
-        event.preventDefault();
-        if (this._openMenuPopup) {
-          this.map.closePopup(this._openMenuPopup);
-          this._openMenuPopup = null;
-        } else {
-          this.map.closePopup();
-        }
-      };
-      closeBtn.addEventListener('click', handleClose);
-      closeBtn.addEventListener('touchend', handleClose, { passive: false });
-    }
-
-    const closePopupIfOpen = () => {
-      if (this._openMenuPopup) {
-        this.map.closePopup(this._openMenuPopup);
-        this._openMenuPopup = null;
-      }
-    };
-
-    // Wire up event handlers for all buttons
-    const attachMenuActionHandler = (
-      button: HTMLDivElement,
-      action: 'simplify' | 'doubleElbows' | 'bbox' | 'bezier',
-    ) => {
-      button.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.eventManager.emit('polydraw:menu:action', {
-          action,
-          latLngs,
-          featureGroup,
-        });
-        closePopupIfOpen();
-      });
-      button.onclick = () => {
-        this.eventManager.emit('polydraw:menu:action', {
-          action,
-          latLngs,
-          featureGroup,
-        });
-        closePopupIfOpen();
-      };
-    };
-
-    const startTransform = (mode: 'scale' | 'rotate' | 'donut') => {
-      const existing = this.transformControllers.get(featureGroup);
-      if (existing) {
-        existing.cancel();
-        existing.destroy();
-        this.transformControllers.delete(featureGroup);
-      }
-      // Defense-in-depth: donut mode requires a simple polygon (no holes, no multi-outer).
-      if (mode === 'donut' && this.donutTargetHasHoles(featureGroup)) {
-        return;
-      }
-      try {
-        const controller = new PolygonTransformController(
-          this.map,
-          featureGroup,
-          mode,
-          this.config.polygonTools.donut.direction,
-          (confirmed) => {
-            if (this.transformControllers.get(featureGroup) === controller) {
-              this.transformControllers.delete(featureGroup);
-            }
-            this.transformModeActive = false;
-
-            const polygonLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
-              | L.Polygon
-              | undefined;
-            if (!polygonLayer) {
-              return;
-            }
-
-            if (!confirmed) {
-              this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
-              return;
-            }
-
-            const { level: optimizationLevel, original: originalOptimizationLevel } =
-              this.getOptimizationMetadataFromFeatureGroup(featureGroup);
-
-            if (mode === 'donut') {
-              this.handleDonutCommit(
-                controller,
-                featureGroup,
-                polygonLayer,
-                optimizationLevel,
-                originalOptimizationLevel,
-              );
-              return;
-            }
-
-            if (this.saveHistoryState) {
-              this.saveHistoryState(mode);
-            }
-            const newGeoJSON = polygonLayer.toGeoJSON();
-            const featureMetadataState = this.getFeatureMetadataState(featureGroup);
-            this.cleanupFeatureGroup(featureGroup);
-            this.removeFeatureGroup(featureGroup);
-            this.emitPolygonUpdated({
-              operation: 'transform',
-              polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
-              allowMerge: true,
-              optimizationLevel,
-              originalOptimizationLevel,
-              featureId: featureMetadataState.featureId,
-              featureMetadata: featureMetadataState.metadata,
-              sourceFeatureIds: featureMetadataState.sourceFeatureIds,
-              featureInteractionOverride: featureMetadataState.interactionOverride,
-              featureStyleOverrides: featureMetadataState.styleOverrides,
-              featureCreatedAt: featureMetadataState.createdAt,
-            });
-          },
-        );
-        this.transformControllers.set(featureGroup, controller);
-        const polyLayer = featureGroup.getLayers().find((l) => l instanceof L.Polygon) as
-          | L.Polygon
-          | undefined;
-        if (polyLayer) this.setMarkerVisibility(polyLayer as unknown as PolydrawPolygon, false);
-        this.transformModeActive = true;
-      } catch {
-        // ignore
-      }
-    };
-
-    const attachTransformHandler = (button: HTMLDivElement, mode: 'scale' | 'rotate' | 'donut') => {
-      button.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startTransform(mode);
-        closePopupIfOpen();
-      });
-      button.onclick = () => {
-        startTransform(mode);
-        closePopupIfOpen();
-      };
-    };
-
-    const attachOptimizationToggleHandler = (button: HTMLDivElement) => {
-      const handler = (e: Event) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.toggleOptimizationVisibility(featureGroup);
-        closePopupIfOpen();
-      };
-      button.addEventListener('touchend', handler, { passive: false });
-      button.onclick = handler;
-    };
-
-    // Attach handlers based on button IDs
-    buttons.forEach((button) => {
-      const actionId = button.getAttribute('data-action-id');
-      switch (actionId) {
-        case 'simplify':
-          attachMenuActionHandler(button, 'simplify');
-          break;
-        case 'doubleElbows':
-          attachMenuActionHandler(button, 'doubleElbows');
-          break;
-        case 'bbox':
-          attachMenuActionHandler(button, 'bbox');
-          break;
-        case 'bezier':
-          attachMenuActionHandler(button, 'bezier');
-          break;
-        case 'scale':
-          attachTransformHandler(button, 'scale');
-          break;
-        case 'rotate':
-          attachTransformHandler(button, 'rotate');
-          break;
-        case 'donut':
-          attachTransformHandler(button, 'donut');
-          break;
-        case 'toggleOptimization':
-          attachOptimizationToggleHandler(button);
-          break;
-      }
-    });
+    this.attachMenuPopupCloseHandler(outerWrapper);
+    this.attachMenuButtonHandlers(buttons, latLngs, featureGroup);
 
     L.DomEvent.disableClickPropagation(outerWrapper);
     outerWrapper.style.pointerEvents = 'auto';
+    this.enableMenuButtonPointerEvents(outerWrapper);
 
-    outerWrapper.querySelectorAll('.marker-menu-button').forEach((btn) => {
-      (btn as HTMLElement).style.pointerEvents = 'auto';
-      btn.addEventListener('click', (e) => e.stopPropagation());
-    });
-
-    const isMobile = window.innerWidth <= 600;
+    const isMobile = globalThis.innerWidth <= 600;
     const versionClass = LeafletVersionDetector.isV1() ? ' leaflet-v1' : ' leaflet-v2';
     const popup = leafletAdapter
       .createPopup({
@@ -3528,6 +3686,19 @@ export class PolygonInteractionManager {
 
     this._openMenuPopup = popup;
     return popup;
+  }
+
+  private getMenuActionContext(featureGroup: L.FeatureGroup): PolygonMenuActionContext {
+    const completePolygon = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
+    const polygonLayer = featureGroup.getLayers().find((layer) => layer instanceof L.Polygon) as
+      | L.Polygon
+      | undefined;
+
+    return {
+      polygon: this.turfHelper.getTurfPolygon(completePolygon),
+      featureGroup,
+      bounds: polygonLayer ? polygonLayer.getBounds() : leafletAdapter.createLatLngBounds(),
+    };
   }
 
   private toggleOptimizationVisibility(featureGroup: L.FeatureGroup): void {

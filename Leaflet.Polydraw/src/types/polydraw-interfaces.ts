@@ -317,6 +317,33 @@ export interface InteractionConfig {
 /**
  * Polygon tools configuration interface (per-polygon operations)
  */
+export interface PolygonMenuActionContext {
+  polygon: Feature<Polygon | MultiPolygon>;
+  featureGroup: L.FeatureGroup;
+  bounds: L.LatLngBounds;
+}
+
+export type PolygonMenuActionResult =
+  | Feature<Polygon | MultiPolygon>
+  | {
+      polygon: Feature<Polygon | MultiPolygon>;
+      allowMerge?: boolean;
+      simplify?: boolean;
+    }
+  | null
+  | undefined;
+
+export interface PolygonMenuAction {
+  id: string;
+  label: string;
+  apply: (
+    ctx: PolygonMenuActionContext,
+  ) => PolygonMenuActionResult | Promise<PolygonMenuActionResult>;
+  className?: string | string[];
+  visible?: (ctx: PolygonMenuActionContext) => boolean;
+  history?: boolean;
+}
+
 export interface PolygonToolsConfig {
   simplify: {
     enabled: boolean;
@@ -353,6 +380,7 @@ export interface PolygonToolsConfig {
   visualOptimizationToggle: {
     enabled: boolean;
   };
+  menuActions?: PolygonMenuAction[];
 }
 
 export type PolygonActionHistory =
@@ -363,7 +391,8 @@ export type PolygonActionHistory =
   | 'scale'
   | 'rotate'
   | 'donut'
-  | 'toggleOptimization';
+  | 'toggleOptimization'
+  | 'polygonMenuAction';
 
 export type HistoryAction =
   | 'batch'
@@ -392,6 +421,7 @@ export interface PolygonActionsHistoryCaptureConfig {
   rotate: boolean;
   donut: boolean;
   toggleOptimization: boolean;
+  polygonMenuAction: boolean;
 }
 
 export interface HistoryCaptureConfig {
@@ -465,7 +495,8 @@ export type PolydrawEventCallback<T extends PolydrawEvent = PolydrawEvent> =
  * Data interface for menu actions
  */
 export interface MenuActionData {
-  action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier';
+  action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier' | 'polygonMenuAction';
+  menuActionId?: string;
   latLngs: L.LatLngLiteral[];
   featureGroup: L.FeatureGroup;
 }

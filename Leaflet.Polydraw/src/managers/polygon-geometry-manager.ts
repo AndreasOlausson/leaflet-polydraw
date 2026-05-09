@@ -7,6 +7,8 @@ export interface GeometryOperationResult {
   result?: Feature<Polygon | MultiPolygon>;
   results?: Feature<Polygon | MultiPolygon>[];
   error?: string;
+  allowMerge?: boolean;
+  simplify?: boolean;
 }
 
 export interface PolygonGeometryManagerDependencies {
