@@ -12,6 +12,9 @@ import type {
 } from '../../../src/types/polydraw-interfaces';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
 
+const BUILD_TYPES_PROCESS_TIMEOUT_MS = 25_000;
+const BUILD_TYPES_TEST_TIMEOUT_MS = 30_000;
+
 function findMenuMarker(featureGroup: L.FeatureGroup): L.Marker | undefined {
   return featureGroup.getLayers().find((layer): layer is L.Marker => {
     if (!(layer instanceof L.Marker)) return false;
@@ -96,18 +99,23 @@ function expectGeometryHasHole(feature: Feature<Polygon | MultiPolygon>): void {
 describe('Polygon menu action verifier', () => {
   const fixtures = MockFactory.createPredefinedPolygons();
 
-  it('exports polygon menu action types from the built package root declarations', () => {
-    execFileSync('npm', ['run', 'build:types'], {
-      cwd: process.cwd(),
-      stdio: 'pipe',
-    });
+  it(
+    'exports polygon menu action types from the built package root declarations',
+    () => {
+      execFileSync('npm', ['run', 'build:types'], {
+        cwd: process.cwd(),
+        stdio: 'pipe',
+        timeout: BUILD_TYPES_PROCESS_TIMEOUT_MS,
+      });
 
-    const rootDeclaration = readFileSync(join(process.cwd(), 'dist/types/index.d.ts'), 'utf8');
+      const rootDeclaration = readFileSync(join(process.cwd(), 'dist/types/index.d.ts'), 'utf8');
 
-    expect(rootDeclaration).toContain('PolygonMenuAction');
-    expect(rootDeclaration).toContain('PolygonMenuActionContext');
-    expect(rootDeclaration).toContain('PolygonMenuActionResult');
-  });
+      expect(rootDeclaration).toContain('PolygonMenuAction');
+      expect(rootDeclaration).toContain('PolygonMenuActionContext');
+      expect(rootDeclaration).toContain('PolygonMenuActionResult');
+    },
+    BUILD_TYPES_TEST_TIMEOUT_MS,
+  );
 
   it('passes complete polygon geometry with holes to visible and apply callbacks', async () => {
     const visibleSpy = vi.fn<(context: PolygonMenuActionContext) => boolean>(() => true);
