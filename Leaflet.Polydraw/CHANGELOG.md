@@ -13,10 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Layer management support with named layers, active-layer tracking, visibility toggling, color updates, delete support, and ordering in `LayerManager`.
 - Layer panel UI control with collapse/expand header, per-layer visibility toggle, delete action, drag-to-reorder behavior, and active-layer highlighting.
-- Public layer APIs for runtime integration: `getLayerManager()` and `reorderLayer(layerId, targetLayerId)`.
+- Public layer APIs for runtime integration: `getLayerManager()`, `getAllLayers()`, `getLayerById()`, `createLayer()`, `ensureLayer()`, `updateLayer()`, `deleteLayer()`, `setActiveLayer()`, visibility/color/interaction/panel/metadata setters, feature-group assignment helpers, and ordering APIs (`reorderLayer`, `moveLayerToIndex`, `setLayerOrder`).
 - Unit tests for layer behavior:
   - inactive-layer markers are read-only/non-draggable
   - layer reorder updates feature-group order consistently
+- Donut polygon transform in the polygon menu, with inward-only or both-directions config, simple-polygon validation, and undo/redo support.
+- Custom polygon menu actions via `polygonTools.menuActions`, including typed callback context, async apply handlers, optional visibility predicates, per-action history control, custom styling classes, merge/simplify result options, and exported `PolygonMenuAction*` types.
+- Predefined polygon overrides for per-feature merge, interaction, and style policy (`overrides.merge`, `overrides.interaction`, `overrides.style`).
+- Standalone public demo workspace with wrapper plus Leaflet v1/v2 routes and local-source verification modes.
+- Custom action documentation in `docs/CUSTOM_ACTIONS.md`.
 - Playwright Leaflet-version matrix scripts: `test:playwright:v1`, `test:playwright:v2`, and `test:playwright:matrix`.
 - Coordinate parser regression tests for `CoordinateUtils.convertToLatLng` now cover:
   - directional decimal suffixes (including west/south negative signs)
@@ -32,10 +37,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `getFeatureMetadata(featureGroup)`
   - `setFeatureMetadata(featureGroup, metadata)`
   - `patchFeatureMetadata(featureGroup, metadataPatch)`
+- History capture now covers batch snapshots, layer delete/reorder actions, donut polygon transforms, and custom polygon menu actions.
 
 ### Fixed
 
 - Demo build now dedupes Leaflet to avoid multiple instances breaking polygon status counts on hosted builds.
+- Built package root declarations now export polygon menu action types.
 - Toolbar button tooltips are now custom (configurable delay, direction, colors, and enable/disable) instead of native title positioning.
 - Clone mode button now disables itself when no polygons exist (matches undo/redo behavior).
 - P2P mode buttons now show the active highlight color when selected.

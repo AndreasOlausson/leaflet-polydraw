@@ -5,8 +5,14 @@ There is no strict priority order — features and fixes are developed based on 
 Contributions, ideas, and discussions are always welcome.
 
 ## Core Fixes & Improvements
-- **Playwright E2E Tests**: Add full end-to-end coverage for interactive drawing and regression validation.
-- **Improved Unit Tests**: Expand test coverage and reliability across core modules.
+- **Playwright E2E Tests**: Expand end-to-end coverage for additional interactive edge cases and regression validation.
+- **Improved Unit Tests**: Continue expanding coverage and reliability across core modules.
+
+## Recently Completed in 2.0
+
+- **Additional Polygon Metadata**: Store and update per-feature metadata through import options and public APIs.
+- **Layered Polygon Sets**: Organize polygons into layers with visibility, ordering, color, interaction policy, panel state, and metadata.
+- **Extensible Menu System**: Add custom polygon menu actions through `polygonTools.menuActions`.
 
 ## Planned New Features
 
@@ -14,13 +20,10 @@ Contributions, ideas, and discussions are always welcome.
 - **Polygon Splitting Tool**: Enable splitting polygons by drawing a cross-cutting line.
 - **Measurement Tool**: Add an optional measuring tool for temporary distance and area visualization.
 - **Multi-Select Editing**: Enable batch selection and transformation of multiple polygons.
-- **Additional Polygon Metadata**: Store extra, non-optimization props per polygon (custom info-popup text, custom color, tags, etc.).
-- **Layered Polygon Sets**: Support multiple independent layers so overlapping polygons in different layers do not merge or affect each other.
 
 ## Experimental & Long-Term Ideas
 
 - **Geo-Data Format Helpers**: Add import/export utilities for GeoJSON, WKT, and KML.
 - **Topological Operations**: Provide advanced GIS operations like intersection, difference, and buffering.
 - **Theming & Customization**: Expand the configuration to support complete UI theming.
-- **Extensible Menu System**: Allow developers to add custom menu items or contextual actions.
 - **Vertex Snapping**: Add snapping to grid, vertices, or nearby geometries.

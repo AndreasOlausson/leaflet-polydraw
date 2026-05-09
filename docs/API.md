@@ -4,7 +4,7 @@ For most use cases, simply add the plugin and use the built-in buttons. However,
 
 ## Essential Methods
 
-git sta### `addPredefinedPolygon(geographicBorders: unknown[][][], options?: PredefinedPolygonOptions)`
+### `addPredefinedPolygon(geographicBorders: unknown[][][], options?: PredefinedPolygonOptions)`
 
 Add polygons programmatically with smart coordinate auto-detection (useful for loading saved data).
 
@@ -195,6 +195,10 @@ const polygons = polydraw.getAllPolygons();
 
 ## Advanced Methods (Optional)
 
+### Custom polygon menu actions
+
+Use `polygonTools.menuActions` to add application-owned polygon menu actions with typed callbacks, optional visibility predicates, async handlers, history control, and custom styling. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md) for the full action/result contract.
+
 ### `setDrawMode(mode: DrawMode)` & `getDrawMode()`
 
 Programmatically control drawing modes (the buttons do this automatically).
@@ -293,3 +297,13 @@ polydraw.updateLayer("Hazard", {
   visibility: true,
 });
 ```
+
+### Layer runtime API
+
+Use these methods when an application needs to control layers outside the built-in panel:
+
+- Read layers: `getLayerManager()`, `getAllLayers()`, `getLayerById(layerId)`, `getLayerForFeatureGroup(featureGroup)`
+- Create/update/delete layers: `createLayer(input)`, `ensureLayer(input)`, `updateLayer(layerId, patch)`, `deleteLayer(layerId)`
+- Set layer state: `setActiveLayer(layerId)`, `setLayerVisibility(layerId, visible)`, `showLayer(layerId)`, `hideLayer(layerId)`, `setLayerColor(layerId, color)`, `setLayerInteraction(layerId, interaction)`, `setLayerPanelVisibility(layerId, panel)`, `setLayerMetadata(layerId, metadata)`
+- Assign feature groups: `assignFeatureGroupToLayer(featureGroup, layerId)`, `moveFeatureGroupToLayer(featureGroup, layerId)`, `removeFeatureGroupFromLayer(featureGroup)`
+- Reorder layers: `reorderLayer(layerId, targetLayerId)`, `moveLayerToIndex(layerId, index)`, `setLayerOrder(layerIds)`

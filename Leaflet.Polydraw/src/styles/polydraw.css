@@ -238,7 +238,21 @@ body {
 }
 
 .marker-menu-content .marker-menu-button.menu-action-default {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000000' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg fill='%23ffffff' stroke='%23ffffff' xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 100 100'%3E%3Cpath d='M79.2 32.8c-.2-.7-1.1-.9-1.7-.4L67.4 42.5c-.8.8-2 .8-2.8 0l-7.1-7.1c-.8-.8-.8-2 0-2.8l10.2-10.2c.5-.5.3-1.4-.4-1.7-1.7-.4-3.5-.7-5.3-.7-10.6 0-19.1 9.2-17.9 20 .2 1.7.6 3.2 1.2 4.7L22 68.1c-2.7 2.7-2.7 7.2 0 9.9 1.4 1.4 3.2 2.1 5 2.1s3.6-.7 5-2.1l23.3-23.3c1.5.6 3.1 1 4.7 1.2C70.9 57.1 80 48.6 80 38c0-1.8-.3-3.6-.8-5.2z'/%3E%3C/svg%3E");
+}
+
+.marker-menu-content .marker-menu-button.menu-action-custom,
+.marker-menu-content .marker-menu-button.menu-action-default {
+  position: relative;
+  border-color: #ffffff;
+  background-color: rgba(6, 78, 59, 0.64);
+  box-shadow:
+    0 0 0 2px #064e3b,
+    0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+.marker-menu-content .marker-menu-button.menu-action-custom.make-triangle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M12 4 21 20H3L12 4Z'/%3E%3C/svg%3E");
 }
 
 .marker-menu-content

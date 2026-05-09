@@ -71,7 +71,8 @@ type PolygonMenuActionContext = {
 const demoMenuActions = [
   {
     id: 'makeTriangle',
-    label: 'Make triangle',
+    label: 'Injected custom',
+    className: ['menu-action-custom', 'make-triangle'],
     apply: ({ bounds }: PolygonMenuActionContext): Feature<Polygon> => {
       const nw = bounds.getNorthWest();
       const ne = bounds.getNorthEast();

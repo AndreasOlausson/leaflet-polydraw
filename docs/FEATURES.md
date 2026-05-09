@@ -13,7 +13,7 @@ Create polygons by drawing freehand shapes on the map. Perfect for:
 
 Simply click the draw button and drag your mouse/finger to create polygon shapes. The plugin automatically converts your drawn path into a clean polygon using advanced algorithms.
 
-**Note**: The number of vertices in the final polygon is controlled by the `polygonCreation.simplification` settings in the configuration.
+**Note**: The number of vertices in the final polygon is controlled by the `simplification` settings in the configuration.
 
 ## Subtract Draw Mode
 
@@ -75,7 +75,7 @@ Duplicate existing polygons by dragging out a copy while the original stays in p
 - Template-based polygon creation
 - Opt-in interaction: Clone Drag Mode is available only when explicitly enabled via `config.tools.clone`.
 
-Clone Drag Mode operates independently of the standard polygon dragging setting (`modes.dragPolygons`). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
+Clone Drag Mode operates independently of the standard polygon dragging setting (`interaction.drag` and the `modes.dragPolygons` compatibility flag). Even when global polygon dragging is disabled, clone operations via drag remain fully functional.
 
 Simply click the clone button in the toolbar and drag any polygon on the map. A dashed ghost outline indicates the original position during the drag operation. Upon release, a new polygon is created at the drop location, and the original returns to its starting coordinates.
 Press Esc to abort the clone. If history capture is enabled (`config.history.capture.polygonClone`), the clone can be reverted using Undo.
@@ -84,7 +84,7 @@ Press Esc to abort the clone. If history capture is enabled (`config.history.cap
 
 - **Hole Integrity**: Clones preserve all inner rings and optimization metadata.
 - **Merge Support**: Respects `config.mergePolygons` — clones will merge with intersecting shapes if enabled.
-- **Independence**: Operates even if global polygon dragging (`modes.dragPolygons`) is disabled.
+- **Independence**: Operates even if global polygon dragging is disabled.
 - **History Capture**: Each clone is recorded as a distinct action for easy undo/redo (configurable via `config.history.capture.polygonClone`).
 
 ## Undo & Redo
@@ -94,7 +94,7 @@ Press Esc to abort the clone. If history capture is enabled (`config.history.cap
 Step backward or forward through edits:
 
 - Undo/redo polygon drawing, subtraction, vertex edits, and transforms
-- Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier)
+- Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier, donut, custom menu actions)
 - Accessible via toolbar buttons or keyboard shortcuts
 - History is capped to keep memory under control (`config.history.maxSize`)
 - You can opt out of specific action types via `config.history.capture` (snapshots still store full state)
@@ -152,8 +152,29 @@ Access operations through the menu marker:
 - **Bezier Curves**: Apply smooth curve interpolation (alpha)
 - **Scale**: Use the transform handles to resize the polygon without redrawing it.
 - **Rotate**: Use the transform handles to rotate the polygon without redrawing it.
+- **Donut**: Convert a simple polygon into an inward hole or outward donut-style geometry, with configurable direction.
+- **Custom Actions**: Add application-owned menu buttons through `polygonTools.menuActions`. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md).
 - **Visual Optimization Toggle**: Quickly show or hide the pruned “elbow” markers on predefined polygons, so you can inspect every
   vertex or keep the view uncluttered. (see [API.md](API.md))
+
+## Layer Management
+
+Organize polygons into named layers for larger applications and imported datasets:
+
+- Set an active layer for new drawing/import operations
+- Toggle layer visibility and reorder layers from the layer panel
+- Apply layer colors to polygons while still allowing per-feature style overrides
+- Mark layers as editable, readonly, or static
+- Attach metadata to layers and individual feature groups
+- Move existing feature groups between layers through the public API
+
+Layer APIs are useful for GIS-style workflows where imported polygons, user-drawn polygons, and reference geometries need different visibility and interaction policies.
+
+## Custom Polygon Menu Actions
+
+Apps can inject their own polygon menu buttons without forking Polydraw. Custom actions receive a typed context with the current polygon, feature group, and bounds, and return the replacement GeoJSON polygon synchronously or asynchronously.
+
+Custom actions support visibility predicates, custom CSS classes, opt-out history capture, and result options for merge/simplify behavior. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md) for the full contract and examples.
 
 ## Programmatic Import & Export
 
