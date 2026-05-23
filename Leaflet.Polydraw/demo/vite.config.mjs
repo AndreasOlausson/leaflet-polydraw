@@ -4,12 +4,13 @@ import path from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '../..');
 
 export default defineConfig({
   base: '/leaflet-polydraw/',
   server: {
     fs: {
-      allow: ['.', '../dist'],
+      allow: [__dirname, path.resolve(__dirname, '../dist'), repoRoot],
     },
   },
   build: {

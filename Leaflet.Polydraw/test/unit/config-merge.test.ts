@@ -173,10 +173,10 @@ describe('deepMerge', () => {
         },
       };
       const result = deepMerge(target, source as any);
-      expect(result.markers?.zIndexOffset).toBe(100);
-      expect(result.markers?.markerIcon?.zIndexOffset).toBe(null);
-      expect(result.markers?.markerIcon?.styleClasses).toEqual(['custom-class']);
-      expect(result.markers?.deleteMarker).toBe(true);
+      expect(result.markers.zIndexOffset).toBe(100);
+      expect(result.markers.markerIcon.zIndexOffset).toBe(null);
+      expect(result.markers.markerIcon.styleClasses).toEqual(['custom-class']);
+      expect(result.markers.deleteMarker).toBe(true);
     });
 
     it('should merge styles configuration with nested objects', () => {
@@ -200,9 +200,9 @@ describe('deepMerge', () => {
         },
       };
       const result = deepMerge(target, source as any);
-      expect(result.styles?.polygon?.color).toBe('#50622b');
-      expect(result.styles?.polygon?.fillColor).toBe('#custom-color');
-      expect(result.styles?.ui?.dragSubtract?.color).toBe('#D9460F');
+      expect(result.styles.polygon.color).toBe('#50622b');
+      expect(result.styles.polygon.fillColor).toBe('#custom-color');
+      expect(result.styles.ui.dragSubtract.color).toBe('#D9460F');
     });
 
     it('should handle empty source objects', () => {
@@ -213,7 +213,7 @@ describe('deepMerge', () => {
       const source: Partial<PolydrawConfig> = {};
       const result = deepMerge(target, source);
       expect(result.mergePolygons).toBe(true);
-      expect(result.tools?.draw).toBe(true);
+      expect(result.tools.draw).toBe(true);
     });
 
     it('should handle null sources gracefully', () => {
@@ -397,9 +397,13 @@ describe('deepMerge', () => {
       expect(result.styles.polygon.color).toBe('#FF0000');
       expect(result.styles.polygon.fillColor).toBe('#b4cd8a'); // Unchanged
 
-      expect(result.markers.visualOptimization.toleranceMin).toBe(0.0001);
-      expect(result.markers.visualOptimization.curve).toBe(1.8);
-      expect(result.markers.visualOptimization.toleranceMax).toBe(0.005); // Unchanged
+      const visualOptimization = result.markers.visualOptimization;
+      if (!visualOptimization) {
+        throw new Error('Expected visualOptimization config to be defined');
+      }
+      expect(visualOptimization.toleranceMin).toBe(0.0001);
+      expect(visualOptimization.curve).toBe(1.8);
+      expect(visualOptimization.toleranceMax).toBe(0.005); // Unchanged
 
       expect(result.simplification.simple.tolerance).toBe(0.001);
       expect(result.simplification.simple.highQuality).toBe(false); // Unchanged

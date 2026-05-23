@@ -1,8 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import * as L from 'leaflet';
+import { DonutDirection } from '../../../src/enums';
+import { defaultConfig } from '../../../src/config';
 import { MockFactory } from '../mocks/factory';
 import { createPolydrawHarness } from '../helpers/polydraw-harness';
 import type { PolydrawConfig } from '../../../src/types/polydraw-interfaces';
+
+function withPolygonTools(
+  polygonTools: Partial<PolydrawConfig['polygonTools']>,
+): Partial<PolydrawConfig> {
+  return {
+    polygonTools: {
+      ...defaultConfig.polygonTools,
+      ...polygonTools,
+    },
+  };
+}
 
 /**
  * Finds the menu marker inside a featureGroup by checking for the 'menu' CSS class
@@ -99,9 +112,9 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the simplify button when simplify is disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { simplify: { enabled: false, processHoles: true } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ simplify: { enabled: false, processHoles: true } }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -127,9 +140,9 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the doubleElbows button when disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { doubleElbows: { enabled: false, processHoles: true } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ doubleElbows: { enabled: false, processHoles: true } }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -155,11 +168,11 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the bbox button when disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bbox: { enabled: false, processHoles: true, addMidPointMarkers: true },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -185,8 +198,8 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the bezier button when disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bezier: {
             enabled: false,
             resolution: 10000,
@@ -196,8 +209,8 @@ describe('Menu Operations Config', () => {
             visualOptimizationLevel: 10,
             ghostMarkers: false,
           },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -223,9 +236,7 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the scale button when disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { scale: { enabled: false } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(withPolygonTools({ scale: { enabled: false } }));
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -251,9 +262,7 @@ describe('Menu Operations Config', () => {
     });
 
     it('should hide the rotate button when disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { rotate: { enabled: false } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(withPolygonTools({ rotate: { enabled: false } }));
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
@@ -294,9 +303,9 @@ describe('Menu Operations Config', () => {
     });
 
     it('should not show toggle button when disabled even if polygon has optimization', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { visualOptimizationToggle: { enabled: false } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ visualOptimizationToggle: { enabled: false } }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon(), {
           visualOptimizationLevel: 6,
@@ -312,9 +321,9 @@ describe('Menu Operations Config', () => {
 
   describe('simplify processHoles behavior', () => {
     it('should simplify holes when processHoles is true', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { simplify: { enabled: true, processHoles: true } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ simplify: { enabled: true, processHoles: true } }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -346,9 +355,9 @@ describe('Menu Operations Config', () => {
     });
 
     it('should preserve holes unchanged when processHoles is false', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { simplify: { enabled: true, processHoles: false } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ simplify: { enabled: true, processHoles: false } }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -376,9 +385,9 @@ describe('Menu Operations Config', () => {
 
   describe('doubleElbows processHoles behavior', () => {
     it('should double elbows on holes when processHoles is true', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { doubleElbows: { enabled: true, processHoles: true } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ doubleElbows: { enabled: true, processHoles: true } }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -404,9 +413,9 @@ describe('Menu Operations Config', () => {
     });
 
     it('should preserve holes unchanged when processHoles is false', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: { doubleElbows: { enabled: true, processHoles: false } },
-      } as Partial<PolydrawConfig>);
+      const harness = createPolydrawHarness(
+        withPolygonTools({ doubleElbows: { enabled: true, processHoles: false } }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -433,11 +442,11 @@ describe('Menu Operations Config', () => {
 
   describe('bbox processHoles and addMidPointMarkers', () => {
     it('should convert holes to bounding boxes when processHoles is true', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bbox: { enabled: true, processHoles: true, addMidPointMarkers: false },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -463,11 +472,11 @@ describe('Menu Operations Config', () => {
     });
 
     it('should preserve holes when processHoles is false', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bbox: { enabled: true, processHoles: false, addMidPointMarkers: false },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         const squareWithHole = MockFactory.createPredefinedPolygons().squareWithHole();
         await harness.polydraw.addPredefinedPolygon(squareWithHole);
@@ -486,11 +495,11 @@ describe('Menu Operations Config', () => {
     });
 
     it('should add midpoint markers (double elbows) when addMidPointMarkers is true', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bbox: { enabled: true, processHoles: true, addMidPointMarkers: true },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(
           MockFactory.createPredefinedPolygons().octagon(),
@@ -514,11 +523,11 @@ describe('Menu Operations Config', () => {
     });
 
     it('should not add midpoint markers when addMidPointMarkers is false', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bbox: { enabled: true, processHoles: true, addMidPointMarkers: false },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(
           MockFactory.createPredefinedPolygons().octagon(),
@@ -568,8 +577,8 @@ describe('Menu Operations Config', () => {
     });
 
     it('should apply visual optimization level from bezier config', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bezier: {
             enabled: true,
             resolution: 10000,
@@ -579,8 +588,8 @@ describe('Menu Operations Config', () => {
             visualOptimizationLevel: 8,
             ghostMarkers: false,
           },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(
           MockFactory.createPredefinedPolygons().octagon(),
@@ -606,8 +615,8 @@ describe('Menu Operations Config', () => {
     });
 
     it('should apply ghost markers when ghostMarkers is true', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           bezier: {
             enabled: true,
             resolution: 10000,
@@ -617,8 +626,8 @@ describe('Menu Operations Config', () => {
             visualOptimizationLevel: 10,
             ghostMarkers: true,
           },
-        },
-      } as Partial<PolydrawConfig>);
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(
           MockFactory.createPredefinedPolygons().octagon(),
@@ -644,8 +653,8 @@ describe('Menu Operations Config', () => {
 
   describe('all buttons disabled', () => {
     it('should show no menu buttons when all operations are disabled', async () => {
-      const harness = createPolydrawHarness({
-        menuOperations: {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
           simplify: { enabled: false, processHoles: true },
           doubleElbows: { enabled: false, processHoles: true },
           bbox: { enabled: false, processHoles: true, addMidPointMarkers: true },
@@ -660,10 +669,10 @@ describe('Menu Operations Config', () => {
           },
           scale: { enabled: false },
           rotate: { enabled: false },
-          donut: { enabled: false, direction: 'both' },
+          donut: { enabled: false, direction: DonutDirection.Both },
           visualOptimizationToggle: { enabled: false },
-        },
-      });
+        }),
+      );
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];

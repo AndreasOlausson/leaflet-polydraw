@@ -10,6 +10,7 @@ export function injectDynamicStyles(config: PolydrawConfig): void {
     .crosshair-cursor-enabled { cursor: crosshair !important; }
     .crosshair-cursor-enabled * { cursor: crosshair !important; }
     .leaflet-polydraw-p2p-marker { background-color: ${config.styles.ui.p2pMarker.backgroundColor}; border: 2px solid ${config.styles.ui.p2pMarker.borderColor}; border-radius: 50%; box-sizing: border-box; }
+    .leaflet-polydraw-p2p-marker[data-p2p-mode="subtract"] { background-color: ${config.styles.ui.dragSubtract.color}; border-color: ${config.styles.ui.dragSubtract.color}; }
     .leaflet-polydraw-p2p-first-marker { position: relative; }
     .leaflet-polydraw-p2p-first-marker:hover { transform: scale(1.5); transition: all 0.2s ease; }
     .leaflet-polydraw-p2p-first-marker-ready[data-p2p-mode="add"]:hover { background-color: ${config.styles.ui.p2pClosingMarker.color}; border-color: ${config.styles.ui.p2pClosingMarker.color}; cursor: pointer; }

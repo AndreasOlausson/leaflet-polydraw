@@ -67,6 +67,17 @@ type PolygonMenuAction = {
   visible?: (ctx: PolygonMenuActionContext) => boolean;
   history?: boolean;
 };
+
+type PolygonMenuActionResult =
+  | Feature<Polygon | MultiPolygon>
+  | {
+      polygon: Feature<Polygon | MultiPolygon>;
+      allowMerge?: boolean;
+      simplify?: boolean;
+      metadata?: Record<string, unknown>;
+    }
+  | null
+  | undefined;
 ```
 
 ### `id`
@@ -133,8 +144,8 @@ const exportAction: PolygonMenuAction = {
 
 ### `visible`
 
-Optional predicate called before the polygon menu is rendered. Return `false` to
-hide the action for the current polygon.
+Optional synchronous predicate called before the polygon menu is rendered. Return
+`false` to hide the action for the current polygon.
 
 ```typescript
 const onlyForLargePolygons: PolygonMenuAction = {
@@ -145,7 +156,10 @@ const onlyForLargePolygons: PolygonMenuAction = {
 };
 ```
 
-If `visible` throws, Polydraw hides the action for that menu render.
+If `visible` throws, Polydraw hides the action for that menu render. `visible`
+must return a boolean directly; asynchronous permission checks should be resolved
+by your application before opening the menu or encoded in local state that the
+predicate can read synchronously.
 
 ### `history`
 
@@ -212,6 +226,7 @@ const replaceWithoutMerge: PolygonMenuAction = {
     polygon,
     allowMerge: false,
     simplify: false,
+    metadata: { status: "processed" },
   }),
 };
 ```
@@ -223,6 +238,7 @@ Supported result fields:
 | `polygon` | `Feature<Polygon | MultiPolygon>` | Replacement geometry. |
 | `allowMerge` | `boolean` | Set `false` to prevent the result from merging with nearby polygons. Default is normal merge behavior. |
 | `simplify` | `boolean` | Set `true` to run simplification when Polydraw adds the result. Default is `false` for menu action results. |
+| `metadata` | `Record<string, unknown>` | Optional replacement feature metadata for the resulting polygon. If omitted, Polydraw preserves the source polygon metadata. |
 
 Return `null` or `undefined` to leave the polygon unchanged.
 

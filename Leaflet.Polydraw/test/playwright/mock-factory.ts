@@ -22,7 +22,7 @@ export class DemoFactory {
 
   /** Load the demo page and wait for the map */
   async goto() {
-    await this.page.goto('http://127.0.0.1:4173/');
+    await this.page.goto('./');
     await this.page.waitForSelector('#map');
   }
 

@@ -30,7 +30,7 @@ function toViewportPoints(
 }
 
 export async function gotoDemo(page: Page) {
-  await page.goto('/');
+  await page.goto('./');
   await page.waitForSelector('#map');
 }
 

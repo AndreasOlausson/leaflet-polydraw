@@ -24,6 +24,7 @@ import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
 import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
+import { cloneMetadataValue } from './utils/metadata-clone.util';
 import { warnIfUsingDeprecatedConfiguration } from './guards/config-deprecation-guard';
 import { applyRuntimeConfigFallbacks } from './guards/config-runtime-fallback-guard';
 import type { HistorySnapshot } from './managers/history-manager';
@@ -990,7 +991,7 @@ class Polydraw extends L.Control {
     if (!metadataStore?.metadata) {
       return undefined;
     }
-    return { ...metadataStore.metadata };
+    return cloneMetadataValue(metadataStore.metadata);
   }
 
   /**
@@ -1004,7 +1005,7 @@ class Polydraw extends L.Control {
       return false;
     }
     const metadataStore = this.ensureFeatureGroupMetadata(featureGroup);
-    metadataStore.metadata = { ...metadata };
+    metadataStore.metadata = cloneMetadataValue(metadata);
     metadataStore.lastModified = new Date();
     return true;
   }
@@ -1118,9 +1119,16 @@ class Polydraw extends L.Control {
       return;
     }
     this.saveHistory('layerDelete');
+    const removedFeatureGroups: L.FeatureGroup[] = [];
     for (const layerId of nonDefault) {
-      this.layerManager.deleteLayer(layerId);
+      removedFeatureGroups.push(...this.layerManager.deleteLayer(layerId));
     }
+
+    if (removedFeatureGroups.length > 0) {
+      this.removeFeatureGroupsFromMap(removedFeatureGroups);
+      return;
+    }
+
     this.updateLayerPanel();
   }
 
@@ -1288,22 +1296,41 @@ class Polydraw extends L.Control {
    * Removes all feature groups from the map and clears the internal storage.
    */
   public removeAllFeatureGroups() {
-    this.arrayOfFeatureGroups.forEach((featureGroups) => {
+    this.removeFeatureGroupsFromMap([...this.arrayOfFeatureGroups], { clearLayerState: true });
+  }
+
+  private removeDefaultLayerFeatureGroups(): void {
+    this.removeFeatureGroupsFromMap(this.layerManager.getFeatureGroupsForLayer('default'));
+  }
+
+  private removeFeatureGroupsFromMap(
+    featureGroups: L.FeatureGroup[],
+    options: { clearLayerState?: boolean } = {},
+  ): void {
+    if (featureGroups.length === 0) {
+      return;
+    }
+
+    featureGroups.forEach((featureGroup) => {
       try {
         // Perform proper cleanup before removing
         if (this.polygonMutationManager) {
-          this.polygonMutationManager.cleanupFeatureGroup(featureGroups);
+          this.polygonMutationManager.cleanupFeatureGroup(featureGroup);
         }
-        this.map.removeLayer(featureGroups);
+        this.map.removeLayer(featureGroup);
       } catch {
         // Silently handle layer removal errors
       }
+      const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+      if (index !== -1) {
+        this.arrayOfFeatureGroups.splice(index, 1);
+      }
+      this.layerManager?.removeFeatureGroupFromLayer(featureGroup);
     });
-    this.arrayOfFeatureGroups.length = 0; // Clear the array in-place to preserve the reference
     this._lastAppliedVisibleMapOrder = [];
 
     // Clear layer state (keep default layer empty)
-    if (this.layerManager) {
+    if (options.clearLayerState && this.layerManager) {
       this.layerManager.clear(this.config.styles.polygon.color);
     }
 
@@ -1312,6 +1339,7 @@ class Polydraw extends L.Control {
     // Update the indicator state after removing all polygons
     this.updateActivateButtonIndicator();
     this.updateLayerPanel();
+    this.eventManager.emit('polydraw:polygon:deleted', undefined);
   }
 
   /**
@@ -1888,13 +1916,22 @@ class Polydraw extends L.Control {
       e.stopPropagation();
     }
     // Only erase if there are polygons to erase
-    if (this.arrayOfFeatureGroups.length === 0) {
+    const eraseScope = this.config.tools.eraseScope ?? 'all';
+    const erasableFeatureGroups =
+      eraseScope === 'defaultLayer'
+        ? this.layerManager.getFeatureGroupsForLayer('default')
+        : this.arrayOfFeatureGroups;
+    if (erasableFeatureGroups.length === 0) {
       return;
     }
     // Close any open popup before erasing polygons
     this.map.closePopup();
     // Save state before erasing all
     this.saveHistory('eraseAll');
+    if (eraseScope === 'defaultLayer') {
+      this.removeDefaultLayerFeatureGroups();
+      return;
+    }
     this.removeAllFeatureGroups();
   };
 
@@ -2190,7 +2227,8 @@ class Polydraw extends L.Control {
   }
 
   /**
-   * Re-apply map layer order for visible feature groups based on array order.
+   * Re-apply map layer order for visible feature groups. Layer order is stored and
+   * shown top-to-bottom, while Leaflet renders later-added layers on top.
    */
   private reapplyFeatureGroupMapOrder(): void {
     if (!this.map || !this.layerManager) {
@@ -2203,6 +2241,22 @@ class Polydraw extends L.Control {
       return layerState ? layerState.visible !== false : true;
     });
 
+    const layerIndex = new Map<string, number>();
+    this.layerManager.getAllLayers().forEach((layer, index) => {
+      layerIndex.set(layer.id, index);
+    });
+    const mapRenderOrder = [...visibleFeatureGroups].sort((left, right) => {
+      const leftLayerId = this.layerManager?.getLayerForFeatureGroup(left);
+      const rightLayerId = this.layerManager?.getLayerForFeatureGroup(right);
+      const leftIndex = leftLayerId
+        ? (layerIndex.get(leftLayerId) ?? layerIndex.size)
+        : layerIndex.size;
+      const rightIndex = rightLayerId
+        ? (layerIndex.get(rightLayerId) ?? layerIndex.size)
+        : layerIndex.size;
+      return rightIndex - leftIndex;
+    });
+
     const visibleSet = new Set(visibleFeatureGroups);
     const hasMatchingVisibilityState = this.arrayOfFeatureGroups.every((featureGroup) => {
       const shouldBeVisible = visibleSet.has(featureGroup);
@@ -2210,7 +2264,7 @@ class Polydraw extends L.Control {
     });
     if (
       hasMatchingVisibilityState &&
-      this.isSameFeatureGroupOrder(this._lastAppliedVisibleMapOrder, visibleFeatureGroups)
+      this.isSameFeatureGroupOrder(this._lastAppliedVisibleMapOrder, mapRenderOrder)
     ) {
       return;
     }
@@ -2225,7 +2279,7 @@ class Polydraw extends L.Control {
       }
     }
 
-    for (const featureGroup of visibleFeatureGroups) {
+    for (const featureGroup of mapRenderOrder) {
       try {
         if (this.map.hasLayer(featureGroup)) {
           this.map.removeLayer(featureGroup);
@@ -2236,7 +2290,7 @@ class Polydraw extends L.Control {
       }
     }
 
-    this._lastAppliedVisibleMapOrder = [...visibleFeatureGroups];
+    this._lastAppliedVisibleMapOrder = [...mapRenderOrder];
   }
 
   /**
@@ -3140,7 +3194,11 @@ class Polydraw extends L.Control {
     }
 
     const eraseButton = container.querySelector('.icon-erase') as HTMLAnchorElement | null;
-    setButtonEnabled(eraseButton, hasPolygons);
+    const hasErasablePolygons =
+      (this.config.tools.eraseScope ?? 'all') === 'defaultLayer'
+        ? this.layerManager.getFeatureGroupsForLayer('default').length > 0
+        : hasPolygons;
+    setButtonEnabled(eraseButton, hasErasablePolygons);
   }
 
   private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {

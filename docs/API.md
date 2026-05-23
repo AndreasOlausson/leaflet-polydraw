@@ -197,7 +197,7 @@ const polygons = polydraw.getAllPolygons();
 
 ### Custom polygon menu actions
 
-Use `polygonTools.menuActions` to add application-owned polygon menu actions with typed callbacks, optional visibility predicates, async handlers, history control, and custom styling. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md) for the full action/result contract.
+Use `polygonTools.menuActions` to add application-owned polygon menu actions with typed callbacks, optional synchronous visibility predicates, async apply handlers, history control, metadata updates, and custom styling. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md) for the full action/result contract.
 
 ### `setDrawMode(mode: DrawMode)` & `getDrawMode()`
 

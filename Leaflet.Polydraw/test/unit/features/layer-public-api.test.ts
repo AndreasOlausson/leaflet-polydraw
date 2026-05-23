@@ -79,6 +79,21 @@ describe('Layer Public API', () => {
     expect(defaultDelete.reason).toBe('default-layer');
   });
 
+  it('clears non-default layers and removes their feature groups', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle());
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Layer A' });
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), { layer: 'Layer B' });
+
+    expect(polydraw.getFeatureGroups()).toHaveLength(3);
+
+    polydraw.clearLayers();
+
+    expect(getLayerOrder()).toEqual(['default']);
+    expect(polydraw.getFeatureGroups()).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(1);
+    expect(getFeatureLayerIds()).toEqual(['default']);
+  });
+
   it('returns false when patching metadata for missing layer', () => {
     expect(polydraw.patchLayerMetadata('missing', { x: 1 })).toBe(false);
   });

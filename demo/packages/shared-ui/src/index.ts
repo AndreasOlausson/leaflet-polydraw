@@ -651,14 +651,17 @@ const sharedStyles = `
   }
 
   .demo-map .demo-edit-handle {
-    background-color: #eef5da;
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--accent) 56%, #2d3f33),
-      0 6px 14px rgba(19, 32, 44, 0.24);
     width: 14px !important;
     height: 14px !important;
     margin-left: -7px !important;
     margin-top: -7px !important;
+  }
+
+  .demo-map .demo-edit-handle:not(.hole) {
+    background-color: #eef5da;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--accent) 56%, #2d3f33),
+      0 6px 14px rgba(19, 32, 44, 0.24);
   }
 
   .demo-map .demo-edit-handle.polygon-marker-faded {

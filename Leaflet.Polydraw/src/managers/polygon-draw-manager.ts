@@ -225,7 +225,10 @@ export class PolygonDrawManager {
           iconSize,
         }),
         draggable: this.config.modes.dragElbow,
-      }).addTo(this.map);
+      });
+      pointMarker.on('add', () => this.applyP2PMarkerMode(pointMarker));
+      pointMarker.addTo(this.map);
+      this.applyP2PMarkerMode(pointMarker);
 
       // Stop propagation on mousedown for all p2p markers to prevent adding new points on top of them
       pointMarker.on('mousedown', (e) => {
@@ -256,8 +259,12 @@ export class PolygonDrawManager {
           if (this.p2pMarkers.length >= 3) {
             const element = pointMarker.getElement();
             if (element) {
-              element.style.backgroundColor = this.config.styles.ui.p2pClosingMarker.color;
-              element.style.borderColor = this.config.styles.ui.p2pClosingMarker.color;
+              const modeColor =
+                this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+                  ? this.config.styles.ui.dragSubtract.color
+                  : this.config.styles.ui.p2pClosingMarker.color;
+              element.style.backgroundColor = modeColor;
+              element.style.borderColor = modeColor;
               element.style.cursor = 'pointer';
               element.title = 'Click to close polygon';
             }
@@ -292,6 +299,7 @@ export class PolygonDrawManager {
 
       this.p2pMarkers.push(pointMarker);
       this.updateP2PTracer();
+      this.updateP2PMarkerModes();
       this.updateFirstMarkerReadyState();
     } catch {
       // Handle marker creation errors in test environment
@@ -591,6 +599,7 @@ export class PolygonDrawManager {
           iconSize: [20, 20],
         }),
       );
+      this.applyP2PMarkerMode(firstMarker);
     }
 
     // Remove existing listeners to avoid duplicates
@@ -639,6 +648,7 @@ export class PolygonDrawManager {
    */
   private updateFirstMarkerReadyState(): void {
     if (this.p2pMarkers.length === 0) return;
+    this.updateP2PMarkerModes();
     const firstMarker = this.p2pMarkers[0];
     const element = firstMarker.getElement();
     if (!element) return;
@@ -652,7 +662,6 @@ export class PolygonDrawManager {
       element.title = 'Click to close polygon';
     } else {
       element.classList.remove('leaflet-polydraw-p2p-first-marker-ready');
-      element.removeAttribute('data-p2p-mode');
       element.style.cursor = '';
       element.removeAttribute('title');
     }
@@ -663,7 +672,26 @@ export class PolygonDrawManager {
    */
   public refreshP2PMarkerState(): void {
     if (this.p2pMarkers.length === 0) return;
+    this.updateP2PMarkerModes();
     this.updateFirstMarkerReadyState();
+  }
+
+  private applyP2PMarkerMode(marker: L.Marker): void {
+    const element = marker.getElement();
+    if (!element) return;
+
+    const mode = this.modeManager.getCurrentMode();
+    if (mode === DrawMode.PointToPointSubtract) {
+      element.setAttribute('data-p2p-mode', 'subtract');
+    } else if (mode === DrawMode.PointToPoint) {
+      element.setAttribute('data-p2p-mode', 'add');
+    } else {
+      element.removeAttribute('data-p2p-mode');
+    }
+  }
+
+  private updateP2PMarkerModes(): void {
+    this.p2pMarkers.forEach((marker) => this.applyP2PMarkerMode(marker));
   }
 
   /**

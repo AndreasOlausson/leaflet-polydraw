@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- demo glue touches dynamic Leaflet/plugin/browser APIs */
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polydraw/dist/leaflet-polydraw.css';
 import * as L from 'leaflet';
@@ -13,6 +14,11 @@ import {
   layerMergeLeft,
   layerMergeRight,
 } from './sample-polygons';
+import {
+  stanganFloodRiskGeoJson,
+  stanganFloodRiskLayers,
+  stanganFloodRiskViewport,
+} from '../../../demo/packages/shared-content/src/demo-polygons/stangan-flood';
 import type { Feature, Polygon } from 'geojson';
 
 declare global {
@@ -191,12 +197,6 @@ function updateStatusBox() {
         const toWktPolygon = (rings: L.LatLng[][]): string => {
           const parts = rings.map((r) => `(${toWktCoords(r)})`).join(', ');
           return `POLYGON (${parts})`;
-        };
-
-        const fmtMeters = (m: number): string => {
-          if (m < 1) return `${m.toFixed(2)} m`;
-          if (m < 1000) return `${m.toFixed(1)} m`;
-          return `${(m / 1000).toFixed(2)} km`;
         };
 
         // Handle different polygon structures based on actual Leaflet structure
@@ -790,7 +790,7 @@ const refreshPolygonViews = () => {
 (polydraw as any).on('polydraw:history:undo', refreshPolygonViews);
 (polydraw as any).on('polydraw:history:redo', refreshPolygonViews);
 
-(polydraw as any).on('polydraw:mode:change', (data: any) => {
+(polydraw as any).on('polydraw:mode:change', () => {
   updateStatusBox();
 });
 
@@ -828,6 +828,40 @@ function registerSampleButtons(): void {
 }
 
 registerSampleButtons();
+
+function registerStanganSampleButtons(): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-stangan-sample]');
+  buttons.forEach((button) => {
+    const id = button.dataset.stanganSample;
+    const layer = stanganFloodRiskLayers.find((entry) => entry.id === id);
+    const feature = stanganFloodRiskGeoJson.find((entry) => entry.properties?.id === id);
+    if (!layer || !feature) {
+      button.disabled = true;
+      return;
+    }
+
+    button.addEventListener('click', async () => {
+      try {
+        await polydraw.addPredefinedGeoJSONs([feature], {
+          overrides: {
+            style: {
+              color: layer.color,
+              fillColor: layer.fillColor,
+              fillOpacity: 0.24,
+              weight: 2,
+            },
+          },
+        });
+        map.setView(stanganFloodRiskViewport.center, stanganFloodRiskViewport.zoom);
+        setTimeout(refreshPolygonViews, 100);
+      } catch (error) {
+        console.warn(`Failed to add Stangan sample "${id}":`, error);
+      }
+    });
+  });
+}
+
+registerStanganSampleButtons();
 
 // --- Layer demo buttons ---
 

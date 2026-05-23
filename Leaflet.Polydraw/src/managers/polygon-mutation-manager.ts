@@ -24,6 +24,7 @@ import {
   PolydrawEventPayloads,
 } from './event-manager';
 import { isTestEnvironment } from '../utils';
+import { cloneMetadataValue } from '../utils/metadata-clone.util';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
@@ -220,6 +221,7 @@ export class PolygonMutationManager {
       sourceFeatureIds: data.sourceFeatureIds,
       featureInteractionOverride: data.featureInteractionOverride,
       featureStyleOverrides: data.featureStyleOverrides,
+      targetLayerId: data.targetLayerId,
       featureCreatedAt: data.featureCreatedAt,
       featureLastModified: data.featureLastModified,
     };
@@ -314,6 +316,7 @@ export class PolygonMutationManager {
 
       const noMerge = result.allowMerge === false;
       const shouldSimplify = result.simplify === true;
+      const resultMetadata = result.metadata ?? sourceMetadata.metadata;
 
       const addResult = await this.addPolygon(result.result, {
         simplify: shouldSimplify,
@@ -321,7 +324,7 @@ export class PolygonMutationManager {
         visualOptimizationLevel: bezierLevel,
         originalOptimizationLevel: bezierOriginal,
         featureId: sourceMetadata.featureId,
-        featureMetadata: sourceMetadata.metadata,
+        featureMetadata: resultMetadata,
         sourceFeatureIds: sourceMetadata.sourceFeatureIds,
         featureInteractionOverride: sourceMetadata.interactionOverride,
         featureStyleOverrides: sourceMetadata.styleOverrides,
@@ -384,6 +387,7 @@ export class PolygonMutationManager {
         result: normalizedResult.polygon,
         allowMerge: normalizedResult.allowMerge,
         simplify: normalizedResult.simplify,
+        metadata: normalizedResult.metadata,
       };
     } catch (error) {
       if (!isTestEnvironment()) {
@@ -399,6 +403,7 @@ export class PolygonMutationManager {
         polygon: Feature<Polygon | MultiPolygon>;
         allowMerge?: boolean;
         simplify?: boolean;
+        metadata?: Record<string, unknown>;
       }
     | undefined {
     if (actionResult === null || actionResult === undefined || typeof actionResult !== 'object') {
@@ -414,6 +419,7 @@ export class PolygonMutationManager {
         polygon: actionResult.polygon,
         allowMerge: actionResult.allowMerge,
         simplify: actionResult.simplify,
+        metadata: actionResult.metadata,
       };
     }
 
@@ -1572,14 +1578,14 @@ export class PolygonMutationManager {
     if (!metadata) {
       return {};
     }
-    return { ...metadata };
+    return cloneMetadataValue(metadata);
   }
 
   private cloneStyleOverrides(style?: PolygonStyleOverrides): PolygonStyleOverrides | undefined {
     if (!style) {
       return undefined;
     }
-    return { ...style };
+    return cloneMetadataValue(style);
   }
 
   private featureHasHoles(feature: Feature<Polygon | MultiPolygon>): boolean {

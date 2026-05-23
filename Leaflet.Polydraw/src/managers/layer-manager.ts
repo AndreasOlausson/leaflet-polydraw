@@ -5,6 +5,7 @@ import type {
   LayerInteraction,
   LayerPanelVisibility,
 } from '../types/polydraw-interfaces';
+import { cloneMetadataValue } from '../utils/metadata-clone.util';
 
 export interface LayerState {
   id: string;
@@ -503,7 +504,7 @@ export class LayerManager {
 
     this.eventManager.emit('polydraw:layer:reordered', {
       layerId: normalizedIds[0],
-      targetLayerId: normalizedIds.at(-1)!,
+      targetLayerId: normalizedIds[normalizedIds.length - 1]!,
       orderedLayerIds: fullOrder,
     });
     return true;
@@ -673,7 +674,7 @@ export class LayerManager {
     if (!metadata) {
       return {};
     }
-    return { ...metadata };
+    return cloneMetadataValue(metadata);
   }
 
   /**

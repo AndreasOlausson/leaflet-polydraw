@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - inactive-layer markers are read-only/non-draggable
   - layer reorder updates feature-group order consistently
 - Donut polygon transform in the polygon menu, with inward-only or both-directions config, simple-polygon validation, and undo/redo support.
-- Custom polygon menu actions via `polygonTools.menuActions`, including typed callback context, async apply handlers, optional visibility predicates, per-action history control, custom styling classes, merge/simplify result options, and exported `PolygonMenuAction*` types.
+- Custom polygon menu actions via `polygonTools.menuActions`, including typed callback context, async apply handlers, optional visibility predicates, per-action history control, custom styling classes, merge/simplify/metadata result options, and exported `PolygonMenuAction*` types.
 - Predefined polygon overrides for per-feature merge, interaction, and style policy (`overrides.merge`, `overrides.interaction`, `overrides.style`).
 - Standalone public demo workspace with wrapper plus Leaflet v1/v2 routes and local-source verification modes.
 - Custom action documentation in `docs/CUSTOM_ACTIONS.md`.

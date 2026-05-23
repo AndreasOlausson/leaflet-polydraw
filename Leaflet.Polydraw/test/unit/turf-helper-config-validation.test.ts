@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Feature, LineString, MultiPolygon, Polygon } from 'geojson';
+import type { Feature, LineString, MultiPolygon, Polygon, Position } from 'geojson';
 import { defaultConfig } from '../../src/config';
 import { TurfHelper } from '../../src/turf-helper';
 import { deepMerge } from '../../src/utils/config-merge.util';
@@ -10,7 +10,11 @@ function buildDenseRing(points = 48, radius = 1): [number, number][] {
     const angle = (i / points) * Math.PI * 2;
     ring.push([Math.cos(angle) * radius, Math.sin(angle) * radius]);
   }
-  ring.push(ring[0]);
+  const first = ring[0];
+  if (!first) {
+    throw new Error('Cannot build dense ring without points');
+  }
+  ring.push(first);
   return ring;
 }
 
@@ -44,7 +48,18 @@ function createTraceFeature(): Feature<LineString> {
 }
 
 function getOuterRingVertexCount(feature: Feature<Polygon | MultiPolygon>): number {
-  return feature.geometry.coordinates[0][0].length;
+  let outerRing: Position[] | undefined;
+  if (feature.geometry.type === 'Polygon') {
+    outerRing = feature.geometry.coordinates[0];
+  } else {
+    outerRing = feature.geometry.coordinates[0]?.[0];
+  }
+
+  if (!outerRing) {
+    throw new Error('Expected polygon feature to include an outer ring');
+  }
+
+  return outerRing.length;
 }
 
 describe('TurfHelper config validation', () => {
@@ -94,6 +109,7 @@ describe('TurfHelper config validation', () => {
 
     const defaultDynamicConfig = deepMerge(structuredClone(defaultConfig), {
       simplification: {
+        ...defaultConfig.simplification,
         strategy: 'dynamic',
         dynamic: {
           baseTolerance: 0.0001,
@@ -106,6 +122,7 @@ describe('TurfHelper config validation', () => {
 
     const invalidDynamicConfig = deepMerge(structuredClone(defaultConfig), {
       simplification: {
+        ...defaultConfig.simplification,
         strategy: 'dynamic',
         dynamic: {
           baseTolerance: Number.NaN,
@@ -151,8 +168,6 @@ describe('TurfHelper config validation', () => {
     const defaultResult = defaultHelper.getBezierMultiPolygon(polygonArray);
     const partialResult = partialHelper.getBezierMultiPolygon(polygonArray);
 
-    expect(partialResult.geometry.coordinates[0][0].length).toBe(
-      defaultResult.geometry.coordinates[0][0].length,
-    );
+    expect(getOuterRingVertexCount(partialResult)).toBe(getOuterRingVertexCount(defaultResult));
   });
 });

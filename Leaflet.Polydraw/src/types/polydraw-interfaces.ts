@@ -224,6 +224,7 @@ export interface StylesConfig {
 export type PolygonCreationAlgorithm = 'concaveman' | 'convex' | 'direct';
 export type SimplificationStrategy = 'simple' | 'dynamic' | 'none';
 export type ModifierKey = 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey';
+export type EraseScope = 'all' | 'defaultLayer';
 
 export interface SimplificationSimpleOptions {
   tolerance: number;
@@ -254,6 +255,7 @@ export interface ToolConfig {
   p2pSubtract: boolean;
   clone: boolean;
   erase: boolean;
+  eraseScope?: EraseScope;
 }
 
 /**
@@ -329,6 +331,7 @@ export type PolygonMenuActionResult =
       polygon: Feature<Polygon | MultiPolygon>;
       allowMerge?: boolean;
       simplify?: boolean;
+      metadata?: Record<string, unknown>;
     }
   | null
   | undefined;
@@ -513,6 +516,7 @@ export interface PolygonUpdatedEventData {
   sourceFeatureIds?: string[];
   featureInteractionOverride?: LayerInteraction;
   featureStyleOverrides?: PolygonStyleOverrides;
+  targetLayerId?: string;
   featureCreatedAt?: string;
   featureLastModified?: string;
 }

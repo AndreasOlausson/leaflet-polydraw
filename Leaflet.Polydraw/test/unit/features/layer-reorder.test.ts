@@ -78,4 +78,23 @@ describe('Layer Reordering', () => {
     await polydraw.redo();
     expect(getFeatureLayerIds()).toEqual(['Layer C', 'Layer A', 'Layer B']);
   });
+
+  it('renders the top layer order above lower panel rows on the map', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle());
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Background' });
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), { layer: 'Reference' });
+
+    const layerManager = polydraw.getLayerManager();
+    const internal = polydraw as unknown as { _lastAppliedVisibleMapOrder: unknown[] };
+    const renderedLayerIds = internal._lastAppliedVisibleMapOrder.map((featureGroup) =>
+      layerManager.getLayerForFeatureGroup(featureGroup as never),
+    );
+
+    expect(layerManager.getAllLayers().map((layer) => layer.id)).toEqual([
+      'default',
+      'Background',
+      'Reference',
+    ]);
+    expect(renderedLayerIds).toEqual(['Reference', 'Background', 'default']);
+  });
 });

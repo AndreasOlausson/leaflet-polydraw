@@ -2,7 +2,7 @@
  * Coordinate Auto-Detection Tests
  * Tests the CoordinateUtils.convertToLatLng method with various coordinate formats
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CoordinateUtils } from '../../../src/coordinate-utils';
 
 // Mock the leafletAdapter to avoid dependency issues

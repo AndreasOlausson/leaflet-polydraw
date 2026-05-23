@@ -5,14 +5,25 @@ import Polydraw, { leafletAdapter } from 'leaflet-polydraw';
 import type { Feature, Polygon } from 'geojson';
 import {
   defaultViewport,
+  editableLayerOneNorth,
+  editableLayerOneSouth,
+  editableLayerThreeEast,
+  editableLayerThreeWest,
   metadataGeoJson,
   mergeLeftZone,
   mergeRightZone,
   operatorZone,
   overrideZone,
+  rainbowOpacityGridCells,
+  rainbowOpacityViewport,
+  readonlyReferenceNorth,
+  readonlyReferenceSouth,
   readonlyZone,
   showcaseScenarios,
   staticContextZone,
+  stanganFloodRiskGeoJson,
+  stanganFloodRiskLayers,
+  stanganFloodRiskViewport,
   toGeoborders,
   type MapScenarioId
 } from '@polydraw-demo/shared-content';
@@ -106,6 +117,12 @@ const polydrawConfig = {
       markerBehavior: 'fade',
     },
   },
+  styles: {
+    polygon: {
+      fillOpacity: 0.38,
+      fillColor: '#bbf7d0',
+    },
+  },
   markers: {
     markerIcon: {
       styleClasses: ['polygon-marker', 'demo-edit-handle'],
@@ -117,12 +134,23 @@ const polydrawConfig = {
   polygonTools: {
     menuActions: demoMenuActions,
   },
+  tools: {
+    eraseScope: 'defaultLayer',
+  },
 };
 
 const polydraw = new Polydraw({
   config: polydrawConfig as unknown as PolydrawConfigInput,
 });
 polydraw.addTo(map as any);
+const configureDefaultLayer = (interaction: 'editable' | 'readonly') => {
+  polydraw.updateLayer('default', {
+    label: 'Default Layer',
+    interaction,
+    panel: 'visible',
+  });
+};
+configureDefaultLayer('editable');
 
 const featureCountEl = document.querySelector<HTMLElement>('[data-state="feature-count"]');
 const layerCountEl = document.querySelector<HTMLElement>('[data-state="layer-count"]');
@@ -367,11 +395,12 @@ const setScenarioCopy = (scenarioId?: MapScenarioId) => {
   if (scenarioSummaryEl) scenarioSummaryEl.textContent = scenario.summary;
 };
 
-const resetMap = () => {
+const resetMap = (options: { defaultInteraction?: 'editable' | 'readonly' } = {}) => {
   closeFeatureInspectionDialog();
   featureDrawerEl?.removeAttribute('open');
   selectedFeatureId = undefined;
   polydraw.removeAllFeatureGroups();
+  configureDefaultLayer(options.defaultInteraction ?? 'editable');
   map.setView(defaultViewport.center as [number, number], defaultViewport.zoom);
   setScenarioCopy();
   syncStatus();
@@ -390,14 +419,122 @@ const withBatch = async (callback: () => Promise<void>) => {
 const loadScenario = async (scenarioId: MapScenarioId) => {
   resetMap();
   switch (scenarioId) {
+    case 'editable-work-layers':
+      await polydraw.addPredefinedPolygonGroups([
+        {
+          layer: {
+            id: 'Layer 1',
+            label: 'Layer 1',
+            color: '#2563eb',
+            interaction: 'editable',
+            panel: 'visible',
+            metadata: { owner: 'field-team-a' }
+          },
+          polygons: [
+            toGeoborders(editableLayerOneNorth),
+            toGeoborders(editableLayerOneSouth),
+          ],
+          options: {
+            metadata: { source: 'editable-seed', workstream: 'north-south' },
+            overrides: {
+              style: {
+                color: '#2563eb',
+                fillColor: '#93c5fd',
+                fillOpacity: 0.48,
+                weight: 3,
+              },
+            },
+          }
+        },
+        {
+          layer: {
+            id: 'Layer 2',
+            label: 'Layer 2',
+            color: '#b45309',
+            interaction: 'readonly',
+            panel: 'visible',
+            metadata: { owner: 'reference-data' }
+          },
+          polygons: [
+            toGeoborders(readonlyReferenceNorth),
+            toGeoborders(readonlyReferenceSouth),
+          ],
+          options: {
+            metadata: { source: 'protected-reference' },
+            overrides: {
+              style: {
+                color: '#b45309',
+                fillColor: '#fde68a',
+                fillOpacity: 0.36,
+                weight: 2,
+              },
+            },
+          }
+        },
+        {
+          layer: {
+            id: 'Layer 3',
+            label: 'Layer 3',
+            color: '#7c3aed',
+            interaction: 'editable',
+            panel: 'visible',
+            metadata: { owner: 'field-team-b' }
+          },
+          polygons: [
+            toGeoborders(editableLayerThreeWest),
+            toGeoborders(editableLayerThreeEast),
+          ],
+          options: {
+            metadata: { source: 'editable-seed', workstream: 'west-east' },
+            overrides: {
+              style: {
+                color: '#7c3aed',
+                fillColor: '#c4b5fd',
+                fillOpacity: 0.46,
+                weight: 3,
+              },
+            },
+          }
+        }
+      ]);
+      polydraw.setActiveLayer('Layer 1');
+      break;
+    case 'color-opacity-grid':
+      await withBatch(async () => {
+        for (const cell of rainbowOpacityGridCells) {
+          await polydraw.addPredefinedPolygon(toGeoborders(cell.polygon), {
+            layer: {
+              id: cell.layerId,
+              label: cell.layerId,
+              color: cell.color,
+              interaction: 'readonly',
+              panel: 'visible',
+            },
+            metadata: {
+              opacity: cell.fillOpacity,
+              label: cell.label,
+            },
+            overrides: {
+              style: {
+                color: cell.color,
+                fillColor: cell.fillColor,
+                fillOpacity: cell.fillOpacity,
+                weight: 1,
+              },
+            },
+          });
+        }
+      });
+      map.setView(rainbowOpacityViewport.center as [number, number], rainbowOpacityViewport.zoom);
+      break;
     case 'layer-policies':
       await polydraw.addPredefinedPolygonGroups([
         {
           layer: {
             id: 'Operator Zone',
             label: 'Operator Zone',
-            color: '#cf6a45',
-            interaction: 'editable',
+            color: '#dc2626',
+            interaction: 'readonly',
             panel: 'visible',
             metadata: { owner: 'operations' }
           },
@@ -406,8 +543,9 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
             metadata: { source: 'ops-seed' },
             overrides: {
               style: {
-                fillColor: '#f2c4b2',
-                fillOpacity: 0.42,
+                color: '#dc2626',
+                fillColor: '#fecaca',
+                fillOpacity: 0.58,
                 weight: 3,
               },
             },
@@ -417,7 +555,7 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
           layer: {
             id: 'Inspection Overlay',
             label: 'Inspection Overlay',
-            color: '#2f7e79',
+            color: '#2563eb',
             interaction: 'readonly',
             panel: 'visible'
           },
@@ -426,8 +564,9 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
             metadata: { source: 'inspection-round-14' },
             overrides: {
               style: {
-                fillColor: '#c4e4e0',
-                fillOpacity: 0.18,
+                color: '#2563eb',
+                fillColor: '#bfdbfe',
+                fillOpacity: 0.48,
                 weight: 2,
               },
             },
@@ -437,7 +576,7 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
           layer: {
             id: 'Context',
             label: 'Context',
-            color: '#7a6d3b',
+            color: '#7c3aed',
             interaction: 'static',
             panel: 'visible',
           },
@@ -446,9 +585,10 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
             metadata: { source: 'planning-context' },
             overrides: {
               style: {
-                fillColor: '#dfd7b6',
-                fillOpacity: 0.1,
-                weight: 2,
+                color: '#7c3aed',
+                fillColor: '#ede9fe',
+                fillOpacity: 0.38,
+                weight: 1,
               },
             },
           }
@@ -460,14 +600,32 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
       await withBatch(async () => {
         await polydraw.addPredefinedPolygon(toGeoborders(mergeLeftZone), {
           layer: {
-            id: 'Merge Zone',
-            label: 'Merge Zone',
-            color: '#c55f3d',
-            interaction: 'editable'
-          }
+            id: 'Parcel Archive',
+            label: 'Parcel Archive',
+            color: '#2563eb',
+            interaction: 'readonly'
+          },
+          metadata: { parcelId: 'PA-1042', source: 'archive-import' },
+          overrides: {
+            style: {
+              color: '#2563eb',
+              fillColor: '#bfdbfe',
+              fillOpacity: 0.44,
+              weight: 2,
+            },
+          },
         });
         await polydraw.addPredefinedPolygon(toGeoborders(mergeRightZone), {
-          layer: 'Merge Zone'
+          layer: 'Parcel Archive',
+          metadata: { parcelId: 'PA-1043', source: 'archive-import' },
+          overrides: {
+            style: {
+              color: '#2563eb',
+              fillColor: '#bfdbfe',
+              fillOpacity: 0.44,
+              weight: 2,
+            },
+          },
         });
       });
       break;
@@ -476,30 +634,56 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
         await polydraw.addPredefinedPolygon(toGeoborders(mergeLeftZone), {
           layer: {
             id: 'Layer Alpha',
-            label: 'Layer Alpha',
-            color: '#275f8b',
-            interaction: 'editable'
-          }
+            label: 'Yellow Overlay',
+            color: '#eab308',
+            interaction: 'readonly'
+          },
+          metadata: { dataset: 'yellow-overlay' },
+          overrides: {
+            style: {
+              color: '#eab308',
+              fillColor: '#eab308',
+              fillOpacity: 0.5,
+              weight: 2,
+            },
+          },
         });
         await polydraw.addPredefinedPolygon(toGeoborders(mergeRightZone), {
           layer: {
             id: 'Layer Beta',
-            label: 'Layer Beta',
-            color: '#9c5a2a',
-            interaction: 'editable'
-          }
+            label: 'Blue Overlay',
+            color: '#2563eb',
+            interaction: 'readonly'
+          },
+          metadata: { dataset: 'blue-overlay' },
+          overrides: {
+            style: {
+              color: '#2563eb',
+              fillColor: '#2563eb',
+              fillOpacity: 0.5,
+              weight: 2,
+            },
+          },
         });
       });
       break;
     case 'metadata-import':
       await polydraw.addPredefinedGeoJSONs(metadataGeoJson, {
         layer: {
-          id: 'Imported Survey',
-          label: 'Imported Survey',
-          color: '#486f91',
+          id: 'SVY-2048 GeoJSON',
+          label: 'SVY-2048 GeoJSON',
+          color: '#4f46e5',
           interaction: 'readonly',
           panel: 'visible'
-        }
+        },
+        overrides: {
+          style: {
+            color: '#4f46e5',
+            fillColor: '#c7d2fe',
+            fillOpacity: 0.46,
+            weight: 2,
+          },
+        },
       });
       break;
     case 'feature-overrides':
@@ -508,10 +692,18 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
           layer: {
             id: 'Dispatch Layer',
             label: 'Dispatch Layer',
-            color: '#1f6a55',
-            interaction: 'editable'
+            color: '#059669',
+            interaction: 'readonly'
           },
-          metadata: { source: 'dispatch-default' }
+          metadata: { source: 'dispatch-default' },
+          overrides: {
+            style: {
+              color: '#059669',
+              fillColor: '#a7f3d0',
+              fillOpacity: 0.38,
+              weight: 2,
+            },
+          },
         });
         await polydraw.addPredefinedPolygon(toGeoborders(overrideZone), {
           layer: 'Dispatch Layer',
@@ -520,14 +712,46 @@ const loadScenario = async (scenarioId: MapScenarioId) => {
             interaction: 'readonly',
             merge: 'block',
             style: {
-              color: '#aa4d2f',
-              fillColor: '#f0cfb0',
-              fillOpacity: 0.42,
-              weight: 4
+              color: '#581c87',
+              fillColor: '#ddd6fe',
+              fillOpacity: 0.48,
+              weight: 2
             }
           }
         });
       });
+      break;
+    case 'stangan-flood-risk':
+      await withBatch(async () => {
+        for (const floodLayer of stanganFloodRiskLayers) {
+          const feature = stanganFloodRiskGeoJson.find(
+            (entry) => entry.properties?.id === floodLayer.id,
+          );
+          if (!feature) continue;
+          await polydraw.addPredefinedGeoJSONs([feature], {
+            layer: {
+              id: floodLayer.title,
+              label: floodLayer.title,
+              color: floodLayer.color,
+              interaction: 'readonly',
+              panel: 'visible',
+              metadata: {
+                sourceLayer: feature.properties?.sourceLayer,
+                riskLevel: feature.properties?.riskLevel,
+              },
+            },
+            overrides: {
+              style: {
+                color: floodLayer.color,
+                fillColor: floodLayer.fillColor,
+                fillOpacity: floodLayer.fillOpacity,
+                weight: 2,
+              },
+            },
+          });
+        }
+      });
+      map.setView(stanganFloodRiskViewport.center as [number, number], stanganFloodRiskViewport.zoom);
       break;
   }
   setScenarioCopy(scenarioId);
@@ -566,7 +790,9 @@ map.whenReady(() => {
   scheduleMapSync();
 });
 
-document.querySelector('[data-action="reset"]')?.addEventListener('click', resetMap);
+document.querySelector('[data-action="reset"]')?.addEventListener('click', () => {
+  resetMap();
+});
 
 document.querySelectorAll<HTMLButtonElement>('[data-scenario-id]').forEach((button) => {
   button.addEventListener('click', () => {

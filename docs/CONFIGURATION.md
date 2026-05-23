@@ -16,6 +16,7 @@ const config = {
     subtract: true,
     clone: true,
     erase: true,
+    eraseScope: "all",
   },
   interaction: {
     ...defaultConfig.interaction,
@@ -90,7 +91,8 @@ const polydraw = L.control.polydraw({
 | **tools** / **modes**                                              | object  |                                   | Tool toggles (`tools.*`) and edit behavior flags (`modes.*`)                                                                                           |
 | &nbsp;&nbsp;draw                                                   | boolean | `true`                            | Enable draw mode button                                                                                                                                  |
 | &nbsp;&nbsp;subtract                                               | boolean | `true`                            | Enable subtract mode button                                                                                                                              |
-| &nbsp;&nbsp;erase                                              | boolean | `true`                            | Enable delete all button                                                                                                                                 |
+| &nbsp;&nbsp;erase                                              | boolean | `true`                            | Enable erase button                                                                                                                                      |
+| &nbsp;&nbsp;eraseScope                                         | `"all"` / `"defaultLayer"` | `"all"`             | Controls whether the erase button removes all polygons or only polygons assigned to the default layer                                                     |
 | &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode                                                                                                                       |
 | &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode                                                                                                                      |
 | &nbsp;&nbsp;clone                                          | boolean | `false`                           | Enable clone mode button for drag-duplicating polygons                                                                                                   |

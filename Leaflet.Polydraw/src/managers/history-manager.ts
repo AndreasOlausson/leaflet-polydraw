@@ -8,6 +8,7 @@ import type {
 } from '../types/polydraw-interfaces';
 import type { LayerManager } from './layer-manager';
 import * as L from 'leaflet';
+import { cloneMetadataValue } from '../utils/metadata-clone.util';
 
 /**
  * Represents a snapshot of the entire drawing state
@@ -335,7 +336,7 @@ export class HistoryManager {
       snapshot.id = metadata.id;
     }
     if (metadata?.metadata) {
-      snapshot.metadata = { ...metadata.metadata };
+      snapshot.metadata = cloneMetadataValue(metadata.metadata);
     }
     if (Array.isArray(metadata?.sourceFeatureIds)) {
       snapshot.sourceFeatureIds = [...metadata.sourceFeatureIds];
@@ -344,7 +345,7 @@ export class HistoryManager {
       snapshot.interactionOverride = metadata.interactionOverride;
     }
     if (metadata?.styleOverrides) {
-      snapshot.styleOverrides = { ...metadata.styleOverrides };
+      snapshot.styleOverrides = cloneMetadataValue(metadata.styleOverrides);
     }
     if (typeof metadata?.hasHoles === 'boolean') {
       snapshot.hasHoles = metadata.hasHoles;

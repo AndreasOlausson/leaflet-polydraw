@@ -536,6 +536,62 @@ describe('Polygon Menu Actions', () => {
       }
     });
 
+    it('should apply metadata returned by polygon menu action', async () => {
+      const polygonMenuAction: PolygonMenuAction = {
+        ...createMakeTriangleAction(),
+        id: 'markProcessed',
+        label: 'Mark processed',
+        apply: ({ bounds }: PolygonMenuActionContext) => {
+          const nw = bounds.getNorthWest();
+          const ne = bounds.getNorthEast();
+          const south = bounds.getSouth();
+          const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+          return {
+            polygon: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'Polygon',
+                coordinates: [
+                  [
+                    [nw.lng, nw.lat],
+                    [ne.lng, ne.lat],
+                    [centerLng, south],
+                    [nw.lng, nw.lat],
+                  ],
+                ],
+              },
+            },
+            metadata: {
+              status: 'processed',
+              details: { source: 'menu-action' },
+            },
+          };
+        },
+      };
+      const harness = createPolydrawHarness({
+        polygonTools: {
+          menuActions: [polygonMenuAction],
+        },
+      } as Partial<PolydrawConfig>);
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon(), {
+          metadata: { status: 'raw' },
+        });
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        clickMenuButton(harness.map, fg, 'markProcessed');
+        await flushAsync();
+
+        const fgAfter = harness.polydraw.getFeatureGroups()[0];
+        expect(harness.polydraw.getFeatureMetadata(fgAfter)).toEqual({
+          status: 'processed',
+          details: { source: 'menu-action' },
+        });
+      } finally {
+        harness.cleanup();
+      }
+    });
+
     it('should preserve layer assignment after polygon menu action', async () => {
       const polygonMenuAction = createMakeTriangleAction();
       const harness = createPolydrawHarness({

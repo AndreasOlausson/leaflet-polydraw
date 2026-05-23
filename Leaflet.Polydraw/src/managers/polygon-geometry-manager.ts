@@ -9,6 +9,7 @@ export interface GeometryOperationResult {
   error?: string;
   allowMerge?: boolean;
   simplify?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PolygonGeometryManagerDependencies {

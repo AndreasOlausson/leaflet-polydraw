@@ -65,6 +65,45 @@ describe('Feature Metadata Lifecycle', () => {
     });
   });
 
+  it('deep-clones feature metadata across public access and history restores', async () => {
+    const metadata = {
+      risk: 'high',
+      details: {
+        owner: 'seed',
+        tags: ['initial'],
+      },
+    };
+
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), { metadata });
+
+    const featureGroup = polydraw.getFeatureGroups()[0];
+    const returnedMetadata = polydraw.getFeatureMetadata(featureGroup)!;
+    (returnedMetadata.details as { owner: string }).owner = 'mutated-return';
+
+    expect(polydraw.getFeatureMetadata(featureGroup)).toEqual({
+      risk: 'high',
+      details: {
+        owner: 'seed',
+        tags: ['initial'],
+      },
+    });
+
+    await polydraw.addPredefinedPolygon(fixtures.octagon());
+    metadata.details.owner = 'mutated-source';
+    metadata.details.tags.push('external');
+
+    await polydraw.undo();
+
+    expect(polydraw.getFeatureGroups()).toHaveLength(1);
+    expect(polydraw.getFeatureMetadata(polydraw.getFeatureGroups()[0])).toEqual({
+      risk: 'high',
+      details: {
+        owner: 'seed',
+        tags: ['initial'],
+      },
+    });
+  });
+
   it('uses incoming metadata when overlapping polygons merge', async () => {
     const [existingPolygon, incomingPolygon] = fixtures.overlappingSquares();
 

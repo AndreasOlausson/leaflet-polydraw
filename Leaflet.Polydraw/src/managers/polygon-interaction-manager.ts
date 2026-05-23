@@ -2063,6 +2063,7 @@ export class PolygonInteractionManager {
     const { level: optimizationLevel, original: originalOptimizationLevel } =
       this.getOptimizationMetadataFromFeatureGroup(featureGroup);
     const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+    const targetLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
 
     // Remove the current feature group first to avoid duplication
     this.cleanupFeatureGroup(featureGroup);
@@ -2109,6 +2110,7 @@ export class PolygonInteractionManager {
           sourceFeatureIds: featureMetadataState.sourceFeatureIds,
           featureInteractionOverride: featureMetadataState.interactionOverride,
           featureStyleOverrides: featureMetadataState.styleOverrides,
+          targetLayerId,
           featureCreatedAt: featureMetadataState.createdAt,
         });
       });
@@ -2128,8 +2130,7 @@ export class PolygonInteractionManager {
         featureCollection.features[0].geometry.coordinates,
       ]);
 
-      // CRITICAL FIX: Don't allow merging for marker drag operations
-      emitCleanedPolygon(feature, false, {
+      emitCleanedPolygon(feature, true, {
         optimizationLevel,
         originalOptimizationLevel,
       });

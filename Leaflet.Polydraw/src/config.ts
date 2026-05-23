@@ -12,6 +12,7 @@ export const defaultConfig: PolydrawConfig = {
     p2pSubtract: true,
     clone: true,
     erase: true,
+    eraseScope: 'all',
   },
   modes: {
     attachElbow: true,

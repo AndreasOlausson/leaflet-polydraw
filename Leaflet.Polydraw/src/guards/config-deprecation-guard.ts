@@ -9,7 +9,9 @@ interface LegacyToolKeys {
   clonePolygons?: boolean;
 }
 
-const LEGACY_TO_TOOLS_MAP: Record<keyof LegacyToolKeys, keyof PolydrawConfig['tools']> = {
+type ToolToggleKey = 'draw' | 'subtract' | 'p2p' | 'p2pSubtract' | 'erase' | 'clone';
+
+const LEGACY_TO_TOOLS_MAP: Record<keyof LegacyToolKeys, ToolToggleKey> = {
   draw: 'draw',
   subtract: 'subtract',
   p2p: 'p2p',
