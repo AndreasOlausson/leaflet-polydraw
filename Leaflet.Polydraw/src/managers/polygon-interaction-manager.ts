@@ -3271,6 +3271,22 @@ export class PolygonInteractionManager {
     });
   }
 
+  private setTransformAuxiliaryVisibility(featureGroup: L.FeatureGroup, visible: boolean): void {
+    const polygon = this.getPolygonLayer(featureGroup) as PolydrawPolygon | undefined;
+    if (polygon) {
+      this.setMarkerVisibility(polygon, visible);
+    }
+
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+        const element = layer.getElement?.() as HTMLElement | SVGElement | undefined;
+        if (element) {
+          element.style.display = visible ? '' : 'none';
+        }
+      }
+    });
+  }
+
   private getBuiltInMenuButtonConfigs(): BuiltInMenuButtonConfig[] {
     const menuOps = this.config.polygonTools;
 
@@ -3572,10 +3588,7 @@ export class PolygonInteractionManager {
           this.handleTransformControllerResult(controller, featureGroup, mode, confirmed),
       );
       this.transformControllers.set(featureGroup, controller);
-      const polygonLayer = this.getPolygonLayer(featureGroup);
-      if (polygonLayer) {
-        this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, false);
-      }
+      this.setTransformAuxiliaryVisibility(featureGroup, false);
       this.transformModeActive = true;
     } catch {
       // ignore
@@ -3599,7 +3612,7 @@ export class PolygonInteractionManager {
     }
 
     if (!confirmed) {
-      this.setMarkerVisibility(polygonLayer as unknown as PolydrawPolygon, true);
+      this.setTransformAuxiliaryVisibility(featureGroup, true);
       return;
     }
 
