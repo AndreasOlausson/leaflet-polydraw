@@ -9,6 +9,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Layer management support with named layers, active-layer tracking, visibility toggling, color updates, delete support, and ordering in `LayerManager`.
+- Layer panel UI control with collapse/expand header, per-layer visibility toggle, delete action, drag-to-reorder behavior, and active-layer highlighting.
+- Public layer APIs for runtime integration: `getLayerManager()`, `getAllLayers()`, `getLayerById()`, `createLayer()`, `ensureLayer()`, `updateLayer()`, `deleteLayer()`, `setActiveLayer()`, visibility/color/interaction/panel/metadata setters, feature-group assignment helpers, and ordering APIs (`reorderLayer`, `moveLayerToIndex`, `setLayerOrder`).
+- Unit tests for layer behavior:
+  - inactive-layer markers are read-only/non-draggable
+  - layer reorder updates feature-group order consistently
+- Donut polygon transform in the polygon menu, with inward-only or both-directions config, simple-polygon validation, and undo/redo support.
+- Custom polygon menu actions via `polygonTools.menuActions`, including typed callback context, async apply handlers, optional visibility predicates, per-action history control, custom styling classes, merge/simplify/metadata result options, and exported `PolygonMenuAction*` types.
+- Predefined polygon overrides for per-feature merge, interaction, and style policy (`overrides.merge`, `overrides.interaction`, `overrides.style`).
+- Standalone public demo workspace with wrapper plus Leaflet v1/v2 routes and local-source verification modes.
+- Custom action documentation in `docs/CUSTOM_ACTIONS.md`.
+- Playwright Leaflet-version matrix scripts: `test:playwright:v1`, `test:playwright:v2`, and `test:playwright:matrix`.
+- Coordinate parser regression tests for `CoordinateUtils.convertToLatLng` now cover:
+  - directional decimal suffixes (including west/south negative signs)
+  - mixed object key precedence (`lat`/`lng` vs `latitude`/`longitude`)
+  - arrays with extra elements (first two values only)
+  - case-insensitive DMS direction letters
+  - trimmed-input handling in UTM-specific error messages
+- Feature metadata lifecycle support across polygon operations:
+  - metadata can be passed via `addPredefinedPolygon(..., { metadata })`
+  - GeoJSON import uses `feature.properties` as metadata fallback when `options.metadata` is omitted
+  - metadata persists through clone/drag transforms, merge/split/subtract, and undo/redo restore
+- Public feature metadata APIs:
+  - `getFeatureMetadata(featureGroup)`
+  - `setFeatureMetadata(featureGroup, metadata)`
+  - `patchFeatureMetadata(featureGroup, metadataPatch)`
+- History capture now covers batch snapshots, layer delete/reorder actions, donut polygon transforms, and custom polygon menu actions.
+
+### Fixed
+
+- Demo build now dedupes Leaflet to avoid multiple instances breaking polygon status counts on hosted builds.
+- Built package root declarations now export polygon menu action types.
+- Toolbar button tooltips are now custom (configurable delay, direction, colors, and enable/disable) instead of native title positioning.
+- Clone mode button now disables itself when no polygons exist (matches undo/redo behavior).
+- P2P mode buttons now show the active highlight color when selected.
+- Erase-all button now disables when there are no polygons, and disabled actions no longer clear the active mode.
+- Config fallback paths now emit clear one-time warnings in non-test environments (invalid simplification values/strategy, deprecated or unknown polygon creation algorithms, and convex-hull fallback behavior).
+- Layer panel no longer hides custom toolbar tooltips when visible (stacking/z-index fix).
+- Default layer row alignment now matches draggable rows while remaining non-draggable/read-only.
+- `CoordinateUtils.convertToLatLng` now correctly preserves hemisphere signs for directional decimal strings (for example `40.7128 N, 74.0060 W`) and supports signed hemisphere handling for prefixed directional input (`S ... W ...`).
+
+### Changed
+
+- Simplification config resolution now validates and normalizes invalid values at runtime:
+  - Invalid `simplification.strategy` falls back to `"simple"`.
+  - Invalid/negative tolerances fall back to safe defaults.
+  - `simplification.dynamic.fractionGuard` is clamped to `[0, 1]`.
+  - `simplification.dynamic.multiplier` must be `> 1`, otherwise defaults are used.
+- Layer panel sizing and spacing were tightened to align with the 30px toolbox rhythm (rows, header, icon scale, and panel spacing).
+- `test:playwright` now builds the demo with `--ignore-scripts` to avoid recursive `prepare` builds during version-matrix runs.
+- Metadata merge behavior is now deterministic:
+  - explicit incoming metadata wins
+  - otherwise merged polygons inherit the first intersecting source metadata
+  - internal provenance is tracked via `sourceFeatureIds` on feature-group metadata.
+- Added a dedicated `MIGRATION.md` guide covering v1 -> v2 config key renames and metadata APIs.
+
+### Breaking
+
+- Tool toggles moved from `config.modes.*` to `config.tools.*` (draw/subtract/p2p/clone/erase).
+- Renamed `polygonCreation.method` to `polygonCreation.algorithm`.
+- Renamed `simplification.mode` to `simplification.strategy`.
+- Removed deprecated legacy simplification support from runtime/type defaults (`polygonCreation.simplification`, `simplifyTolerance`, `dynamicMode`).
+- `markers.visualOptimization` now only exposes `toleranceMin`, `toleranceMax`, and `curve` in the public config/types.
+- `buffer` was removed from the public `PolygonCreationAlgorithm` union type (runtime still warns and falls back to `concaveman`).
+- `dynamicTolerance` is now internal-only (removed from public config option types).
+
 ## [1.3.3] - 2026-02-03
 
 ### Added
@@ -23,7 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Polygon drag on touch devices now works correctly with Leaflet v1 (touch events were not triggering drag start on SVG paths).
 - Demo build now resolves the correct Leaflet version instead of picking up the library's devDependency.
-
 - Async `configPath` loading now waits before `addTo(map)` wires managers, preventing undefined manager crashes when adding the control before config fetch completes.
 - Coordinate auto-detection now correctly handles Western hemisphere coordinates (e.g., `[-122.4194, 37.7749]` for San Francisco) by using absolute-value checks for longitude detection.
 - Stale async init callbacks no longer fire after control removal/re-add cycles during external config loading.

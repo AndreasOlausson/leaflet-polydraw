@@ -5,6 +5,16 @@ body {
   height: 100%;
 }
 
+/*
+ * Leaflet 2 alpha applies width/height: 100% to pane SVG elements.
+ * Leaflet's SVG renderer expects its own viewport sizing, so forcing a full-size
+ * SVG can shift vector overlays relative to marker panes while drawing/editing.
+ */
+.leaflet-container .leaflet-overlay-pane > svg.leaflet-zoom-animated {
+  width: auto;
+  height: auto;
+}
+
 #blitz-app {
   height: 100%;
 }
@@ -223,6 +233,28 @@ body {
   background-image: url('../icons/icon-rotate.svg');
 }
 
+.marker-menu-content .marker-menu-button.transform-donut {
+  background-image: url('../icons/icon-donut.svg');
+}
+
+.marker-menu-content .marker-menu-button.menu-action-default {
+  background-image: url("data:image/svg+xml,%3Csvg fill='%23ffffff' stroke='%23ffffff' xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 100 100'%3E%3Cpath d='M79.2 32.8c-.2-.7-1.1-.9-1.7-.4L67.4 42.5c-.8.8-2 .8-2.8 0l-7.1-7.1c-.8-.8-.8-2 0-2.8l10.2-10.2c.5-.5.3-1.4-.4-1.7-1.7-.4-3.5-.7-5.3-.7-10.6 0-19.1 9.2-17.9 20 .2 1.7.6 3.2 1.2 4.7L22 68.1c-2.7 2.7-2.7 7.2 0 9.9 1.4 1.4 3.2 2.1 5 2.1s3.6-.7 5-2.1l23.3-23.3c1.5.6 3.1 1 4.7 1.2C70.9 57.1 80 48.6 80 38c0-1.8-.3-3.6-.8-5.2z'/%3E%3C/svg%3E");
+}
+
+.marker-menu-content .marker-menu-button.menu-action-custom,
+.marker-menu-content .marker-menu-button.menu-action-default {
+  position: relative;
+  border-color: #ffffff;
+  background-color: rgba(6, 78, 59, 0.64);
+  box-shadow:
+    0 0 0 2px #064e3b,
+    0 2px 8px rgba(0, 0, 0, 0.26);
+}
+
+.marker-menu-content .marker-menu-button.menu-action-custom.make-triangle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M12 4 21 20H3L12 4Z'/%3E%3C/svg%3E");
+}
+
 .marker-menu-content
   .marker-menu-button.toggle-visual-optimization.visual-optimization-state-visible {
   background-image: url('../icons/icon-visual-optimization-show.svg');
@@ -234,6 +266,8 @@ body {
 }
 
 .marker-menu-button {
+  /* Host apps often apply a global border-box reset; these buttons are sized in content-box terms. */
+  box-sizing: content-box;
   padding: 4px;
   border: 1px solid #aaaaaa;
 }
@@ -335,6 +369,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.polydraw-transform-confirm.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.polydraw-transform-status {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+}
+
+.polydraw-transform-status.is-invalid {
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.28));
+}
+
+.polydraw-transform-status svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .alter-marker-wrapper .row.bottom-separator {
@@ -506,6 +563,77 @@ body {
   user-select: none;
 }
 
+/* Custom tooltips for Polydraw toolbar buttons */
+.leaflet-control.leaflet-bar a[data-tooltip] {
+  position: relative;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::after,
+.leaflet-control.leaflet-bar a[data-tooltip]::before {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+  transition-delay: 0s;
+  z-index: 2000;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::after {
+  content: attr(data-tooltip);
+  background: var(--polydraw-tooltip-bg, #645d5d);
+  color: var(--polydraw-tooltip-color, #ffffff);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]::before {
+  content: '';
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='left'] a[data-tooltip]::after,
+.leaflet-control.leaflet-bar:not([data-tooltip-direction]) a[data-tooltip]::after {
+  right: calc(100% + 10px);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='left'] a[data-tooltip]::before,
+.leaflet-control.leaflet-bar:not([data-tooltip-direction]) a[data-tooltip]::before {
+  right: calc(100% + 4px);
+  border-left: 6px solid var(--polydraw-tooltip-bg, #645d5d);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='right'] a[data-tooltip]::after {
+  left: calc(100% + 10px);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-direction='right'] a[data-tooltip]::before {
+  left: calc(100% + 4px);
+  border-right: 6px solid var(--polydraw-tooltip-bg, #645d5d);
+}
+
+.leaflet-control.leaflet-bar a[data-tooltip]:hover::after,
+.leaflet-control.leaflet-bar a[data-tooltip]:hover::before,
+.leaflet-control.leaflet-bar a[data-tooltip]:focus-visible::after,
+.leaflet-control.leaflet-bar a[data-tooltip]:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: var(--polydraw-tooltip-delay, 500ms);
+}
+
+.leaflet-control.leaflet-bar[data-tooltip-enabled='false'] a[data-tooltip]::after,
+.leaflet-control.leaflet-bar[data-tooltip-enabled='false'] a[data-tooltip]::before {
+  display: none;
+}
+
 /* Firefox-specific fixes for touch event handling */
 @-moz-document url-prefix() {
   .leaflet-control.leaflet-bar {
@@ -544,5 +672,291 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* Layer panel styles */
+.polydraw-layer-panel {
+  width: 206px;
+  min-width: 206px;
+  max-width: 206px;
+  z-index: 900 !important;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #333;
+  pointer-events: auto;
+  overflow: hidden;
+}
+
+.leaflet-top.leaflet-right .polydraw-layer-panel.leaflet-control {
+  clear: none;
+  margin-right: 4px;
+}
+
+.polydraw-layer-header {
+  height: 30px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fff;
+  padding-left: 6px;
+}
+
+.polydraw-layer-header-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #444;
+}
+
+.polydraw-layer-header-count {
+  min-width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1px solid #d7d7d7;
+  color: #666;
+  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polydraw-layer-header-toggle {
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  cursor: pointer;
+  color: #333;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polydraw-layer-header-toggle:hover {
+  background: #f0f0f0;
+}
+
+.polydraw-layer-header-toggle:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-header-toggle svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  transition: transform 0.18s ease;
+}
+
+.polydraw-layer-header-toggle.is-collapsed svg {
+  transform: rotate(180deg);
+}
+
+.polydraw-layer-panel-collapsed {
+  width: 30px;
+  min-width: 30px;
+  max-width: 30px;
+}
+
+.polydraw-layer-panel-collapsed .polydraw-layer-header {
+  border-bottom: none;
+  padding-left: 0;
+}
+
+.polydraw-layer-panel-collapsed .polydraw-layer-header-title,
+.polydraw-layer-panel-collapsed .polydraw-layer-header-count {
+  display: none;
+}
+
+.polydraw-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 4px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  transition: background 0.2s;
+  user-select: none;
+  outline: none;
+}
+
+.polydraw-layer-row:hover {
+  background: #f9f9f9;
+}
+
+.polydraw-layer-row[draggable='true'] {
+  cursor: move;
+}
+
+.polydraw-layer-row[draggable='false'] {
+  cursor: pointer;
+}
+
+.polydraw-layer-row:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-row-active {
+  background: #eef5ff;
+}
+
+.polydraw-layer-row-active:hover {
+  background: #e6f0ff;
+}
+
+.polydraw-layer-row-dragging {
+  opacity: 0.5;
+}
+
+.polydraw-layer-row-drag-over {
+  border-top: 2px solid #2196f3;
+}
+
+.polydraw-layer-grip {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  cursor: grab;
+  transition: background 0.2s;
+}
+
+.polydraw-layer-grip:hover {
+  background: #e0e0e0;
+}
+
+.polydraw-layer-grip svg {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: #666;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.polydraw-layer-grip-spacer {
+  width: 18px;
+  height: 18px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-color-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #333;
+  font-size: 11.5px;
+}
+
+.polydraw-layer-btn {
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.polydraw-layer-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.polydraw-layer-visibility {
+  color: #333;
+}
+
+.polydraw-layer-visibility svg {
+  width: 20px;
+  height: 20px;
+}
+
+.polydraw-layer-btn:hover {
+  background: #e0e0e0;
+}
+
+.polydraw-layer-delete {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.polydraw-layer-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-btn-spacer {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.polydraw-layer-visibility-hidden {
+  color: #999;
+}
+
+.polydraw-layer-hidden .polydraw-layer-name {
+  opacity: 0.65;
+}
+
+@media (max-width: 768px) {
+  .polydraw-layer-panel {
+    width: 196px;
+    min-width: 196px;
+    max-width: 196px;
+  }
+
+  .polydraw-layer-row {
+    height: 30px;
+    min-height: 30px;
+    padding: 0 4px;
+  }
+
+  .polydraw-layer-name {
+    font-size: 11.5px;
+  }
+
+  .polydraw-layer-btn {
+    width: 30px;
+    height: 30px;
   }
 }

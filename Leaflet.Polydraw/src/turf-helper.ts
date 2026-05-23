@@ -48,6 +48,7 @@ import type {
 import * as L from 'leaflet';
 import { defaultConfig } from './config';
 import { isTestEnvironment } from './utils';
+import { deepMerge } from './utils/config-merge.util';
 
 /**
  * Enhanced GeoJSON feature with polydraw-specific metadata
@@ -60,9 +61,17 @@ type TraceFeature = Feature<LineString | MultiLineString | Polygon | MultiPolygo
 
 export class TurfHelper {
   private config: typeof defaultConfig = defaultConfig;
+  private fallbackWarnings = new Set<string>();
 
-  constructor(config: object) {
-    this.config = { ...defaultConfig, ...config };
+  constructor(config: Partial<typeof defaultConfig>) {
+    this.config = deepMerge(structuredClone(defaultConfig), config);
+  }
+
+  private warnFallbackOnce(key: string, message: string): void {
+    if (isTestEnvironment()) return;
+    if (this.fallbackWarnings.has(key)) return;
+    this.fallbackWarnings.add(key);
+    console.warn(message);
   }
 
   /**
@@ -142,12 +151,20 @@ export class TurfHelper {
   }
 
   /**
-   * Create polygon from drawing trace using configured method
+   * Create polygon from drawing trace using configured algorithm.
    */
   createPolygonFromTrace(feature: TraceFeature): Feature<Polygon | MultiPolygon> {
-    const method = this.config.polygonCreation?.method || 'concaveman';
+    const configuredAlgorithm = (this.config.polygonCreation as { algorithm?: unknown } | undefined)
+      ?.algorithm;
+    if (configuredAlgorithm !== undefined && typeof configuredAlgorithm !== 'string') {
+      this.warnFallbackOnce(
+        'polygonCreation.algorithm.type',
+        '[Leaflet.Polydraw] Invalid `polygonCreation.algorithm` type. Using "concaveman" as fallback.',
+      );
+    }
+    const algorithm = typeof configuredAlgorithm === 'string' ? configuredAlgorithm : 'concaveman';
 
-    switch (method) {
+    switch (algorithm) {
       case 'concaveman':
         return this.turfConcaveman(feature);
       case 'convex':
@@ -155,12 +172,17 @@ export class TurfHelper {
       case 'direct':
         return this.createDirectPolygon(feature);
       case 'buffer':
-        // Buffer method is deprecated, fall back to concaveman
+        // Buffer algorithm is deprecated, fall back to concaveman.
+        this.warnFallbackOnce(
+          'polygonCreation.algorithm.buffer',
+          '[Leaflet.Polydraw] `polygonCreation.algorithm: "buffer"` is deprecated. Using "concaveman" as fallback.',
+        );
         return this.turfConcaveman(feature);
       default:
-        if (!isTestEnvironment()) {
-          console.warn(`Unknown polygon creation method: ${method}, falling back to concaveman`);
-        }
+        this.warnFallbackOnce(
+          `polygonCreation.algorithm.unknown:${algorithm}`,
+          `[Leaflet.Polydraw] Unknown polygon creation algorithm "${algorithm}". Using "concaveman" as fallback.`,
+        );
         return this.turfConcaveman(feature);
     }
   }
@@ -183,6 +205,10 @@ export class TurfHelper {
 
     if (!convexHull) {
       // Fallback to direct polygon if convex hull fails
+      this.warnFallbackOnce(
+        'polygonCreation.algorithm.convex.noHull',
+        '[Leaflet.Polydraw] Convex hull generation failed. Using "direct" polygon creation as fallback.',
+      );
       return this.createDirectPolygon(feature);
     }
 
@@ -232,11 +258,11 @@ export class TurfHelper {
   ): Feature<Polygon | MultiPolygon> {
     const simplification = this.resolveSimplificationConfig();
 
-    if (simplification.mode === 'none') {
+    if (simplification.strategy === 'none') {
       return polygon;
     }
 
-    if (simplification.mode === 'simple') {
+    if (simplification.strategy === 'simple') {
       const adaptedTol = this.getAdaptiveTolerance(
         simplification.simple.tolerance,
         this.getFeatureDiagonal(polygon),
@@ -335,7 +361,7 @@ export class TurfHelper {
   }
 
   private resolveSimplificationConfig(): {
-    mode: 'simple' | 'dynamic' | 'none';
+    strategy: 'simple' | 'dynamic' | 'none';
     simple: { tolerance: number; highQuality: boolean };
     dynamic: {
       baseTolerance: number;
@@ -344,48 +370,106 @@ export class TurfHelper {
       multiplier: number;
     };
   } {
-    const legacy = this.config.polygonCreation?.simplification;
-    const raw = this.config.simplification as
-      | (typeof this.config.simplification & {
-          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
-          dynamicMode?: { fractionGuard?: number; multiplier?: number };
-        })
-      | undefined;
+    const raw = this.config.simplification;
+    const rawSimple = (
+      raw as { simple?: { tolerance?: unknown; highQuality?: unknown } } | undefined
+    )?.simple;
+    const rawDynamic = (
+      raw as
+        | {
+            dynamic?: {
+              baseTolerance?: unknown;
+              highQuality?: unknown;
+              fractionGuard?: unknown;
+              multiplier?: unknown;
+            };
+          }
+        | undefined
+    )?.dynamic;
+    const rawStrategy = (raw as { strategy?: unknown } | undefined)?.strategy;
 
-    const fallbackSimpleTolerance = legacy?.tolerance ?? 0.00001;
-    const fallbackSimpleHighQuality = legacy?.highQuality ?? false;
+    const normalizeNonNegativeNumber = (value: unknown, fallback: number): number => {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+        if (value !== undefined) {
+          this.warnFallbackOnce(
+            `simplification.invalidNumber:${String(value)}`,
+            '[Leaflet.Polydraw] Invalid simplification numeric value. Using fallback default.',
+          );
+        }
+        return fallback;
+      }
+      return value;
+    };
 
-    const legacyMode = legacy?.mode;
-    const inferredLegacyDynamicTolerance = legacy?.tolerance ?? 0.0001;
+    const normalizeBoolean = (value: unknown, fallback: boolean): boolean => {
+      if (typeof value !== 'boolean') {
+        if (value !== undefined) {
+          this.warnFallbackOnce(
+            `simplification.invalidBoolean:${String(value)}`,
+            '[Leaflet.Polydraw] Invalid simplification boolean value. Using fallback default.',
+          );
+        }
+        return fallback;
+      }
+      return value;
+    };
 
-    const mode =
-      (raw?.mode as 'simple' | 'dynamic' | 'none' | undefined) ??
-      (legacyMode === 'none' ? 'none' : legacyMode === 'dynamic' ? 'dynamic' : 'simple');
+    const normalizeFraction = (value: unknown, fallback: number): number => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        if (value !== undefined) {
+          this.warnFallbackOnce(
+            `simplification.invalidFraction:${String(value)}`,
+            '[Leaflet.Polydraw] Invalid `simplification.dynamic.fractionGuard`. Using fallback default.',
+          );
+        }
+        return fallback;
+      }
+      if (value < 0 || value > 1) {
+        this.warnFallbackOnce(
+          `simplification.outOfRangeFraction:${value}`,
+          '[Leaflet.Polydraw] `simplification.dynamic.fractionGuard` is out of range [0, 1]. Clamping to nearest valid value.',
+        );
+      }
+      return Math.max(0, Math.min(1, value));
+    };
+
+    const normalizeMultiplier = (value: unknown, fallback: number): number => {
+      if (typeof value !== 'number' || !Number.isFinite(value) || value <= 1) {
+        if (value !== undefined) {
+          this.warnFallbackOnce(
+            `simplification.invalidMultiplier:${String(value)}`,
+            '[Leaflet.Polydraw] Invalid `simplification.dynamic.multiplier` (must be > 1). Using fallback default.',
+          );
+        }
+        return fallback;
+      }
+      return value;
+    };
+
+    let strategy: 'simple' | 'dynamic' | 'none' = 'simple';
+    if (rawStrategy === 'simple' || rawStrategy === 'dynamic' || rawStrategy === 'none') {
+      strategy = rawStrategy;
+    } else if (rawStrategy !== undefined) {
+      this.warnFallbackOnce(
+        `simplification.invalidStrategy:${String(rawStrategy)}`,
+        '[Leaflet.Polydraw] Invalid `simplification.strategy`. Using "simple" as fallback.',
+      );
+    }
 
     const simple = {
-      tolerance:
-        raw?.simple?.tolerance ?? raw?.simplifyTolerance?.tolerance ?? fallbackSimpleTolerance,
-      highQuality:
-        raw?.simple?.highQuality ??
-        raw?.simplifyTolerance?.highQuality ??
-        fallbackSimpleHighQuality,
+      tolerance: normalizeNonNegativeNumber(rawSimple?.tolerance, 0.0001),
+      highQuality: normalizeBoolean(rawSimple?.highQuality, false),
     };
 
     const dynamic = {
-      baseTolerance:
-        raw?.dynamic?.baseTolerance ??
-        raw?.simplifyTolerance?.tolerance ??
-        inferredLegacyDynamicTolerance,
-      highQuality:
-        raw?.dynamic?.highQuality ??
-        raw?.simplifyTolerance?.highQuality ??
-        fallbackSimpleHighQuality,
-      fractionGuard: raw?.dynamic?.fractionGuard ?? raw?.dynamicMode?.fractionGuard ?? 0.9,
-      multiplier: raw?.dynamic?.multiplier ?? raw?.dynamicMode?.multiplier ?? 2,
+      baseTolerance: normalizeNonNegativeNumber(rawDynamic?.baseTolerance, 0.0001),
+      highQuality: normalizeBoolean(rawDynamic?.highQuality, false),
+      fractionGuard: normalizeFraction(rawDynamic?.fractionGuard, 0.9),
+      multiplier: normalizeMultiplier(rawDynamic?.multiplier, 2),
     };
 
     return {
-      mode,
+      strategy,
       simple,
       dynamic,
     };
@@ -1155,13 +1239,16 @@ export class TurfHelper {
         try {
           const ls = lineString(safeRing);
           const bez = bezierSpline(ls, {
-            resolution: this.config.bezier.resolution,
-            sharpness: this.config.bezier.sharpness,
+            resolution: this.config.polygonTools.bezier.resolution,
+            sharpness: this.config.polygonTools.bezier.sharpness,
           });
           const coords = (bez.geometry.coordinates as Position[]) ?? safeRing;
           const baseCount = Math.max(2, safeRing.length - 1);
-          const resampleMultiplier = Math.max(1, this.config.bezier.resampleMultiplier ?? 10);
-          const maxNodes = Math.max(4, this.config.bezier.maxNodes ?? coords.length);
+          const resampleMultiplier = Math.max(
+            1,
+            this.config.polygonTools.bezier.resampleMultiplier ?? 10,
+          );
+          const maxNodes = Math.max(4, this.config.polygonTools.bezier.maxNodes ?? coords.length);
           const targetCount = Math.max(4, Math.min(maxNodes, baseCount * resampleMultiplier));
           // Resample to even spacing to avoid bezier-spline cluster artifacts.
           const resampled = resampleRing(coords, targetCount);

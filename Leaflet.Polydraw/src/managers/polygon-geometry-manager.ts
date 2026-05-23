@@ -7,6 +7,9 @@ export interface GeometryOperationResult {
   result?: Feature<Polygon | MultiPolygon>;
   results?: Feature<Polygon | MultiPolygon>[];
   error?: string;
+  allowMerge?: boolean;
+  simplify?: boolean;
+  metadata?: Record<string, unknown>;
 }
 
 export interface PolygonGeometryManagerDependencies {
@@ -248,7 +251,7 @@ export class PolygonGeometryManager {
         return { success: false, error: 'Invalid polygon coordinates' };
       }
 
-      const processHoles = this.config.menuOperations?.simplify?.processHoles ?? true;
+      const processHoles = this.config.polygonTools?.simplify?.processHoles ?? true;
 
       const simplifiedCoords = coords.map((ring) => {
         const simplifiedRings: [number, number][][] = [];
@@ -318,7 +321,7 @@ export class PolygonGeometryManager {
         return { success: false, error: 'Invalid polygon coordinates' };
       }
 
-      const processHoles = this.config.menuOperations?.bbox?.processHoles ?? true;
+      const processHoles = this.config.polygonTools?.bbox?.processHoles ?? true;
 
       if (!processHoles) {
         // Only create bounding box for outer ring, ignore holes
@@ -389,7 +392,7 @@ export class PolygonGeometryManager {
       const multiPolygon = this.turfHelper.getMultiPolygon(bboxCoords);
       let result = this.turfHelper.getTurfPolygon(multiPolygon);
 
-      if (this.config.boundingBox?.addMidPointMarkers) {
+      if (this.config.polygonTools?.bbox?.addMidPointMarkers) {
         const doubled = this.doubleElbowsPolygon(result);
         if (doubled.success && doubled.result) {
           result = doubled.result;
@@ -439,7 +442,7 @@ export class PolygonGeometryManager {
         return { success: false, error: 'Invalid polygon coordinates' };
       }
 
-      const processHoles = this.config.menuOperations?.doubleElbows?.processHoles ?? true;
+      const processHoles = this.config.polygonTools?.doubleElbows?.processHoles ?? true;
 
       const doubleElbowCoords = coords.map((ring) => {
         const processedRings: [number, number][][] = [];

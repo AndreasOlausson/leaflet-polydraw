@@ -1,10 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- demo glue touches dynamic Leaflet/plugin/browser APIs */
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polydraw/dist/leaflet-polydraw.css';
 import * as L from 'leaflet';
-import Polydraw from 'leaflet-polydraw';
+import Polydraw, { type PolygonMenuActionContext } from 'leaflet-polydraw';
 import { leafletAdapter } from 'leaflet-polydraw';
 import './version-test';
-import { sampleLibrary, type SampleKey } from './sample-polygons';
+import {
+  sampleLibrary,
+  type SampleKey,
+  layerZoneA,
+  layerZoneB,
+  layerZoneC,
+  layerMergeLeft,
+  layerMergeRight,
+} from './sample-polygons';
+import {
+  stanganFloodRiskGeoJson,
+  stanganFloodRiskLayers,
+  stanganFloodRiskViewport,
+} from '../../../demo/packages/shared-content/src/demo-polygons/stangan-flood';
+import type { Feature, Polygon } from 'geojson';
 
 declare global {
   interface Window {
@@ -21,13 +36,55 @@ leafletAdapter
   })
   .addTo(map);
 
-const polydraw = new Polydraw();
+const demoMenuActions = [
+  {
+    id: 'makeTriangle',
+    label: 'Injected custom',
+    className: ['menu-action-custom', 'make-triangle'],
+    apply: ({ bounds }: PolygonMenuActionContext): Feature<Polygon> => {
+      const nw = bounds.getNorthWest();
+      const ne = bounds.getNorthEast();
+      const south = bounds.getSouth();
+      const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+
+      return {
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [nw.lng, nw.lat],
+              [ne.lng, ne.lat],
+              [centerLng, south],
+              [nw.lng, nw.lat],
+            ],
+          ],
+        },
+      };
+    },
+  },
+];
+
+type PolydrawConfigInput = NonNullable<ConstructorParameters<typeof Polydraw>[0]>['config'];
+type AdapterLayerGroup = ReturnType<typeof leafletAdapter.createLayerGroup>;
+type AdapterMarker = ReturnType<typeof leafletAdapter.createMarker>;
+
+const polydrawConfig = {
+  polygonTools: {
+    menuActions: demoMenuActions,
+  },
+};
+
+const polydraw = new Polydraw({
+  config: polydrawConfig as unknown as PolydrawConfigInput,
+});
 polydraw.addTo(map as any);
 window.polydrawControl = polydraw;
 
 const pointMarkerState = {
-  layer: null as L.LayerGroup | null,
-  markers: [] as L.Marker[],
+  layer: null as AdapterLayerGroup | null,
+  markers: [] as AdapterMarker[],
   points: [] as L.LatLngLiteral[],
 };
 
@@ -140,12 +197,6 @@ function updateStatusBox() {
         const toWktPolygon = (rings: L.LatLng[][]): string => {
           const parts = rings.map((r) => `(${toWktCoords(r)})`).join(', ');
           return `POLYGON (${parts})`;
-        };
-
-        const fmtMeters = (m: number): string => {
-          if (m < 1) return `${m.toFixed(2)} m`;
-          if (m < 1000) return `${m.toFixed(1)} m`;
-          return `${(m / 1000).toFixed(2)} km`;
         };
 
         // Handle different polygon structures based on actual Leaflet structure
@@ -739,7 +790,7 @@ const refreshPolygonViews = () => {
 (polydraw as any).on('polydraw:history:undo', refreshPolygonViews);
 (polydraw as any).on('polydraw:history:redo', refreshPolygonViews);
 
-(polydraw as any).on('polydraw:mode:change', (data: any) => {
+(polydraw as any).on('polydraw:mode:change', () => {
   updateStatusBox();
 });
 
@@ -777,6 +828,121 @@ function registerSampleButtons(): void {
 }
 
 registerSampleButtons();
+
+function registerStanganSampleButtons(): void {
+  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-stangan-sample]');
+  buttons.forEach((button) => {
+    const id = button.dataset.stanganSample;
+    const layer = stanganFloodRiskLayers.find((entry) => entry.id === id);
+    const feature = stanganFloodRiskGeoJson.find((entry) => entry.properties?.id === id);
+    if (!layer || !feature) {
+      button.disabled = true;
+      return;
+    }
+
+    button.addEventListener('click', async () => {
+      try {
+        await polydraw.addPredefinedGeoJSONs([feature], {
+          overrides: {
+            style: {
+              color: layer.color,
+              fillColor: layer.fillColor,
+              fillOpacity: 0.24,
+              weight: 2,
+            },
+          },
+        });
+        map.setView(stanganFloodRiskViewport.center, stanganFloodRiskViewport.zoom);
+        setTimeout(refreshPolygonViews, 100);
+      } catch (error) {
+        console.warn(`Failed to add Stangan sample "${id}":`, error);
+      }
+    });
+  });
+}
+
+registerStanganSampleButtons();
+
+// --- Layer demo buttons ---
+
+async function withLayerDemoBatch(callback: () => Promise<void>): Promise<void> {
+  polydraw.beginBatch();
+  try {
+    await callback();
+  } finally {
+    polydraw.endBatch();
+  }
+}
+
+function setupLayerDemoButtons(): void {
+  const viewport = { center: [58.41, 15.59] as L.LatLngExpression, zoom: 13 };
+
+  // "3 zones, 3 layers" – adds three non-overlapping polygons in three different layers
+  document.getElementById('layer-multi')?.addEventListener('click', async () => {
+    try {
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerZoneA, {
+          layer: 'Hazard A',
+          layerColor: '#e63946',
+        });
+        await polydraw.addPredefinedPolygon(layerZoneB, {
+          layer: 'Hazard B',
+          layerColor: '#457b9d',
+        });
+        await polydraw.addPredefinedPolygon(layerZoneC, {
+          layer: 'Hazard C',
+          layerColor: '#2a9d8f',
+        });
+      });
+      map.setView(viewport.center, viewport.zoom);
+      setTimeout(refreshPolygonViews, 100);
+    } catch (error) {
+      console.warn('Failed to add layer demo (multi):', error);
+    }
+  });
+
+  // "Merge in layer" – adds two overlapping polygons in the SAME layer; they should merge
+  document.getElementById('layer-merge')?.addEventListener('click', async () => {
+    try {
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerMergeLeft, {
+          layer: 'Merge Zone',
+          layerColor: '#e76f51',
+        });
+        await polydraw.addPredefinedPolygon(layerMergeRight, {
+          layer: 'Merge Zone',
+          layerColor: '#e76f51',
+        });
+      });
+      map.setView(viewport.center, viewport.zoom);
+      setTimeout(refreshPolygonViews, 100);
+    } catch (error) {
+      console.warn('Failed to add layer demo (merge):', error);
+    }
+  });
+
+  // "Cross-layer overlap" – adds two overlapping polygons in DIFFERENT layers; should NOT merge
+  document.getElementById('layer-cross')?.addEventListener('click', async () => {
+    try {
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerMergeLeft, {
+          layer: 'Layer Alpha',
+          layerColor: '#6a4c93',
+        });
+        await polydraw.addPredefinedPolygon(layerMergeRight, {
+          layer: 'Layer Beta',
+          layerColor: '#1982c4',
+        });
+      });
+      map.setView(viewport.center, viewport.zoom);
+      setTimeout(refreshPolygonViews, 100);
+    } catch (error) {
+      console.warn('Failed to add layer demo (cross-layer):', error);
+    }
+  });
+}
+
+setupLayerDemoButtons();
 
 const clampCount = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) return min;

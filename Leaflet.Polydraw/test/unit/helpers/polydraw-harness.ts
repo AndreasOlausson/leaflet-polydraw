@@ -15,7 +15,11 @@ export const createPolydrawHarness = (config?: Partial<PolydrawConfig>) => {
 
   const cleanup = () => {
     polydraw.cleanup();
-    map.remove();
+    try {
+      map.remove();
+    } catch {
+      // Ignore jsdom + Leaflet v1 teardown renderer errors in tests
+    }
     container.remove();
   };
 

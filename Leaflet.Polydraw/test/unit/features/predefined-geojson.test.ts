@@ -40,4 +40,11 @@ describe('Predefined GeoJSON', () => {
 
     expect(polygonLayer._polydrawOptimizationLevel).toBe(4);
   });
+
+  it('rejects empty GeoJSON input without mutating map state', async () => {
+    await expect(polydraw.addPredefinedGeoJSONs([])).rejects.toThrow(
+      'Cannot add empty GeoJSON feature array',
+    );
+    expect(polydraw.getFeatureGroups()).toHaveLength(0);
+  });
 });

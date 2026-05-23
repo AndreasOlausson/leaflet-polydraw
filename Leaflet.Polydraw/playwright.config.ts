@@ -3,13 +3,15 @@ import process from 'node:process';
 import { defineConfig, devices } from '@playwright/test';
 
 const rootDir = path.resolve(process.cwd());
+const e2ePort = Number(process.env.POLYDRAW_E2E_PORT ?? 43173);
+const e2eBaseURL = `http://127.0.0.1:${e2ePort}/leaflet-polydraw/`;
 
 export default defineConfig({
   testDir: path.resolve(rootDir, 'test/playwright'),
   fullyParallel: true,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:4173',
+    baseURL: e2eBaseURL,
     headless: true,
     trace: 'on-first-retry',
   },
@@ -40,9 +42,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run preview -- --host 127.0.0.1 --port 4173',
+    command: `npm run preview -- --host 127.0.0.1 --port ${e2ePort}`,
     cwd: path.resolve(rootDir, 'demo'),
-    port: 4173,
+    url: e2eBaseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

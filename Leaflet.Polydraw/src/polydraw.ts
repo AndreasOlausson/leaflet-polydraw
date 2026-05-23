@@ -14,6 +14,8 @@ import { ModeManager } from './managers/mode-manager';
 import { PolygonDrawManager } from './managers/polygon-draw-manager';
 import { PolygonMutationManager } from './managers/polygon-mutation-manager';
 import { HistoryManager } from './managers/history-manager';
+import { LayerManager, type LayerState } from './managers/layer-manager';
+import { createLayerPanel, type LayerPanelControl } from './ui/layer-panel';
 import './styles/polydraw.css';
 import { injectDynamicStyles } from './styles/dynamic-styles';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
@@ -22,13 +24,24 @@ import { LeafletVersionDetector } from './compatibility/version-detector';
 import { CoordinateUtils } from './coordinate-utils';
 import { deepMerge } from './utils/config-merge.util';
 import { applySvgIcon } from './utils/svg-icon.util';
+import { cloneMetadataValue } from './utils/metadata-clone.util';
+import { warnIfUsingDeprecatedConfiguration } from './guards/config-deprecation-guard';
+import { applyRuntimeConfigFallbacks } from './guards/config-runtime-fallback-guard';
 import type { HistorySnapshot } from './managers/history-manager';
 import type { Feature, Polygon, MultiPolygon, LineString } from 'geojson';
 import type {
   PolydrawConfig,
   DrawModeChangeHandler,
   HistoryAction,
+  LayerDeleteResult,
+  LayerInteraction,
+  LayerPanelVisibility,
+  LayerUpdateInput,
+  PredefinedPolygonOptions,
   PolygonActionHistory,
+  PolydrawFeatureGroup,
+  PolygonLayerDescriptorInput,
+  PolygonGroupInput,
 } from './types/polydraw-interfaces';
 
 // Create a local interface that extends L.Map for our specific needs
@@ -48,13 +61,15 @@ type PolydrawOptions = L.ControlOptions & {
   configPath?: string;
 };
 
-type PredefinedOptions = {
-  visualOptimizationLevel?: number;
-};
-
 type SetDrawModeOptions = {
   preserveActiveDraw?: boolean;
 };
+
+function normalizeConfigInput(config?: Partial<PolydrawConfig>): Partial<PolydrawConfig> {
+  const normalized = deepMerge<Partial<PolydrawConfig>>({}, config ?? {});
+  warnIfUsingDeprecatedConfiguration(normalized);
+  return normalized;
+}
 
 class Polydraw extends L.Control {
   private map!: L.Map;
@@ -69,6 +84,8 @@ class Polydraw extends L.Control {
   private polygonDrawManager!: PolygonDrawManager;
   private polygonMutationManager!: PolygonMutationManager;
   private historyManager!: HistoryManager;
+  private layerManager!: LayerManager;
+  private layerPanel: LayerPanelControl | null = null;
   private arrayOfFeatureGroups: L.FeatureGroup[] = [];
 
   private drawMode: DrawMode = DrawMode.Off;
@@ -96,21 +113,30 @@ class Polydraw extends L.Control {
   private _configReady: Promise<void> | null = null;
   private _componentsInitialized: boolean = false;
   private _isControlMounted: boolean = false;
+  private _isRestoringSnapshot: boolean = false;
+  private _coreEventListenersAttached: boolean = false;
+  private _coreEventSubscriptions: Array<{
+    event: PolydrawEvent;
+    callback: PolydrawEventCallback;
+  }> = [];
   private _initRequestId: number = 0;
+  private _historySuppressionDepth: number = 0;
+  private _lastAppliedVisibleMapOrder: L.FeatureGroup[] = [];
 
   constructor(options?: PolydrawOptions) {
     super(options);
 
     // Start from a clean clone of the defaults
     const baseDefaults: PolydrawConfig = structuredClone(defaultConfig);
+    const inlineConfig = normalizeConfigInput(options?.config);
 
     // Apply inline config via deep merge (partial configs supported)
-    this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
-    this.warnIfUsingDeprecatedConfiguration(options?.config);
+    this.config = deepMerge<PolydrawConfig>(baseDefaults, inlineConfig);
+    applyRuntimeConfigFallbacks(this.config);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
-      this._configReady = this.loadExternalConfig(options.configPath, options?.config);
+      this._configReady = this.loadExternalConfig(options.configPath, inlineConfig);
     } else {
       // Initialize components immediately when no external config is used
       this.initializeComponents();
@@ -167,7 +193,7 @@ class Polydraw extends L.Control {
         return;
       }
       this.initializeManagers();
-      this.setDrawMode(this.config.defaultMode);
+      this.setDrawMode(this.config.tools.default);
       this.setupEventListeners();
     };
 
@@ -212,7 +238,15 @@ class Polydraw extends L.Control {
 
     // Clean up tracer
     if (this.tracer) {
-      this.map.removeLayer(this.tracer);
+      try {
+        if (this.map.hasLayer(this.tracer)) {
+          this.map.removeLayer(this.tracer);
+        } else {
+          this.tracer.remove();
+        }
+      } catch {
+        // Ignore tracer cleanup errors (can happen in jsdom + Leaflet v1)
+      }
       this.tracer = null; // Reset tracer reference
     }
 
@@ -228,6 +262,12 @@ class Polydraw extends L.Control {
       }
     });
     this.arrayOfFeatureGroups.length = 0;
+    this._lastAppliedVisibleMapOrder = [];
+
+    if (this.polygonMutationManager) {
+      this.polygonMutationManager.dispose();
+    }
+    this.removeCoreEventListeners();
 
     // Clean up polygon information
     if (this.polygonInformation) {
@@ -274,8 +314,21 @@ class Polydraw extends L.Control {
     this.isModifierKeyHeld = false;
     this._lastTapTime = 0;
 
+    // Clean up layer panel
+    if (this.layerPanel) {
+      try {
+        this.layerPanel.remove();
+      } catch {
+        // Ignore
+      }
+      this.layerPanel = null;
+    }
+
     // Clean up UI references
     this.subContainer = undefined;
+
+    // Allow full component re-initialization on the next add cycle.
+    this._componentsInitialized = false;
   }
 
   /**
@@ -304,7 +357,7 @@ class Polydraw extends L.Control {
       return;
     }
 
-    const snapshot = this.historyManager.undo(this.arrayOfFeatureGroups);
+    const snapshot = this.historyManager.undo(this.arrayOfFeatureGroups, this.layerManager);
     if (snapshot) {
       await this.restoreFromSnapshot(snapshot);
     }
@@ -318,7 +371,9 @@ class Polydraw extends L.Control {
       action === 'bezier' ||
       action === 'scale' ||
       action === 'rotate' ||
-      action === 'toggleOptimization'
+      action === 'donut' ||
+      action === 'toggleOptimization' ||
+      action === 'polygonMenuAction'
     );
   }
 
@@ -334,10 +389,30 @@ class Polydraw extends L.Control {
   }
 
   private saveHistory(action: HistoryAction): void {
+    if (this.isHistorySuppressed()) {
+      return;
+    }
     if (!this.shouldCaptureHistory(action)) {
       return;
     }
-    this.historyManager.saveState(this.arrayOfFeatureGroups, action);
+    this.historyManager.saveState(this.arrayOfFeatureGroups, action, this.layerManager);
+  }
+
+  private isHistorySuppressed(): boolean {
+    return this._historySuppressionDepth > 0;
+  }
+
+  private startHistoryBatch(action: HistoryAction): void {
+    if (!this.isHistorySuppressed()) {
+      this.saveHistory(action);
+    }
+    this._historySuppressionDepth += 1;
+  }
+
+  private endHistoryBatch(): void {
+    if (this._historySuppressionDepth > 0) {
+      this._historySuppressionDepth -= 1;
+    }
   }
 
   /**
@@ -348,10 +423,143 @@ class Polydraw extends L.Control {
       return;
     }
 
-    const snapshot = this.historyManager.redo(this.arrayOfFeatureGroups);
+    const snapshot = this.historyManager.redo(this.arrayOfFeatureGroups, this.layerManager);
     if (snapshot) {
       await this.restoreFromSnapshot(snapshot);
     }
+  }
+
+  private resolvePredefinedLayerDescriptor(
+    inputLayer: PredefinedPolygonOptions['layer'],
+    layerColorOverride?: string,
+  ): PolygonLayerDescriptorInput | null {
+    if (!inputLayer) {
+      return null;
+    }
+
+    if (typeof inputLayer === 'string') {
+      const id = inputLayer.trim();
+      if (!id) {
+        throw new Error('Layer id cannot be empty');
+      }
+      return {
+        id,
+        color: layerColorOverride,
+      };
+    }
+
+    const id = (inputLayer.id || '').trim();
+    if (!id) {
+      throw new Error('Layer descriptor must include a non-empty id');
+    }
+
+    const descriptor: PolygonLayerDescriptorInput = {
+      ...inputLayer,
+      id,
+      color: layerColorOverride ?? inputLayer.color,
+    };
+
+    if (descriptor.interaction === 'static' && descriptor.panel === undefined) {
+      descriptor.panel = 'hidden';
+    }
+
+    return descriptor;
+  }
+
+  private ensureLayerFromDescriptor(descriptor: PolygonLayerDescriptorInput) {
+    const layerId = descriptor.id.trim();
+    const created = this.layerManager.getOrCreateLayer(layerId, {
+      label: descriptor.label,
+      color: descriptor.color,
+      visible: descriptor.visibility,
+      interaction: descriptor.interaction,
+      panel: descriptor.panel ?? (descriptor.interaction === 'static' ? 'hidden' : undefined),
+      metadata: descriptor.metadata,
+    });
+
+    if (descriptor.label !== undefined) {
+      this.layerManager.setLayerLabel(layerId, descriptor.label);
+    }
+    if (descriptor.color) {
+      this.layerManager.setLayerColor(layerId, descriptor.color);
+    }
+    if (descriptor.visibility !== undefined) {
+      this.layerManager.setLayerVisibility(layerId, descriptor.visibility);
+    }
+    if (descriptor.interaction !== undefined) {
+      this.layerManager.setLayerInteraction(layerId, descriptor.interaction);
+    }
+    if (descriptor.panel !== undefined || descriptor.interaction === 'static') {
+      this.layerManager.setLayerPanelVisibility(
+        layerId,
+        descriptor.panel ?? (descriptor.interaction === 'static' ? 'hidden' : 'visible'),
+      );
+    }
+    if (descriptor.metadata !== undefined) {
+      this.layerManager.setLayerMetadata(layerId, descriptor.metadata);
+    }
+
+    return this.layerManager.getLayer(layerId) ?? created;
+  }
+
+  private getInteractionTargetLayerId(): string | undefined {
+    if (!this.layerManager) {
+      return undefined;
+    }
+
+    const activeLayerId = this.layerManager.getActiveLayerId();
+    if (this.layerManager.isLayerEditable(activeLayerId)) {
+      return activeLayerId;
+    }
+
+    if (this.layerManager.isLayerEditable('default')) {
+      return 'default';
+    }
+
+    const fallback = this.layerManager
+      .getAllLayers()
+      .find((layer) => layer.interaction === 'editable');
+    return fallback?.id;
+  }
+
+  private ensureFeatureGroupMetadata(
+    featureGroup: L.FeatureGroup,
+  ): NonNullable<PolydrawFeatureGroup['_polydrawMetadata']> {
+    const polydrawFeatureGroup = featureGroup as PolydrawFeatureGroup;
+    if (polydrawFeatureGroup._polydrawMetadata) {
+      return polydrawFeatureGroup._polydrawMetadata;
+    }
+
+    let optimizationLevel = 0;
+    let originalOptimizationLevel = 0;
+    featureGroup.eachLayer((layer) => {
+      if (layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) {
+        const polygon = layer as L.Polygon & {
+          _polydrawOptimizationLevel?: number;
+          _polydrawOptimizationOriginalLevel?: number;
+        };
+        if (typeof polygon._polydrawOptimizationLevel === 'number') {
+          optimizationLevel = polygon._polydrawOptimizationLevel;
+        }
+        if (typeof polygon._polydrawOptimizationOriginalLevel === 'number') {
+          originalOptimizationLevel = polygon._polydrawOptimizationOriginalLevel;
+        }
+      }
+    });
+
+    const now = new Date();
+    const featureId = `fg-${leafletAdapter.util.stamp(featureGroup as unknown as L.Layer)}`;
+    polydrawFeatureGroup._polydrawMetadata = {
+      id: featureId,
+      optimizationLevel,
+      originalOptimizationLevel,
+      hasHoles: false,
+      createdAt: now,
+      lastModified: now,
+      metadata: {},
+      sourceFeatureIds: [featureId],
+    };
+    return polydrawFeatureGroup._polydrawMetadata;
   }
 
   /**
@@ -361,7 +569,7 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedPolygon(
     geoborders: unknown[][][],
-    options?: PredefinedOptions,
+    options?: PredefinedPolygonOptions,
   ): Promise<void> {
     // Convert input to L.LatLng[][][] using smart coordinate detection
     const geographicBorders = CoordinateUtils.convertToLatLngArray(geoborders);
@@ -380,9 +588,9 @@ class Polydraw extends L.Control {
     if (!this.polygonMutationManager) {
       throw new Error('PolygonMutationManager not initialized');
     }
-
-    // Extract options with defaults
-    const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
+    if (!this.layerManager) {
+      throw new Error('LayerManager not initialized');
+    }
 
     for (const [groupIndex, group] of geographicBorders.entries()) {
       if (!group || !group[0] || group[0].length < 4) {
@@ -390,32 +598,74 @@ class Polydraw extends L.Control {
           `Invalid polygon data at index ${groupIndex}: A polygon must have at least 3 unique vertices.`,
         );
       }
-      try {
-        // Convert L.LatLng[][][] to coordinate format for TurfHelper
-        const coords = group.map((ring) => ring.map((latlng) => [latlng.lng, latlng.lat]));
+    }
 
-        const polygon2 = this.turfHelper.getMultiPolygon([coords]);
+    // Extract options with defaults
+    const visualOptimizationLevel = options?.visualOptimizationLevel ?? 0;
+    const interactionOverride =
+      options?.overrides?.interaction && options.overrides.interaction !== 'inherit'
+        ? options.overrides.interaction
+        : undefined;
+    const styleOverrides = options?.overrides?.style ? { ...options.overrides.style } : undefined;
+    const mergeOverride = options?.overrides?.merge ?? 'inherit';
 
-        // Save state before adding polygon
-        this.saveHistory('addPredefinedPolygon');
+    // Resolve target layer if specified
+    let targetLayerId: string | undefined;
+    let layerColor: string | undefined;
+    let forceNoMerge = false;
 
-        // Use the PolygonMutationManager instead of direct addPolygon
-        const result = await this.polygonMutationManager.addPolygon(polygon2, {
-          simplify: false,
-          noMerge: false,
-          visualOptimizationLevel: visualOptimizationLevel,
-        });
-
-        if (!result.success) {
-          console.error('Error adding polygon via manager:', result.error);
-          throw new Error(result.error || 'Failed to add polygon');
-        }
-
-        this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
-      } catch (error) {
-        console.error('Error adding auto polygon:', error);
-        throw error;
+    if (options?.layer) {
+      const descriptor = this.resolvePredefinedLayerDescriptor(options.layer, options.layerColor);
+      if (descriptor) {
+        const layer = this.ensureLayerFromDescriptor(descriptor);
+        targetLayerId = layer.id;
+        layerColor = layer.color;
+        forceNoMerge = layer.interaction !== 'editable';
       }
+      this.updateLayerPanel();
+    } else if (options?.layerColor) {
+      // Color specified without explicit layer name - apply to active layer
+      layerColor = options.layerColor;
+    }
+
+    this.startHistoryBatch('addPredefinedPolygon');
+
+    try {
+      for (const group of geographicBorders) {
+        try {
+          // Convert L.LatLng[][][] to coordinate format for TurfHelper
+          const coords = group.map((ring) => ring.map((latlng) => [latlng.lng, latlng.lat]));
+
+          const polygon2 = this.turfHelper.getMultiPolygon([coords]);
+
+          // Use the PolygonMutationManager instead of direct addPolygon
+          const noMerge =
+            mergeOverride === 'allow' ? false : mergeOverride === 'block' ? true : forceNoMerge;
+          const result = await this.polygonMutationManager.addPolygon(polygon2, {
+            simplify: false,
+            noMerge,
+            mergeEditableOnly: mergeOverride === 'allow' ? false : true,
+            visualOptimizationLevel: visualOptimizationLevel,
+            targetLayerId,
+            layerColor,
+            featureMetadata: options?.metadata,
+            featureInteractionOverride: interactionOverride,
+            featureStyleOverrides: styleOverrides,
+          });
+
+          if (!result.success) {
+            console.error('Error adding polygon via manager:', result.error);
+            throw new Error(result.error || 'Failed to add polygon');
+          }
+
+          this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+        } catch (error) {
+          console.error('Error adding auto polygon:', error);
+          throw error;
+        }
+      }
+    } finally {
+      this.endHistoryBatch();
     }
   }
 
@@ -426,27 +676,551 @@ class Polydraw extends L.Control {
    */
   public async addPredefinedGeoJSONs(
     geojsonFeatures: GeoJSON.Feature<GeoJSON.Polygon | GeoJSON.MultiPolygon>[],
-    options?: PredefinedOptions,
+    options?: PredefinedPolygonOptions,
   ): Promise<void> {
-    for (const geojsonFeature of geojsonFeatures) {
-      const { type, coordinates } = geojsonFeature.geometry;
+    if (!Array.isArray(geojsonFeatures) || geojsonFeatures.length === 0) {
+      throw new Error('Cannot add empty GeoJSON feature array');
+    }
 
-      if (type === 'MultiPolygon') {
-        // MultiPolygon: coordinates[polygon][ring][point]
-        for (const polygonCoords of coordinates) {
-          const latLngs = polygonCoords.map((ring) =>
+    this.startHistoryBatch('addPredefinedPolygon');
+
+    try {
+      for (const geojsonFeature of geojsonFeatures) {
+        const { type, coordinates } = geojsonFeature.geometry;
+        const metadataFromFeature =
+          options?.metadata ??
+          (geojsonFeature.properties
+            ? ({ ...geojsonFeature.properties } as Record<string, unknown>)
+            : undefined);
+        const perFeatureOptions: PredefinedPolygonOptions = {
+          ...options,
+          metadata: metadataFromFeature,
+        };
+
+        if (type === 'MultiPolygon') {
+          // MultiPolygon: coordinates[polygon][ring][point]
+          for (const polygonCoords of coordinates) {
+            const latLngs = polygonCoords.map((ring) =>
+              ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
+            );
+            await this.addPredefinedPolygon([latLngs], perFeatureOptions);
+          }
+        } else if (type === 'Polygon') {
+          // Polygon: coordinates[ring][point]
+          const latLngs = coordinates.map((ring) =>
             ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
           );
-          await this.addPredefinedPolygon([latLngs], options);
+          await this.addPredefinedPolygon([latLngs], perFeatureOptions);
         }
-      } else if (type === 'Polygon') {
-        // Polygon: coordinates[ring][point]
-        const latLngs = coordinates.map((ring) =>
-          ring.map((point) => leafletAdapter.createLatLng(point[1], point[0])),
-        );
-        await this.addPredefinedPolygon([latLngs], options);
+      }
+    } finally {
+      this.endHistoryBatch();
+    }
+  }
+
+  /**
+   * Adds multiple groups of predefined polygons, each associated with a named, colored layer.
+   * @param groups - Array of polygon group inputs with layer info and polygon coordinates.
+   */
+  public async addPredefinedPolygonGroups(groups: PolygonGroupInput[]): Promise<void> {
+    if (!Array.isArray(groups) || groups.length === 0) {
+      throw new Error('Cannot add empty polygon group array');
+    }
+    if (!this.layerManager) {
+      throw new Error('LayerManager not initialized');
+    }
+
+    this.startHistoryBatch('addPredefinedPolygon');
+
+    try {
+      const resolvedGroups = groups.map((group) => {
+        const descriptor = this.resolvePredefinedLayerDescriptor(group.layer);
+        if (!descriptor) {
+          throw new Error('Polygon group layer descriptor is missing');
+        }
+        return {
+          descriptor,
+          polygons: group.polygons,
+          options: group.options,
+        };
+      });
+
+      // Create/update all layers upfront
+      for (const group of resolvedGroups) {
+        this.ensureLayerFromDescriptor(group.descriptor);
+      }
+
+      // Add polygons for each group
+      for (const group of resolvedGroups) {
+        for (const polygons of group.polygons) {
+          await this.addPredefinedPolygon(polygons, {
+            layer: group.descriptor,
+            ...group.options,
+          });
+        }
+      }
+    } finally {
+      this.endHistoryBatch();
+    }
+
+    this.updateLayerPanel();
+  }
+
+  /**
+   * Returns the LayerManager instance for external layer manipulation.
+   */
+  public getLayerManager(): LayerManager {
+    return this.layerManager;
+  }
+
+  /**
+   * Returns all configured layers.
+   */
+  public getAllLayers(): LayerState[] {
+    return this.layerManager.getAllLayers();
+  }
+
+  /**
+   * Returns a single layer by id.
+   */
+  public getLayerById(layerId: string): LayerState | undefined {
+    return this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Returns true if a layer exists.
+   */
+  public hasLayer(layerId: string): boolean {
+    return !!this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Returns the active layer state.
+   */
+  public getActiveLayer(): LayerState | undefined {
+    return this.layerManager.getActiveLayer();
+  }
+
+  /**
+   * Returns feature groups assigned to the given layer.
+   */
+  public getFeatureGroupsByLayer(layerId: string): L.FeatureGroup[] {
+    return this.layerManager.getFeatureGroupsForLayer(layerId);
+  }
+
+  /**
+   * Creates a new layer. Throws if the layer already exists.
+   */
+  public createLayer(input: PolygonLayerDescriptorInput): LayerState {
+    const layerId = (input.id || '').trim();
+    if (!layerId) {
+      throw new Error('Layer id cannot be empty');
+    }
+    if (this.layerManager.getLayer(layerId)) {
+      throw new Error(`Layer "${layerId}" already exists`);
+    }
+
+    return this.ensureLayer(input);
+  }
+
+  /**
+   * Creates or updates a layer descriptor idempotently.
+   */
+  public ensureLayer(input: PolygonLayerDescriptorInput): LayerState {
+    const layer = this.ensureLayerFromDescriptor(input);
+    this.updateLayerPanel();
+    this.updateMarkerDraggableState();
+    return layer;
+  }
+
+  /**
+   * Updates layer properties. Returns updated state, or undefined if not found.
+   */
+  public updateLayer(layerId: string, patch: LayerUpdateInput): LayerState | undefined {
+    if (!this.layerManager.getLayer(layerId)) {
+      return undefined;
+    }
+
+    let changed = false;
+
+    if ('label' in patch) {
+      changed = this.layerManager.setLayerLabel(layerId, patch.label) || changed;
+    }
+    if (typeof patch.color === 'string') {
+      changed = this.layerManager.setLayerColor(layerId, patch.color) || changed;
+    }
+    if (typeof patch.visibility === 'boolean') {
+      changed = this.layerManager.setLayerVisibility(layerId, patch.visibility) || changed;
+    }
+    if (patch.interaction !== undefined) {
+      changed = this.layerManager.setLayerInteraction(layerId, patch.interaction) || changed;
+      if (patch.interaction === 'static' && patch.panel === undefined) {
+        changed = this.layerManager.setLayerPanelVisibility(layerId, 'hidden') || changed;
       }
     }
+    if (patch.panel !== undefined) {
+      changed = this.layerManager.setLayerPanelVisibility(layerId, patch.panel) || changed;
+    }
+    if (patch.metadata !== undefined) {
+      changed = this.layerManager.setLayerMetadata(layerId, patch.metadata) || changed;
+    }
+
+    if (changed) {
+      this.updateLayerPanel();
+      this.updateMarkerDraggableState();
+      this.syncFeatureGroupOrderWithLayers();
+    }
+
+    return this.layerManager.getLayer(layerId);
+  }
+
+  /**
+   * Deletes a non-default layer.
+   */
+  public deleteLayer(layerId: string): LayerDeleteResult {
+    const normalizedId = (layerId || '').trim();
+    if (!normalizedId || !this.layerManager.getLayer(normalizedId)) {
+      return {
+        success: false,
+        layerId: normalizedId,
+        removedFeatureGroups: 0,
+        reason: 'not-found',
+      };
+    }
+
+    if (normalizedId === 'default') {
+      return {
+        success: false,
+        layerId: normalizedId,
+        removedFeatureGroups: 0,
+        reason: 'default-layer',
+      };
+    }
+
+    this.saveHistory('layerDelete');
+    const removedFeatureGroups = this.layerManager.deleteLayer(normalizedId);
+    return {
+      success: true,
+      layerId: normalizedId,
+      removedFeatureGroups: removedFeatureGroups.length,
+    };
+  }
+
+  /**
+   * Activates a layer.
+   */
+  public setActiveLayer(layerId: string): boolean {
+    return this.layerManager.setActiveLayer(layerId);
+  }
+
+  /**
+   * Updates visibility for a layer.
+   */
+  public setLayerVisibility(layerId: string, visible: boolean): boolean {
+    return this.layerManager.setLayerVisibility(layerId, visible);
+  }
+
+  /**
+   * Shows a layer.
+   */
+  public showLayer(layerId: string): boolean {
+    return this.setLayerVisibility(layerId, true);
+  }
+
+  /**
+   * Hides a layer.
+   */
+  public hideLayer(layerId: string): boolean {
+    return this.setLayerVisibility(layerId, false);
+  }
+
+  /**
+   * Updates a layer color.
+   */
+  public setLayerColor(layerId: string, color: string): boolean {
+    return this.layerManager.setLayerColor(layerId, color);
+  }
+
+  /**
+   * Updates interaction policy for a layer.
+   */
+  public setLayerInteraction(layerId: string, interaction: LayerInteraction): boolean {
+    const changed = this.layerManager.setLayerInteraction(layerId, interaction);
+    if (changed) {
+      this.updateMarkerDraggableState();
+      this.updateLayerPanel();
+    }
+    return changed;
+  }
+
+  /**
+   * Updates panel visibility policy for a layer.
+   */
+  public setLayerPanelVisibility(layerId: string, panel: LayerPanelVisibility): boolean {
+    const changed = this.layerManager.setLayerPanelVisibility(layerId, panel);
+    if (changed) {
+      this.updateLayerPanel();
+    }
+    return changed;
+  }
+
+  /**
+   * Replaces layer metadata.
+   */
+  public setLayerMetadata(layerId: string, metadata: Record<string, unknown>): boolean {
+    return this.layerManager.setLayerMetadata(layerId, metadata);
+  }
+
+  /**
+   * Shallow-merges metadata into existing layer metadata.
+   */
+  public patchLayerMetadata(layerId: string, metadataPatch: Record<string, unknown>): boolean {
+    const layer = this.layerManager.getLayer(layerId);
+    if (!layer) {
+      return false;
+    }
+    return this.layerManager.setLayerMetadata(layerId, {
+      ...layer.metadata,
+      ...metadataPatch,
+    });
+  }
+
+  /**
+   * Returns a shallow copy of feature metadata for a feature group.
+   */
+  public getFeatureMetadata(featureGroup: L.FeatureGroup): Record<string, unknown> | undefined {
+    const metadataStore = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+    if (!metadataStore?.metadata) {
+      return undefined;
+    }
+    return cloneMetadataValue(metadataStore.metadata);
+  }
+
+  /**
+   * Replaces feature metadata for a feature group.
+   */
+  public setFeatureMetadata(
+    featureGroup: L.FeatureGroup,
+    metadata: Record<string, unknown>,
+  ): boolean {
+    if (!featureGroup) {
+      return false;
+    }
+    const metadataStore = this.ensureFeatureGroupMetadata(featureGroup);
+    metadataStore.metadata = cloneMetadataValue(metadata);
+    metadataStore.lastModified = new Date();
+    return true;
+  }
+
+  /**
+   * Shallow-merges metadata into feature metadata for a feature group.
+   */
+  public patchFeatureMetadata(
+    featureGroup: L.FeatureGroup,
+    metadataPatch: Record<string, unknown>,
+  ): boolean {
+    if (!featureGroup) {
+      return false;
+    }
+    const current = this.getFeatureMetadata(featureGroup) ?? {};
+    return this.setFeatureMetadata(featureGroup, {
+      ...current,
+      ...metadataPatch,
+    });
+  }
+
+  /**
+   * Reorder layers by moving one layer to another layer's position.
+   */
+  public reorderLayer(layerId: string, targetLayerId: string): boolean {
+    if (layerId === 'default' || targetLayerId === 'default') {
+      return false;
+    }
+
+    const orderedLayerIds = this.layerManager.getAllLayers().map((layer) => layer.id);
+    const sourceIndex = orderedLayerIds.indexOf(layerId);
+    const targetIndex = orderedLayerIds.indexOf(targetLayerId);
+    if (sourceIndex < 0 || targetIndex < 0 || sourceIndex === targetIndex) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    return this.layerManager.moveLayer(layerId, targetLayerId);
+  }
+
+  /**
+   * Returns the id of the currently active layer.
+   */
+  public getActiveLayerId(): string {
+    return this.layerManager.getActiveLayerId();
+  }
+
+  /**
+   * Returns the layer id that the given feature group is assigned to, or undefined.
+   */
+  public getLayerForFeatureGroup(featureGroup: L.FeatureGroup): string | undefined {
+    return this.layerManager.getLayerForFeatureGroup(featureGroup);
+  }
+
+  /**
+   * Assigns a feature group to a layer. If the feature group is already
+   * assigned to another layer it is moved. Returns false if the target layer
+   * does not exist.
+   */
+  public assignFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean {
+    const normalizedLayerId = (layerId || '').trim();
+    if (!featureGroup || !normalizedLayerId) {
+      return false;
+    }
+    if (!this.layerManager.getLayer(normalizedLayerId)) {
+      return false;
+    }
+    if (this.layerManager.getLayerForFeatureGroup(featureGroup) === normalizedLayerId) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    const changed = this.layerManager.assignFeatureGroupToLayer(featureGroup, normalizedLayerId);
+    if (changed) {
+      this.refreshAfterLayerStructureChange();
+    }
+    return changed;
+  }
+
+  /**
+   * Moves a feature group from its current layer to the given layer.
+   * Alias for {@link assignFeatureGroupToLayer}.
+   */
+  public moveFeatureGroupToLayer(featureGroup: L.FeatureGroup, layerId: string): boolean {
+    return this.assignFeatureGroupToLayer(featureGroup, layerId);
+  }
+
+  /**
+   * Removes a feature group from whatever layer it is currently assigned to.
+   */
+  public removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void {
+    if (!featureGroup || !this.layerManager.getLayerForFeatureGroup(featureGroup)) {
+      return;
+    }
+
+    this.saveHistory('layerReorder');
+    this.layerManager.removeFeatureGroupFromLayer(featureGroup);
+    this.refreshAfterLayerStructureChange();
+  }
+
+  /**
+   * Deletes all non-default layers and removes their feature groups from the map.
+   * The default layer is left empty. A single history snapshot is saved before clearing.
+   */
+  public clearLayers(): void {
+    const nonDefault = this.layerManager
+      .getAllLayers()
+      .filter((l) => l.id !== 'default')
+      .map((l) => l.id);
+    if (nonDefault.length === 0) {
+      return;
+    }
+    this.saveHistory('layerDelete');
+    const removedFeatureGroups: L.FeatureGroup[] = [];
+    for (const layerId of nonDefault) {
+      removedFeatureGroups.push(...this.layerManager.deleteLayer(layerId));
+    }
+
+    if (removedFeatureGroups.length > 0) {
+      this.removeFeatureGroupsFromMap(removedFeatureGroups);
+      return;
+    }
+
+    this.updateLayerPanel();
+  }
+
+  /**
+   * Moves a layer to a specific 0-based position in the layer order.
+   * The default layer always occupies index 0; valid target indices for
+   * non-default layers start at 1. The index is clamped to the valid range.
+   */
+  public moveLayerToIndex(layerId: string, index: number): boolean {
+    const normalizedLayerId = (layerId || '').trim();
+    if (normalizedLayerId === 'default' || !Number.isFinite(index)) {
+      return false;
+    }
+    const orderedLayerIds = this.layerManager.getAllLayers().map((layer) => layer.id);
+    const currentIndex = orderedLayerIds.indexOf(normalizedLayerId);
+    if (currentIndex < 0) {
+      return false;
+    }
+    const clampedIndex = Math.max(1, Math.min(Math.trunc(index), orderedLayerIds.length - 1));
+    if (currentIndex === clampedIndex) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    return this.layerManager.moveLayerToIndex(normalizedLayerId, index);
+  }
+
+  /**
+   * Sets the full layer order by providing an ordered list of layer IDs.
+   * The default layer always stays first. Layers not included in the list are
+   * appended after the specified layers in their current relative order.
+   * Returns false if any specified ID does not exist or equals 'default'.
+   */
+  public setLayerOrder(layerIds: string[]): boolean {
+    if (!layerIds || layerIds.length === 0) {
+      return false;
+    }
+
+    const currentOrder = this.layerManager.getAllLayers().map((layer) => layer.id);
+    const normalizedIds = layerIds.map((layerId) => (layerId || '').trim());
+    if (normalizedIds.some((layerId) => layerId.length === 0 || layerId === 'default')) {
+      return false;
+    }
+    if (new Set(normalizedIds).size !== normalizedIds.length) {
+      return false;
+    }
+    if (normalizedIds.some((layerId) => !currentOrder.includes(layerId))) {
+      return false;
+    }
+
+    const specifiedIds = new Set(normalizedIds);
+    const fullOrder = [
+      'default',
+      ...normalizedIds,
+      ...currentOrder.filter((layerId) => layerId !== 'default' && !specifiedIds.has(layerId)),
+    ];
+    if (
+      currentOrder.length === fullOrder.length &&
+      currentOrder.every((id, index) => id === fullOrder[index])
+    ) {
+      return false;
+    }
+
+    this.saveHistory('layerReorder');
+    return this.layerManager.setLayerOrder(normalizedIds);
+  }
+
+  private refreshAfterLayerStructureChange(): void {
+    this.syncFeatureGroupOrderWithLayers();
+    this.polygonInformation.deletePolygonInformationStorage();
+    this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+    this.updateMarkerDraggableState();
+    this.updateLayerPanel();
+  }
+
+  /**
+   * Begin a batch operation. A single history snapshot is saved before the
+   * batch starts; all individual history saves inside the batch are suppressed.
+   * Must be paired with {@link endBatch}.
+   * @param action - Optional history action label for the snapshot.
+   */
+  public beginBatch(action: HistoryAction = 'batch'): void {
+    this.startHistoryBatch(action);
+  }
+
+  /**
+   * End a batch operation started with {@link beginBatch}.
+   */
+  public endBatch(): void {
+    this.endHistoryBatch();
   }
 
   /**
@@ -524,22 +1298,50 @@ class Polydraw extends L.Control {
    * Removes all feature groups from the map and clears the internal storage.
    */
   public removeAllFeatureGroups() {
-    this.arrayOfFeatureGroups.forEach((featureGroups) => {
+    this.removeFeatureGroupsFromMap([...this.arrayOfFeatureGroups], { clearLayerState: true });
+  }
+
+  private removeDefaultLayerFeatureGroups(): void {
+    this.removeFeatureGroupsFromMap(this.layerManager.getFeatureGroupsForLayer('default'));
+  }
+
+  private removeFeatureGroupsFromMap(
+    featureGroups: L.FeatureGroup[],
+    options: { clearLayerState?: boolean } = {},
+  ): void {
+    if (featureGroups.length === 0) {
+      return;
+    }
+
+    featureGroups.forEach((featureGroup) => {
       try {
         // Perform proper cleanup before removing
         if (this.polygonMutationManager) {
-          this.polygonMutationManager.cleanupFeatureGroup(featureGroups);
+          this.polygonMutationManager.cleanupFeatureGroup(featureGroup);
         }
-        this.map.removeLayer(featureGroups);
+        this.map.removeLayer(featureGroup);
       } catch {
         // Silently handle layer removal errors
       }
+      const index = this.arrayOfFeatureGroups.indexOf(featureGroup);
+      if (index !== -1) {
+        this.arrayOfFeatureGroups.splice(index, 1);
+      }
+      this.layerManager?.removeFeatureGroupFromLayer(featureGroup);
     });
-    this.arrayOfFeatureGroups.length = 0; // Clear the array in-place to preserve the reference
+    this._lastAppliedVisibleMapOrder = [];
+
+    // Clear layer state (keep default layer empty)
+    if (options.clearLayerState && this.layerManager) {
+      this.layerManager.clear(this.config.styles.polygon.color);
+    }
+
     this.polygonInformation.deletePolygonInformationStorage();
     this.polygonInformation.updatePolygons();
     // Update the indicator state after removing all polygons
     this.updateActivateButtonIndicator();
+    this.updateLayerPanel();
+    this.eventManager.emit('polydraw:polygon:deleted', undefined);
   }
 
   /**
@@ -599,6 +1401,16 @@ class Polydraw extends L.Control {
     container.style.position = 'relative';
     container.style.zIndex = '1000';
 
+    const tooltipConfig = this.config.tooltips;
+    if (tooltipConfig) {
+      const delayMs = Math.max(0, tooltipConfig.delayMs);
+      container.setAttribute('data-tooltip-enabled', tooltipConfig.enabled ? 'true' : 'false');
+      container.setAttribute('data-tooltip-direction', tooltipConfig.direction);
+      container.style.setProperty('--polydraw-tooltip-bg', tooltipConfig.backgroundColor);
+      container.style.setProperty('--polydraw-tooltip-color', tooltipConfig.color);
+      container.style.setProperty('--polydraw-tooltip-delay', `${delayMs}ms`);
+    }
+
     this.subContainer = leafletAdapter.domUtil.create('div', 'sub-buttons', container);
     this.subContainer.setAttribute('data-polydraw', 'sub-buttons');
     this.subContainer.style.maxHeight = '0px';
@@ -608,6 +1420,15 @@ class Polydraw extends L.Control {
     // Firefox Android fix: Ensure subContainer has proper touch handling
     this.subContainer.style.pointerEvents = 'auto';
     this.subContainer.style.position = 'relative';
+
+    // When configPath is async, UI can be created before full component init.
+    // Ensure button wiring dependencies exist without replacing a future shared EventManager.
+    if (!this.eventManager) {
+      this.eventManager = new EventManager();
+    }
+    if (!this.historyManager) {
+      this.historyManager = new HistoryManager(this.eventManager, this.config.history.maxSize);
+    }
 
     createButtons(
       container,
@@ -629,13 +1450,21 @@ class Polydraw extends L.Control {
     // Firefox Android fix: Ensure all buttons have proper touch handling
     this.ensureButtonTouchResponsiveness(container);
 
+    // Initialize indicator + clone button state on first render
+    this.updateActivateButtonIndicator();
+
     // Simple UI update listener
     const uiUpdateListener = (mode: DrawMode) => {
       const drawButton = container.querySelector('.icon-draw') as HTMLElement;
       const subtractButton = container.querySelector('.icon-subtract') as HTMLElement;
+      const p2pButton = container.querySelector('.icon-p2p') as HTMLElement;
+      const p2pSubtractButton = container.querySelector('.icon-p2p-subtract') as HTMLElement;
       const cloneButton = container.querySelector('.icon-clone') as HTMLElement;
       if (drawButton) drawButton.classList.toggle('active', mode === DrawMode.Add);
       if (subtractButton) subtractButton.classList.toggle('active', mode === DrawMode.Subtract);
+      if (p2pButton) p2pButton.classList.toggle('active', mode === DrawMode.PointToPoint);
+      if (p2pSubtractButton)
+        p2pSubtractButton.classList.toggle('active', mode === DrawMode.PointToPointSubtract);
       if (cloneButton) cloneButton.classList.toggle('active', mode === DrawMode.Clone);
     };
     this.drawModeListeners.push(uiUpdateListener);
@@ -644,9 +1473,41 @@ class Polydraw extends L.Control {
   /**
    * Attaches listeners to polygonMutationManager and eventManager.
    */
+  private addCoreEventListener<T extends PolydrawEvent>(
+    event: T,
+    callback: PolydrawEventCallback<T>,
+  ): void {
+    this.eventManager.on(event, callback);
+    this._coreEventSubscriptions.push({
+      event,
+      callback: callback as PolydrawEventCallback,
+    });
+  }
+
+  private removeCoreEventListeners(): void {
+    if (!this.eventManager) {
+      this._coreEventListenersAttached = false;
+      return;
+    }
+
+    for (const subscription of this._coreEventSubscriptions) {
+      this.eventManager.off(
+        subscription.event,
+        subscription.callback as PolydrawEventCallback<typeof subscription.event>,
+      );
+    }
+    this._coreEventSubscriptions.length = 0;
+    this._coreEventListenersAttached = false;
+  }
+
   private setupEventListeners(): void {
+    if (this._coreEventListenersAttached) {
+      return;
+    }
+    this._coreEventListenersAttached = true;
+
     // Listen for polygon operation completion events to reset draw mode
-    this.polygonMutationManager.on('polygonOperationComplete', () => {
+    this.addCoreEventListener('polygonOperationComplete', () => {
       // Update the indicator state after any polygon operation
       this.updateActivateButtonIndicator();
       // Use the interaction state manager to reset to Off mode
@@ -676,16 +1537,25 @@ class Polydraw extends L.Control {
 
       // Reset tracer style
       this.applyTracerStyle(DrawMode.Off);
+
+      // Keep global feature-group ordering aligned with current layer ordering.
+      this.syncFeatureGroupOrderWithLayers();
+
+      // Clean up empty non-default layers after merge/subtract/drag operations
+      this.cleanupEmptyLayers();
     });
 
     // Listen for polygon deletion events to update the activate button indicator
-    this.polygonMutationManager.on('polygonDeleted', () => {
+    // and clean up empty non-default layers
+    this.addCoreEventListener('polygonDeleted', () => {
       this.updateActivateButtonIndicator();
+      this.cleanupEmptyLayers();
     });
 
     // Listen for drawing completion events from the draw manager
-    this.eventManager.on('polydraw:polygon:created', async (data) => {
+    this.addCoreEventListener('polydraw:polygon:created', async (data) => {
       this.stopDraw();
+      const interactionLayerId = this.getInteractionTargetLayerId();
       if (data.isPointToPoint) {
         // Save state before P2P operation
         this.saveHistory('pointToPoint');
@@ -693,12 +1563,16 @@ class Polydraw extends L.Control {
         // For P2P, handle based on the mode
         if (data.mode === DrawMode.PointToPointSubtract) {
           // Use subtraction for P2P subtract mode
-          await this.polygonMutationManager.subtractPolygon(data.polygon, { simplify: false });
+          await this.polygonMutationManager.subtractPolygon(data.polygon, {
+            simplify: false,
+            targetLayerId: interactionLayerId,
+          });
         } else {
           // Use addition for regular P2P mode
           await this.polygonMutationManager.addPolygon(data.polygon, {
             simplify: false,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
         }
       } else {
@@ -709,9 +1583,83 @@ class Polydraw extends L.Control {
     });
 
     // Listen for drawing cancellation events
-    this.eventManager.on('polydraw:draw:cancel', () => {
+    this.addCoreEventListener('polydraw:draw:cancel', () => {
       this.stopDraw();
-      this.setDrawMode(this.config.defaultMode);
+      this.setDrawMode(this.config.tools.default);
+    });
+
+    // Layer events
+    this.addCoreEventListener('polydraw:layer:visibility', (data) => {
+      const layerState = this.layerManager.getLayer(data.layerId);
+      if (!layerState) return;
+      for (const fg of layerState.featureGroups) {
+        try {
+          if (data.visible) {
+            fg.addTo(this.map);
+          } else {
+            this.map.removeLayer(fg);
+          }
+        } catch {
+          // Ignore add/remove errors
+        }
+      }
+      this.syncFeatureGroupOrderWithLayers();
+      // Re-render the panel so the eye icon reflects the new state
+      this.updateLayerPanel();
+    });
+
+    this.addCoreEventListener('polydraw:layer:activated', () => {
+      this.updateMarkerDraggableState();
+      this.updateLayerPanel();
+    });
+
+    this.addCoreEventListener('polydraw:layer:colorChanged', () => {
+      this.updateLayerPanel();
+    });
+
+    this.addCoreEventListener('polydraw:layer:created', () => {
+      this.updateLayerPanel();
+    });
+
+    this.addCoreEventListener('polydraw:layer:delete-requested', (data) => {
+      // Save history before deleting so undo can restore the layer and its polygons
+      this.saveHistory('layerDelete');
+      this.layerManager.deleteLayer(data.layerId);
+    });
+
+    this.addCoreEventListener('polydraw:layer:reorder-requested', (data) => {
+      this.reorderLayer(data.layerId, data.targetLayerId);
+    });
+
+    this.addCoreEventListener('polydraw:layer:reordered', () => {
+      this.syncFeatureGroupOrderWithLayers();
+      this.polygonInformation.deletePolygonInformationStorage();
+      this.polygonInformation.createPolygonInformationStorage(this.arrayOfFeatureGroups);
+      this.updateLayerPanel();
+    });
+
+    this.addCoreEventListener('polydraw:layer:deleted', (data) => {
+      for (const fg of data.removedFeatureGroups) {
+        try {
+          if (this.polygonMutationManager) {
+            this.polygonMutationManager.cleanupFeatureGroup(fg);
+          }
+          fg.clearLayers();
+          this.map.removeLayer(fg);
+        } catch {
+          // Ignore cleanup errors
+        }
+        const idx = this.arrayOfFeatureGroups.indexOf(fg);
+        if (idx > -1) {
+          this.arrayOfFeatureGroups.splice(idx, 1);
+        }
+      }
+
+      this.syncFeatureGroupOrderWithLayers();
+      this.polygonInformation.updatePolygons();
+      this.updateActivateButtonIndicator();
+      this.updateMarkerDraggableState();
+      this.updateLayerPanel();
     });
   }
 
@@ -720,8 +1668,7 @@ class Polydraw extends L.Control {
    */
   private createTracer(): void {
     this.tracer = leafletAdapter.createPolyline([], {
-      ...this.config.polyLineOptions,
-      color: this.config.colors.polyline,
+      ...this.config.styles.polyline,
     });
     try {
       this.tracer.addTo(this.map);
@@ -745,19 +1692,19 @@ class Polydraw extends L.Control {
 
       switch (mode) {
         case DrawMode.Add:
-          color = this.config.colors.polyline;
+          color = this.config.styles.polyline.color;
           dashArray = undefined;
           break;
         case DrawMode.Subtract:
-          color = this.config.colors.subtractLine;
+          color = this.config.styles.subtractLine.color;
           dashArray = undefined;
           break;
         case DrawMode.PointToPoint:
-          color = this.config.colors.polyline;
+          color = this.config.styles.polyline.color;
           dashArray = '5, 5';
           break;
         case DrawMode.PointToPointSubtract:
-          color = this.config.colors.subtractLine;
+          color = this.config.styles.subtractLine.color;
           dashArray = '5, 5';
           break;
         case DrawMode.Off:
@@ -781,7 +1728,7 @@ class Polydraw extends L.Control {
    * Returns base tracer styles depending on whether we're in subtract mode.
    */
   private getTracerBaseStyle(isSubtractMode: boolean): Pick<L.PathOptions, 'weight' | 'opacity'> {
-    const options = isSubtractMode ? this.config.subtractLineOptions : this.config.polyLineOptions;
+    const options = isSubtractMode ? this.config.styles.subtractLine : this.config.styles.polyline;
     return {
       weight: options.weight,
       opacity: options.opacity,
@@ -814,6 +1761,7 @@ class Polydraw extends L.Control {
       saveHistoryState: (action: HistoryAction) => {
         this.saveHistory(action);
       },
+      layerManager: this.layerManager,
     });
   }
 
@@ -832,19 +1780,15 @@ class Polydraw extends L.Control {
       }
 
       // Expect external to be a partial config
-      const externalConfig: Partial<PolydrawConfig> = await response.json();
-
-      this.warnIfUsingDeprecatedConfiguration(externalConfig);
-      if (inlineConfig) {
-        this.warnIfUsingDeprecatedConfiguration(inlineConfig);
-      }
+      const externalConfig = normalizeConfigInput(await response.json());
 
       // Merge precedence: defaults < external < inline
       this.config = deepMerge<PolydrawConfig>(
         structuredClone(defaultConfig),
-        externalConfig ?? {},
+        externalConfig,
         inlineConfig ?? {},
       );
+      applyRuntimeConfigFallbacks(this.config);
 
       this.initializeComponents();
     } catch (error) {
@@ -854,6 +1798,7 @@ class Polydraw extends L.Control {
       );
       // Fallback to defaults < inline
       this.config = deepMerge<PolydrawConfig>(structuredClone(defaultConfig), inlineConfig ?? {});
+      applyRuntimeConfigFallbacks(this.config);
       this.initializeComponents();
     }
   }
@@ -902,12 +1847,14 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(activateButton, 'active');
       if (this.subContainer) {
         this.subContainer.style.maxHeight = '0px';
+        this.subContainer.style.overflow = 'hidden';
       }
     } else {
       leafletAdapter.domUtil.addClass(activateButton, 'active');
       if (this.subContainer) {
         const targetHeight = this.subContainer.scrollHeight;
         this.subContainer.style.maxHeight = `${targetHeight || 250}px`;
+        this.subContainer.style.overflow = 'visible';
       }
     }
     // Update the indicator state whenever the panel is toggled
@@ -948,6 +1895,9 @@ class Polydraw extends L.Control {
       e.preventDefault();
       e.stopPropagation();
     }
+    if (this.arrayOfFeatureGroups.length === 0) {
+      return;
+    }
     if (this.modeManager.getCurrentMode() === DrawMode.Clone) {
       this.setDrawMode(DrawMode.Off);
       return;
@@ -957,19 +1907,28 @@ class Polydraw extends L.Control {
   };
 
   private _handleEraseClick = (e?: Event) => {
-    // Close any open popup before erasing polygons
-    this.map.closePopup();
     // Prevent multiple rapid clicks
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     // Only erase if there are polygons to erase
-    if (this.arrayOfFeatureGroups.length === 0) {
+    const eraseScope = this.config.tools.eraseScope ?? 'all';
+    const erasableFeatureGroups =
+      eraseScope === 'defaultLayer'
+        ? this.layerManager.getFeatureGroupsForLayer('default')
+        : this.arrayOfFeatureGroups;
+    if (erasableFeatureGroups.length === 0) {
       return;
     }
+    // Close any open popup before erasing polygons
+    this.map.closePopup();
     // Save state before erasing all
     this.saveHistory('eraseAll');
+    if (eraseScope === 'defaultLayer') {
+      this.removeDefaultLayerFeatureGroups();
+      return;
+    }
     this.removeAllFeatureGroups();
   };
 
@@ -1039,27 +1998,101 @@ class Polydraw extends L.Control {
    * Restore the map state from a history snapshot
    */
   private async restoreFromSnapshot(snapshot: HistorySnapshot): Promise<void> {
+    if (!snapshot || !Array.isArray(snapshot.features)) {
+      console.warn('Invalid history snapshot provided for restore; skipping restore operation.');
+      return;
+    }
+
     // Set restoration flag to prevent saveState during restoration
     this.historyManager.setRestoring(true);
+    this._isRestoringSnapshot = true;
 
     try {
       // Clear all existing feature groups
       this.removeAllFeatureGroups();
 
       // Restore each polygon from the snapshot
-      for (const feature of snapshot.features) {
+      for (const [featureIndex, feature] of snapshot.features.entries()) {
+        const featureSnapshot = snapshot.featureMetadataSnapshot?.[featureIndex];
+        const restoreLayerId =
+          featureSnapshot?.layerId && this.layerManager?.getLayer(featureSnapshot.layerId)
+            ? featureSnapshot.layerId
+            : undefined;
+
         // Add the polygon back to the map using the mutation manager
         // Use noMerge and simplify:false to restore polygons exactly as they were
         await this.polygonMutationManager.addPolygon(feature, {
           noMerge: true,
           simplify: false,
+          skipKinkProcessing: true,
+          targetLayerId: restoreLayerId,
+          visualOptimizationLevel: featureSnapshot?.optimizationLevel ?? 0,
+          originalOptimizationLevel: featureSnapshot?.originalOptimizationLevel,
+          featureId: featureSnapshot?.id,
+          featureMetadata: featureSnapshot?.metadata,
+          sourceFeatureIds: featureSnapshot?.sourceFeatureIds,
+          featureInteractionOverride: featureSnapshot?.interactionOverride,
+          featureStyleOverrides: featureSnapshot?.styleOverrides,
+          featureCreatedAt: featureSnapshot?.createdAt,
+          featureLastModified: featureSnapshot?.lastModified,
         });
+      }
+
+      // Restore layer state from snapshot if available
+      if (snapshot.layerSnapshot && this.layerManager) {
+        this.layerManager.restoreFromLayerSnapshot(
+          snapshot.layerSnapshot,
+          this.arrayOfFeatureGroups,
+        );
+
+        // Re-apply layer colors and visibility after restoring assignments.
+        // Polygons were added with the default color during restore, so each
+        // layer's color must be pushed back onto its polygons.
+        for (const layer of this.layerManager.getAllLayers()) {
+          // Re-apply the layer color to all polygons in this layer
+          for (const fg of layer.featureGroups) {
+            const styleOverrides = (fg as PolydrawFeatureGroup)._polydrawMetadata?.styleOverrides;
+            fg.eachLayer((l: L.Layer) => {
+              if (l instanceof L.Polygon && !(l instanceof L.Rectangle)) {
+                l.setStyle({
+                  color: styleOverrides?.color ?? layer.color,
+                  fillColor: styleOverrides?.fillColor ?? this.config.styles.polygon.fillColor,
+                  fillOpacity:
+                    styleOverrides?.fillOpacity ?? this.config.styles.polygon.fillOpacity,
+                  weight: styleOverrides?.weight ?? this.config.styles.polygon.weight,
+                });
+              }
+            });
+          }
+
+          // Re-apply visibility
+          if (!layer.visible) {
+            for (const fg of layer.featureGroups) {
+              try {
+                this.map.removeLayer(fg);
+              } catch {
+                // Ignore
+              }
+            }
+          }
+        }
+
+        this.updateLayerPanel();
+      }
+
+      // Keep global feature-group order aligned with restored layer ordering.
+      if (this.layerManager) {
+        this.syncFeatureGroupOrderWithLayers();
       }
 
       // Update polygon information
       this.polygonInformation.updatePolygons();
+
+      // Ensure marker drag state is correct for the restored layer assignments
+      this.updateMarkerDraggableState();
     } finally {
       // Always reset restoration flag
+      this._isRestoringSnapshot = false;
       this.historyManager.setRestoring(false);
     }
   }
@@ -1070,10 +2103,15 @@ class Polydraw extends L.Control {
 
     this.turfHelper = new TurfHelper(this.config);
     this.mapStateService = new MapStateService();
-    this.eventManager = new EventManager();
+    this.eventManager = this.eventManager ?? new EventManager();
     this.polygonInformation = new PolygonInformationService(this.mapStateService);
     this.modeManager = new ModeManager(this.config, this.eventManager);
-    this.historyManager = new HistoryManager(this.eventManager, this.config.maxHistorySize);
+    if (!this.historyManager) {
+      this.historyManager = new HistoryManager(this.eventManager, this.config.history.maxSize);
+    } else {
+      this.historyManager.setMaxHistorySize(this.config.history.maxSize);
+    }
+    this.layerManager = new LayerManager(this.eventManager, this.config.styles.polygon.color);
     this.polygonInformation.onPolygonInfoUpdated((_k) => {
       void _k; // make lint happy
       // This is the perfect central place to keep the indicator in sync.
@@ -1098,30 +2136,180 @@ class Polydraw extends L.Control {
    * Update the draggable state of all existing markers when draw mode changes
    */
   private updateMarkerDraggableState(): void {
-    const shouldBeDraggable = this.modeManager.canPerformAction('markerDrag');
+    // Delegate to interaction manager so active-layer read-only rules are respected.
+    if (this.polygonMutationManager) {
+      this.polygonMutationManager.updateMarkerDraggableState();
+    }
+  }
 
-    this.arrayOfFeatureGroups.forEach((featureGroup) => {
-      featureGroup.eachLayer((layer) => {
-        if (layer instanceof L.Marker) {
-          const marker = layer as L.Marker;
-          try {
-            // Update the draggable option
-            marker.options.draggable = shouldBeDraggable;
+  /**
+   * Update the layer panel visibility and contents
+   */
+  private updateLayerPanel(): void {
+    if (!this.map || !this.layerManager) return;
 
-            // If the marker has dragging capability, update its state
-            if (marker.dragging) {
-              if (shouldBeDraggable) {
-                marker.dragging.enable();
-              } else {
-                marker.dragging.disable();
-              }
-            }
-          } catch {
-            // Handle any errors in updating marker state
-          }
+    const shouldShow = this.layerManager.getPanelLayerCount() > 1;
+
+    if (!shouldShow) {
+      if (this.layerPanel) {
+        try {
+          this.layerPanel.remove();
+        } catch {
+          // Control may not have been added to the map; ignore
         }
-      });
+        this.layerPanel = null;
+      }
+      return;
+    }
+
+    if (!this.layerPanel) {
+      const panel = createLayerPanel(this.layerManager, this.eventManager);
+      this.layerPanel = panel;
+      panel.addTo(this.map);
+      return;
+    }
+
+    this.layerPanel.refresh();
+  }
+
+  /**
+   * Reorder the global feature-group array to follow the current layer order
+   * and re-apply map draw order accordingly.
+   */
+  private syncFeatureGroupOrderWithLayers(): void {
+    if (!this.layerManager) return;
+
+    const current = this.arrayOfFeatureGroups;
+    if (current.length === 0) {
+      return;
+    }
+
+    const currentSet = new Set<L.FeatureGroup>(current);
+    const seen = new Set<L.FeatureGroup>();
+    const ordered: L.FeatureGroup[] = [];
+
+    for (const layer of this.layerManager.getAllLayers()) {
+      for (const featureGroup of layer.featureGroups) {
+        if (!currentSet.has(featureGroup) || seen.has(featureGroup)) {
+          continue;
+        }
+        seen.add(featureGroup);
+        ordered.push(featureGroup);
+      }
+    }
+
+    for (const featureGroup of current) {
+      if (!seen.has(featureGroup)) {
+        ordered.push(featureGroup);
+      }
+    }
+
+    if (!this.isSameFeatureGroupOrder(current, ordered)) {
+      current.splice(0, current.length, ...ordered);
+    }
+
+    this.reapplyFeatureGroupMapOrder();
+  }
+
+  private isSameFeatureGroupOrder(a: L.FeatureGroup[], b: L.FeatureGroup[]): boolean {
+    if (a.length !== b.length) {
+      return false;
+    }
+    for (let index = 0; index < a.length; index += 1) {
+      if (a[index] !== b[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Re-apply map layer order for visible feature groups. Layer order is stored and
+   * shown top-to-bottom, while Leaflet renders later-added layers on top.
+   */
+  private reapplyFeatureGroupMapOrder(): void {
+    if (!this.map || !this.layerManager) {
+      return;
+    }
+
+    const visibleFeatureGroups = this.arrayOfFeatureGroups.filter((featureGroup) => {
+      const layerId = this.layerManager.getLayerForFeatureGroup(featureGroup);
+      const layerState = layerId ? this.layerManager.getLayer(layerId) : undefined;
+      return layerState ? layerState.visible !== false : true;
     });
+
+    const layerIndex = new Map<string, number>();
+    this.layerManager.getAllLayers().forEach((layer, index) => {
+      layerIndex.set(layer.id, index);
+    });
+    const mapRenderOrder = [...visibleFeatureGroups].sort((left, right) => {
+      const leftLayerId = this.layerManager?.getLayerForFeatureGroup(left);
+      const rightLayerId = this.layerManager?.getLayerForFeatureGroup(right);
+      const leftIndex = leftLayerId
+        ? (layerIndex.get(leftLayerId) ?? layerIndex.size)
+        : layerIndex.size;
+      const rightIndex = rightLayerId
+        ? (layerIndex.get(rightLayerId) ?? layerIndex.size)
+        : layerIndex.size;
+      return rightIndex - leftIndex;
+    });
+
+    const visibleSet = new Set(visibleFeatureGroups);
+    const hasMatchingVisibilityState = this.arrayOfFeatureGroups.every((featureGroup) => {
+      const shouldBeVisible = visibleSet.has(featureGroup);
+      return this.map.hasLayer(featureGroup) === shouldBeVisible;
+    });
+    if (
+      hasMatchingVisibilityState &&
+      this.isSameFeatureGroupOrder(this._lastAppliedVisibleMapOrder, mapRenderOrder)
+    ) {
+      return;
+    }
+
+    for (const featureGroup of this.arrayOfFeatureGroups) {
+      if (!visibleSet.has(featureGroup) && this.map.hasLayer(featureGroup)) {
+        try {
+          this.map.removeLayer(featureGroup);
+        } catch {
+          // Ignore remove errors
+        }
+      }
+    }
+
+    for (const featureGroup of mapRenderOrder) {
+      try {
+        if (this.map.hasLayer(featureGroup)) {
+          this.map.removeLayer(featureGroup);
+        }
+        featureGroup.addTo(this.map);
+      } catch {
+        // Ignore add errors
+      }
+    }
+
+    this._lastAppliedVisibleMapOrder = [...mapRenderOrder];
+  }
+
+  /**
+   * Remove non-default layers that have no feature groups left.
+   */
+  private cleanupEmptyLayers(): void {
+    if (!this.layerManager || this._isRestoringSnapshot) return;
+
+    const emptyLayerIds: string[] = [];
+    for (const layer of this.layerManager.getAllLayers()) {
+      if (layer.id !== 'default' && layer.featureGroups.length === 0) {
+        emptyLayerIds.push(layer.id);
+      }
+    }
+
+    for (const id of emptyLayerIds) {
+      this.layerManager.deleteLayer(id);
+    }
+
+    if (emptyLayerIds.length > 0) {
+      this.updateLayerPanel();
+    }
   }
 
   /**
@@ -1636,12 +2824,14 @@ class Polydraw extends L.Control {
     this.stopDraw();
 
     try {
+      const interactionLayerId = this.getInteractionTargetLayerId();
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
           // Use the PolygonMutationManager instead of direct addPolygon
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
           if (!result.success) {
             console.error('Error adding polygon via manager:', result.error);
@@ -1650,7 +2840,9 @@ class Polydraw extends L.Control {
         }
         case DrawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
-          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos, {
+            targetLayerId: interactionLayerId,
+          });
           if (!subtractResult.success) {
             console.error('Error subtracting polygon via manager:', subtractResult.error);
           }
@@ -1674,6 +2866,7 @@ class Polydraw extends L.Control {
     try {
       // Save state before freehand operation
       this.saveHistory('freehand');
+      const interactionLayerId = this.getInteractionTargetLayerId();
 
       switch (this.modeManager.getCurrentMode()) {
         case DrawMode.Add: {
@@ -1681,6 +2874,7 @@ class Polydraw extends L.Control {
           const result = await this.polygonMutationManager.addPolygon(geoPos, {
             simplify: true,
             noMerge: false,
+            targetLayerId: interactionLayerId,
           });
           if (!result.success) {
             console.error('Error adding polygon via manager:', result.error);
@@ -1689,7 +2883,9 @@ class Polydraw extends L.Control {
         }
         case DrawMode.Subtract: {
           // Use the PolygonMutationManager for subtraction
-          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos);
+          const subtractResult = await this.polygonMutationManager.subtractPolygon(geoPos, {
+            targetLayerId: interactionLayerId,
+          });
           if (!subtractResult.success) {
             console.error('Error subtracting polygon via manager:', subtractResult.error);
           }
@@ -1858,8 +3054,8 @@ class Polydraw extends L.Control {
 
     const element = e.target as HTMLElement;
     if (element) {
-      element.style.backgroundColor = this.config.colors.edgeDeletion.hover;
-      element.style.borderColor = this.config.colors.edgeDeletion.hover;
+      element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
+      element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
       element.classList.add('edge-deletion-hover');
     }
   };
@@ -1966,64 +3162,44 @@ class Polydraw extends L.Control {
       leafletAdapter.domUtil.removeClass(activateButton, 'polydraw-indicator-active');
     }
 
-    const baseBackground = this.config.colors.styles.controlButton.backgroundColor;
-    const baseColor = this.config.colors.styles.controlButton.color;
-    const indicatorBackground = this.config.colors.styles.indicatorActive.backgroundColor;
+    const baseBackground = this.config.styles.ui.controlButton.backgroundColor;
+    const baseColor = this.config.styles.ui.controlButton.color;
+    const indicatorBackground = this.config.styles.ui.indicatorActive.backgroundColor;
 
     activateButton.style.backgroundColor = hasIndicator ? indicatorBackground : baseBackground;
     activateButton.style.color = baseColor;
+
+    const setButtonEnabled = (button: HTMLAnchorElement | null, enabled: boolean) => {
+      if (!button) return;
+      if (enabled) {
+        button.style.opacity = '1';
+        button.style.pointerEvents = 'auto';
+        button.setAttribute('aria-disabled', 'false');
+        button.tabIndex = 0;
+      } else {
+        button.style.opacity = '0.3';
+        button.style.pointerEvents = 'none';
+        button.setAttribute('aria-disabled', 'true');
+        button.tabIndex = -1;
+      }
+    };
+
+    const cloneButton = container.querySelector('.icon-clone') as HTMLAnchorElement | null;
+    setButtonEnabled(cloneButton, hasPolygons);
+    if (!hasPolygons && this.modeManager.getCurrentMode() === DrawMode.Clone) {
+      this.setDrawMode(DrawMode.Off);
+    }
+
+    const eraseButton = container.querySelector('.icon-erase') as HTMLAnchorElement | null;
+    const hasErasablePolygons =
+      (this.config.tools.eraseScope ?? 'all') === 'defaultLayer'
+        ? this.layerManager.getFeatureGroupsForLayer('default').length > 0
+        : hasPolygons;
+    setButtonEnabled(eraseButton, hasErasablePolygons);
   }
 
   private applyActivateButtonIcon(button: HTMLElement, svgMarkup: string): void {
     applySvgIcon(button, svgMarkup);
-  }
-
-  private warnIfUsingDeprecatedConfiguration(config?: Partial<PolydrawConfig>) {
-    if (!config) {
-      return;
-    }
-
-    const legacyPolygon = config.polygonCreation?.simplification;
-    const simplification = config.simplification as
-      | {
-          simplifyTolerance?: { tolerance?: number; highQuality?: boolean };
-          dynamicMode?: { fractionGuard?: number; multiplier?: number };
-        }
-      | undefined;
-
-    const hasLegacySimplifyTolerance =
-      !!simplification &&
-      (Object.prototype.hasOwnProperty.call(simplification, 'simplifyTolerance') ||
-        Object.prototype.hasOwnProperty.call(simplification, 'dynamicMode'));
-
-    if (legacyPolygon || hasLegacySimplifyTolerance) {
-      console.warn(
-        '[Leaflet.Polydraw] Legacy simplification settings detected. Please migrate to `config.simplification` with `mode`, `simple`, and `dynamic` blocks.',
-      );
-    }
-
-    const visualOptimization = config.markers?.visualOptimization;
-    const deprecatedVisualOptimizationKeys =
-      visualOptimization &&
-      (visualOptimization.useAngles !== undefined ||
-        visualOptimization.useBoundingBox !== undefined ||
-        visualOptimization.useDistance !== undefined ||
-        visualOptimization.thresholdBoundingBox !== undefined ||
-        visualOptimization.thresholdDistance !== undefined ||
-        visualOptimization.sharpAngleThreshold !== undefined);
-
-    if (deprecatedVisualOptimizationKeys) {
-      console.warn(
-        '[Leaflet.Polydraw] `markers.visualOptimization` is deprecated. Prefer `visualOptimizationLevel` when adding predefined polygons.',
-      );
-    }
-
-    // Check for deprecated buffer polygon creation method
-    if (config.polygonCreation?.method === 'buffer') {
-      console.warn(
-        '[Leaflet.Polydraw] `polygonCreation.method: "buffer"` is deprecated and no longer supported. Falling back to "concaveman". Use "concaveman" or "direct" instead.',
-      );
-    }
   }
 }
 
@@ -2063,4 +3239,10 @@ if (typeof globalThis !== 'undefined') {
 }
 
 export default Polydraw;
-export { leafletAdapter };
+export { defaultConfig } from './config';
+export { leafletAdapter } from './compatibility/leaflet-adapter';
+export type {
+  PolygonMenuAction,
+  PolygonMenuActionContext,
+  PolygonMenuActionResult,
+} from './types/polydraw-interfaces';

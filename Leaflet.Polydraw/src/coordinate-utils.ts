@@ -146,19 +146,6 @@ export class CoordinateUtils {
     if (typeof coordinate === 'string') {
       const coord = coordinate.trim();
 
-      // Handle comma-separated: "59.903,10.724" (but not DMS formats)
-      if (
-        coord.includes(',') &&
-        !coord.includes('°') &&
-        !coord.includes("'") &&
-        !coord.includes('"')
-      ) {
-        const parts = coord.split(',').map((p) => parseFloat(p.trim()));
-        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
-          return this.convertToLatLng(parts); // Recursive call for array handling
-        }
-      }
-
       // Handle Degrees Minutes Seconds (DMS): "59°54'10.8\"N 10°43'26.4\"E"
       const dmsMatch = coord.match(
         /(\d+)°(\d+)'(?:(\d+(?:\.\d+)?)")?([NS])\s*,?\s*(\d+)°(\d+)'(?:(\d+(?:\.\d+)?)")?([EW])/i,
@@ -186,19 +173,38 @@ export class CoordinateUtils {
       }
 
       // Handle Decimal Degrees with Direction: "59.903°N, 10.724°E"
-      const ddMatch = coord.match(/(\d+(?:\.\d+)?)°?\s*([NS])\s*,\s*(\d+(?:\.\d+)?)°?\s*([EW])/i);
+      const ddMatch = coord.match(
+        /([+-]?(?:\d+(?:\.\d+)?|\.\d+))°?\s*([NS])(?:\s*,\s*|\s+)([+-]?(?:\d+(?:\.\d+)?|\.\d+))°?\s*([EW])/i,
+      );
       if (ddMatch) {
         const [, lat, latDir, lng, lngDir] = ddMatch;
-        const finalLat = latDir.toUpperCase() === 'S' ? -parseFloat(lat) : parseFloat(lat);
-        const finalLng = lngDir.toUpperCase() === 'W' ? -parseFloat(lng) : parseFloat(lng);
+        const parsedLat = Math.abs(parseFloat(lat));
+        const parsedLng = Math.abs(parseFloat(lng));
+        const finalLat = latDir.toUpperCase() === 'S' ? -parsedLat : parsedLat;
+        const finalLng = lngDir.toUpperCase() === 'W' ? -parsedLng : parsedLng;
         return leafletAdapter.createLatLng(finalLat, finalLng);
       }
 
-      // Handle N/E format: "N59 E10"
-      const neMatch = coord.match(/N\s*(\d+(?:\.\d+)?)\s+E\s*(\d+(?:\.\d+)?)/i);
-      if (neMatch) {
-        const [, lat, lng] = neMatch;
-        return leafletAdapter.createLatLng(parseFloat(lat), parseFloat(lng));
+      // Handle directional prefix format: "N59 E10" / "S59 W10"
+      const directionalPrefixMatch = coord.match(
+        /([NS])\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s+([EW])\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))/i,
+      );
+      if (directionalPrefixMatch) {
+        const [, latDir, lat, lngDir, lng] = directionalPrefixMatch;
+        const parsedLat = Math.abs(parseFloat(lat));
+        const parsedLng = Math.abs(parseFloat(lng));
+        const finalLat = latDir.toUpperCase() === 'S' ? -parsedLat : parsedLat;
+        const finalLng = lngDir.toUpperCase() === 'W' ? -parsedLng : parsedLng;
+        return leafletAdapter.createLatLng(finalLat, finalLng);
+      }
+
+      // Handle comma-separated decimals: "59.903,10.724"
+      const commaSeparatedDecimals = coord.match(
+        /^\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*,\s*([+-]?(?:\d+(?:\.\d+)?|\.\d+))\s*$/,
+      );
+      if (commaSeparatedDecimals) {
+        const [, first, second] = commaSeparatedDecimals;
+        return this.convertToLatLng([parseFloat(first), parseFloat(second)]); // Recursive call for array handling
       }
 
       // Handle UTM coordinates: "32N 500000 6600000" or "UTM 32N 500000 6600000"

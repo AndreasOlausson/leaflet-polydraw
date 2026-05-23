@@ -17,7 +17,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
----4
+---
 
 ## Key Features
 
@@ -25,10 +25,13 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 
 - **Freehand Drawing**: Draw polygons naturally by sketching directly on the map — click and drag to create shapes in real time.
 - **Smart Polygon Merging**: Automatically detects and merges overlapping polygons (including smooth C-to-O shape completion).
+- **Layer Management**: Organize polygons into named layers with visibility, color, ordering, read-only/static policies, and metadata.
 - **Drag & Drop Editing**: Intuitive polygon repositioning with intelligent spatial interactions.
 - **Clone Drag Mode**: Duplicate polygons instantly by dragging a copy while the original remains in its starting position (preserves holes and metadata).
 - **Advanced Vertex Editing**: Drag vertices, add or remove points, and reshape polygons seamlessly.
 - **Scaling & Rotation Handles**: Transform polygons visually using interactive bounding boxes — scale, rotate, or stretch with precision.
+- **Donut Transform Tool**: Turn simple polygons into holes or outward donut-style shapes from the polygon menu with undo support.
+- **Custom Polygon Menu Actions**: Inject application-specific actions into the polygon menu with typed callbacks, async support, history control, and custom styling.
 - **Undo & Redo History**: Full action history with reversible edits — step backward or forward through vertex moves, shape changes, merges, and freehand strokes (Ctrl/Cmd+Z, Ctrl+Y or Cmd+Shift+Z).
 - **Point-to-Point Mode**: Optional precise vertex-by-vertex drawing for detailed or structured geometry.
 - **Hole Support**: Create complex polygons with holes and nested structures effortlessly.
@@ -42,7 +45,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 
 ---
 
-**[Live Demo](https://polydraw.ao-tech.se)** · **[Quick Start](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/QUICK_START.md)** · **[Full Documentation](https://github.com/AndreasOlausson/leaflet-polydraw/tree/main/docs)**
+**[Live Demo](https://polydraw.ao-tech.se)** · **[Quick Start](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/QUICK_START.md)** · **[Custom Actions](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CUSTOM_ACTIONS.md)** · **[Full Documentation](https://github.com/AndreasOlausson/leaflet-polydraw/tree/main/docs)**
 
 ---
 
@@ -54,6 +57,7 @@ Full documentation and examples are available on GitHub:
 - [Quick Start](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/QUICK_START.md)
 - [Configuration](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CONFIGURATION.md)
 - [Features](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/FEATURES.md)
+- [Custom Polygon Menu Actions](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CUSTOM_ACTIONS.md)
 - [API Reference](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/API.md)
 - [Markers](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/MARKERS.md)
 - [Events](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/EVENTS.md)
@@ -62,6 +66,7 @@ Full documentation and examples are available on GitHub:
 - [General — Browser Support, License, Acknowledgments](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/GENERAL.md)
 - [Roadmap](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/ROADMAP.md)
 - [Changelog](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/Leaflet.Polydraw/CHANGELOG.md)
+- [Migration Guide (v1 -> v2)](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/MIGRATION.md)
 
 
 ---

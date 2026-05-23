@@ -2,7 +2,7 @@
  * Coordinate Auto-Detection Tests
  * Tests the CoordinateUtils.convertToLatLng method with various coordinate formats
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { CoordinateUtils } from '../../../src/coordinate-utils';
 
 // Mock the leafletAdapter to avoid dependency issues
@@ -41,6 +41,17 @@ describe('CoordinateUtils - Auto-Detection', () => {
       expect(result.lat).toBe(59.903);
       expect(result.lng).toBe(10.724);
     });
+
+    it('should prefer {lat, lng} when both object conventions are present', () => {
+      const result = CoordinateUtils.convertToLatLng({
+        lat: 1,
+        lng: 2,
+        latitude: 100,
+        longitude: 200,
+      });
+      expect(result.lat).toBe(1);
+      expect(result.lng).toBe(2);
+    });
   });
 
   describe('Array Formats', () => {
@@ -66,6 +77,12 @@ describe('CoordinateUtils - Auto-Detection', () => {
       const result = CoordinateUtils.convertToLatLng([10.724, 59.903]);
       expect(result.lat).toBe(10.724);
       expect(result.lng).toBe(59.903);
+    });
+
+    it('should ignore extra array elements beyond the first two', () => {
+      const result = CoordinateUtils.convertToLatLng([10, 20, 30]);
+      expect(result.lat).toBe(10);
+      expect(result.lng).toBe(20);
     });
   });
 
@@ -126,6 +143,12 @@ describe('CoordinateUtils - Auto-Detection', () => {
       expect(result.lat).toBeCloseTo(-59.9, 1);
       expect(result.lng).toBeCloseTo(-10.7167, 4);
     });
+
+    it('should parse directional letters case-insensitively', () => {
+      const result = CoordinateUtils.convertToLatLng(`40°42'46"n, 74°0'21"w`);
+      expect(result.lat).toBeCloseTo(40 + 42 / 60 + 46 / 3600, 6);
+      expect(result.lng).toBeCloseTo(-(74 + 0 / 60 + 21 / 3600), 6);
+    });
   });
 
   describe('String Formats - Degrees Decimal Minutes (DDM)', () => {
@@ -165,6 +188,12 @@ describe('CoordinateUtils - Auto-Detection', () => {
       const result = CoordinateUtils.convertToLatLng('59.903 N, 10.724 E');
       expect(result.lat).toBe(59.903);
       expect(result.lng).toBe(10.724);
+    });
+
+    it('should handle DD format with directional suffixes and no degree symbols', () => {
+      const result = CoordinateUtils.convertToLatLng('40.7128 N, 74.0060 W');
+      expect(result.lat).toBe(40.7128);
+      expect(result.lng).toBe(-74.006);
     });
 
     it('should handle DD format without spaces', () => {
@@ -210,6 +239,12 @@ describe('CoordinateUtils - Auto-Detection', () => {
       expect(result.lat).toBe(59);
       expect(result.lng).toBe(10);
     });
+
+    it('should handle "S59 W10" hemisphere signs', () => {
+      const result = CoordinateUtils.convertToLatLng('S 59 W 10');
+      expect(result.lat).toBe(-59);
+      expect(result.lng).toBe(-10);
+    });
   });
 
   describe('Complex Coordinate Systems - Error Handling', () => {
@@ -242,6 +277,14 @@ describe('CoordinateUtils - Auto-Detection', () => {
         CoordinateUtils.convertToLatLng('9F2PXX2J+2V');
       }).toThrow(
         'Plus Code detected: 9F2PXX2J+2V. Plus Code conversion requires specialized libraries. Please convert to decimal degrees first.',
+      );
+    });
+
+    it('should use trimmed input value in UTM errors', () => {
+      expect(() => {
+        CoordinateUtils.convertToLatLng('  UTM 33N 500000 4649776  ');
+      }).toThrow(
+        'UTM coordinates detected: UTM 33N 500000 4649776. UTM conversion requires specialized libraries like proj4js. Please convert to decimal degrees first.',
       );
     });
   });

@@ -58,81 +58,6 @@ const overlappingSquares: L.LatLng[][][] = [
   ],
 ];
 
-// Triangle for testing vertex count (should show 3 vertices)
-const triangle: L.LatLng[][][] = [
-  [
-    [
-      leafletAdapter.createLatLng(58.41, 15.59),
-      leafletAdapter.createLatLng(58.41, 15.595),
-      leafletAdapter.createLatLng(58.405, 15.592),
-      leafletAdapter.createLatLng(58.41, 15.59), // Closing point
-    ],
-  ],
-];
-
-const multipleSimplePolygons: L.LatLng[][][] = [
-  [
-    [
-      leafletAdapter.createLatLng(59.9112809995347, 10.720321999999998),
-      leafletAdapter.createLatLng(59.91171999953472, 10.720544),
-      leafletAdapter.createLatLng(59.911641999534716, 10.723379000000001),
-      leafletAdapter.createLatLng(59.9117679995347, 10.723480000000002),
-      leafletAdapter.createLatLng(59.91184499953473, 10.721888),
-      leafletAdapter.createLatLng(59.912069999534715, 10.721374000000003),
-      leafletAdapter.createLatLng(59.912262999534725, 10.721598000000002),
-      leafletAdapter.createLatLng(59.91213999953472, 10.721990000000002),
-      leafletAdapter.createLatLng(59.9123129995347, 10.722227),
-      leafletAdapter.createLatLng(59.91215999953473, 10.722759000000002),
-      leafletAdapter.createLatLng(59.9118759995347, 10.722396),
-      leafletAdapter.createLatLng(59.911786999534705, 10.72365),
-      leafletAdapter.createLatLng(59.911580999534706, 10.723459),
-      leafletAdapter.createLatLng(59.91165499953472, 10.722184000000002),
-      leafletAdapter.createLatLng(59.91113099953468, 10.722066000000002),
-      leafletAdapter.createLatLng(59.9112809995347, 10.720321999999998),
-    ],
-  ],
-  [
-    [
-      leafletAdapter.createLatLng(59.91343499953473, 10.721424999999998),
-      leafletAdapter.createLatLng(59.913602999534724, 10.721683),
-      leafletAdapter.createLatLng(59.913030999534726, 10.723528000000002),
-      leafletAdapter.createLatLng(59.912470999534726, 10.723031),
-      leafletAdapter.createLatLng(59.912536999534716, 10.722772000000003),
-      leafletAdapter.createLatLng(59.91236699953473, 10.722519000000002),
-      leafletAdapter.createLatLng(59.91255299953473, 10.721880999999998),
-      leafletAdapter.createLatLng(59.91275899953473, 10.722159999999999),
-      leafletAdapter.createLatLng(59.91295899953471, 10.721596),
-      leafletAdapter.createLatLng(59.913231999534716, 10.722003),
-      leafletAdapter.createLatLng(59.91343499953473, 10.721424999999998),
-    ],
-  ],
-  [
-    [
-      leafletAdapter.createLatLng(59.914059999534736, 10.722228000000001),
-      leafletAdapter.createLatLng(59.91450499953475, 10.723161999999999),
-      leafletAdapter.createLatLng(59.91488299953473, 10.722514),
-      leafletAdapter.createLatLng(59.91506199953474, 10.722853),
-      leafletAdapter.createLatLng(59.91463499953472, 10.723891),
-      leafletAdapter.createLatLng(59.91512799953473, 10.724659),
-      leafletAdapter.createLatLng(59.91495399953473, 10.725907),
-      leafletAdapter.createLatLng(59.91519099953475, 10.726231),
-      leafletAdapter.createLatLng(59.915136999534745, 10.726750000000001),
-      leafletAdapter.createLatLng(59.91479399953474, 10.727636999999996),
-      leafletAdapter.createLatLng(59.914208999534736, 10.726809),
-      leafletAdapter.createLatLng(59.91433099953474, 10.726432),
-      leafletAdapter.createLatLng(59.91371499953473, 10.725579999999999),
-      leafletAdapter.createLatLng(59.913596999534725, 10.725832),
-      leafletAdapter.createLatLng(59.913272999534726, 10.725498),
-      leafletAdapter.createLatLng(59.91306499953472, 10.725956),
-      leafletAdapter.createLatLng(59.912831999534724, 10.725652000000002),
-      leafletAdapter.createLatLng(59.913220999534715, 10.724587999999999),
-      leafletAdapter.createLatLng(59.91324999953473, 10.723502999999997),
-      leafletAdapter.createLatLng(59.91344499953475, 10.723672000000002),
-      leafletAdapter.createLatLng(59.914059999534736, 10.722228000000001),
-    ],
-  ],
-];
-
 // Star/compass base
 const starBase: L.LatLngLiteral[] = [
   { lat: 58.001914, lng: 15.344043 },
@@ -2998,6 +2923,70 @@ const linkoping: L.LatLng[][][] = [
   ],
 ];
 
+// --- Layer demo polygons ---
+
+// Two non-overlapping zones for different layers
+const layerZoneA: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.42, 15.56),
+      leafletAdapter.createLatLng(58.42, 15.58),
+      leafletAdapter.createLatLng(58.41, 15.58),
+      leafletAdapter.createLatLng(58.41, 15.56),
+      leafletAdapter.createLatLng(58.42, 15.56),
+    ],
+  ],
+];
+
+const layerZoneB: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.42, 15.6),
+      leafletAdapter.createLatLng(58.42, 15.62),
+      leafletAdapter.createLatLng(58.41, 15.62),
+      leafletAdapter.createLatLng(58.41, 15.6),
+      leafletAdapter.createLatLng(58.42, 15.6),
+    ],
+  ],
+];
+
+const layerZoneC: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.4, 15.58),
+      leafletAdapter.createLatLng(58.4, 15.6),
+      leafletAdapter.createLatLng(58.39, 15.6),
+      leafletAdapter.createLatLng(58.39, 15.58),
+      leafletAdapter.createLatLng(58.4, 15.58),
+    ],
+  ],
+];
+
+// Two overlapping polygons meant for the SAME layer (to test intra-layer merge)
+const layerMergeLeft: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.415, 15.57),
+      leafletAdapter.createLatLng(58.415, 15.595),
+      leafletAdapter.createLatLng(58.405, 15.595),
+      leafletAdapter.createLatLng(58.405, 15.57),
+      leafletAdapter.createLatLng(58.415, 15.57),
+    ],
+  ],
+];
+
+const layerMergeRight: L.LatLng[][][] = [
+  [
+    [
+      leafletAdapter.createLatLng(58.415, 15.585),
+      leafletAdapter.createLatLng(58.415, 15.61),
+      leafletAdapter.createLatLng(58.405, 15.61),
+      leafletAdapter.createLatLng(58.405, 15.585),
+      leafletAdapter.createLatLng(58.415, 15.585),
+    ],
+  ],
+];
+
 type SampleKey =
   | 'octagon'
   | 'star16'
@@ -3064,3 +3053,4 @@ const sampleLibrary: Record<SampleKey, SampleDefinition> = {
 
 export type { SampleKey };
 export { sampleLibrary };
+export { layerZoneA, layerZoneB, layerZoneC, layerMergeLeft, layerMergeRight };

@@ -225,7 +225,10 @@ export class PolygonDrawManager {
           iconSize,
         }),
         draggable: this.config.modes.dragElbow,
-      }).addTo(this.map);
+      });
+      pointMarker.on('add', () => this.applyP2PMarkerMode(pointMarker));
+      pointMarker.addTo(this.map);
+      this.applyP2PMarkerMode(pointMarker);
 
       // Stop propagation on mousedown for all p2p markers to prevent adding new points on top of them
       pointMarker.on('mousedown', (e) => {
@@ -256,8 +259,12 @@ export class PolygonDrawManager {
           if (this.p2pMarkers.length >= 3) {
             const element = pointMarker.getElement();
             if (element) {
-              element.style.backgroundColor = this.config.colors.p2p.closingMarker;
-              element.style.borderColor = this.config.colors.p2p.closingMarker;
+              const modeColor =
+                this.modeManager.getCurrentMode() === DrawMode.PointToPointSubtract
+                  ? this.config.styles.ui.dragSubtract.color
+                  : this.config.styles.ui.p2pClosingMarker.color;
+              element.style.backgroundColor = modeColor;
+              element.style.borderColor = modeColor;
               element.style.cursor = 'pointer';
               element.title = 'Click to close polygon';
             }
@@ -292,6 +299,7 @@ export class PolygonDrawManager {
 
       this.p2pMarkers.push(pointMarker);
       this.updateP2PTracer();
+      this.updateP2PMarkerModes();
       this.updateFirstMarkerReadyState();
     } catch {
       // Handle marker creation errors in test environment
@@ -430,7 +438,11 @@ export class PolygonDrawManager {
     // console.log('PolygonDrawManager clearP2pMarkers');
     this.p2pMarkers.forEach((marker) => {
       this.detachMarkerModifierHandler(marker);
-      this.map.removeLayer(marker);
+      try {
+        this.map.removeLayer(marker);
+      } catch {
+        // Ignore marker removal errors (Leaflet v1/jsdom edge case)
+      }
     });
     this.p2pMarkers = [];
   }
@@ -497,8 +509,8 @@ export class PolygonDrawManager {
         const currentMode = this.modeManager.getCurrentMode();
         const lineColor =
           currentMode === DrawMode.PointToPointSubtract
-            ? this.config.colors.subtractLine
-            : this.config.colors.polyline;
+            ? this.config.styles.subtractLine.color
+            : this.config.styles.polyline.color;
         this.tracer.setStyle({
           color: lineColor,
           dashArray: '5, 5',
@@ -528,7 +540,11 @@ export class PolygonDrawManager {
       this.p2pMarkers.splice(markerIndex, 1);
       this.detachMarkerModifierHandler(markerToDelete);
       // Remove from map
-      this.map.removeLayer(markerToDelete);
+      try {
+        this.map.removeLayer(markerToDelete);
+      } catch {
+        // Ignore marker removal errors (Leaflet v1/jsdom edge case)
+      }
       // Update the tracer
       this.updateP2PTracer();
 
@@ -583,6 +599,7 @@ export class PolygonDrawManager {
           iconSize: [20, 20],
         }),
       );
+      this.applyP2PMarkerMode(firstMarker);
     }
 
     // Remove existing listeners to avoid duplicates
@@ -631,6 +648,7 @@ export class PolygonDrawManager {
    */
   private updateFirstMarkerReadyState(): void {
     if (this.p2pMarkers.length === 0) return;
+    this.updateP2PMarkerModes();
     const firstMarker = this.p2pMarkers[0];
     const element = firstMarker.getElement();
     if (!element) return;
@@ -644,7 +662,6 @@ export class PolygonDrawManager {
       element.title = 'Click to close polygon';
     } else {
       element.classList.remove('leaflet-polydraw-p2p-first-marker-ready');
-      element.removeAttribute('data-p2p-mode');
       element.style.cursor = '';
       element.removeAttribute('title');
     }
@@ -655,7 +672,26 @@ export class PolygonDrawManager {
    */
   public refreshP2PMarkerState(): void {
     if (this.p2pMarkers.length === 0) return;
+    this.updateP2PMarkerModes();
     this.updateFirstMarkerReadyState();
+  }
+
+  private applyP2PMarkerMode(marker: L.Marker): void {
+    const element = marker.getElement();
+    if (!element) return;
+
+    const mode = this.modeManager.getCurrentMode();
+    if (mode === DrawMode.PointToPointSubtract) {
+      element.setAttribute('data-p2p-mode', 'subtract');
+    } else if (mode === DrawMode.PointToPoint) {
+      element.setAttribute('data-p2p-mode', 'add');
+    } else {
+      element.removeAttribute('data-p2p-mode');
+    }
+  }
+
+  private updateP2PMarkerModes(): void {
+    this.p2pMarkers.forEach((marker) => this.applyP2PMarkerMode(marker));
   }
 
   /**

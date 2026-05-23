@@ -184,7 +184,7 @@ export class ModeManager {
    * Set interaction state for clone mode (drag to duplicate)
    */
   private setCloneModeState(): void {
-    this.state.polygonDragging = this.config.modes.clonePolygons ?? false;
+    this.state.polygonDragging = this.config.tools.clone ?? false;
     this.state.markerDragging = false;
     this.state.edgeClicking = false;
     this.state.polygonClicking = false;

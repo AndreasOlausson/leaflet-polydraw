@@ -22,7 +22,7 @@ export class DemoFactory {
 
   /** Load the demo page and wait for the map */
   async goto() {
-    await this.page.goto('http://127.0.0.1:4173/');
+    await this.page.goto('./');
     await this.page.waitForSelector('#map');
   }
 
@@ -186,18 +186,46 @@ export class DemoFactory {
         if (requireHoles && ringSet && ringSet.length > 1) {
           const outer = ringSet[0];
           const hole = ringSet[1];
-          const outerPt = outer?.[0] as LatLngLike | undefined;
-          const holePt = hole?.[0] as LatLngLike | undefined;
-          if (
-            outerPt &&
-            holePt &&
-            typeof outerPt.lat === 'number' &&
-            typeof holePt.lat === 'number'
-          ) {
-            startLatLng = {
+          const mapRect = map.getContainer().getBoundingClientRect();
+          const controlRect = ctrl?.getContainer?.()?.getBoundingClientRect?.() ?? null;
+          const isCoveredByControl = (point: LatLngLike): boolean => {
+            if (!controlRect) return false;
+            const pixel = map.latLngToContainerPoint(point);
+            const clientX = mapRect.left + pixel.x;
+            const clientY = mapRect.top + pixel.y;
+            return (
+              clientX >= controlRect.left &&
+              clientX <= controlRect.right &&
+              clientY >= controlRect.top &&
+              clientY <= controlRect.bottom
+            );
+          };
+
+          const candidateCount = Math.min(outer.length, hole.length);
+          const candidates: LatLngLike[] = [];
+          for (let i = 0; i < candidateCount; i += 1) {
+            const outerPt = outer[i] as LatLngLike | undefined;
+            const holePt = hole[i] as LatLngLike | undefined;
+            if (!outerPt || !holePt) continue;
+            if (
+              typeof outerPt.lat !== 'number' ||
+              typeof outerPt.lng !== 'number' ||
+              typeof holePt.lat !== 'number' ||
+              typeof holePt.lng !== 'number'
+            ) {
+              continue;
+            }
+            candidates.push({
               lat: (outerPt.lat + holePt.lat) / 2,
               lng: (outerPt.lng + holePt.lng) / 2,
-            };
+            });
+          }
+
+          const uncoveredCandidate = candidates.find((point) => !isCoveredByControl(point));
+          if (uncoveredCandidate) {
+            startLatLng = uncoveredCandidate;
+          } else if (candidates.length > 0) {
+            startLatLng = candidates[0];
           }
         }
 
@@ -212,7 +240,9 @@ export class DemoFactory {
         const downTarget =
           pathTarget ?? document.elementFromPoint(start.x, start.y) ?? map.getContainer();
         const moveTarget = map.getContainer();
-        const usePointer = typeof window.PointerEvent === 'function';
+        const leafletVersion = String((window as any).L?.version ?? '');
+        const usePointer =
+          !leafletVersion.startsWith('1.') && typeof window.PointerEvent === 'function';
         const isTouch = (navigator.maxTouchPoints || 0) > 0;
 
         const dispatchPointer = (type: string, x: number, y: number, targetEl: Element) => {
@@ -252,6 +282,8 @@ export class DemoFactory {
           await new Promise((resolve) => setTimeout(resolve, 16));
         }
         dispatchPointer('pointerup', end.x, end.y, moveTarget);
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
       },
       { offsetLat, offsetLng, requireHoles: options.requireHoles ?? false },
     );
@@ -290,7 +322,7 @@ export class DemoFactory {
   }
 
   /** Start a transform mode from the polygon menu */
-  async startTransform(mode: 'scale' | 'rotate') {
+  async startTransform(mode: 'scale' | 'rotate' | 'donut') {
     await this.clickMenuAction(mode);
     await this.page.locator('.polydraw-transform-handle').first().waitFor({ state: 'visible' });
   }
@@ -449,6 +481,26 @@ export class DemoFactory {
     await this.page.locator('.polydraw-transform-root').waitFor({ state: 'detached' });
   }
 
+  /** Return whether the confirm button is disabled in transform mode */
+  async isTransformConfirmDisabled(): Promise<boolean> {
+    const confirm = this.page.locator('.polydraw-transform-confirm');
+    await confirm.waitFor({ state: 'visible' });
+    const ariaDisabled = await confirm.getAttribute('aria-disabled');
+    return ariaDisabled === 'true';
+  }
+
+  /** Return the transform status text, if any */
+  async getTransformStatusText(): Promise<string> {
+    const status = this.page.locator('.polydraw-transform-status');
+    if ((await status.count()) === 0) {
+      return '';
+    }
+    if (!(await status.first().isVisible())) {
+      return '';
+    }
+    return (await status.first().textContent())?.trim() ?? '';
+  }
+
   /** Undo the last operation */
   async undo() {
     await this.page.evaluate(async () => {
@@ -507,6 +559,26 @@ export class DemoFactory {
       maxLng = Math.max(maxLng, lng);
     });
     return { minLat, maxLat, minLng, maxLng };
+  }
+
+  /** Return the number of rings for the primary polygon */
+  async getPrimaryPolygonRingCount(): Promise<number> {
+    return this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const groups = ctrl?.getFeatureGroups?.() ?? [];
+      if (!groups.length) return 0;
+      const geojson = groups[0].toGeoJSON() as any;
+      const features = Array.isArray(geojson?.features) ? geojson.features : [geojson];
+      const geom = features[0]?.geometry;
+      if (!geom || !geom.coordinates) return 0;
+      if (geom.type === 'Polygon') {
+        return Array.isArray(geom.coordinates) ? geom.coordinates.length : 0;
+      }
+      if (geom.type === 'MultiPolygon') {
+        return Array.isArray(geom.coordinates[0]) ? geom.coordinates[0].length : 0;
+      }
+      return 0;
+    });
   }
 }
 

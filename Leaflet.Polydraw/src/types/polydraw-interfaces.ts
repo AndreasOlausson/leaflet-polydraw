@@ -1,6 +1,11 @@
 import * as L from 'leaflet';
-import { DrawMode, MarkerPosition } from '../enums';
+import { DonutDirection, DrawMode, MarkerPosition } from '../enums';
 import type { Feature, Polygon, MultiPolygon, Position } from 'geojson';
+import type {
+  PolydrawEvent as ManagerPolydrawEvent,
+  PolydrawEventCallback as ManagerPolydrawEventCallback,
+  PolydrawEventPayloads,
+} from '../managers/event-manager';
 
 export type { Position };
 
@@ -123,12 +128,6 @@ export interface MarkerOptions {
     toleranceMin?: number;
     toleranceMax?: number;
     curve?: number;
-    sharpAngleThreshold?: number;
-    thresholdBoundingBox?: number;
-    thresholdDistance?: number;
-    useDistance?: boolean;
-    useBoundingBox?: boolean;
-    useAngles?: boolean;
   };
 }
 
@@ -152,13 +151,80 @@ export interface HoleStyleOptions {
   dashArray?: string;
 }
 
-export type SimplificationMode = 'simple' | 'dynamic' | 'none';
-
-export interface LegacySimplificationOptions {
-  mode?: string;
-  tolerance?: number;
-  highQuality?: boolean;
+/**
+ * Unified styles configuration interface
+ */
+export interface PolylineStyle {
+  weight: number;
+  opacity: number;
+  color: string;
+  dashArray?: string;
 }
+
+export interface PolygonStyle {
+  weight: number;
+  opacity: number;
+  fillOpacity: number;
+  smoothFactor: number;
+  noClip: boolean;
+  color: string;
+  fillColor: string;
+}
+
+export interface HoleStyle {
+  weight: number;
+  opacity: number;
+  fillOpacity: number;
+  color: string;
+  fillColor: string;
+  dashArray?: string;
+}
+
+export interface UIStyles {
+  controlButton: {
+    backgroundColor: string;
+    color: string;
+  };
+  controlButtonHover: {
+    backgroundColor: string;
+  };
+  controlButtonActive: {
+    backgroundColor: string;
+    color: string;
+  };
+  indicatorActive: {
+    backgroundColor: string;
+  };
+  p2pMarker: {
+    backgroundColor: string;
+    borderColor: string;
+  };
+  p2pClosingMarker: {
+    color: string;
+  };
+  edgeHover: {
+    color: string;
+  };
+  edgeDeletion: {
+    color: string;
+  };
+  dragSubtract: {
+    color: string;
+  };
+}
+
+export interface StylesConfig {
+  polyline: PolylineStyle;
+  subtractLine: PolylineStyle;
+  polygon: PolygonStyle;
+  hole: HoleStyle;
+  ui: UIStyles;
+}
+
+export type PolygonCreationAlgorithm = 'concaveman' | 'convex' | 'direct';
+export type SimplificationStrategy = 'simple' | 'dynamic' | 'none';
+export type ModifierKey = 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey';
+export type EraseScope = 'all' | 'defaultLayer';
 
 export interface SimplificationSimpleOptions {
   tolerance: number;
@@ -173,9 +239,23 @@ export interface SimplificationDynamicOptions {
 }
 
 export interface SimplificationConfig {
-  mode: SimplificationMode;
+  strategy: SimplificationStrategy;
   simple: SimplificationSimpleOptions;
   dynamic: SimplificationDynamicOptions;
+}
+
+/**
+ * Tool configuration interface (user-selectable modes)
+ */
+export interface ToolConfig {
+  default: DrawMode;
+  draw: boolean;
+  subtract: boolean;
+  p2p: boolean;
+  p2pSubtract: boolean;
+  clone: boolean;
+  erase: boolean;
+  eraseScope?: EraseScope;
 }
 
 /**
@@ -191,12 +271,6 @@ export interface PolylineStyleOptions {
  * Mode configuration interface
  */
 export interface ModeConfig {
-  draw: boolean;
-  subtract: boolean;
-  deleteAll: boolean;
-  p2p: boolean;
-  p2pSubtract: boolean;
-  clonePolygons: boolean;
   dragElbow: boolean;
   dragPolygons: boolean;
   attachElbow: boolean;
@@ -214,9 +288,9 @@ export interface DragPolygonConfig {
   markerAnimationDuration: number;
   modifierSubtract: {
     keys: {
-      windows: string;
-      mac: string;
-      linux: string;
+      windows: ModifierKey;
+      mac: ModifierKey;
+      linux: ModifierKey;
     };
     hideMarkersOnDrag: boolean;
   };
@@ -227,17 +301,53 @@ export interface DragPolygonConfig {
  */
 export interface EdgeDeletionConfig {
   keys: {
-    windows: string;
-    mac: string;
-    linux: string;
+    windows: ModifierKey;
+    mac: ModifierKey;
+    linux: ModifierKey;
   };
   minVertices: number;
 }
 
 /**
- * Menu operations configuration interface
+ * Interaction configuration interface (drag + edge deletion)
  */
-export interface MenuOperationsConfig {
+export interface InteractionConfig {
+  drag: DragPolygonConfig;
+  edgeDeletion: EdgeDeletionConfig;
+}
+
+/**
+ * Polygon tools configuration interface (per-polygon operations)
+ */
+export interface PolygonMenuActionContext {
+  polygon: Feature<Polygon | MultiPolygon>;
+  featureGroup: L.FeatureGroup;
+  bounds: L.LatLngBounds;
+}
+
+export type PolygonMenuActionResult =
+  | Feature<Polygon | MultiPolygon>
+  | {
+      polygon: Feature<Polygon | MultiPolygon>;
+      allowMerge?: boolean;
+      simplify?: boolean;
+      metadata?: Record<string, unknown>;
+    }
+  | null
+  | undefined;
+
+export interface PolygonMenuAction {
+  id: string;
+  label: string;
+  apply: (
+    ctx: PolygonMenuActionContext,
+  ) => PolygonMenuActionResult | Promise<PolygonMenuActionResult>;
+  className?: string | string[];
+  visible?: (ctx: PolygonMenuActionContext) => boolean;
+  history?: boolean;
+}
+
+export interface PolygonToolsConfig {
   simplify: {
     enabled: boolean;
     processHoles: boolean;
@@ -249,9 +359,16 @@ export interface MenuOperationsConfig {
   bbox: {
     enabled: boolean;
     processHoles: boolean;
+    addMidPointMarkers: boolean;
   };
   bezier: {
     enabled: boolean;
+    resolution: number;
+    sharpness: number;
+    resampleMultiplier: number;
+    maxNodes: number;
+    visualOptimizationLevel: number;
+    ghostMarkers: boolean;
   };
   scale: {
     enabled: boolean;
@@ -259,9 +376,14 @@ export interface MenuOperationsConfig {
   rotate: {
     enabled: boolean;
   };
+  donut: {
+    enabled: boolean;
+    direction: DonutDirection;
+  };
   visualOptimizationToggle: {
     enabled: boolean;
   };
+  menuActions?: PolygonMenuAction[];
 }
 
 export type PolygonActionHistory =
@@ -271,9 +393,12 @@ export type PolygonActionHistory =
   | 'bezier'
   | 'scale'
   | 'rotate'
-  | 'toggleOptimization';
+  | 'donut'
+  | 'toggleOptimization'
+  | 'polygonMenuAction';
 
 export type HistoryAction =
+  | 'batch'
   | 'freehand'
   | 'pointToPoint'
   | 'addPredefinedPolygon'
@@ -286,6 +411,8 @@ export type HistoryAction =
   | 'removeHole'
   | 'modifierSubtract'
   | 'deletePolygon'
+  | 'layerDelete'
+  | 'layerReorder'
   | PolygonActionHistory;
 
 export interface PolygonActionsHistoryCaptureConfig {
@@ -295,10 +422,13 @@ export interface PolygonActionsHistoryCaptureConfig {
   bezier: boolean;
   scale: boolean;
   rotate: boolean;
+  donut: boolean;
   toggleOptimization: boolean;
+  polygonMenuAction: boolean;
 }
 
 export interface HistoryCaptureConfig {
+  batch: boolean;
   freehand: boolean;
   pointToPoint: boolean;
   addPredefinedPolygon: boolean;
@@ -311,11 +441,22 @@ export interface HistoryCaptureConfig {
   removeHole: boolean;
   modifierSubtract: boolean;
   deletePolygon: boolean;
+  layerDelete?: boolean;
+  layerReorder?: boolean;
   polygonActions?: PolygonActionsHistoryCaptureConfig;
 }
 
 export interface HistoryConfig {
   capture: HistoryCaptureConfig;
+  maxSize: number;
+}
+
+export interface TooltipConfig {
+  enabled: boolean;
+  delayMs: number;
+  direction: 'left' | 'right';
+  backgroundColor: string;
+  color: string;
 }
 
 /**
@@ -324,83 +465,19 @@ export interface HistoryConfig {
 export interface PolydrawConfig {
   kinks: boolean;
   mergePolygons: boolean;
+  tools: ToolConfig;
   modes: ModeConfig;
-  defaultMode: DrawMode;
   modifierSubtractMode: boolean;
-  dragPolygons: DragPolygonConfig;
-  edgeDeletion: EdgeDeletionConfig;
+  interaction: InteractionConfig;
   markers: MarkerOptions;
-  polyLineOptions: PolylineStyleOptions;
-  subtractLineOptions: PolylineStyleOptions;
-  polygonOptions: {
-    weight: number;
-    opacity: number;
-    fillOpacity: number;
-    smoothFactor: number;
-    noClip: boolean;
-  };
-  holeOptions: HoleStyleOptions;
+  styles: StylesConfig;
   polygonCreation: {
-    method: string;
-    simplification?: LegacySimplificationOptions;
+    algorithm: PolygonCreationAlgorithm;
   };
   simplification: SimplificationConfig;
-  menuOperations: MenuOperationsConfig;
-  boundingBox: {
-    addMidPointMarkers: boolean;
-  };
-  bezier: {
-    resolution: number;
-    sharpness: number;
-    resampleMultiplier: number;
-    maxNodes: number;
-    visualOptimizationLevel: number;
-    ghostMarkers: boolean;
-  };
-  colors: {
-    dragPolygons: {
-      subtract: string;
-    };
-    p2p: {
-      closingMarker: string;
-    };
-    edgeHover: string;
-    edgeDeletion: {
-      hover: string;
-    };
-    polyline: string;
-    subtractLine: string;
-    polygon: {
-      border: string;
-      fill: string;
-    };
-    hole: {
-      border: string;
-      fill: string;
-    };
-    styles: {
-      controlButton: {
-        backgroundColor: string;
-        color: string;
-      };
-      controlButtonHover: {
-        backgroundColor: string;
-      };
-      controlButtonActive: {
-        backgroundColor: string;
-        color: string;
-      };
-      indicatorActive: {
-        backgroundColor: string;
-      };
-      p2pMarker: {
-        backgroundColor: string;
-        borderColor: string;
-      };
-    };
-  };
+  polygonTools: PolygonToolsConfig;
+  tooltips: TooltipConfig;
   history: HistoryConfig;
-  maxHistorySize: number;
 }
 
 /**
@@ -412,39 +489,17 @@ export type TouchEventHandler = (event: TouchEvent) => void;
 export type MarkerEventHandler = (event: L.LeafletEvent) => void;
 export type PolygonEventHandler = (event: L.LeafletEvent) => void;
 
-export type PolydrawEvent =
-  | 'polydraw:ready'
-  | 'polydraw:start'
-  | 'polydraw:stop'
-  | 'polydraw:mode:change'
-  | 'polydraw:polygon:created'
-  | 'polydraw:polygon:updated'
-  | 'polydraw:polygon:deleted'
-  | 'polydraw:marker:click'
-  | 'polydraw:marker:dragstart'
-  | 'polydraw:marker:dragend'
-  | 'polydraw:draw:cancel'
-  | 'polydraw:menu:action'
-  | 'polydraw:check:intersection'
-  | 'polydraw:subtract';
-
-export type PolydrawEventData =
-  | undefined
-  | DrawMode
-  | MenuActionData
-  | IntersectionAnalysis
-  | PolygonUpdatedEventData
-  | GeometricOperationResult
-  | { id?: string; polygon?: Feature<Polygon | MultiPolygon> }
-  | L.LeafletEvent;
-
-export type PolydrawEventCallback = (data?: PolydrawEventData) => void;
+export type PolydrawEvent = ManagerPolydrawEvent;
+export type PolydrawEventData<T extends PolydrawEvent = PolydrawEvent> = PolydrawEventPayloads[T];
+export type PolydrawEventCallback<T extends PolydrawEvent = PolydrawEvent> =
+  ManagerPolydrawEventCallback<T>;
 
 /**
  * Data interface for menu actions
  */
 export interface MenuActionData {
-  action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier';
+  action: 'simplify' | 'bbox' | 'doubleElbows' | 'bezier' | 'polygonMenuAction';
+  menuActionId?: string;
   latLngs: L.LatLngLiteral[];
   featureGroup: L.FeatureGroup;
 }
@@ -456,6 +511,14 @@ export interface PolygonUpdatedEventData {
   intelligentMerge?: boolean;
   optimizationLevel?: number;
   originalOptimizationLevel?: number;
+  featureId?: string;
+  featureMetadata?: Record<string, unknown>;
+  sourceFeatureIds?: string[];
+  featureInteractionOverride?: LayerInteraction;
+  featureStyleOverrides?: PolygonStyleOverrides;
+  targetLayerId?: string;
+  featureCreatedAt?: string;
+  featureLastModified?: string;
 }
 
 /**
@@ -530,9 +593,15 @@ export interface PolydrawFeatureGroup extends L.FeatureGroup {
   _polydrawMetadata?: {
     id: string;
     optimizationLevel: number;
+    originalOptimizationLevel?: number;
     hasHoles: boolean;
     createdAt: Date;
     lastModified: Date;
+    layerId?: string;
+    metadata?: Record<string, unknown>;
+    sourceFeatureIds?: string[];
+    interactionOverride?: LayerInteraction;
+    styleOverrides?: PolygonStyleOverrides;
   };
 }
 
@@ -643,15 +712,6 @@ export interface PointImportance {
 }
 
 /**
- * Simplification options interface
- */
-export interface SimplificationOptions {
-  tolerance: number;
-  highQuality: boolean;
-  dynamicTolerance: boolean;
-}
-
-/**
  * Bezier curve options interface
  */
 export interface BezierOptions {
@@ -673,4 +733,102 @@ export interface UnionOptions {
 export interface DifferenceOptions {
   tolerance: number;
   createHoles: boolean;
+}
+
+/**
+ * Layer snapshot entry for history serialization
+ */
+export interface LayerSnapshotEntry {
+  id: string;
+  label?: string;
+  color: string;
+  visible: boolean;
+  interaction?: LayerInteraction;
+  panel?: LayerPanelVisibility;
+  metadata?: Record<string, unknown>;
+  featureIndices: number[];
+}
+
+/**
+ * Complete layer snapshot for history
+ */
+export interface LayerSnapshot {
+  layers: LayerSnapshotEntry[];
+  activeLayerId: string;
+}
+
+export interface FeatureMetadataSnapshotEntry {
+  id?: string;
+  metadata?: Record<string, unknown>;
+  sourceFeatureIds?: string[];
+  interactionOverride?: LayerInteraction;
+  styleOverrides?: PolygonStyleOverrides;
+  optimizationLevel?: number;
+  originalOptimizationLevel?: number;
+  hasHoles?: boolean;
+  layerId?: string;
+  createdAt?: string;
+  lastModified?: string;
+}
+
+export type LayerInteraction = 'editable' | 'readonly' | 'static';
+export type LayerPanelVisibility = 'visible' | 'hidden';
+export type PolydrawMetadata = Record<string, unknown>;
+export type PolygonOverrideInteraction = 'inherit' | LayerInteraction;
+export type PolygonOverrideMerge = 'inherit' | 'allow' | 'block';
+
+export interface PolygonStyleOverrides {
+  color?: string;
+  fillColor?: string;
+  fillOpacity?: number;
+  weight?: number;
+}
+
+export interface PolygonOverridesInput {
+  interaction?: PolygonOverrideInteraction;
+  merge?: PolygonOverrideMerge;
+  style?: PolygonStyleOverrides;
+}
+
+export interface PredefinedPolygonOptions {
+  visualOptimizationLevel?: number;
+  layer?: string | PolygonLayerDescriptorInput;
+  layerColor?: string;
+  metadata?: PolydrawMetadata;
+  overrides?: PolygonOverridesInput;
+}
+
+export interface PolygonLayerDescriptorInput {
+  id: string;
+  label?: string;
+  color?: string;
+  visibility?: boolean;
+  panel?: LayerPanelVisibility;
+  interaction?: LayerInteraction;
+  metadata?: PolydrawMetadata;
+}
+
+export interface LayerUpdateInput {
+  label?: string;
+  color?: string;
+  visibility?: boolean;
+  panel?: LayerPanelVisibility;
+  interaction?: LayerInteraction;
+  metadata?: PolydrawMetadata;
+}
+
+export interface LayerDeleteResult {
+  success: boolean;
+  layerId: string;
+  removedFeatureGroups: number;
+  reason?: 'not-found' | 'default-layer';
+}
+
+/**
+ * Input format for adding polygon groups with layer information
+ */
+export interface PolygonGroupInput {
+  layer: string | PolygonLayerDescriptorInput;
+  polygons: unknown[][][][];
+  options?: Omit<PredefinedPolygonOptions, 'layer' | 'layerColor'>;
 }

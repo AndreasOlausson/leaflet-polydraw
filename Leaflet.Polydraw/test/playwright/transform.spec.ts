@@ -52,4 +52,24 @@ test.describe('Polygon transforms', () => {
     });
     expect(changed).toBe(true);
   });
+
+  test('donut transform only enables confirm for valid donuts', async ({ page }) => {
+    const demo = new DemoFactory(page);
+    await demo.addPredefined([latlngPolys.square]);
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+
+    await demo.startTransform('donut');
+    await expect.poll(() => demo.isTransformConfirmDisabled()).toBe(true);
+    await expect.poll(() => demo.getTransformStatusText()).toBe('');
+
+    await demo.dragTransformHandle('top-right', 120, -120);
+
+    await expect.poll(() => demo.isTransformConfirmDisabled()).toBe(false);
+    await expect.poll(() => demo.getTransformStatusText()).toBe('');
+
+    await demo.confirmTransform();
+
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+    await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
+  });
 });

@@ -1,6 +1,14 @@
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import type { EventManager } from './event-manager';
+import type {
+  FeatureMetadataSnapshotEntry,
+  LayerSnapshot,
+  PolydrawFeatureGroup,
+  PolydrawPolygon,
+} from '../types/polydraw-interfaces';
+import type { LayerManager } from './layer-manager';
 import * as L from 'leaflet';
+import { cloneMetadataValue } from '../utils/metadata-clone.util';
 
 /**
  * Represents a snapshot of the entire drawing state
@@ -25,6 +33,16 @@ export interface HistorySnapshot {
    * Approximate serialized size in bytes at save time.
    */
   size?: number;
+
+  /**
+   * Optional layer snapshot for restoring layer assignments
+   */
+  layerSnapshot?: LayerSnapshot;
+
+  /**
+   * Optional per-feature metadata snapshot aligned with `features` order.
+   */
+  featureMetadataSnapshot?: FeatureMetadataSnapshotEntry[];
 }
 
 /**
@@ -46,23 +64,30 @@ export class HistoryManager {
     this.maxHistorySize = maxHistorySize;
   }
 
+  setMaxHistorySize(maxHistorySize: number): void {
+    if (!Number.isFinite(maxHistorySize) || maxHistorySize <= 0) {
+      return;
+    }
+    this.maxHistorySize = Math.floor(maxHistorySize);
+    this.enforceMemoryBudget();
+    this.enforceRedoMemoryBudget();
+  }
+
   /**
    * Save the current state to the undo stack
    * @param featureGroups - Array of Leaflet feature groups to save
    * @param action - Optional description of the action
+   * @param layerManager - Optional layer manager for capturing layer state
    */
-  saveState(featureGroups: L.FeatureGroup[], action?: string): void {
+  saveState(featureGroups: L.FeatureGroup[], action?: string, layerManager?: LayerManager): void {
     // Don't save state while restoring to prevent infinite loops
     if (this.isRestoring) {
       return;
     }
 
-    const snapshot = this.createSnapshot(featureGroups, action);
+    const snapshot = this.createSnapshot(featureGroups, action, layerManager);
     const snapshotSize = this.calculateSnapshotSize(snapshot);
     snapshot.size = snapshotSize;
-
-    // Clear redo stack when new action is performed (always, even if we skip saving)
-    this.redoStack = [];
 
     // Check if snapshot exceeds individual size limit
     if (snapshotSize > this.maxSnapshotSize) {
@@ -71,6 +96,9 @@ export class HistoryManager {
       );
       return;
     }
+
+    // Clear redo stack only after we know this action will be recorded.
+    this.redoStack = [];
 
     // Add to undo stack
     this.undoStack.push(snapshot);
@@ -137,13 +165,13 @@ export class HistoryManager {
    * @param featureGroups - Current array of feature groups
    * @returns The snapshot to restore, or null if undo stack is empty
    */
-  undo(featureGroups: L.FeatureGroup[]): HistorySnapshot | null {
+  undo(featureGroups: L.FeatureGroup[], layerManager?: LayerManager): HistorySnapshot | null {
     if (!this.canUndo()) {
       return null;
     }
 
-    // Save current state to redo stack before undoing
-    const currentSnapshot = this.createSnapshot(featureGroups, 'redo-point');
+    // Save current state to redo stack before undoing (include layer state)
+    const currentSnapshot = this.createSnapshot(featureGroups, 'redo-point', layerManager);
     const currentSnapshotSize = this.calculateSnapshotSize(currentSnapshot);
     currentSnapshot.size = currentSnapshotSize;
 
@@ -174,13 +202,13 @@ export class HistoryManager {
    * @param featureGroups - Current array of feature groups
    * @returns The snapshot to restore, or null if redo stack is empty
    */
-  redo(featureGroups: L.FeatureGroup[]): HistorySnapshot | null {
+  redo(featureGroups: L.FeatureGroup[], layerManager?: LayerManager): HistorySnapshot | null {
     if (!this.canRedo()) {
       return null;
     }
 
-    // Save current state to undo stack before redoing
-    const currentSnapshot = this.createSnapshot(featureGroups, 'undo-point');
+    // Save current state to undo stack before redoing (include layer state)
+    const currentSnapshot = this.createSnapshot(featureGroups, 'undo-point', layerManager);
     const currentSnapshotSize = this.calculateSnapshotSize(currentSnapshot);
     currentSnapshot.size = currentSnapshotSize;
 
@@ -248,8 +276,13 @@ export class HistoryManager {
   /**
    * Create a snapshot from feature groups
    */
-  private createSnapshot(featureGroups: L.FeatureGroup[], action?: string): HistorySnapshot {
+  private createSnapshot(
+    featureGroups: L.FeatureGroup[],
+    action?: string,
+    layerManager?: LayerManager,
+  ): HistorySnapshot {
     const features: Feature<Polygon | MultiPolygon>[] = [];
+    const featureMetadataSnapshot: FeatureMetadataSnapshotEntry[] = [];
 
     featureGroups.forEach((fg) => {
       fg.eachLayer((layer) => {
@@ -267,6 +300,7 @@ export class HistoryManager {
           const geomType = feature?.geometry?.type;
           if (geomType === 'Polygon' || geomType === 'MultiPolygon') {
             features.push(feature);
+            featureMetadataSnapshot.push(this.captureFeatureMetadataSnapshot(fg, layer));
           }
         } catch (error) {
           console.warn('Error converting polygon to GeoJSON:', error);
@@ -274,11 +308,69 @@ export class HistoryManager {
       });
     });
 
-    return {
+    const snapshot: HistorySnapshot = {
       features,
       timestamp: Date.now(),
       action,
     };
+
+    // Capture layer snapshot if layer manager is available
+    if (layerManager) {
+      snapshot.layerSnapshot = layerManager.captureLayerSnapshot(featureGroups);
+    }
+    if (featureMetadataSnapshot.length > 0) {
+      snapshot.featureMetadataSnapshot = featureMetadataSnapshot;
+    }
+
+    return snapshot;
+  }
+
+  private captureFeatureMetadataSnapshot(
+    featureGroup: L.FeatureGroup,
+    polygonLayer?: L.Layer,
+  ): FeatureMetadataSnapshotEntry {
+    const snapshot: FeatureMetadataSnapshotEntry = {};
+    const metadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+
+    if (metadata?.id) {
+      snapshot.id = metadata.id;
+    }
+    if (metadata?.metadata) {
+      snapshot.metadata = cloneMetadataValue(metadata.metadata);
+    }
+    if (Array.isArray(metadata?.sourceFeatureIds)) {
+      snapshot.sourceFeatureIds = [...metadata.sourceFeatureIds];
+    }
+    if (metadata?.interactionOverride) {
+      snapshot.interactionOverride = metadata.interactionOverride;
+    }
+    if (metadata?.styleOverrides) {
+      snapshot.styleOverrides = cloneMetadataValue(metadata.styleOverrides);
+    }
+    if (typeof metadata?.hasHoles === 'boolean') {
+      snapshot.hasHoles = metadata.hasHoles;
+    }
+    if (typeof metadata?.layerId === 'string') {
+      snapshot.layerId = metadata.layerId;
+    }
+    if (metadata?.createdAt instanceof Date && !Number.isNaN(metadata.createdAt.getTime())) {
+      snapshot.createdAt = metadata.createdAt.toISOString();
+    }
+    if (metadata?.lastModified instanceof Date && !Number.isNaN(metadata.lastModified.getTime())) {
+      snapshot.lastModified = metadata.lastModified.toISOString();
+    }
+
+    if (polygonLayer instanceof L.Polygon) {
+      const polygon = polygonLayer as PolydrawPolygon;
+      if (typeof polygon._polydrawOptimizationLevel === 'number') {
+        snapshot.optimizationLevel = polygon._polydrawOptimizationLevel;
+      }
+      if (typeof polygon._polydrawOptimizationOriginalLevel === 'number') {
+        snapshot.originalOptimizationLevel = polygon._polydrawOptimizationOriginalLevel;
+      }
+    }
+
+    return snapshot;
   }
 
   private getSnapshotSize(snapshot: HistorySnapshot): number {
