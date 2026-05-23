@@ -58,6 +58,7 @@ type DragDocumentListener = (event: MouseEvent | PointerEvent) => void;
 type LeafletPolygonLatLngs = L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
 type BuiltInPolygonMenuAction = 'simplify' | 'doubleElbows' | 'bbox' | 'bezier';
 type PolygonTransformMode = 'scale' | 'rotate' | 'donut';
+type PolydrawAuxiliaryPolyline = L.Polyline & { _polydrawAuxiliaryLayer?: true };
 
 interface BuiltInMenuButtonConfig {
   enabled: boolean;
@@ -120,6 +121,7 @@ export class PolygonInteractionManager {
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
+  private transformAuxiliaryDisplayValues = new WeakMap<L.Polyline, string>();
   private deleteMarkerSuppressUntil = 0;
   private readonly onModeChange = () => {
     if (this.currentCloneGhost || this.isPolygonDragActive()) {
@@ -1023,6 +1025,7 @@ export class PolygonInteractionManager {
           },
         );
 
+        (edgePolyline as PolydrawAuxiliaryPolyline)._polydrawAuxiliaryLayer = true;
         (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo = {
           ringIndex,
           edgeIndex: i,
@@ -3278,13 +3281,36 @@ export class PolygonInteractionManager {
     }
 
     featureGroup.eachLayer((layer) => {
-      if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
-        const element = layer.getElement?.() as HTMLElement | SVGElement | undefined;
-        if (element) {
-          element.style.display = visible ? '' : 'none';
+      if (!this.isPolydrawAuxiliaryPolyline(layer)) {
+        return;
+      }
+
+      const element = layer.getElement?.() as HTMLElement | SVGElement | undefined;
+      if (!element) {
+        return;
+      }
+
+      if (!visible) {
+        if (!this.transformAuxiliaryDisplayValues.has(layer)) {
+          this.transformAuxiliaryDisplayValues.set(layer, element.style.display);
         }
+        element.style.display = 'none';
+        return;
+      }
+
+      if (this.transformAuxiliaryDisplayValues.has(layer)) {
+        element.style.display = this.transformAuxiliaryDisplayValues.get(layer) ?? '';
+        this.transformAuxiliaryDisplayValues.delete(layer);
       }
     });
+  }
+
+  private isPolydrawAuxiliaryPolyline(layer: L.Layer): layer is PolydrawAuxiliaryPolyline {
+    return (
+      layer instanceof L.Polyline &&
+      !(layer instanceof L.Polygon) &&
+      (layer as PolydrawAuxiliaryPolyline)._polydrawAuxiliaryLayer === true
+    );
   }
 
   private getBuiltInMenuButtonConfigs(): BuiltInMenuButtonConfig[] {
