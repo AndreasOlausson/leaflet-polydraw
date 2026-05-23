@@ -865,21 +865,38 @@ registerStanganSampleButtons();
 
 // --- Layer demo buttons ---
 
+async function withLayerDemoBatch(callback: () => Promise<void>): Promise<void> {
+  polydraw.beginBatch();
+  try {
+    await callback();
+  } finally {
+    polydraw.endBatch();
+  }
+}
+
 function setupLayerDemoButtons(): void {
   const viewport = { center: [58.41, 15.59] as L.LatLngExpression, zoom: 13 };
 
   // "3 zones, 3 layers" – adds three non-overlapping polygons in three different layers
   document.getElementById('layer-multi')?.addEventListener('click', async () => {
     try {
-      polydraw.beginBatch();
-      await polydraw.addPredefinedPolygon(layerZoneA, { layer: 'Hazard A', layerColor: '#e63946' });
-      await polydraw.addPredefinedPolygon(layerZoneB, { layer: 'Hazard B', layerColor: '#457b9d' });
-      await polydraw.addPredefinedPolygon(layerZoneC, { layer: 'Hazard C', layerColor: '#2a9d8f' });
-      polydraw.endBatch();
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerZoneA, {
+          layer: 'Hazard A',
+          layerColor: '#e63946',
+        });
+        await polydraw.addPredefinedPolygon(layerZoneB, {
+          layer: 'Hazard B',
+          layerColor: '#457b9d',
+        });
+        await polydraw.addPredefinedPolygon(layerZoneC, {
+          layer: 'Hazard C',
+          layerColor: '#2a9d8f',
+        });
+      });
       map.setView(viewport.center, viewport.zoom);
       setTimeout(refreshPolygonViews, 100);
     } catch (error) {
-      polydraw.endBatch();
       console.warn('Failed to add layer demo (multi):', error);
     }
   });
@@ -887,20 +904,19 @@ function setupLayerDemoButtons(): void {
   // "Merge in layer" – adds two overlapping polygons in the SAME layer; they should merge
   document.getElementById('layer-merge')?.addEventListener('click', async () => {
     try {
-      polydraw.beginBatch();
-      await polydraw.addPredefinedPolygon(layerMergeLeft, {
-        layer: 'Merge Zone',
-        layerColor: '#e76f51',
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerMergeLeft, {
+          layer: 'Merge Zone',
+          layerColor: '#e76f51',
+        });
+        await polydraw.addPredefinedPolygon(layerMergeRight, {
+          layer: 'Merge Zone',
+          layerColor: '#e76f51',
+        });
       });
-      await polydraw.addPredefinedPolygon(layerMergeRight, {
-        layer: 'Merge Zone',
-        layerColor: '#e76f51',
-      });
-      polydraw.endBatch();
       map.setView(viewport.center, viewport.zoom);
       setTimeout(refreshPolygonViews, 100);
     } catch (error) {
-      polydraw.endBatch();
       console.warn('Failed to add layer demo (merge):', error);
     }
   });
@@ -908,20 +924,19 @@ function setupLayerDemoButtons(): void {
   // "Cross-layer overlap" – adds two overlapping polygons in DIFFERENT layers; should NOT merge
   document.getElementById('layer-cross')?.addEventListener('click', async () => {
     try {
-      polydraw.beginBatch();
-      await polydraw.addPredefinedPolygon(layerMergeLeft, {
-        layer: 'Layer Alpha',
-        layerColor: '#6a4c93',
+      await withLayerDemoBatch(async () => {
+        await polydraw.addPredefinedPolygon(layerMergeLeft, {
+          layer: 'Layer Alpha',
+          layerColor: '#6a4c93',
+        });
+        await polydraw.addPredefinedPolygon(layerMergeRight, {
+          layer: 'Layer Beta',
+          layerColor: '#1982c4',
+        });
       });
-      await polydraw.addPredefinedPolygon(layerMergeRight, {
-        layer: 'Layer Beta',
-        layerColor: '#1982c4',
-      });
-      polydraw.endBatch();
       map.setView(viewport.center, viewport.zoom);
       setTimeout(refreshPolygonViews, 100);
     } catch (error) {
-      polydraw.endBatch();
       console.warn('Failed to add layer demo (cross-layer):', error);
     }
   });

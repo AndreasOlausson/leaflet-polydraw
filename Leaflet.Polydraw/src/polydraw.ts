@@ -65,6 +65,12 @@ type SetDrawModeOptions = {
   preserveActiveDraw?: boolean;
 };
 
+function normalizeConfigInput(config?: Partial<PolydrawConfig>): Partial<PolydrawConfig> {
+  const normalized = deepMerge<Partial<PolydrawConfig>>({}, config ?? {});
+  warnIfUsingDeprecatedConfiguration(normalized);
+  return normalized;
+}
+
 class Polydraw extends L.Control {
   private map!: L.Map;
   private tracer: L.Polyline | null = null;
@@ -122,19 +128,15 @@ class Polydraw extends L.Control {
 
     // Start from a clean clone of the defaults
     const baseDefaults: PolydrawConfig = structuredClone(defaultConfig);
-
-    // Warn and migrate any deprecated configuration before merging
-    if (options?.config) {
-      warnIfUsingDeprecatedConfiguration(options.config);
-    }
+    const inlineConfig = normalizeConfigInput(options?.config);
 
     // Apply inline config via deep merge (partial configs supported)
-    this.config = deepMerge<PolydrawConfig>(baseDefaults, options?.config ?? {});
+    this.config = deepMerge<PolydrawConfig>(baseDefaults, inlineConfig);
     applyRuntimeConfigFallbacks(this.config);
 
     // If an external config path is provided, load and merge it (then init)
     if (options?.configPath) {
-      this._configReady = this.loadExternalConfig(options.configPath, options?.config);
+      this._configReady = this.loadExternalConfig(options.configPath, inlineConfig);
     } else {
       // Initialize components immediately when no external config is used
       this.initializeComponents();
@@ -1778,17 +1780,12 @@ class Polydraw extends L.Control {
       }
 
       // Expect external to be a partial config
-      const externalConfig: Partial<PolydrawConfig> = await response.json();
-
-      warnIfUsingDeprecatedConfiguration(externalConfig);
-      if (inlineConfig) {
-        warnIfUsingDeprecatedConfiguration(inlineConfig);
-      }
+      const externalConfig = normalizeConfigInput(await response.json());
 
       // Merge precedence: defaults < external < inline
       this.config = deepMerge<PolydrawConfig>(
         structuredClone(defaultConfig),
-        externalConfig ?? {},
+        externalConfig,
         inlineConfig ?? {},
       );
       applyRuntimeConfigFallbacks(this.config);
