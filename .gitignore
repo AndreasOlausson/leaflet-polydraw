@@ -80,6 +80,7 @@ typings/
 # IDE
 .vscode/
 .idea/
+.claude/
 
 # Temporary files
 *.tmp

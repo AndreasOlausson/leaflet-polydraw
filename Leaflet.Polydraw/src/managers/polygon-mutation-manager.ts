@@ -879,6 +879,9 @@ export class PolygonMutationManager {
                   fillColor: this.config.styles.hole.fillColor,
                   fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
                 });
+                (
+                  holePolyline as L.Polyline & { _polydrawAuxiliaryLayer?: true }
+                )._polydrawAuxiliaryLayer = true;
                 featureGroup.addLayer(holePolyline);
 
                 this.interactionManager.addHoleMarkers(latLngLiterals, featureGroup);
