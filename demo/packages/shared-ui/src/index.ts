@@ -67,6 +67,10 @@ const sharedStyles = `
     --theme-toggle-bg: rgba(255, 255, 255, 0.08);
     --theme-toggle-border: rgba(19, 32, 44, 0.16);
     --theme-toggle-color: currentColor;
+    --demo-route-safe-top: env(safe-area-inset-top, 0px);
+    --demo-route-topbar-height: 50px;
+    --demo-mobile-info-expanded-height: min(56dvh, 420px);
+    --demo-mobile-info-collapsed-height: 44px;
   }
 
   :root[data-theme="dark"] {
@@ -129,7 +133,9 @@ const sharedStyles = `
   }
 
   .demo-shell,
-  .demo-shell :where([class^="demo-"], [class*=" demo-"]) {
+  .demo-shell :where([class^="demo-"], [class*=" demo-"]),
+  .demo-route-shell,
+  .demo-route-shell :where([class^="demo-"], [class*=" demo-"]) {
     box-sizing: border-box;
   }
 
@@ -1373,7 +1379,9 @@ const sharedStyles = `
   }
 
   .demo-route-shell {
+    height: 100dvh;
     min-height: 100vh;
+    overflow: hidden;
     background: var(--route-shell-bg);
   }
 
@@ -1383,11 +1391,11 @@ const sharedStyles = `
     left: 0;
     right: 0;
     z-index: 1200;
-    height: 50px;
+    height: calc(var(--demo-route-topbar-height) + var(--demo-route-safe-top));
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 16px;
+    padding: var(--demo-route-safe-top) 16px 0;
     background: var(--route-topbar-bg);
     color: var(--route-topbar-color);
     border-bottom: 1px solid var(--route-topbar-border);
@@ -1431,6 +1439,7 @@ const sharedStyles = `
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex: 0 0 auto;
   }
 
   .demo-route-topbar-badge {
@@ -1444,6 +1453,7 @@ const sharedStyles = `
     color: var(--route-badge-color);
     font-size: 12px;
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .demo-route-topbar-badge--source {
@@ -1455,7 +1465,9 @@ const sharedStyles = `
   .demo-route-topbar-copy {
     color: var(--route-topbar-muted);
     font-size: 13px;
+    flex: 1 1 auto;
     min-width: 0;
+    max-width: calc(100% - 36px);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1595,13 +1607,18 @@ const sharedStyles = `
 
   .demo-route-layout {
     position: fixed;
-    inset: 50px 0 0 0;
+    inset: calc(var(--demo-route-topbar-height) + var(--demo-route-safe-top)) 0 0 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
+    min-height: 0;
   }
 
   .demo-map-panel {
     position: relative;
+    z-index: 0;
+    overflow: hidden;
+    height: 100%;
+    min-height: 0;
     border: 0;
     box-shadow: none;
     background: var(--route-map-bg);
@@ -1612,14 +1629,25 @@ const sharedStyles = `
     width: 100%;
     height: 100%;
     min-height: 0;
+    overscroll-behavior: contain;
+    touch-action: none;
   }
 
   .demo-sidebar {
     display: flex;
     flex-direction: column;
+    z-index: 1;
     background: var(--route-sidebar-bg);
     border-left: 1px solid var(--route-sidebar-border);
     overflow-y: auto;
+  }
+
+  .demo-mobile-info-toggle {
+    display: none;
+  }
+
+  .demo-sidebar-content {
+    display: contents;
   }
 
   .demo-panel {
@@ -1834,24 +1862,51 @@ const sharedStyles = `
       border-left: 0;
       border-top: 1px solid var(--wrapper-body-border);
     }
+  }
+
+  @media (max-width: 767px) {
+    .demo-route-shell {
+      --demo-route-topbar-height: 92px;
+    }
 
     .demo-route-topbar {
-      height: auto;
-      min-height: 50px;
-      align-items: flex-start;
+      align-content: center;
+      align-items: center;
       flex-wrap: wrap;
-      padding: 10px 14px;
-      row-gap: 10px;
+      padding: calc(var(--demo-route-safe-top) + 8px) 12px 8px;
+      row-gap: 8px;
     }
 
     .demo-route-topbar-left {
+      flex: 1 1 100%;
       min-width: 0;
+    }
+
+    .demo-route-topbar-info {
+      flex-wrap: nowrap;
+    }
+
+    .demo-route-topbar-meta {
+      flex: 1 1 auto;
+      min-width: 0;
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    .demo-route-topbar-badge {
+      flex: 1 1 0;
+      min-width: 0;
+      height: auto;
+      min-height: 26px;
+      line-height: 1.2;
+      overflow-wrap: anywhere;
+      white-space: normal;
     }
 
     .demo-route-topbar-actions {
       margin-left: 0;
       justify-content: flex-end;
-      width: auto;
+      width: 100%;
     }
 
     .demo-route-topbar-copy {
@@ -1866,17 +1921,91 @@ const sharedStyles = `
     }
 
     .demo-route-layout {
-      position: static;
-      inset: auto;
-      min-height: 100vh;
-      padding-top: 76px;
+      position: fixed;
+      inset: calc(var(--demo-route-topbar-height) + var(--demo-route-safe-top)) 0 0 0;
+      min-height: 0;
       grid-template-columns: 1fr;
-      grid-template-rows: minmax(56vh, 72vh) auto;
+      grid-template-rows: minmax(0, 1fr);
+    }
+
+    .demo-map-panel {
+      height: auto;
+      min-height: 0;
+    }
+
+    .demo-map {
+      height: 100%;
+      min-height: 0;
     }
 
     .demo-sidebar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 850;
+      height: var(--demo-mobile-info-expanded-height);
+      min-height: 0;
+      max-height: none;
       border-left: 0;
-      border-top: 1px solid rgba(19, 32, 44, 0.1);
+      border-top: 1px solid rgba(19, 32, 44, 0.12);
+      border-right: 0;
+      border-bottom: 0;
+      border-radius: 0;
+      box-shadow: 0 -10px 28px rgba(19, 32, 44, 0.12);
+      overflow: hidden;
+      overscroll-behavior: contain;
+    }
+
+    .demo-route-shell[data-mobile-info="collapsed"] .demo-sidebar {
+      height: var(--demo-mobile-info-collapsed-height);
+    }
+
+    .demo-mobile-info-toggle {
+      width: 100%;
+      min-height: var(--demo-mobile-info-collapsed-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 14px;
+      border: 0;
+      border-bottom: 1px solid var(--route-panel-border);
+      background: var(--route-sidebar-bg);
+      color: var(--route-text-strong);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .demo-mobile-info-toggle::after {
+      content: "Collapse";
+      color: var(--route-text-muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .demo-route-shell[data-mobile-info="collapsed"] .demo-mobile-info-toggle::after {
+      content: "Expand";
+    }
+
+    .demo-sidebar-content {
+      display: block;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .demo-route-shell[data-mobile-info="collapsed"] .demo-sidebar-content {
+      display: none;
+    }
+  }
+
+  @media (max-width: 399px) {
+    .demo-route-topbar-title {
+      display: none;
     }
   }
 `;
@@ -1896,6 +2025,7 @@ type DemoTheme = 'light' | 'dark';
 
 let themeToggleBound = false;
 let scenarioDismissBound = false;
+let mobileInfoPanelBound = false;
 
 const readStoredTheme = (): DemoTheme | null => {
   try {
@@ -2024,6 +2154,43 @@ const ensureScenarioDismiss = () => {
   });
 };
 
+const scheduleLayoutResize = () => {
+  // Nudge Leaflet once immediately and once after the bottom-sheet transition.
+  window.dispatchEvent(new Event('resize'));
+  window.setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+  }, 180);
+};
+
+const ensureMobileInfoPanel = () => {
+  if (mobileInfoPanelBound) {
+    return;
+  }
+
+  mobileInfoPanelBound = true;
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const button = target.closest<HTMLButtonElement>('[data-action="toggle-mobile-info"]');
+    if (!button) {
+      return;
+    }
+
+    const shell = button.closest<HTMLElement>('.demo-route-shell');
+    if (!shell) {
+      return;
+    }
+
+    const nextState = shell.dataset.mobileInfo === 'collapsed' ? 'expanded' : 'collapsed';
+    shell.dataset.mobileInfo = nextState;
+    button.setAttribute('aria-expanded', String(nextState === 'expanded'));
+    scheduleLayoutResize();
+  });
+};
+
 const listMarkup = (items: string[], className: string) =>
   `<ul class="${className}">${items.map((item) => `<li>${item}</li>`).join('')}</ul>`;
 
@@ -2031,6 +2198,7 @@ export const mountSharedStyles = (accent?: string) => {
   ensureStyles();
   ensureThemeToggle();
   ensureScenarioDismiss();
+  ensureMobileInfoPanel();
   if (accent) {
     document.documentElement.style.setProperty('--accent', accent);
   }
@@ -2450,7 +2618,7 @@ export const renderMapDemoPage = (options: {
 }) => {
   const { runtimeLabel, sourceLabel, subtitle, homeHref, homeLabel, scenarios } = options;
   return `
-    <div class="demo-route-shell">
+    <div class="demo-route-shell" data-mobile-info="collapsed">
       <header class="demo-route-topbar">
         <div class="demo-route-topbar-left">
           <a class="demo-route-topbar-link demo-route-topbar-link--icon demo-route-topbar-home" href="${homeHref}" aria-label="${homeLabel}" title="${homeLabel}">
@@ -2494,33 +2662,38 @@ export const renderMapDemoPage = (options: {
           <div id="demo-map" class="demo-map"></div>
         </section>
         <aside class="demo-sidebar">
-          <section class="demo-panel">
-            <div class="demo-panel-title">Scenario</div>
-            <h2 class="demo-scenario-heading" data-state="scenario-title">Waiting for scenario</h2>
-            <p class="demo-status-copy" data-state="scenario-summary">Choose a scenario to load a curated Polydraw workflow.</p>
-          </section>
-          <section class="demo-panel">
-            <div class="demo-panel-title">State</div>
-            <div class="demo-state-list">
-              <div class="demo-state-row">
-                <span class="demo-state-label">Features</span>
-                <span class="demo-state-value" data-state="feature-count">0</span>
+          <button class="demo-mobile-info-toggle" type="button" data-action="toggle-mobile-info" aria-expanded="false">
+            Map info
+          </button>
+          <div class="demo-sidebar-content">
+            <section class="demo-panel">
+              <div class="demo-panel-title">Scenario</div>
+              <h2 class="demo-scenario-heading" data-state="scenario-title">Waiting for scenario</h2>
+              <p class="demo-status-copy" data-state="scenario-summary">Choose a scenario to load a curated Polydraw workflow.</p>
+            </section>
+            <section class="demo-panel">
+              <div class="demo-panel-title">State</div>
+              <div class="demo-state-list">
+                <div class="demo-state-row">
+                  <span class="demo-state-label">Features</span>
+                  <span class="demo-state-value" data-state="feature-count">0</span>
+                </div>
+                <div class="demo-state-row">
+                  <span class="demo-state-label">Layers</span>
+                  <span class="demo-state-value" data-state="layer-count">0</span>
+                </div>
+                <div class="demo-state-row">
+                  <span class="demo-state-label">Active layer</span>
+                  <span class="demo-state-value" data-state="active-layer">default</span>
+                </div>
               </div>
-              <div class="demo-state-row">
-                <span class="demo-state-label">Layers</span>
-                <span class="demo-state-value" data-state="layer-count">0</span>
-              </div>
-              <div class="demo-state-row">
-                <span class="demo-state-label">Active layer</span>
-                <span class="demo-state-value" data-state="active-layer">default</span>
-              </div>
-            </div>
-          </section>
-          <section class="demo-panel demo-feature-drawer">
-          <div class="demo-panel-title">Feature inspector</div>
-            <p class="demo-feature-intro">Open the inspector to review one feature at a time. Feature switching happens in the modal, not in the side panel.</p>
-            <div data-state="feature-list"></div>
-          </section>
+            </section>
+            <section class="demo-panel demo-feature-drawer">
+            <div class="demo-panel-title">Feature inspector</div>
+              <p class="demo-feature-intro">Open the inspector to review one feature at a time. Feature switching happens in the modal, not in the side panel.</p>
+              <div data-state="feature-list"></div>
+            </section>
+          </div>
         </aside>
         <dialog class="demo-feature-dialog" data-feature-dialog>
           <div class="demo-feature-dialog-shell">
