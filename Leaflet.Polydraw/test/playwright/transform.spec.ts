@@ -149,4 +149,27 @@ test.describe('Polygon transforms', () => {
     await expect.poll(() => demo.polygonCount()).toBe(1);
     await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
   });
+
+  test('undo after deleting a donut hole restores the polygon with its hole', async ({ page }) => {
+    const demo = new DemoFactory(page);
+    await demo.addPredefined([latlngPolys.square]);
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+
+    await demo.startTransform('donut');
+    await demo.dragTransformHandle('top-right', 120, -120);
+    await demo.confirmTransform();
+
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+    await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
+
+    await demo.clickFirstHoleDeleteMarker();
+
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+    await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(1);
+
+    await demo.undo();
+
+    await expect.poll(() => demo.polygonCount()).toBe(1);
+    await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
+  });
 });
