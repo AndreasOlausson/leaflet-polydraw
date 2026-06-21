@@ -13,6 +13,6 @@
     "@polydraw-demo/shared-content": "0.1.0",
     "@polydraw-demo/shared-ui": "0.1.0",
     "leaflet": "1.9.4",
-    "leaflet-polydraw": "2.0.0"
+    "leaflet-polydraw": "2.0.1"
   }
 }
