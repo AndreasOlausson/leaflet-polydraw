@@ -71,6 +71,43 @@ export class DemoFactory {
     });
   }
 
+  /** Return the current Leaflet map center. */
+  async mapCenter(): Promise<LatLngLike> {
+    return this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const map = ctrl?.map ?? ctrl?._map;
+      const center = map?.getCenter?.();
+      if (!center) {
+        throw new Error('Map center not available');
+      }
+      return { lat: center.lat, lng: center.lng };
+    });
+  }
+
+  /** Return bounds for the first polygon in GeoJSON-friendly coordinates. */
+  async firstPolygonBounds(): Promise<GeoBounds> {
+    return this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const groups = ctrl?.getFeatureGroups?.() ?? [];
+      for (const fg of groups) {
+        const layers = fg.getLayers?.() ?? [];
+        const polygon = layers.find(
+          (layer: any) =>
+            typeof layer?.getBounds === 'function' && typeof layer?.getLatLngs === 'function',
+        );
+        if (!polygon) continue;
+        const bounds = polygon.getBounds();
+        return {
+          minLat: bounds.getSouth(),
+          maxLat: bounds.getNorth(),
+          minLng: bounds.getWest(),
+          maxLng: bounds.getEast(),
+        };
+      }
+      throw new Error('Polygon bounds not available');
+    });
+  }
+
   /** Draw via pointer moves (normalized viewport points 0-1). Adjust speedMs for slower/faster paths. */
   async drawFreehand(points: NormalizedPoint[], speedMs = 10) {
     const hasControl = await this.page.evaluate(() => !!(window as any).polydrawControl);
@@ -114,6 +151,61 @@ export class DemoFactory {
       if (ctrl?.addPredefinedPolygon) await ctrl.addPredefinedPolygon([poly] as any);
     }, rings);
     await this.page.waitForTimeout(100);
+  }
+
+  /** Drag the first polygon using real Playwright mouse input. */
+  async dragFirstPolygonByOffsetWithMouse(offsetLat: number, offsetLng: number, clone = false) {
+    const points = await this.page.evaluate(
+      ({ offsetLat: latOffset, offsetLng: lngOffset, clone: cloneMode }) => {
+        const ctrl = (window as any).polydrawControl;
+        ctrl?.setDrawMode?.(cloneMode ? 128 : 0);
+
+        const map = ctrl?.map ?? ctrl?._map;
+        const groups = ctrl?.getFeatureGroups?.() ?? [];
+        if (!map || !groups.length) {
+          throw new Error('Map or feature groups not ready');
+        }
+
+        let polygon: any = null;
+        for (const fg of groups) {
+          const layers = fg.getLayers?.() ?? [];
+          polygon = layers.find(
+            (layer: any) =>
+              typeof layer?.getBounds === 'function' && typeof layer?.getLatLngs === 'function',
+          );
+          if (polygon) break;
+        }
+
+        if (!polygon) {
+          throw new Error('Target polygon not found for mouse drag');
+        }
+
+        const startLatLng = polygon.getBounds().getCenter();
+        const targetLatLng = { lat: startLatLng.lat + latOffset, lng: startLatLng.lng + lngOffset };
+        const startPoint = map.latLngToContainerPoint(startLatLng);
+        const endPoint = map.latLngToContainerPoint(targetLatLng);
+        const offsetX = endPoint.x - startPoint.x;
+        const offsetY = endPoint.y - startPoint.y;
+        const pathBox = polygon._path?.getBoundingClientRect?.();
+        const rect = map.getContainer().getBoundingClientRect();
+        const startX = pathBox ? pathBox.left + pathBox.width / 2 : rect.left + startPoint.x;
+        const startY = pathBox ? pathBox.top + pathBox.height / 2 : rect.top + startPoint.y;
+        const endX = startX + offsetX;
+        const endY = startY + offsetY;
+
+        return {
+          start: { x: startX, y: startY },
+          end: { x: endX, y: endY },
+        };
+      },
+      { offsetLat, offsetLng, clone },
+    );
+
+    await this.page.mouse.move(points.start.x, points.start.y);
+    await this.page.mouse.down();
+    await this.page.mouse.move(points.end.x, points.end.y, { steps: 10 });
+    await this.page.mouse.up();
+    await this.page.waitForTimeout(250);
   }
 
   /** Drag a polygon by a lat/lng offset (optionally target polygons with holes). */
@@ -479,6 +571,59 @@ export class DemoFactory {
     await confirm.waitFor({ state: 'visible' });
     await confirm.click();
     await this.page.locator('.polydraw-transform-root').waitFor({ state: 'detached' });
+  }
+
+  /** Click the delete marker belonging to the first hole ring. */
+  async clickFirstHoleDeleteMarker() {
+    const point = await this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const groups = ctrl?.getFeatureGroups?.() ?? [];
+      const sameLatLng = (a: any, b: any) =>
+        Math.abs(a.lat - b.lat) < 1e-12 && Math.abs(a.lng - b.lng) < 1e-12;
+
+      for (const fg of groups) {
+        const layers = fg.getLayers?.() ?? [];
+        const polygon = layers.find(
+          (layer: any) =>
+            typeof layer?.getLatLngs === 'function' && typeof layer?.getBounds === 'function',
+        );
+        if (!polygon) continue;
+
+        const rawLatLngs = polygon.getLatLngs?.() ?? [];
+        const rings =
+          Array.isArray(rawLatLngs?.[0]?.[0]) && Array.isArray(rawLatLngs?.[0]?.[0]?.[0])
+            ? rawLatLngs[0]
+            : rawLatLngs;
+        const holePoints = Array.isArray(rings)
+          ? rings
+              .slice(1)
+              .flat()
+              .filter((latlng: any) => typeof latlng?.lat === 'number')
+          : [];
+        if (!holePoints.length) continue;
+
+        for (const layer of layers) {
+          const element = layer.getElement?.() as HTMLElement | undefined;
+          const latlng = layer.getLatLng?.();
+          if (
+            element?.classList.contains('delete') &&
+            latlng &&
+            holePoints.some((point: any) => sameLatLng(point, latlng))
+          ) {
+            const rect = element.getBoundingClientRect();
+            return {
+              x: rect.left + rect.width / 2,
+              y: rect.top + rect.height / 2,
+            };
+          }
+        }
+      }
+
+      throw new Error('Hole delete marker not found');
+    });
+
+    await this.page.mouse.click(point.x, point.y);
+    await this.page.waitForTimeout(200);
   }
 
   /** Return whether the confirm button is disabled in transform mode */

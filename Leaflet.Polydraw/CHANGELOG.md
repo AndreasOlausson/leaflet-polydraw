@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2026-06-22
+
+### Fixed
+
+- Fixed polygon and clone-drag start handling so dragging an existing polygon no longer falls through to Leaflet map panning.
+- Clone mode now lets the polygon body capture pointer input instead of vertex markers intercepting the drag start.
+- Fixed undo after deleting a donut hole so the previous polygon-with-hole snapshot is restored instead of an empty map.
+- Added Playwright regression coverage for polygon dragging and real mouse clone-drag behavior.
+
+## [2.0.1] - 2026-06-21
+
+### Fixed
+
+- Fixed the public demo mobile layout so the header no longer overlaps the top of the map controls.
+- Prevented page scrolling from taking over while drawing polygons on touch devices in the public demo.
+- Improved the public demo's small-screen header wrapping and bottom scenario panel behavior.
+
 ## [2.0.0] - 2026-05-23
 
 ### Added
