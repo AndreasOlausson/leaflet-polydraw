@@ -2596,6 +2596,7 @@ class Polydraw extends L.Control {
   }
 
   private isP2PDoubleTapClose(tapLatLng: L.LatLng | null, timeDiff: number): boolean {
+    if (!this.map) return false;
     if (!tapLatLng || !this._lastTapLatLng) return false;
     if (timeDiff <= 0 || timeDiff > 300) return false;
 
@@ -2809,7 +2810,7 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private mouseMove(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
-    if (!this.isDrawingInProgress) {
+    if (!this.map || !this.isDrawingInProgress) {
       return;
     }
     // Normalize event for v1/v2 compatibility
@@ -2832,7 +2833,7 @@ class Polydraw extends L.Control {
    * @param event - The mouse, touch, or pointer event.
    */
   private async mouseUpLeave(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
-    if (!this.isDrawingInProgress) {
+    if (!this.map || !this.isDrawingInProgress) {
       return;
     }
     // Normalize event for v1/v2 compatibility

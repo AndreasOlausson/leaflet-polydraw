@@ -2155,6 +2155,7 @@ const ensureScenarioDismiss = () => {
 };
 
 const scheduleLayoutResize = () => {
+  // Nudge Leaflet once immediately and once after the bottom-sheet transition.
   window.dispatchEvent(new Event('resize'));
   window.setTimeout(() => {
     window.dispatchEvent(new Event('resize'));
