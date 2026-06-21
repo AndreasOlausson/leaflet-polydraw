@@ -99,12 +99,17 @@ class Polydraw extends L.Control {
   private drawEventsAttached: boolean = false;
   private controlEvents: WeakSet<Event> = new WeakSet();
   private lastControlPointerDown: { id: number; time: number; pointerType: string } | null = null;
+  private _boundMouseMove?: (e: MouseEvent) => void;
+  private _boundMouseUp?: (e: MouseEvent) => void;
   private _boundTouchMove?: (e: TouchEvent) => void;
   private _boundTouchEnd?: (e: TouchEvent) => void;
+  private _boundTouchCancel?: (e: TouchEvent) => void;
   private _boundTouchStart?: (e: TouchEvent) => void;
   private _boundPointerDown?: (e: PointerEvent) => void;
   private _boundPointerMove?: (e: PointerEvent) => void;
   private _boundPointerUp?: (e: PointerEvent) => void;
+  private _boundPointerCancel?: (e: PointerEvent) => void;
+  private _boundContextMenu?: (e: MouseEvent) => void;
   private _lastTapTime: number = 0;
   private _lastTapLatLng: L.LatLng | null = null;
   private _tapTimeout: number | null = null;
@@ -122,6 +127,7 @@ class Polydraw extends L.Control {
   private _initRequestId: number = 0;
   private _historySuppressionDepth: number = 0;
   private _lastAppliedVisibleMapOrder: L.FeatureGroup[] = [];
+  private originalMapTouchAction: string | null = null;
 
   constructor(options?: PolydrawOptions) {
     super(options);
@@ -232,6 +238,7 @@ class Polydraw extends L.Control {
     // Clean up map event listeners first (before nulling handlers)
     this.events(false);
     this.drawStartedEvents(false);
+    this.setMapDrawingTouchLock(false);
 
     // Remove keyboard handlers
     this.removeKeyboardHandlers();
@@ -284,11 +291,20 @@ class Polydraw extends L.Control {
     if (this._boundKeyUpHandler) {
       this._boundKeyUpHandler = undefined;
     }
+    if (this._boundMouseMove) {
+      this._boundMouseMove = undefined;
+    }
+    if (this._boundMouseUp) {
+      this._boundMouseUp = undefined;
+    }
     if (this._boundTouchMove) {
       this._boundTouchMove = undefined;
     }
     if (this._boundTouchEnd) {
       this._boundTouchEnd = undefined;
+    }
+    if (this._boundTouchCancel) {
+      this._boundTouchCancel = undefined;
     }
     if (this._boundTouchStart) {
       this._boundTouchStart = undefined;
@@ -301,6 +317,12 @@ class Polydraw extends L.Control {
     }
     if (this._boundPointerUp) {
       this._boundPointerUp = undefined;
+    }
+    if (this._boundPointerCancel) {
+      this._boundPointerCancel = undefined;
+    }
+    if (this._boundContextMenu) {
+      this._boundContextMenu = undefined;
     }
 
     // Clean up timer
@@ -1989,9 +2011,31 @@ class Polydraw extends L.Control {
     const mapDragEnabled = this.modeManager.canPerformAction('mapDrag');
     const mapZoomEnabled = this.modeManager.canPerformAction('mapZoom');
     const mapDoubleClickEnabled = this.modeManager.canPerformAction('mapDoubleClickZoom');
+    const drawEventsEnabled = this.shouldEnableDrawEvents(this.drawMode);
 
-    this.events(this.shouldEnableDrawEvents(this.drawMode));
+    this.events(drawEventsEnabled);
+    this.setMapDrawingTouchLock(drawEventsEnabled);
     this.setLeafletMapEvents(mapDragEnabled, mapDoubleClickEnabled, mapZoomEnabled);
+  }
+
+  private setMapDrawingTouchLock(enabled: boolean): void {
+    if (!this.map) {
+      return;
+    }
+
+    const container = this.map.getContainer();
+    if (enabled) {
+      if (this.originalMapTouchAction === null) {
+        this.originalMapTouchAction = container.style.touchAction || '';
+      }
+      container.style.touchAction = 'none';
+      return;
+    }
+
+    if (this.originalMapTouchAction !== null) {
+      container.style.touchAction = this.originalMapTouchAction;
+      this.originalMapTouchAction = null;
+    }
   }
 
   /**
@@ -2376,8 +2420,16 @@ class Polydraw extends L.Control {
       this.map[onoroff]('mouseup', this.mouseUpLeave, this);
     }
 
-    // Handle touch events separately for backward compatibility
     if (onoff) {
+      if (!this._boundMouseMove) {
+        this._boundMouseMove = (e) => this.mouseMove(e);
+      }
+      if (!this._boundMouseUp) {
+        this._boundMouseUp = (e) => this.mouseUpLeave(e);
+      }
+      document.addEventListener('mousemove', this._boundMouseMove);
+      document.addEventListener('mouseup', this._boundMouseUp);
+
       if (!usePointerEvents) {
         if (!this._boundTouchMove) {
           this._boundTouchMove = (e) => this.mouseMove(e);
@@ -2385,13 +2437,13 @@ class Polydraw extends L.Control {
         if (!this._boundTouchEnd) {
           this._boundTouchEnd = (e) => this.mouseUpLeave(e);
         }
+        if (!this._boundTouchCancel) {
+          this._boundTouchCancel = (e) => this.mouseUpLeave(e);
+        }
 
-        this.map
-          .getContainer()
-          .addEventListener('touchmove', this._boundTouchMove, { passive: false });
-        this.map
-          .getContainer()
-          .addEventListener('touchend', this._boundTouchEnd, { passive: false });
+        document.addEventListener('touchmove', this._boundTouchMove, { passive: false });
+        document.addEventListener('touchend', this._boundTouchEnd, { passive: false });
+        document.addEventListener('touchcancel', this._boundTouchCancel, { passive: false });
       }
 
       // Add pointer events for Leaflet v2 when supported
@@ -2402,26 +2454,38 @@ class Polydraw extends L.Control {
         if (!this._boundPointerUp) {
           this._boundPointerUp = (e) => this.mouseUpLeave(e);
         }
+        if (!this._boundPointerCancel) {
+          this._boundPointerCancel = (e) => this.mouseUpLeave(e);
+        }
 
-        this.map
-          .getContainer()
-          .addEventListener('pointermove', this._boundPointerMove, { passive: false });
-        this.map
-          .getContainer()
-          .addEventListener('pointerup', this._boundPointerUp, { passive: false });
+        document.addEventListener('pointermove', this._boundPointerMove, { passive: false });
+        document.addEventListener('pointerup', this._boundPointerUp, { passive: false });
+        document.addEventListener('pointercancel', this._boundPointerCancel, { passive: false });
       }
     } else {
+      if (this._boundMouseMove) {
+        document.removeEventListener('mousemove', this._boundMouseMove);
+      }
+      if (this._boundMouseUp) {
+        document.removeEventListener('mouseup', this._boundMouseUp);
+      }
       if (this._boundTouchMove) {
-        this.map.getContainer().removeEventListener('touchmove', this._boundTouchMove);
+        document.removeEventListener('touchmove', this._boundTouchMove);
       }
       if (this._boundTouchEnd) {
-        this.map.getContainer().removeEventListener('touchend', this._boundTouchEnd);
+        document.removeEventListener('touchend', this._boundTouchEnd);
+      }
+      if (this._boundTouchCancel) {
+        document.removeEventListener('touchcancel', this._boundTouchCancel);
       }
       if (this._boundPointerMove) {
-        this.map.getContainer().removeEventListener('pointermove', this._boundPointerMove);
+        document.removeEventListener('pointermove', this._boundPointerMove);
       }
       if (this._boundPointerUp) {
-        this.map.getContainer().removeEventListener('pointerup', this._boundPointerUp);
+        document.removeEventListener('pointerup', this._boundPointerUp);
+      }
+      if (this._boundPointerCancel) {
+        document.removeEventListener('pointercancel', this._boundPointerCancel);
       }
     }
   }
@@ -2448,6 +2512,11 @@ class Polydraw extends L.Control {
 
     // Handle touch and pointer events separately for backward compatibility
     if (onoff) {
+      if (!this._boundContextMenu) {
+        this._boundContextMenu = (e) => e.preventDefault();
+      }
+      this.map.getContainer().addEventListener('contextmenu', this._boundContextMenu);
+
       if (!usePointerEvents) {
         if (!this._boundTouchStart) {
           this._boundTouchStart = (e) => this.handleTouchStart(e);
@@ -2468,6 +2537,9 @@ class Polydraw extends L.Control {
           .addEventListener('pointerdown', this._boundPointerDown, { passive: false });
       }
     } else {
+      if (this._boundContextMenu) {
+        this.map.getContainer().removeEventListener('contextmenu', this._boundContextMenu);
+      }
       if (this._boundTouchStart) {
         this.map.getContainer().removeEventListener('touchstart', this._boundTouchStart);
       }
@@ -2482,6 +2554,10 @@ class Polydraw extends L.Control {
    * @param event - The touch event
    */
   private handleTouchStart(event: TouchEvent) {
+    if (EventAdapter.shouldPreventDefault(event)) {
+      event.preventDefault();
+    }
+
     const currentTime = Date.now();
     const timeDiff = currentTime - this._lastTapTime;
 
@@ -2509,28 +2585,14 @@ class Polydraw extends L.Control {
       return;
     }
 
-    // Clear any existing timeout
     if (this._tapTimeout) {
       clearTimeout(this._tapTimeout);
       this._tapTimeout = null;
     }
 
-    // Check for double-tap (within 300ms)
-    if (timeDiff < 300 && timeDiff > 0) {
-      // Double-tap detected
-      this.handleDoubleTap(event);
-      this._lastTapTime = 0; // Reset to prevent triple-tap
-    } else {
-      // Single tap - set timeout to handle as single tap if no second tap comes
-      this._lastTapTime = currentTime;
-      this._lastTapLatLng = EventAdapter.extractCoordinates(event, this.map);
-      if (!this.pointerEventsHandled) {
-        this._tapTimeout = window.setTimeout(() => {
-          this.mouseDown(event);
-          this._tapTimeout = null;
-        }, 300);
-      }
-    }
+    this._lastTapTime = currentTime;
+    this._lastTapLatLng = EventAdapter.extractCoordinates(event, this.map);
+    this.mouseDown(event);
   }
 
   private isP2PDoubleTapClose(tapLatLng: L.LatLng | null, timeDiff: number): boolean {
@@ -2746,7 +2808,7 @@ class Polydraw extends L.Control {
    * Handles the mouse move event to draw the tracer polyline.
    * @param event - The mouse, touch, or pointer event.
    */
-  private mouseMove(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
+  private mouseMove(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
     if (!this.isDrawingInProgress) {
       return;
     }
@@ -2769,7 +2831,7 @@ class Polydraw extends L.Control {
    * Handles the mouse up event to complete a drawing operation.
    * @param event - The mouse, touch, or pointer event.
    */
-  private async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
+  private async mouseUpLeave(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
     if (!this.isDrawingInProgress) {
       return;
     }
