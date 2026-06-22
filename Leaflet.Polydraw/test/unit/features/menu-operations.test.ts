@@ -259,9 +259,7 @@ describe('Menu Operations Config', () => {
         const container = harness.map.getContainer();
         const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
         const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
-        const opacityInput = panel?.querySelector(
-          'input[type="range"]',
-        ) as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector('input[type="range"]') as HTMLInputElement | null;
         const cancelButton = panel?.querySelector('.polygon-color-cancel') as HTMLElement | null;
 
         expect(colorInput).not.toBeNull();
@@ -373,9 +371,7 @@ describe('Menu Operations Config', () => {
         const container = harness.map.getContainer();
         const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
         const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
-        const opacityInput = panel?.querySelector(
-          'input[type="range"]',
-        ) as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector('input[type="range"]') as HTMLInputElement | null;
         const applyButton = panel?.querySelector('.polygon-color-apply') as HTMLElement | null;
 
         colorInput!.value = '#123456';
