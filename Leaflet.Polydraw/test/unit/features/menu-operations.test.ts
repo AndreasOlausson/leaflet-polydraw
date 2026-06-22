@@ -88,6 +88,14 @@ function getPolygonRings(polygon: L.Polygon): L.LatLng[][] {
   return latLngs as L.LatLng[][];
 }
 
+function findPolygonLayer(featureGroup: L.FeatureGroup): L.Polygon | undefined {
+  return featureGroup
+    .getLayers()
+    .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as
+    | L.Polygon
+    | undefined;
+}
+
 /**
  * Flush pending microtasks/promises.
  */
@@ -221,16 +229,87 @@ describe('Menu Operations Config', () => {
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
         const fg = harness.polydraw.getFeatureGroups()[0];
-        const polygonLayer = fg
-          .getLayers()
-          .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as
-          | L.Polygon
-          | undefined;
+        const polygonLayer = findPolygonLayer(fg);
         const originalColor = polygonLayer?.options.color;
         const originalFillColor = polygonLayer?.options.fillColor;
         const originalFillOpacity = polygonLayer?.options.fillOpacity;
 
         clickMenuButton(harness.map, fg, 'color');
+
+        expect(polygonLayer?.options.color).toBe(originalColor);
+        expect(polygonLayer?.options.fillColor).toBe(originalFillColor);
+        expect(polygonLayer?.options.fillOpacity).toBe(originalFillOpacity);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should restore polygon color preview when canceled', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const polygonLayer = findPolygonLayer(fg);
+        const originalColor = polygonLayer?.options.color;
+        const originalFillColor = polygonLayer?.options.fillColor;
+        const originalFillOpacity = polygonLayer?.options.fillOpacity;
+
+        clickMenuButton(harness.map, fg, 'color');
+
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
+        const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector(
+          'input[type="range"]',
+        ) as HTMLInputElement | null;
+        const cancelButton = panel?.querySelector('.polygon-color-cancel') as HTMLElement | null;
+
+        expect(colorInput).not.toBeNull();
+        expect(opacityInput).not.toBeNull();
+        expect(cancelButton).not.toBeNull();
+
+        colorInput!.value = '#123456';
+        colorInput!.dispatchEvent(new Event('input', { bubbles: true }));
+        opacityInput!.value = '0.65';
+        opacityInput!.dispatchEvent(new Event('input', { bubbles: true }));
+
+        expect((polygonLayer?.options.fillColor as string).toLowerCase()).toBe('#123456');
+        expect(polygonLayer?.options.fillOpacity).toBe(0.65);
+
+        cancelButton!.click();
+        await flushAsync();
+
+        expect(polygonLayer?.options.color).toBe(originalColor);
+        expect(polygonLayer?.options.fillColor).toBe(originalFillColor);
+        expect(polygonLayer?.options.fillOpacity).toBe(originalFillOpacity);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should restore polygon color preview when the menu popup closes externally', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const polygonLayer = findPolygonLayer(fg);
+        const originalColor = polygonLayer?.options.color;
+        const originalFillColor = polygonLayer?.options.fillColor;
+        const originalFillOpacity = polygonLayer?.options.fillOpacity;
+
+        clickMenuButton(harness.map, fg, 'color');
+
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
+        const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
+        expect(colorInput).not.toBeNull();
+
+        colorInput!.value = '#123456';
+        colorInput!.dispatchEvent(new Event('input', { bubbles: true }));
+        expect((polygonLayer?.options.fillColor as string).toLowerCase()).toBe('#123456');
+
+        harness.map.closePopup();
+        await flushAsync();
 
         expect(polygonLayer?.options.color).toBe(originalColor);
         expect(polygonLayer?.options.fillColor).toBe(originalFillColor);
@@ -266,11 +345,7 @@ describe('Menu Operations Config', () => {
         const updatedFeatureGroup = harness.polydraw.getFeatureGroups()[0] as L.FeatureGroup & {
           _polydrawMetadata?: { styleOverrides?: { color?: string; fillOpacity?: number } };
         };
-        const polygonLayer = updatedFeatureGroup
-          .getLayers()
-          .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as
-          | L.Polygon
-          | undefined;
+        const polygonLayer = findPolygonLayer(updatedFeatureGroup);
 
         expect((polygonLayer?.options.color as string).toLowerCase()).toBe('#0a1d2f');
         expect((polygonLayer?.options.fillColor as string).toLowerCase()).toBe('#123456');
@@ -278,6 +353,65 @@ describe('Menu Operations Config', () => {
         expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.color).toBe('#0a1d2f');
         expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.fillColor).toBe('#123456');
         expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.fillOpacity).toBe(0.65);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should restore applied polygon colors through undo and redo', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const originalPolygonLayer = findPolygonLayer(fg);
+        const originalColor = originalPolygonLayer?.options.color;
+        const originalFillColor = originalPolygonLayer?.options.fillColor;
+        const originalFillOpacity = originalPolygonLayer?.options.fillOpacity;
+
+        clickMenuButton(harness.map, fg, 'color');
+
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
+        const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector(
+          'input[type="range"]',
+        ) as HTMLInputElement | null;
+        const applyButton = panel?.querySelector('.polygon-color-apply') as HTMLElement | null;
+
+        colorInput!.value = '#123456';
+        opacityInput!.value = '0.65';
+        applyButton!.click();
+        await flushAsync();
+
+        await harness.polydraw.undo();
+        await flushAsync();
+
+        let restoredFeatureGroup = harness.polydraw.getFeatureGroups()[0] as L.FeatureGroup & {
+          _polydrawMetadata?: { styleOverrides?: unknown };
+        };
+        let restoredPolygonLayer = findPolygonLayer(restoredFeatureGroup);
+
+        expect(restoredPolygonLayer?.options.color).toBe(originalColor);
+        expect(restoredPolygonLayer?.options.fillColor).toBe(originalFillColor);
+        expect(restoredPolygonLayer?.options.fillOpacity).toBe(originalFillOpacity);
+        expect(restoredFeatureGroup._polydrawMetadata?.styleOverrides).toBeUndefined();
+
+        await harness.polydraw.redo();
+        await flushAsync();
+
+        restoredFeatureGroup = harness.polydraw.getFeatureGroups()[0] as L.FeatureGroup & {
+          _polydrawMetadata?: {
+            styleOverrides?: { color?: string; fillColor?: string; fillOpacity?: number };
+          };
+        };
+        restoredPolygonLayer = findPolygonLayer(restoredFeatureGroup);
+
+        expect((restoredPolygonLayer?.options.color as string).toLowerCase()).toBe('#0a1d2f');
+        expect((restoredPolygonLayer?.options.fillColor as string).toLowerCase()).toBe('#123456');
+        expect(restoredPolygonLayer?.options.fillOpacity).toBe(0.65);
+        expect(restoredFeatureGroup._polydrawMetadata?.styleOverrides?.color).toBe('#0a1d2f');
+        expect(restoredFeatureGroup._polydrawMetadata?.styleOverrides?.fillColor).toBe('#123456');
+        expect(restoredFeatureGroup._polydrawMetadata?.styleOverrides?.fillOpacity).toBe(0.65);
       } finally {
         harness.cleanup();
       }

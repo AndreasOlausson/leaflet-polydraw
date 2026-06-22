@@ -122,4 +122,37 @@ describe('Layer Color Styling', () => {
     expect((polygonLayer.options.fillColor as string).toLowerCase()).toBe('#ff0000');
     expect(polygonLayer.options.fillOpacity).toBe(0.3);
   });
+
+  it('can blend polygon color overrides when configured for blend merge strategy', async () => {
+    cleanup();
+    const harness = createPolydrawHarness({
+      polygonTools: {
+        ...defaultConfig.polygonTools,
+        color: {
+          ...defaultConfig.polygonTools.color,
+          mergeStrategy: 'blend',
+        },
+      },
+    });
+    polydraw = harness.polydraw;
+    cleanup = harness.cleanup;
+
+    const [first, second] = fixtures.overlappingSquares();
+    await polydraw.addPredefinedPolygon([first], {
+      overrides: { style: { color: '#ff0000', fillColor: '#ff0000', fillOpacity: 0.3 } },
+    });
+    await polydraw.addPredefinedPolygon([second], {
+      overrides: { style: { color: '#0000ff', fillColor: '#0000ff', fillOpacity: 0.7 } },
+    });
+
+    expect(polydraw.getFeatureGroups()).toHaveLength(1);
+    const featureGroup = polydraw.getFeatureGroups()[0];
+    const polygonLayer = featureGroup
+      .getLayers()
+      .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as L.Polygon;
+
+    expect((polygonLayer.options.color as string).toLowerCase()).toBe('#800080');
+    expect((polygonLayer.options.fillColor as string).toLowerCase()).toBe('#800080');
+    expect(polygonLayer.options.fillOpacity).toBe(0.5);
+  });
 });

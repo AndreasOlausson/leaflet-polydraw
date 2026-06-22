@@ -3841,6 +3841,10 @@ export class PolygonInteractionManager {
       }
     };
 
+    panel.addEventListener('polydraw:color-picker:restore', () => {
+      closeEditor(true, false);
+    });
+
     const colorMap = document.createElement('div');
     colorMap.className = 'polygon-color-map';
     const updateSelectedSwatch = (selectedColor: string) => {
@@ -4292,6 +4296,15 @@ export class PolygonInteractionManager {
         className: `menu-popup${isMobile ? ' mobile-popup' : ''}${versionClass}`,
       })
       .setContent(outerWrapper);
+
+    popup.on('remove', () => {
+      outerWrapper
+        .querySelector<HTMLElement>('.polygon-color-picker')
+        ?.dispatchEvent(new Event('polydraw:color-picker:restore'));
+      if (this._openMenuPopup === popup) {
+        this._openMenuPopup = null;
+      }
+    });
 
     this._openMenuPopup = popup;
     return popup;
