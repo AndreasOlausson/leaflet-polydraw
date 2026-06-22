@@ -252,9 +252,7 @@ describe('Menu Operations Config', () => {
         expect(panel?.hidden).toBe(false);
 
         const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
-        const opacityInput = panel?.querySelector(
-          'input[type="range"]',
-        ) as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector('input[type="range"]') as HTMLInputElement | null;
         const applyButton = panel?.querySelector('.polygon-color-apply') as HTMLElement | null;
         expect(colorInput).not.toBeNull();
         expect(opacityInput).not.toBeNull();
