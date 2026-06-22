@@ -394,6 +394,7 @@ class Polydraw extends L.Control {
       action === 'scale' ||
       action === 'rotate' ||
       action === 'donut' ||
+      action === 'color' ||
       action === 'toggleOptimization' ||
       action === 'polygonMenuAction'
     );
@@ -2103,6 +2104,7 @@ class Polydraw extends L.Control {
                   fillColor: styleOverrides?.fillColor ?? this.config.styles.polygon.fillColor,
                   fillOpacity:
                     styleOverrides?.fillOpacity ?? this.config.styles.polygon.fillOpacity,
+                  opacity: styleOverrides?.opacity ?? this.config.styles.polygon.opacity,
                   weight: styleOverrides?.weight ?? this.config.styles.polygon.weight,
                 });
               }

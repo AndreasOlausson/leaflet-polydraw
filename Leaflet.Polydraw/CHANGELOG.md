@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - Unreleased
+
+### Added
+
+- Added a built-in polygon color action, controlled by `polygonTools.color`, for changing a feature's fill color and fill opacity from the polygon action menu.
+- Added a compact color picker with a hex color map, native color input, opacity slider, live preview, cancel/back flow, and apply confirmation.
+- Added `polygonTools.color.mergeStrategy` (`source`, `target`, `blend`) to control how feature-level style overrides are resolved during polygon merges.
+
+### Changed
+
+- Feature-level color changes are stored as style overrides and are preserved through undo/redo snapshots.
+- Polygon color previews now keep edit marker styling in sync with the selected fill color while deriving darker borders for the polygon and markers.
+- Opacity changes affect polygon fill only; edit markers remain opaque for readability.
+
 ## [2.0.2] - 2026-06-22
 
 ### Fixed

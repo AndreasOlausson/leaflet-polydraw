@@ -380,6 +380,12 @@ export interface PolygonToolsConfig {
     enabled: boolean;
     direction: DonutDirection;
   };
+  color: {
+    enabled: boolean;
+    palette: string[];
+    defaultFillOpacity: number;
+    mergeStrategy: 'source' | 'target' | 'blend';
+  };
   visualOptimizationToggle: {
     enabled: boolean;
   };
@@ -394,6 +400,7 @@ export type PolygonActionHistory =
   | 'scale'
   | 'rotate'
   | 'donut'
+  | 'color'
   | 'toggleOptimization'
   | 'polygonMenuAction';
 
@@ -423,6 +430,7 @@ export interface PolygonActionsHistoryCaptureConfig {
   scale: boolean;
   rotate: boolean;
   donut: boolean;
+  color: boolean;
   toggleOptimization: boolean;
   polygonMenuAction: boolean;
 }
@@ -781,6 +789,7 @@ export interface PolygonStyleOverrides {
   color?: string;
   fillColor?: string;
   fillOpacity?: number;
+  opacity?: number;
   weight?: number;
 }
 

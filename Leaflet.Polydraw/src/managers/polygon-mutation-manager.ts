@@ -1053,8 +1053,10 @@ export class PolygonMutationManager {
         options.featureMetadata ?? this.resolvePrimaryFeatureMetadata(layers);
       const mergedInteractionOverride =
         options.featureInteractionOverride ?? this.resolvePrimaryFeatureInteractionOverride(layers);
-      const mergedStyleOverrides =
-        options.featureStyleOverrides ?? this.resolvePrimaryFeatureStyleOverrides(layers);
+      const mergedStyleOverrides = this.resolveMergedFeatureStyleOverrides(
+        layers,
+        options.featureStyleOverrides,
+      );
 
       // Remove the intersecting feature groups
       layers.forEach((featureGroup) => {
@@ -1318,7 +1320,7 @@ export class PolygonMutationManager {
       fillColor: styleOverrides?.fillColor ?? effectiveFillColor,
       // Force these values to ensure they override any default styling
       weight: styleOverrides?.weight ?? this.config.styles.polygon.weight ?? 2,
-      opacity: this.config.styles.polygon.opacity || 1,
+      opacity: styleOverrides?.opacity ?? this.config.styles.polygon.opacity ?? 1,
       fillOpacity: styleOverrides?.fillOpacity ?? this.config.styles.polygon.fillOpacity ?? 0.2,
     };
 
@@ -1575,6 +1577,88 @@ export class PolygonMutationManager {
       }
     }
     return undefined;
+  }
+
+  private resolveMergedFeatureStyleOverrides(
+    targetFeatureGroups: L.FeatureGroup[],
+    sourceStyleOverrides?: PolygonStyleOverrides,
+  ): PolygonStyleOverrides | undefined {
+    const targetStyleOverrides = this.resolvePrimaryFeatureStyleOverrides(targetFeatureGroups);
+    const strategy = this.config.polygonTools.color?.mergeStrategy ?? 'source';
+
+    if (strategy === 'target') {
+      return this.cloneStyleOverrides(targetStyleOverrides ?? sourceStyleOverrides);
+    }
+
+    if (strategy === 'blend') {
+      return this.blendFeatureStyleOverrides(sourceStyleOverrides, targetStyleOverrides);
+    }
+
+    return this.cloneStyleOverrides(sourceStyleOverrides);
+  }
+
+  private blendFeatureStyleOverrides(
+    sourceStyleOverrides?: PolygonStyleOverrides,
+    targetStyleOverrides?: PolygonStyleOverrides,
+  ): PolygonStyleOverrides | undefined {
+    if (!sourceStyleOverrides && !targetStyleOverrides) {
+      return undefined;
+    }
+    if (!sourceStyleOverrides || !targetStyleOverrides) {
+      return this.cloneStyleOverrides(sourceStyleOverrides ?? targetStyleOverrides);
+    }
+
+    const blended: PolygonStyleOverrides = {
+      ...targetStyleOverrides,
+      ...sourceStyleOverrides,
+    };
+    const color = this.blendHexColors(sourceStyleOverrides.color, targetStyleOverrides.color);
+    const fillColor = this.blendHexColors(
+      sourceStyleOverrides.fillColor ?? sourceStyleOverrides.color,
+      targetStyleOverrides.fillColor ?? targetStyleOverrides.color,
+    );
+    if (color) {
+      blended.color = color;
+    }
+    if (fillColor) {
+      blended.fillColor = fillColor;
+    }
+    if (
+      typeof sourceStyleOverrides.fillOpacity === 'number' &&
+      typeof targetStyleOverrides.fillOpacity === 'number'
+    ) {
+      blended.fillOpacity =
+        (sourceStyleOverrides.fillOpacity + targetStyleOverrides.fillOpacity) / 2;
+    }
+
+    return blended;
+  }
+
+  private blendHexColors(sourceColor?: string, targetColor?: string): string | undefined {
+    const source = this.parseHexColor(sourceColor);
+    const target = this.parseHexColor(targetColor);
+    if (!source || !target) {
+      return sourceColor ?? targetColor;
+    }
+
+    const blended = source.map((channel, index) => Math.round((channel + target[index]) / 2)) as [
+      number,
+      number,
+      number,
+    ];
+
+    return `#${blended.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+  }
+
+  private parseHexColor(color?: string): [number, number, number] | undefined {
+    if (!color || !/^#[0-9a-f]{6}$/i.test(color)) {
+      return undefined;
+    }
+    return [
+      Number.parseInt(color.slice(1, 3), 16),
+      Number.parseInt(color.slice(3, 5), 16),
+      Number.parseInt(color.slice(5, 7), 16),
+    ];
   }
 
   private cloneFeatureMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {

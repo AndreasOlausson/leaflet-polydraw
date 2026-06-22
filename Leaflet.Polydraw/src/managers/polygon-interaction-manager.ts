@@ -58,6 +58,10 @@ type DragDocumentListener = (event: MouseEvent | PointerEvent) => void;
 type LeafletPolygonLatLngs = L.LatLng[] | L.LatLng[][] | L.LatLng[][][];
 type BuiltInPolygonMenuAction = 'simplify' | 'doubleElbows' | 'bbox' | 'bezier';
 type PolygonTransformMode = 'scale' | 'rotate' | 'donut';
+type PolygonColorSelection = Required<
+  Pick<PolygonStyleOverrides, 'color' | 'fillColor' | 'fillOpacity'>
+>;
+type RgbColor = [number, number, number];
 type PolydrawAuxiliaryPolyline = L.Polyline & { _polydrawAuxiliaryLayer?: true };
 type PolygonNativeStartListeners = {
   mousedown: (event: MouseEvent) => void;
@@ -80,8 +84,144 @@ const BUILT_IN_POLYGON_MENU_ACTION_IDS = new Set([
   'scale',
   'rotate',
   'donut',
+  'color',
   'toggleOptimization',
 ]);
+
+const DEFAULT_COLOR_MAP_PALETTE = [
+  '#003366',
+  '#336699',
+  '#3366CC',
+  '#003399',
+  '#000099',
+  '#0000CC',
+  '#000066',
+  '#006666',
+  '#006699',
+  '#0099CC',
+  '#0066CC',
+  '#0033CC',
+  '#0000FF',
+  '#3333FF',
+  '#333399',
+  '#669999',
+  '#009999',
+  '#33CCCC',
+  '#00CCFF',
+  '#0099FF',
+  '#0066FF',
+  '#3366FF',
+  '#3333CC',
+  '#666699',
+  '#339966',
+  '#00CC99',
+  '#00FFCC',
+  '#00FFFF',
+  '#33CCFF',
+  '#3399FF',
+  '#6699FF',
+  '#6666FF',
+  '#6600FF',
+  '#6600CC',
+  '#339933',
+  '#00CC66',
+  '#00FF99',
+  '#66FFCC',
+  '#66FFFF',
+  '#66CCFF',
+  '#99CCFF',
+  '#9999FF',
+  '#9966FF',
+  '#9933FF',
+  '#9900FF',
+  '#006600',
+  '#00CC00',
+  '#00FF00',
+  '#66FF99',
+  '#99FFCC',
+  '#CCFFFF',
+  '#CCCCFF',
+  '#CC99FF',
+  '#CC66FF',
+  '#CC33FF',
+  '#CC00FF',
+  '#9900CC',
+  '#003300',
+  '#009933',
+  '#33CC33',
+  '#66FF66',
+  '#99FF99',
+  '#CCFFCC',
+  '#FFFFFF',
+  '#FFCCFF',
+  '#FF99FF',
+  '#FF66FF',
+  '#FF00FF',
+  '#CC00CC',
+  '#660066',
+  '#336600',
+  '#009900',
+  '#66FF33',
+  '#99FF66',
+  '#CCFF99',
+  '#FFFFCC',
+  '#FFCCCC',
+  '#FF99CC',
+  '#FF66CC',
+  '#FF33CC',
+  '#CC0099',
+  '#993399',
+  '#333300',
+  '#669900',
+  '#99FF33',
+  '#CCFF66',
+  '#FFFF99',
+  '#FFCC99',
+  '#FF9999',
+  '#FF6699',
+  '#FF3399',
+  '#CC3399',
+  '#990099',
+  '#666633',
+  '#99CC00',
+  '#CCFF33',
+  '#FFFF66',
+  '#FFCC66',
+  '#FF9966',
+  '#FF6666',
+  '#FF0066',
+  '#CC6699',
+  '#993366',
+  '#999966',
+  '#CCCC00',
+  '#FFFF00',
+  '#FFCC00',
+  '#FF9933',
+  '#FF6600',
+  '#FF5050',
+  '#CC0066',
+  '#660033',
+  '#996633',
+  '#CC9900',
+  '#FF9900',
+  '#CC6600',
+  '#FF3300',
+  '#FF0000',
+  '#CC0000',
+  '#990033',
+  '#663300',
+  '#996600',
+  '#CC3300',
+  '#993300',
+  '#990000',
+  '#800000',
+  '#993333',
+];
+
+const COLOR_MAP_ROWS = [7, 8, 9, 10, 11, 12, 13, 12, 11, 10, 9, 8, 7];
+const COLOR_MAP_CELL_WIDTH = 18;
+const COLOR_MAP_ROW_HEIGHT = 15;
+const COLOR_MAP_WIDTH = 234;
 
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
@@ -358,7 +498,10 @@ export class PolygonInteractionManager {
 
       marker.on('add', () => {
         const el = marker.getElement();
-        if (el) el.style.pointerEvents = 'auto';
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          this.applyFeatureGroupColorToMarkerElement(featureGroup, el);
+        }
       });
 
       marker.on('click', (e) => {
@@ -692,7 +835,10 @@ export class PolygonInteractionManager {
 
       marker.on('add', () => {
         const el = marker.getElement();
-        if (el) el.style.pointerEvents = 'auto';
+        if (el) {
+          el.style.pointerEvents = 'auto';
+          this.applyFeatureGroupColorToMarkerElement(featureGroup, el);
+        }
       });
 
       marker.on('click', (e) => {
@@ -3330,6 +3476,12 @@ export class PolygonInteractionManager {
         label: 'Rotate',
         classNames: ['transform-rotate'],
       },
+      {
+        enabled: menuOps.color.enabled,
+        id: 'color',
+        label: 'Color',
+        classNames: ['polygon-color'],
+      },
     ];
   }
 
@@ -3431,6 +3583,436 @@ export class PolygonInteractionManager {
     }
   }
 
+  private normalizeHexColor(value: string | undefined, fallback: string): string {
+    if (!value) {
+      return fallback;
+    }
+
+    const trimmed = value.trim();
+    if (/^#[0-9a-f]{6}$/i.test(trimmed)) {
+      return trimmed.toLowerCase();
+    }
+    if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
+      const [, r, g, b] = trimmed.toLowerCase();
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+
+    return fallback;
+  }
+
+  private clampFillOpacity(value: number | undefined): number {
+    const fallback = this.config.polygonTools.color.defaultFillOpacity;
+    const nextValue = typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    return Math.min(1, Math.max(0, nextValue));
+  }
+
+  private parseHexColor(value: string): RgbColor {
+    const normalized = this.normalizeHexColor(value, '#50622b');
+    return [
+      Number.parseInt(normalized.slice(1, 3), 16),
+      Number.parseInt(normalized.slice(3, 5), 16),
+      Number.parseInt(normalized.slice(5, 7), 16),
+    ];
+  }
+
+  private toHexColor([red, green, blue]: RgbColor): string {
+    return `#${[red, green, blue]
+      .map((channel) => Math.min(255, Math.max(0, channel)).toString(16).padStart(2, '0'))
+      .join('')}`;
+  }
+
+  private darkenColor(color: string, factor: number): string {
+    const rgb = this.parseHexColor(color);
+    return this.toHexColor(rgb.map((channel) => Math.round(channel * factor)) as RgbColor);
+  }
+
+  private toRgbaColor(color: string, alpha: number): string {
+    const [red, green, blue] = this.parseHexColor(color);
+    return `rgba(${red}, ${green}, ${blue}, ${Math.min(1, Math.max(0, alpha))})`;
+  }
+
+  private getCurrentPolygonColorSelection(
+    polygon: L.Polygon,
+    featureGroup: L.FeatureGroup,
+  ): PolygonColorSelection {
+    const styleOverrides = this.getFeatureMetadataState(featureGroup).styleOverrides;
+    const defaultPolygonColor = '#50622b';
+    const fallbackColor = this.normalizeHexColor(
+      this.config.styles.polygon.color,
+      defaultPolygonColor,
+    );
+    const color = this.normalizeHexColor(
+      styleOverrides?.color ?? (polygon.options.color as string | undefined),
+      fallbackColor,
+    );
+    const fillColor = this.normalizeHexColor(
+      styleOverrides?.fillColor ?? (polygon.options.fillColor as string | undefined),
+      color,
+    );
+    const fillOpacity = this.clampFillOpacity(
+      styleOverrides?.fillOpacity ?? polygon.options.fillOpacity,
+    );
+
+    return { color, fillColor, fillOpacity };
+  }
+
+  private getDefaultPolygonColorSelection(): PolygonColorSelection {
+    const color = this.normalizeHexColor(this.config.styles.polygon.color, '#50622b');
+    const fillColor = this.normalizeHexColor(this.config.styles.polygon.fillColor, color);
+    return {
+      color,
+      fillColor,
+      fillOpacity: this.clampFillOpacity(this.config.styles.polygon.fillOpacity),
+    };
+  }
+
+  private createPolygonColorSelection(
+    fillColor: string,
+    fillOpacity: number,
+  ): PolygonColorSelection {
+    const normalizedFillColor = this.normalizeHexColor(fillColor, '#50622b');
+    return {
+      color: this.darkenColor(normalizedFillColor, 0.55),
+      fillColor: normalizedFillColor,
+      fillOpacity: this.clampFillOpacity(fillOpacity),
+    };
+  }
+
+  private getPaletteColors(): string[] {
+    const configuredPalette = this.config.polygonTools.color.palette;
+    const palette = configuredPalette.length > 0 ? configuredPalette : DEFAULT_COLOR_MAP_PALETTE;
+    return palette.map((color) => this.normalizeHexColor(color, '#50622b'));
+  }
+
+  private getColorMapCellPosition(index: number): { left: number; top: number } {
+    let remaining = index;
+    for (let rowIndex = 0; rowIndex < COLOR_MAP_ROWS.length; rowIndex += 1) {
+      const rowCount = COLOR_MAP_ROWS[rowIndex];
+      if (remaining < rowCount) {
+        const rowWidth = rowCount * COLOR_MAP_CELL_WIDTH;
+        return {
+          left: Math.round((COLOR_MAP_WIDTH - rowWidth) / 2 + remaining * COLOR_MAP_CELL_WIDTH),
+          top: rowIndex * COLOR_MAP_ROW_HEIGHT,
+        };
+      }
+      remaining -= rowCount;
+    }
+
+    const fallbackIndex = index - DEFAULT_COLOR_MAP_PALETTE.length;
+    return {
+      left: (fallbackIndex % 13) * COLOR_MAP_CELL_WIDTH,
+      top:
+        COLOR_MAP_ROWS.length * COLOR_MAP_ROW_HEIGHT +
+        Math.floor(fallbackIndex / 13) * COLOR_MAP_ROW_HEIGHT,
+    };
+  }
+
+  private styleMarkerElement(element: HTMLElement, selection: PolygonColorSelection): void {
+    if (
+      element.classList.contains('menu') ||
+      element.classList.contains('delete') ||
+      element.classList.contains('info')
+    ) {
+      return;
+    }
+
+    element.style.backgroundColor = selection.fillColor;
+    element.style.boxShadow = `0 0 0 2px ${this.darkenColor(selection.fillColor, 0.55)}, 0 0 10px rgba(0, 0, 0, 0.35)`;
+  }
+
+  private applyPolygonThemeToMarkers(
+    featureGroup: L.FeatureGroup,
+    selection: PolygonColorSelection,
+  ): void {
+    featureGroup.eachLayer((layer) => {
+      if (!(layer instanceof L.Marker)) {
+        return;
+      }
+      const element = layer.getElement();
+      if (element instanceof HTMLElement) {
+        this.styleMarkerElement(element, selection);
+      }
+    });
+  }
+
+  private getMarkerColorSelectionFromFeatureGroup(
+    featureGroup: L.FeatureGroup,
+  ): PolygonColorSelection | undefined {
+    const styleOverrides = this.getFeatureMetadataState(featureGroup).styleOverrides;
+    if (
+      !styleOverrides?.color &&
+      !styleOverrides?.fillColor &&
+      styleOverrides?.fillOpacity === undefined
+    ) {
+      return undefined;
+    }
+    const defaultSelection = this.getDefaultPolygonColorSelection();
+    const color = this.normalizeHexColor(styleOverrides?.color, defaultSelection.color);
+    return {
+      color,
+      fillColor: this.normalizeHexColor(styleOverrides?.fillColor, color),
+      fillOpacity: this.clampFillOpacity(styleOverrides?.fillOpacity),
+    };
+  }
+
+  private applyFeatureGroupColorToMarkerElement(
+    featureGroup: L.FeatureGroup,
+    element: HTMLElement,
+  ): void {
+    const selection = this.getMarkerColorSelectionFromFeatureGroup(featureGroup);
+    if (selection) {
+      this.styleMarkerElement(element, selection);
+    }
+  }
+
+  private previewPolygonColor(
+    featureGroup: L.FeatureGroup,
+    selection: PolygonColorSelection,
+  ): void {
+    const polygon = this.getPolygonLayer(featureGroup);
+    if (polygon) {
+      polygon.setStyle({
+        color: selection.color,
+        fillColor: selection.fillColor,
+        fillOpacity: selection.fillOpacity,
+      });
+    }
+    this.applyPolygonThemeToMarkers(featureGroup, selection);
+  }
+
+  private createColorPickerPanel(featureGroup: L.FeatureGroup): HTMLDivElement {
+    const polygon = this.getPolygonLayer(featureGroup);
+    const current = polygon
+      ? this.getCurrentPolygonColorSelection(polygon, featureGroup)
+      : this.getDefaultPolygonColorSelection();
+    const panel = document.createElement('div');
+    panel.className = 'polygon-color-picker';
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.value = current.fillColor;
+    colorInput.setAttribute('aria-label', 'Custom polygon color');
+
+    const opacityInput = document.createElement('input');
+    opacityInput.type = 'range';
+    opacityInput.min = '0';
+    opacityInput.max = '1';
+    opacityInput.step = '0.05';
+    opacityInput.value = current.fillOpacity.toString();
+    opacityInput.setAttribute('aria-label', 'Polygon fill opacity');
+
+    const preview = document.createElement('div');
+    preview.className = 'polygon-color-preview';
+
+    const opacityValue = document.createElement('span');
+    opacityValue.className = 'polygon-color-opacity-value';
+    let hasAppliedPreview = false;
+
+    const readDraft = (): PolygonColorSelection => {
+      return this.createPolygonColorSelection(colorInput.value, Number(opacityInput.value));
+    };
+
+    const renderPreviewUi = (selection: PolygonColorSelection) => {
+      preview.style.backgroundColor = this.toRgbaColor(selection.fillColor, selection.fillOpacity);
+      preview.style.borderColor = this.darkenColor(selection.fillColor, 0.55);
+      opacityValue.textContent = `${Math.round(selection.fillOpacity * 100)}%`;
+    };
+
+    const renderPreview = (selection: PolygonColorSelection) => {
+      renderPreviewUi(selection);
+      hasAppliedPreview = true;
+      this.previewPolygonColor(featureGroup, selection);
+    };
+
+    const closeEditor = (restorePreview: boolean, closePopup: boolean) => {
+      if (restorePreview && hasAppliedPreview) {
+        this.previewPolygonColor(featureGroup, current);
+      }
+      const actionContent = panel
+        .closest('.alter-marker-outer-wrapper')
+        ?.querySelector<HTMLElement>('.content');
+      panel.closest('.alter-marker-outer-wrapper')?.classList.remove('polygon-color-mode');
+      if (actionContent) {
+        actionContent.hidden = false;
+      }
+      panel.remove();
+      if (closePopup) {
+        this.closeOpenMenuPopup();
+      }
+    };
+
+    panel.addEventListener('polydraw:color-picker:restore', () => {
+      closeEditor(true, false);
+    });
+
+    const colorMap = document.createElement('div');
+    colorMap.className = 'polygon-color-map';
+    const updateSelectedSwatch = (selectedColor: string) => {
+      colorMap.querySelectorAll('.polygon-color-swatch').forEach((swatch) => {
+        swatch.classList.toggle(
+          'selected',
+          swatch.getAttribute('data-color')?.toLowerCase() === selectedColor.toLowerCase(),
+        );
+      });
+    };
+    this.getPaletteColors().forEach((paletteColor, index) => {
+      const color = this.normalizeHexColor(paletteColor, current.color);
+      const swatch = document.createElement('button');
+      swatch.type = 'button';
+      swatch.className = 'polygon-color-swatch';
+      swatch.style.backgroundColor = color;
+      swatch.setAttribute('data-color', color);
+      swatch.setAttribute('aria-label', `Set polygon color ${color}`);
+      const position = this.getColorMapCellPosition(index);
+      swatch.style.left = `${position.left}px`;
+      swatch.style.top = `${position.top}px`;
+      swatch.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        colorInput.value = color;
+        updateSelectedSwatch(color);
+        renderPreview(this.createPolygonColorSelection(color, Number(opacityInput.value)));
+      });
+      colorMap.appendChild(swatch);
+    });
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'polygon-color-toolbar';
+
+    const backButton = document.createElement('button');
+    backButton.type = 'button';
+    backButton.className = 'polygon-color-back';
+    backButton.setAttribute('aria-label', 'Back to polygon actions');
+    backButton.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>';
+    backButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEditor(true, false);
+    });
+
+    toolbar.append(backButton);
+
+    const customRow = document.createElement('div');
+    customRow.className = 'polygon-color-custom-row';
+    customRow.append(colorInput, opacityInput, opacityValue);
+
+    const actions = document.createElement('div');
+    actions.className = 'polygon-color-actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'polygon-color-cancel';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEditor(true, true);
+    });
+
+    const applyButton = document.createElement('button');
+    applyButton.type = 'button';
+    applyButton.className = 'polygon-color-apply';
+    applyButton.textContent = 'Apply';
+    applyButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.applyPolygonColor(featureGroup, readDraft());
+      closeEditor(false, true);
+    });
+
+    actions.append(cancelButton, applyButton);
+
+    const updateFromInputs = () => renderPreview(readDraft());
+    colorInput.addEventListener('input', () => {
+      updateSelectedSwatch(colorInput.value);
+      updateFromInputs();
+    });
+    opacityInput.addEventListener('input', updateFromInputs);
+
+    panel.append(toolbar, colorMap, preview, customRow, actions);
+    renderPreviewUi(current);
+    updateSelectedSwatch(current.fillColor);
+    return panel;
+  }
+
+  private toggleColorPickerPanel(button: HTMLDivElement, featureGroup: L.FeatureGroup): void {
+    const outerWrapper = button.closest('.alter-marker-outer-wrapper');
+    if (!(outerWrapper instanceof HTMLElement)) {
+      return;
+    }
+
+    const wrapper = outerWrapper.querySelector<HTMLElement>('.alter-marker-wrapper');
+    const actionContent = outerWrapper.querySelector<HTMLElement>('.content');
+    if (!wrapper || !actionContent) {
+      return;
+    }
+
+    outerWrapper.querySelector('.polygon-color-picker')?.remove();
+    const panel = this.createColorPickerPanel(featureGroup);
+    wrapper.appendChild(panel);
+    L.DomEvent.disableClickPropagation(panel);
+    actionContent.hidden = true;
+    outerWrapper.classList.add('polygon-color-mode');
+    button.classList.remove('active');
+  }
+
+  private applyPolygonColor(
+    featureGroup: L.FeatureGroup,
+    selection: PolygonColorSelection | null,
+  ): void {
+    const polygonLayer = this.getPolygonLayer(featureGroup);
+    if (!polygonLayer) {
+      return;
+    }
+
+    if (this.saveHistoryState) {
+      this.saveHistoryState('color');
+    }
+
+    const { level: optimizationLevel, original: originalOptimizationLevel } =
+      this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+    const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+    const nextStyleOverrides = selection
+      ? {
+          ...featureMetadataState.styleOverrides,
+          color: selection.color,
+          fillColor: selection.fillColor,
+          fillOpacity: selection.fillOpacity,
+        }
+      : this.getStyleOverridesWithoutColor(featureMetadataState.styleOverrides);
+    const newGeoJSON = polygonLayer.toGeoJSON();
+
+    this.cleanupFeatureGroup(featureGroup);
+    this.removeFeatureGroup(featureGroup);
+    this.emitPolygonUpdated({
+      operation: 'color',
+      polygon: this.turfHelper.getTurfPolygon(newGeoJSON),
+      allowMerge: false,
+      optimizationLevel,
+      originalOptimizationLevel,
+      featureId: featureMetadataState.featureId,
+      featureMetadata: featureMetadataState.metadata,
+      sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureInteractionOverride: featureMetadataState.interactionOverride,
+      featureStyleOverrides: nextStyleOverrides,
+      featureCreatedAt: featureMetadataState.createdAt,
+    });
+  }
+
+  private getStyleOverridesWithoutColor(
+    styleOverrides?: PolygonStyleOverrides,
+  ): PolygonStyleOverrides | undefined {
+    if (!styleOverrides) {
+      return undefined;
+    }
+    const rest = { ...styleOverrides };
+    delete rest.color;
+    delete rest.fillColor;
+    delete rest.fillOpacity;
+    return Object.keys(rest).length > 0 ? rest : undefined;
+  }
+
   private attachMenuPopupCloseHandler(outerWrapper: HTMLElement): void {
     const closeBtn = outerWrapper.querySelector('.marker-menu-close');
     if (!closeBtn) {
@@ -3511,6 +4093,17 @@ export class PolygonInteractionManager {
     button.onclick = handler;
   }
 
+  private attachColorPickerHandler(button: HTMLDivElement, featureGroup: L.FeatureGroup): void {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleColorPickerPanel(button, featureGroup);
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
   private attachCustomPolygonMenuActionHandler(
     button: HTMLDivElement,
     actionId: string,
@@ -3561,6 +4154,9 @@ export class PolygonInteractionManager {
         return;
       case 'toggleOptimization':
         this.attachOptimizationToggleHandler(button, featureGroup);
+        return;
+      case 'color':
+        this.attachColorPickerHandler(button, featureGroup);
         return;
       default:
         if (actionId) {
@@ -3700,6 +4296,15 @@ export class PolygonInteractionManager {
         className: `menu-popup${isMobile ? ' mobile-popup' : ''}${versionClass}`,
       })
       .setContent(outerWrapper);
+
+    popup.on('remove', () => {
+      outerWrapper
+        .querySelector<HTMLElement>('.polygon-color-picker')
+        ?.dispatchEvent(new Event('polydraw:color-picker:restore'));
+      if (this._openMenuPopup === popup) {
+        this._openMenuPopup = null;
+      }
+    });
 
     this._openMenuPopup = popup;
     return popup;

@@ -237,6 +237,10 @@ body {
   background-image: url('../icons/icon-donut.svg');
 }
 
+.marker-menu-content .marker-menu-button.polygon-color {
+  background-image: url('../icons/icon-color.svg');
+}
+
 .marker-menu-content .marker-menu-button.menu-action-default {
   background-image: url("data:image/svg+xml,%3Csvg fill='%23ffffff' stroke='%23ffffff' xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 100 100'%3E%3Cpath d='M79.2 32.8c-.2-.7-1.1-.9-1.7-.4L67.4 42.5c-.8.8-2 .8-2.8 0l-7.1-7.1c-.8-.8-.8-2 0-2.8l10.2-10.2c.5-.5.3-1.4-.4-1.7-1.7-.4-3.5-.7-5.3-.7-10.6 0-19.1 9.2-17.9 20 .2 1.7.6 3.2 1.2 4.7L22 68.1c-2.7 2.7-2.7 7.2 0 9.9 1.4 1.4 3.2 2.1 5 2.1s3.6-.7 5-2.1l23.3-23.3c1.5.6 3.1 1 4.7 1.2C70.9 57.1 80 48.6 80 38c0-1.8-.3-3.6-.8-5.2z'/%3E%3C/svg%3E");
 }
@@ -326,12 +330,28 @@ body {
   text-align: center;
   position: relative;
 }
+
+.alter-marker-outer-wrapper.polygon-color-mode,
+.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper {
+  background-color: #ffffff;
+}
+
+.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper {
+  border-color: #ffffff;
+  color: #1f2937;
+  padding: 0;
+}
+
 .content {
   width: auto;
   min-height: 40px;
   margin-right: 12px;
   display: flex;
   align-items: center;
+}
+
+.content[hidden] {
+  display: none;
 }
 
 .marker-menu-close {
@@ -357,6 +377,134 @@ body {
 .marker-menu-close:focus {
   outline: 2px solid #fff8;
   outline-offset: 2px;
+}
+
+.polygon-color-mode .marker-menu-close {
+  color: #50622b;
+}
+
+.polygon-color-mode .marker-menu-close:focus {
+  outline-color: rgba(80, 98, 43, 0.45);
+}
+
+.polygon-color-picker {
+  width: 248px;
+  padding: 6px 8px 8px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+.polygon-color-map {
+  position: relative;
+  width: 234px;
+  height: 199px;
+  margin: 6px auto 7px;
+}
+
+.polygon-color-swatch {
+  position: absolute;
+  width: 18px;
+  height: 20px;
+  border: 0;
+  clip-path: polygon(50% 0, 100% 22%, 100% 78%, 50% 100%, 0 78%, 0 22%);
+  padding: 0;
+  cursor: pointer;
+}
+
+.polygon-color-swatch:hover,
+.polygon-color-swatch.selected {
+  z-index: 2;
+  outline: 2px solid #1f2937;
+  outline-offset: 1px;
+}
+
+.polygon-color-toolbar {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  padding-right: 24px;
+}
+
+.polygon-color-apply,
+.polygon-color-cancel {
+  height: 28px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #1f2937;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.polygon-color-back {
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #50622b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polygon-color-back svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.polygon-color-apply {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
+}
+
+.polygon-color-preview {
+  height: 18px;
+  margin: 0 7px 7px;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+}
+
+.polygon-color-custom-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 36px;
+  gap: 6px;
+  align-items: center;
+}
+
+.polygon-color-custom-row input[type='color'] {
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.polygon-color-custom-row input[type='range'] {
+  min-width: 0;
+}
+
+.polygon-color-opacity-value {
+  color: #1f2937;
+  font-size: 12px;
+  text-align: right;
+}
+
+.polygon-color-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
 }
 
 .polydraw-transform-cancel,
