@@ -211,6 +211,12 @@ export const defaultConfig: PolydrawConfig = {
       enabled: true,
       direction: DonutDirection.Both,
     },
+    color: {
+      enabled: true,
+      palette: [],
+      defaultFillOpacity: 0.35,
+      mergeStrategy: 'source',
+    },
     visualOptimizationToggle: {
       enabled: true,
     },
@@ -247,6 +253,7 @@ export const defaultConfig: PolydrawConfig = {
         scale: true,
         rotate: true,
         donut: true,
+        color: true,
         toggleOptimization: true,
         polygonMenuAction: true,
       },

@@ -184,6 +184,108 @@ describe('Menu Operations Config', () => {
     });
   });
 
+  describe('color', () => {
+    it('should show the color button when enabled', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const actions = openMenuAndGetActionIds(harness.map, fg);
+        expect(actions.has('color')).toBe(true);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should hide the color button when disabled', async () => {
+      const harness = createPolydrawHarness(
+        withPolygonTools({
+          color: {
+            ...defaultConfig.polygonTools.color,
+            enabled: false,
+          },
+        }),
+      );
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const actions = openMenuAndGetActionIds(harness.map, fg);
+        expect(actions.has('color')).toBe(false);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should not restyle an original polygon when opening the color picker', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const polygonLayer = fg
+          .getLayers()
+          .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as
+          | L.Polygon
+          | undefined;
+        const originalColor = polygonLayer?.options.color;
+        const originalFillColor = polygonLayer?.options.fillColor;
+        const originalFillOpacity = polygonLayer?.options.fillOpacity;
+
+        clickMenuButton(harness.map, fg, 'color');
+
+        expect(polygonLayer?.options.color).toBe(originalColor);
+        expect(polygonLayer?.options.fillColor).toBe(originalFillColor);
+        expect(polygonLayer?.options.fillOpacity).toBe(originalFillOpacity);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should apply a custom polygon color and fill opacity', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        clickMenuButton(harness.map, fg, 'color');
+
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-color-picker') as HTMLElement | null;
+        expect(panel?.hidden).toBe(false);
+
+        const colorInput = panel?.querySelector('input[type="color"]') as HTMLInputElement | null;
+        const opacityInput = panel?.querySelector(
+          'input[type="range"]',
+        ) as HTMLInputElement | null;
+        const applyButton = panel?.querySelector('.polygon-color-apply') as HTMLElement | null;
+        expect(colorInput).not.toBeNull();
+        expect(opacityInput).not.toBeNull();
+        expect(applyButton).not.toBeNull();
+
+        colorInput!.value = '#123456';
+        opacityInput!.value = '0.65';
+        applyButton!.click();
+        await flushAsync();
+
+        const updatedFeatureGroup = harness.polydraw.getFeatureGroups()[0] as L.FeatureGroup & {
+          _polydrawMetadata?: { styleOverrides?: { color?: string; fillOpacity?: number } };
+        };
+        const polygonLayer = updatedFeatureGroup
+          .getLayers()
+          .find((layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle)) as
+          | L.Polygon
+          | undefined;
+
+        expect((polygonLayer?.options.color as string).toLowerCase()).toBe('#0a1d2f');
+        expect((polygonLayer?.options.fillColor as string).toLowerCase()).toBe('#123456');
+        expect(polygonLayer?.options.fillOpacity).toBe(0.65);
+        expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.color).toBe('#0a1d2f');
+        expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.fillColor).toBe('#123456');
+        expect(updatedFeatureGroup._polydrawMetadata?.styleOverrides?.fillOpacity).toBe(0.65);
+      } finally {
+        harness.cleanup();
+      }
+    });
+  });
+
   describe('bezier', () => {
     it('should show the bezier button when enabled', async () => {
       const harness = createPolydrawHarness();
@@ -670,6 +772,7 @@ describe('Menu Operations Config', () => {
           scale: { enabled: false },
           rotate: { enabled: false },
           donut: { enabled: false, direction: DonutDirection.Both },
+          color: { ...defaultConfig.polygonTools.color, enabled: false },
           visualOptimizationToggle: { enabled: false },
         }),
       );
@@ -685,7 +788,7 @@ describe('Menu Operations Config', () => {
   });
 
   describe('default config shows all standard buttons', () => {
-    it('should show simplify, doubleElbows, bbox, bezier, scale, rotate, and donut with defaults', async () => {
+    it('should show simplify, doubleElbows, bbox, bezier, scale, rotate, donut, and color with defaults', async () => {
       const harness = createPolydrawHarness();
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
@@ -698,6 +801,7 @@ describe('Menu Operations Config', () => {
         expect(actions.has('scale')).toBe(true);
         expect(actions.has('rotate')).toBe(true);
         expect(actions.has('donut')).toBe(true);
+        expect(actions.has('color')).toBe(true);
         // toggleOptimization only shows when polygon has VO metadata
         expect(actions.has('toggleOptimization')).toBe(false);
       } finally {

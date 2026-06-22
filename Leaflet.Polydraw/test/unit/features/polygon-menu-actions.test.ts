@@ -349,6 +349,7 @@ describe('Polygon Menu Actions', () => {
               scale: true,
               rotate: true,
               donut: true,
+              color: true,
               toggleOptimization: true,
               polygonMenuAction: false,
             },
