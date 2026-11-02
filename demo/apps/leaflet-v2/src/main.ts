@@ -130,9 +130,19 @@ const polydrawConfig = {
     holeIcon: {
       styleClasses: ['polygon-marker', 'hole', 'demo-edit-handle'],
     },
+    markerInfoIcon: {
+      showLayer: true,
+      showGeometry: true,
+      metadata: {
+        fields: ['owner', 'source', 'workstream', 'priority', 'parcelId', 'dataset'],
+      },
+    },
   },
   polygonTools: {
     menuActions: demoMenuActions,
+    color: {
+      enabled: true,
+    },
     moveToLayer: {
       enabled: true,
     },
@@ -142,6 +152,7 @@ const polydrawConfig = {
   },
   layerPanel: {
     enabled: true,
+    initialState: 'expanded',
     merge: {
       allowReferenceSources: true,
     },
