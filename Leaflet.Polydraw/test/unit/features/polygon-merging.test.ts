@@ -94,4 +94,67 @@ describe('Polygon Merging', () => {
 
     expect(polydraw.getFeatureGroupsByLayer('Layer 1')).toHaveLength(1);
   });
+
+  it('keeps body-drag merge scoped to the dragged polygon layer instead of the active draw layer', async () => {
+    const first = [
+      [
+        leafletAdapter.createLatLng(58.405, 15.595),
+        leafletAdapter.createLatLng(58.405, 15.6),
+        leafletAdapter.createLatLng(58.4, 15.6),
+        leafletAdapter.createLatLng(58.4, 15.595),
+        leafletAdapter.createLatLng(58.405, 15.595),
+      ],
+    ];
+    const second = [
+      [
+        leafletAdapter.createLatLng(58.405, 15.605),
+        leafletAdapter.createLatLng(58.405, 15.61),
+        leafletAdapter.createLatLng(58.4, 15.61),
+        leafletAdapter.createLatLng(58.4, 15.605),
+        leafletAdapter.createLatLng(58.405, 15.605),
+      ],
+    ];
+    const firstAfterBodyDrag = [
+      [
+        leafletAdapter.createLatLng(58.405, 15.606),
+        leafletAdapter.createLatLng(58.405, 15.611),
+        leafletAdapter.createLatLng(58.4, 15.611),
+        leafletAdapter.createLatLng(58.4, 15.606),
+        leafletAdapter.createLatLng(58.405, 15.606),
+      ],
+    ];
+
+    await polydraw.addPredefinedPolygon([first]);
+    polydraw.createDrawLayer({ id: 'Layer 1' });
+    await polydraw.addPredefinedPolygon([second]);
+
+    expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('Layer 1')).toHaveLength(1);
+    expect(polydraw.getActiveLayerId()).toBe('Layer 1');
+
+    const movingGroup = polydraw.getFeatureGroupsByLayer('default')[0];
+    const movingPolygon = movingGroup
+      .getLayers()
+      .find((layer): layer is L.Polygon => layer instanceof L.Polygon);
+
+    expect(movingPolygon).toBeDefined();
+    movingPolygon!.setLatLngs(firstAfterBodyDrag);
+
+    const interactionManager = (
+      polydraw as unknown as {
+        polygonMutationManager: {
+          interactionManager: {
+            updatePolygonAfterDrag(polygon: L.Polygon): void;
+          };
+        };
+      }
+    ).polygonMutationManager.interactionManager;
+
+    interactionManager.updatePolygonAfterDrag(movingPolygon!);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('Layer 1')).toHaveLength(1);
+    expect(polydraw.getFeatureGroups()).toHaveLength(2);
+  });
 });

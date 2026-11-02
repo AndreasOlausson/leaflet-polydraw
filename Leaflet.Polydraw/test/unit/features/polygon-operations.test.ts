@@ -77,4 +77,39 @@ describe('Polygon Operations', () => {
     expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(0);
     expect(polydraw.getFeatureGroupsByLayer('Scenario Layer')).toHaveLength(1);
   });
+
+  it('can erase every draw layer without touching reference layers', async () => {
+    cleanup();
+    const harness = createPolydrawHarness({
+      tools: {
+        eraseScope: 'drawLayers',
+      },
+    });
+    polydraw = harness.polydraw;
+    cleanup = harness.cleanup;
+
+    await polydraw.addPredefinedPolygon(fixtures.triangle());
+    polydraw.createDrawLayer({ id: 'Work layer' });
+    await polydraw.addPredefinedPolygon(fixtures.octagon());
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), {
+      layer: { id: 'Reference layer', role: 'reference', interaction: 'readonly' },
+    });
+
+    (polydraw as unknown as { _handleEraseClick: () => void })._handleEraseClick();
+
+    expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(0);
+    expect(polydraw.getFeatureGroupsByLayer('Work layer')).toHaveLength(0);
+    expect(polydraw.getFeatureGroupsByLayer('Reference layer')).toHaveLength(1);
+    expect(polydraw.getAllLayers().map((layer) => layer.id)).toEqual([
+      'default',
+      'Work layer',
+      'Reference layer',
+    ]);
+
+    await polydraw.undo();
+
+    expect(polydraw.getFeatureGroupsByLayer('default')).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('Work layer')).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('Reference layer')).toHaveLength(1);
+  });
 });

@@ -165,16 +165,16 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0;
-  max-width: 132px;
+  max-width: 102px;
 }
 
 @supports (display: grid) {
   .marker-menu-content {
     display: grid;
-    grid-template-columns: repeat(3, minmax(22px, 1fr));
+    grid-template-columns: repeat(3, 30px);
     justify-items: center;
     align-items: center;
-    column-gap: 8px;
+    column-gap: 6px;
     row-gap: 6px;
   }
 }
@@ -189,84 +189,170 @@ body {
 
 @supports (display: grid) {
   .menu-popup.leaflet-v1 .marker-menu-content {
-    grid-template-columns: repeat(3, minmax(32px, 1fr));
-    margin-right: 12px;
+    grid-template-columns: repeat(3, 30px);
+    margin-right: 0;
   }
 }
 
 .marker-menu-content .marker-menu-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
   background-repeat: no-repeat;
   background-size: 22px, 22px;
   background-position: center;
   padding: 4px;
-  border: 1px solid #fff;
-  margin: 4px;
+  border: 1px solid #d8dee7;
+  margin: 0;
   border-radius: 4px;
+  background-color: #eef2f7;
   cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.marker-menu-content .marker-menu-button::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  background-image: var(--polydraw-action-icon, none);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: brightness(0);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.marker-menu-content .marker-menu-button:hover {
+  border-color: #94a3b8;
+  background-color: #e2e8f0;
+}
+
+.marker-menu-content .marker-menu-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 32%);
 }
 
 .marker-menu-content .marker-menu-button.simplify {
-  background-image: url('../icons/icon-simplify2.svg');
+  --polydraw-action-icon: url('../icons/icon-simplify2.svg');
 }
 
 .marker-menu-content .marker-menu-button.double-elbows {
-  background-image: url('../icons/icon-double-elbows.svg');
+  --polydraw-action-icon: url('../icons/icon-double-elbows.svg');
 }
 
 .marker-menu-content .marker-menu-button.bbox {
-  background-image: url('../icons/icon-bbox.svg');
+  --polydraw-action-icon: url('../icons/icon-bbox.svg');
 }
 
 .marker-menu-content .marker-menu-button.bezier {
-  background-image: url('../icons/icon-bezier.svg');
+  --polydraw-action-icon: url('../icons/icon-bezier.svg');
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .marker-menu-content .marker-menu-button.transform-scale {
-  background-image: url('../icons/icon-resize.svg');
+  --polydraw-action-icon: url('../icons/icon-resize.svg');
 }
 
 .marker-menu-content .marker-menu-button.transform-rotate {
-  background-image: url('../icons/icon-rotate.svg');
+  --polydraw-action-icon: url('../icons/icon-rotate.svg');
 }
 
 .marker-menu-content .marker-menu-button.transform-donut {
-  background-image: url('../icons/icon-donut.svg');
+  --polydraw-action-icon: url('../icons/icon-donut.svg');
 }
 
 .marker-menu-content .marker-menu-button.polygon-color {
-  background-image: url('../icons/icon-color.svg');
+  --polydraw-action-icon: url('../icons/icon-color.svg');
+}
+
+.marker-menu-content .marker-menu-button.polygon-move-to-layer {
+  --polydraw-action-icon: url('../icons/icon-move-to-layer.svg');
 }
 
 .marker-menu-content .marker-menu-button.menu-action-default {
-  background-image: url("data:image/svg+xml,%3Csvg fill='%23ffffff' stroke='%23ffffff' xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 100 100'%3E%3Cpath d='M79.2 32.8c-.2-.7-1.1-.9-1.7-.4L67.4 42.5c-.8.8-2 .8-2.8 0l-7.1-7.1c-.8-.8-.8-2 0-2.8l10.2-10.2c.5-.5.3-1.4-.4-1.7-1.7-.4-3.5-.7-5.3-.7-10.6 0-19.1 9.2-17.9 20 .2 1.7.6 3.2 1.2 4.7L22 68.1c-2.7 2.7-2.7 7.2 0 9.9 1.4 1.4 3.2 2.1 5 2.1s3.6-.7 5-2.1l23.3-23.3c1.5.6 3.1 1 4.7 1.2C70.9 57.1 80 48.6 80 38c0-1.8-.3-3.6-.8-5.2z'/%3E%3C/svg%3E");
+  --polydraw-action-icon: url("data:image/svg+xml,%3Csvg fill='%23ffffff' stroke='%23ffffff' xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 100 100'%3E%3Cpath d='M79.2 32.8c-.2-.7-1.1-.9-1.7-.4L67.4 42.5c-.8.8-2 .8-2.8 0l-7.1-7.1c-.8-.8-.8-2 0-2.8l10.2-10.2c.5-.5.3-1.4-.4-1.7-1.7-.4-3.5-.7-5.3-.7-10.6 0-19.1 9.2-17.9 20 .2 1.7.6 3.2 1.2 4.7L22 68.1c-2.7 2.7-2.7 7.2 0 9.9 1.4 1.4 3.2 2.1 5 2.1s3.6-.7 5-2.1l23.3-23.3c1.5.6 3.1 1 4.7 1.2C70.9 57.1 80 48.6 80 38c0-1.8-.3-3.6-.8-5.2z'/%3E%3C/svg%3E");
 }
 
 .marker-menu-content .marker-menu-button.menu-action-custom,
 .marker-menu-content .marker-menu-button.menu-action-default {
   position: relative;
-  border-color: #ffffff;
-  background-color: rgba(6, 78, 59, 0.64);
-  box-shadow:
-    0 0 0 2px #064e3b,
-    0 2px 8px rgba(0, 0, 0, 0.26);
+  border-color: #99d5ca;
+  background-color: #e6fffa;
+  box-shadow: inset 0 -2px 0 #0f766e;
+}
+
+.marker-menu-content .marker-menu-button.menu-action-custom:hover,
+.marker-menu-content .marker-menu-button.menu-action-default:hover {
+  border-color: #5eead4;
+  background-color: #ccfbf1;
+}
+
+.marker-menu-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 20;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--polydraw-tooltip-bg, #645d5d);
+  color: var(--polydraw-tooltip-color, #ffffff);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -2px);
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+  transition-delay: 0s;
+}
+
+.marker-menu-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid var(--polydraw-tooltip-bg, #645d5d);
+  border-left: 5px solid transparent;
+  transform: translateX(-50%);
+}
+
+.marker-menu-button:hover > .marker-menu-tooltip,
+.marker-menu-button:focus-visible > .marker-menu-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+  transition-delay: var(--polydraw-tooltip-delay, 500ms);
+}
+
+.alter-marker-outer-wrapper[data-tooltip-enabled='false'] .marker-menu-tooltip {
+  display: none;
 }
 
 .marker-menu-content .marker-menu-button.menu-action-custom.make-triangle {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M12 4 21 20H3L12 4Z'/%3E%3C/svg%3E");
+  --polydraw-action-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='none' stroke='%23ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round' d='M12 4 21 20H3L12 4Z'/%3E%3C/svg%3E");
 }
 
 .marker-menu-content
   .marker-menu-button.toggle-visual-optimization.visual-optimization-state-visible {
-  background-image: url('../icons/icon-visual-optimization-show.svg');
+  --polydraw-action-icon: url('../icons/icon-visual-optimization-show.svg');
 }
 
 .marker-menu-content
   .marker-menu-button.toggle-visual-optimization.visual-optimization-state-hidden {
-  background-image: url('../icons/icon-visual-optimization-hide.svg');
+  --polydraw-action-icon: url('../icons/icon-visual-optimization-hide.svg');
 }
 
 .marker-menu-button {
@@ -312,31 +398,143 @@ body {
 
 .alter-marker-outer-wrapper,
 .info-marker-outer-wrapper {
+  overflow: visible;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  box-shadow: 0 10px 24px rgb(15 23 42 / 24%);
+}
+
+.info-marker-outer-wrapper {
   overflow: hidden;
-  background-color: #80be50;
-  border-radius: 12px;
-  box-shadow: 3px 4px 20px #00000080;
 }
 
 .alter-marker-wrapper,
 .info-marker-wrapper {
   min-height: 40px;
-  border: 2px solid transparent;
-  background-color: #80be50;
-  color: #fff;
+  border: 0;
+  background-color: #f8fafc;
+  color: #1f2937;
   padding: 0 6px;
-  text-align: center;
-  border-radius: 12px;
-  text-align: center;
+  border-radius: 8px;
   position: relative;
 }
 
+.info-marker-outer-wrapper,
+.info-marker-wrapper {
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.info-marker-wrapper {
+  box-sizing: border-box;
+  min-width: 220px;
+  min-height: 0;
+  padding: 10px 12px;
+  border-color: #f8fafc;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.info-marker-wrapper .content {
+  width: 100%;
+  margin-right: 0;
+  padding: 0;
+  display: block;
+}
+
+.info-marker-content {
+  width: 100%;
+  display: grid;
+  gap: 5px;
+}
+
+.info-marker-layer {
+  min-width: 0;
+  margin: -2px -2px 3px;
+  padding: 0 20px 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.info-marker-layer-color {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+}
+
+.info-marker-layer-heading {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.info-marker-layer-heading strong {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.info-marker-layer-heading span {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+.info-marker-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(62px, auto) minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+.info-marker-label {
+  color: #64748b;
+}
+
+.info-marker-value {
+  min-width: 0;
+  color: #1f2937;
+  font-weight: 650;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.info-marker-secondary-value {
+  display: block;
+  margin-top: 1px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.info-marker-metadata {
+  margin-top: 3px;
+  padding-top: 7px;
+  display: grid;
+  gap: 5px;
+  border-top: 1px solid #e2e8f0;
+}
+
 .alter-marker-outer-wrapper.polygon-color-mode,
-.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper {
+.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper,
+.alter-marker-outer-wrapper.polygon-layer-mode,
+.alter-marker-outer-wrapper.polygon-layer-mode .alter-marker-wrapper {
   background-color: #ffffff;
 }
 
-.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper {
+.alter-marker-outer-wrapper.polygon-color-mode .alter-marker-wrapper,
+.alter-marker-outer-wrapper.polygon-layer-mode .alter-marker-wrapper {
   border-color: #ffffff;
   color: #1f2937;
   padding: 0;
@@ -344,8 +542,9 @@ body {
 
 .content {
   width: auto;
-  min-height: 40px;
-  margin-right: 12px;
+  min-height: 0;
+  margin-right: 18px;
+  padding: 8px 4px;
   display: flex;
   align-items: center;
 }
@@ -356,14 +555,14 @@ body {
 
 .marker-menu-close {
   position: absolute;
-  top: 0;
-  right: 0;
+  top: 3px;
+  right: 3px;
   width: 24px;
   height: 24px;
   padding: 0;
   border: none;
   background: transparent;
-  color: #fff;
+  color: #334155;
   font-size: 18px;
   line-height: 1;
   display: flex;
@@ -375,15 +574,18 @@ body {
 }
 
 .marker-menu-close:focus {
-  outline: 2px solid #fff8;
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(37 99 235 / 24%);
+  border-radius: 3px;
 }
 
-.polygon-color-mode .marker-menu-close {
-  color: #50622b;
+.polygon-color-mode .marker-menu-close,
+.polygon-layer-mode .marker-menu-close {
+  color: #334155;
 }
 
-.polygon-color-mode .marker-menu-close:focus {
+.polygon-color-mode .marker-menu-close:focus,
+.polygon-layer-mode .marker-menu-close:focus {
   outline-color: rgba(80, 98, 43, 0.45);
 }
 
@@ -395,6 +597,7 @@ body {
   color: #1f2937;
 }
 
+.polydraw-color-map,
 .polygon-color-map {
   position: relative;
   width: 234px;
@@ -402,6 +605,7 @@ body {
   margin: 6px auto 7px;
 }
 
+.polydraw-color-swatch,
 .polygon-color-swatch {
   position: absolute;
   width: 18px;
@@ -412,6 +616,8 @@ body {
   cursor: pointer;
 }
 
+.polydraw-color-swatch:hover,
+.polydraw-color-swatch.selected,
 .polygon-color-swatch:hover,
 .polygon-color-swatch.selected {
   z-index: 2;
@@ -426,8 +632,7 @@ body {
   padding-right: 24px;
 }
 
-.polygon-color-apply,
-.polygon-color-cancel {
+.polydraw-dialog-button {
   height: 28px;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
@@ -461,7 +666,7 @@ body {
   stroke-linejoin: round;
 }
 
-.polygon-color-apply {
+.polydraw-dialog-button-primary {
   background: #2563eb;
   border-color: #1d4ed8;
   color: #ffffff;
@@ -481,13 +686,15 @@ body {
   align-items: center;
 }
 
+.polydraw-color-input,
 .polygon-color-custom-row input[type='color'] {
   width: 34px;
   height: 28px;
   padding: 0;
   border: 1px solid #cbd5e1;
   border-radius: 4px;
-  background: transparent;
+  background: #ffffff;
+  color-scheme: light;
 }
 
 .polygon-color-custom-row input[type='range'] {
@@ -505,6 +712,140 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 6px;
   margin-top: 8px;
+}
+
+.polygon-layer-picker {
+  width: 248px;
+  padding: 6px 8px 8px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+.polygon-layer-toolbar {
+  min-height: 28px;
+  padding-right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.polygon-layer-toolbar strong {
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.polygon-layer-options {
+  max-height: 180px;
+  margin-top: 4px;
+  overflow-y: auto;
+  border: 1px solid #dbe3ec;
+  border-radius: 4px;
+  background: #ffffff;
+}
+
+.polygon-layer-option {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.polygon-layer-option:last-child {
+  border-bottom: 0;
+}
+
+.polygon-layer-option:hover {
+  background: #f3f7ff;
+}
+
+.polygon-layer-option.selected {
+  background: #e8f0ff;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.polygon-layer-option-color {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+}
+
+.polygon-layer-option-label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.polygon-layer-option-state {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.polygon-layer-option-new {
+  font-weight: 650;
+}
+
+.polygon-layer-new-name {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.polygon-layer-new-name[hidden] {
+  display: none;
+}
+
+.polygon-layer-new-name > span {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.polygon-layer-new-name input[type='text'] {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  color-scheme: light;
+  font-size: 13px;
+}
+
+.polygon-layer-new-name input[type='text']:focus {
+  border-color: #2563eb;
+  outline: 2px solid rgb(37 99 235 / 20%);
+  outline-offset: 0;
+}
+
+.polygon-layer-actions {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.polygon-layer-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .polydraw-transform-cancel,
@@ -689,6 +1030,10 @@ body {
   color: white !important;
 }
 
+.info-popup .leaflet-popup-close-button {
+  color: #50622b !important;
+}
+
 .leaflet-container .leaflet-control-attribution {
   display: flex;
   gap: 4px;
@@ -701,6 +1046,26 @@ body {
   pointer-events: auto !important;
 }
 
+.leaflet-control.leaflet-bar:not(.polydraw-layer-panel) {
+  border-radius: 5px;
+}
+
+.leaflet-control.leaflet-bar:not(.polydraw-layer-panel) > .icon-activate {
+  border-radius: 5px;
+}
+
+.leaflet-control.leaflet-bar:not(.polydraw-layer-panel) > .icon-activate.active {
+  border-radius: 5px 5px 0 0;
+}
+
+.leaflet-control.leaflet-bar:not(.polydraw-layer-panel) > .sub-buttons a {
+  border-radius: 0;
+}
+
+.leaflet-control.leaflet-bar:not(.polydraw-layer-panel) > .sub-buttons a:last-child {
+  border-radius: 0 0 5px 5px;
+}
+
 .leaflet-control.leaflet-bar a {
   pointer-events: auto !important;
   touch-action: manipulation;
@@ -709,6 +1074,10 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+.polydraw-toolbar a.polydraw-toolbar-button-disabled > svg {
+  opacity: 0.3;
 }
 
 /* Custom tooltips for Polydraw toolbar buttons */
@@ -825,13 +1194,13 @@ body {
 
 /* Layer panel styles */
 .polydraw-layer-panel {
-  width: 206px;
-  min-width: 206px;
-  max-width: 206px;
+  width: 226px;
+  min-width: 226px;
+  max-width: 226px;
   z-index: 900 !important;
   background: #fff;
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   padding: 0;
   font-family:
@@ -843,8 +1212,17 @@ body {
   overflow: hidden;
 }
 
-.leaflet-top.leaflet-right .polydraw-layer-panel.leaflet-control {
+.leaflet-top.leaflet-right .polydraw-layer-panel.leaflet-control,
+.leaflet-top.leaflet-right .polydraw-toolbar.leaflet-control {
   clear: none;
+}
+
+.leaflet-top.leaflet-right .polydraw-toolbar.leaflet-control {
+  z-index: 2100 !important;
+  overflow: visible;
+}
+
+.leaflet-top.leaflet-right .polydraw-layer-panel.leaflet-control {
   margin-right: 4px;
 }
 
@@ -930,6 +1308,14 @@ body {
   display: none;
 }
 
+.polydraw-layer-panel-body {
+  max-height: min(420px, var(--polydraw-layer-panel-available-height, calc(100vh - 80px)));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
 .polydraw-layer-row {
   display: flex;
   align-items: center;
@@ -942,6 +1328,84 @@ body {
   transition: background 0.2s;
   user-select: none;
   outline: none;
+}
+
+.polydraw-layer-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 6px 8px 4px;
+  background: #f7f7f7;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.polydraw-layer-section-title {
+  color: #333;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.polydraw-layer-section-detail {
+  min-width: 0;
+  overflow: hidden;
+  color: #666;
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.polydraw-layer-section-delete {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  margin: -4px -4px -2px auto;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+}
+
+.polydraw-layer-section-delete:hover {
+  background: #e7e7e7;
+}
+
+.polydraw-layer-section-delete:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
+}
+
+.polydraw-layer-section-delete svg {
+  width: 16px;
+  height: 16px;
+}
+
+.polydraw-layer-add-draw {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 8px;
+  background: #fff;
+  border: 0;
+  border-bottom: 1px solid #e0e0e0;
+  color: #333;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.polydraw-layer-add-draw:hover {
+  background: #f3f7ff;
+}
+
+.polydraw-layer-add-draw:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(33, 150, 243, 0.35);
 }
 
 .polydraw-layer-row:hover {
@@ -1015,6 +1479,7 @@ body {
 .polydraw-layer-color-indicator {
   width: 12px;
   height: 12px;
+  padding: 0;
   border-radius: 50%;
   border: 1px solid #ccc;
   flex-shrink: 0;
@@ -1049,6 +1514,16 @@ body {
   height: 24px;
 }
 
+.polydraw-layer-edit {
+  width: 22px;
+  color: #475569;
+}
+
+.polydraw-layer-edit svg {
+  width: 15px;
+  height: 15px;
+}
+
 .polydraw-layer-visibility {
   color: #333;
 }
@@ -1065,6 +1540,280 @@ body {
 .polydraw-layer-delete {
   border: none !important;
   box-shadow: none !important;
+}
+
+.polydraw-layer-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.38);
+}
+
+.polydraw-layer-dialog {
+  box-sizing: border-box;
+  width: min(280px, calc(100vw - 32px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  color: #1f2937;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.polydraw-layer-dialog-header {
+  height: 38px;
+  padding: 0 8px 0 12px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.polydraw-layer-dialog-header h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.polydraw-layer-dialog-back {
+  width: 28px;
+  height: 30px;
+  margin-left: -6px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #334155;
+  cursor: pointer;
+}
+
+.polydraw-layer-dialog-back[hidden] {
+  display: none;
+}
+
+.polydraw-layer-dialog-back svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.polydraw-layer-dialog-close {
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #50622b;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.polydraw-layer-dialog-field,
+.polydraw-layer-dialog-colors {
+  margin: 0;
+  padding: 12px;
+  display: grid;
+  gap: 7px;
+  border: 0;
+}
+
+.polydraw-layer-dialog-field {
+  padding-bottom: 5px;
+}
+
+.polydraw-layer-dialog-colors {
+  padding-top: 5px;
+}
+
+.polydraw-layer-dialog-field > span,
+.polydraw-layer-dialog-colors legend {
+  padding: 0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.polydraw-layer-dialog-field input[type='text'] {
+  appearance: none;
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #1f2937;
+  color-scheme: light;
+  font-size: 13px;
+}
+
+.polydraw-layer-dialog .polydraw-color-map {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.polydraw-layer-dialog-custom-color {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.polydraw-layer-dialog-custom-color input[type='color'] {
+  cursor: pointer;
+}
+
+.polydraw-layer-dialog-color-value {
+  color: #64748b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+}
+
+.polydraw-layer-dialog-commands {
+  padding: 0 12px 8px;
+}
+
+.polydraw-layer-dialog-commands:empty {
+  display: none;
+}
+
+.polydraw-layer-dialog-merge {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  background: #eef2f7;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.polydraw-layer-dialog-merge:hover {
+  border-color: #94a3b8;
+  background: #e2e8f0;
+}
+
+.polydraw-layer-dialog-merge svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.polydraw-layer-merge-panel {
+  padding: 12px;
+}
+
+.polydraw-layer-merge-panel[hidden],
+.polydraw-layer-dialog-actions[hidden] {
+  display: none;
+}
+
+.polydraw-layer-merge-options {
+  max-height: 210px;
+  margin-top: 0;
+}
+
+.polydraw-layer-merge-style-choice {
+  margin-top: 10px;
+  padding: 8px 9px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid #dbe3ec;
+  border-radius: 4px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+}
+
+.polydraw-layer-merge-style-choice input {
+  appearance: none;
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+  display: grid;
+  place-content: center;
+  border: 1px solid #94a3b8;
+  border-radius: 3px;
+  background: #fff;
+  color-scheme: light;
+}
+
+.polydraw-layer-merge-style-choice input::before {
+  width: 4px;
+  height: 8px;
+  content: '';
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  opacity: 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+
+.polydraw-layer-merge-style-choice input:checked {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.polydraw-layer-merge-style-choice input:checked::before {
+  opacity: 1;
+}
+
+.polydraw-layer-merge-style-choice input:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
+.polydraw-layer-merge-style-choice span {
+  display: grid;
+  gap: 2px;
+}
+
+.polydraw-layer-merge-style-choice strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.polydraw-layer-merge-style-choice small {
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.polydraw-layer-dialog-actions {
+  padding: 5px 12px 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.polydraw-layer-dialog-cancel,
+.polydraw-layer-dialog-apply {
+  height: 30px;
+  font-size: 12px;
+}
+
+.polydraw-layer-merge-apply:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .polydraw-layer-btn:focus-visible {
@@ -1088,9 +1837,9 @@ body {
 
 @media (max-width: 768px) {
   .polydraw-layer-panel {
-    width: 196px;
-    min-width: 196px;
-    max-width: 196px;
+    width: 216px;
+    min-width: 216px;
+    max-width: 216px;
   }
 
   .polydraw-layer-row {

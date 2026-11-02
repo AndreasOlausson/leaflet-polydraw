@@ -25,6 +25,7 @@ import {
 } from './event-manager';
 import { isTestEnvironment } from '../utils';
 import { cloneMetadataValue } from '../utils/metadata-clone.util';
+import { createPolygonColorTheme } from '../utils/color-style.util';
 
 // Import the specialized managers
 import { PolygonGeometryManager, GeometryOperationResult } from './polygon-geometry-manager';
@@ -524,6 +525,50 @@ export class PolygonMutationManager {
     };
   }
 
+  async moveFeatureGroupToLayerWithMerge(
+    featureGroup: L.FeatureGroup,
+    targetLayerId: string,
+  ): Promise<MutationResult> {
+    if (!this.layerManager?.getLayer(targetLayerId)) {
+      return { success: false, error: `Layer "${targetLayerId}" does not exist` };
+    }
+
+    let polygon: Feature<Polygon | MultiPolygon>;
+    try {
+      polygon = this.getCompletePolygonFromFeatureGroup(featureGroup);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to resolve polygon geometry',
+      };
+    }
+
+    const { level, original } = this.getOptimizationMetadataFromFeatureGroup(featureGroup);
+    const sourceMetadata = this.getFeatureMetadataStateFromFeatureGroup(featureGroup);
+    const storedMetadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata;
+    const lastModified =
+      storedMetadata?.lastModified instanceof Date &&
+      !Number.isNaN(storedMetadata.lastModified.getTime())
+        ? storedMetadata.lastModified.toISOString()
+        : undefined;
+
+    this.removeFeatureGroupInternal(featureGroup);
+    return this.addPolygon(polygon, {
+      simplify: false,
+      noMerge: false,
+      visualOptimizationLevel: level,
+      originalOptimizationLevel: original,
+      targetLayerId,
+      featureId: sourceMetadata.featureId,
+      featureMetadata: sourceMetadata.metadata,
+      sourceFeatureIds: sourceMetadata.sourceFeatureIds,
+      featureInteractionOverride: sourceMetadata.interactionOverride,
+      featureStyleOverrides: sourceMetadata.styleOverrides,
+      featureCreatedAt: sourceMetadata.createdAt,
+      featureLastModified: lastModified,
+    });
+  }
+
   private async addPolygonWithMergeHandling(
     latlngs: Feature<Polygon | MultiPolygon>,
     options: AddPolygonOptions,
@@ -872,13 +917,26 @@ export class PolygonMutationManager {
                 });
               } else {
                 // Add red polyline overlay for hole rings
-                const holePolyline = leafletAdapter.createPolyline(latLngLiterals as L.LatLng[], {
-                  color: this.config.styles.hole.color,
-                  weight: this.config.styles.hole.weight || 2,
-                  opacity: this.config.styles.hole.opacity || 1,
-                  fillColor: this.config.styles.hole.fillColor,
-                  fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
-                });
+                const firstLatLng = latLngLiterals[0];
+                const lastLatLng = latLngLiterals[latLngLiterals.length - 1];
+                const holePolylineLatLngs = [...latLngLiterals];
+                if (
+                  firstLatLng &&
+                  lastLatLng &&
+                  (firstLatLng.lat !== lastLatLng.lat || firstLatLng.lng !== lastLatLng.lng)
+                ) {
+                  holePolylineLatLngs.push(firstLatLng);
+                }
+                const holePolyline = leafletAdapter.createPolyline(
+                  holePolylineLatLngs as L.LatLng[],
+                  {
+                    color: this.config.styles.hole.color,
+                    weight: this.config.styles.hole.weight || 2,
+                    opacity: this.config.styles.hole.opacity || 1,
+                    fillColor: this.config.styles.hole.fillColor,
+                    fillOpacity: this.config.styles.hole.fillOpacity || 0.5,
+                  },
+                );
                 (
                   holePolyline as L.Polyline & { _polydrawAuxiliaryLayer?: true }
                 )._polydrawAuxiliaryLayer = true;
@@ -1309,10 +1367,14 @@ export class PolygonMutationManager {
     // console.log('PolygonMutationManager getPolygon');
     const polygon = L.GeoJSON.geometryToLayer(latlngs) as L.Polygon & Record<string, unknown>;
 
-    // Force the polygon to always use regular polygon styling (green)
-    // This ensures that polygons drawn inside holes are styled correctly
-    const effectiveColor = layerColor || this.config.styles.polygon.color;
-    const effectiveFillColor = this.config.styles.polygon.fillColor;
+    // Layer colors use the same fill/stroke theme as the polygon color tool.
+    // The default layer keeps the configured polygon fill unless explicitly overridden.
+    const layerTheme =
+      layerColor && layerColor !== this.config.styles.polygon.color
+        ? createPolygonColorTheme(layerColor)
+        : undefined;
+    const effectiveColor = layerTheme?.color ?? this.config.styles.polygon.color;
+    const effectiveFillColor = layerTheme?.fillColor ?? this.config.styles.polygon.fillColor;
     const { styleOverrides } = options;
     const polygonStyle = {
       ...this.config.styles.polygon,

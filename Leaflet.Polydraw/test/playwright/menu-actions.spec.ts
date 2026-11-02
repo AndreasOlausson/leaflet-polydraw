@@ -9,6 +9,56 @@ test.describe('Polygon menu actions', () => {
     await demo.clearPolygons();
   });
 
+  test('uses the compact light action-panel theme', async ({ page }) => {
+    const demo = new DemoFactory(page);
+    await demo.addPredefined([latlngPolys.diamond]);
+    await demo.openMenu();
+
+    const theme = await page.locator('.alter-marker-outer-wrapper').evaluate((outer) => {
+      const wrapper = outer.querySelector<HTMLElement>('.alter-marker-wrapper')!;
+      const close = outer.querySelector<HTMLElement>('.marker-menu-close')!;
+      const button = outer.querySelector<HTMLElement>('.marker-menu-button')!;
+      const outerStyle = getComputedStyle(outer);
+      const wrapperStyle = getComputedStyle(wrapper);
+      const closeStyle = getComputedStyle(close);
+      const buttonStyle = getComputedStyle(button);
+      const iconStyle = getComputedStyle(button, '::before');
+      return {
+        outerBackground: outerStyle.backgroundColor,
+        wrapperBackground: wrapperStyle.backgroundColor,
+        closeColor: closeStyle.color,
+        buttonBackground: buttonStyle.backgroundColor,
+        hasButtonIcon: iconStyle.backgroundImage !== 'none',
+        iconOpacity: iconStyle.opacity,
+        hasNativeTitle: button.hasAttribute('title'),
+        tooltipText: button.querySelector('.marker-menu-tooltip')?.textContent,
+        borderRadius: outerStyle.borderRadius,
+      };
+    });
+
+    expect(theme).toEqual({
+      outerBackground: 'rgb(248, 250, 252)',
+      wrapperBackground: 'rgb(248, 250, 252)',
+      closeColor: 'rgb(51, 65, 85)',
+      buttonBackground: 'rgb(238, 242, 247)',
+      hasButtonIcon: true,
+      iconOpacity: '0.72',
+      hasNativeTitle: false,
+      tooltipText: 'Simplify',
+      borderRadius: '8px',
+    });
+
+    const button = page.locator('.marker-menu-button').first();
+    const tooltip = button.locator('.marker-menu-tooltip');
+    await button.hover();
+    await expect(tooltip).toHaveCSS('opacity', '1');
+    const buttonBox = await button.boundingBox();
+    const tooltipBox = await tooltip.boundingBox();
+    expect(buttonBox).not.toBeNull();
+    expect(tooltipBox).not.toBeNull();
+    expect(tooltipBox!.y).toBeGreaterThan(buttonBox!.y + buttonBox!.height);
+  });
+
   test('bbox action normalizes polygon to its bounds', async ({ page }) => {
     const demo = new DemoFactory(page);
     await demo.addPredefined([latlngPolys.diamond]);

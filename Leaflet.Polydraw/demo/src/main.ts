@@ -73,6 +73,25 @@ type AdapterMarker = ReturnType<typeof leafletAdapter.createMarker>;
 const polydrawConfig = {
   polygonTools: {
     menuActions: demoMenuActions,
+    moveToLayer: {
+      enabled: true,
+    },
+  },
+  tools: {
+    eraseScope: 'drawLayers',
+  },
+  layerPanel: {
+    enabled: true,
+    merge: {
+      allowReferenceSources: true,
+    },
+  },
+  markers: {
+    markerInfoIcon: {
+      metadata: {
+        fields: ['name', 'category'],
+      },
+    },
   },
 };
 

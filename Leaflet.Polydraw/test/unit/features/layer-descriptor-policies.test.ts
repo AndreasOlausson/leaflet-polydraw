@@ -10,7 +10,9 @@ describe('Layer Descriptor Policies', () => {
 
   beforeEach(() => {
     fixtures = MockFactory.createPredefinedPolygons();
-    const harness = createPolydrawHarness();
+    const harness = createPolydrawHarness({
+      layerPanel: { enabled: true, initialState: 'expanded' },
+    });
     polydraw = harness.polydraw;
     cleanup = harness.cleanup;
   });
@@ -30,6 +32,7 @@ describe('Layer Descriptor Policies', () => {
     const layerManager = polydraw.getLayerManager();
     const hazardLayer = layerManager.getLayer('Hazard');
     expect(hazardLayer).toBeDefined();
+    expect(hazardLayer?.role).toBe('reference');
     expect(hazardLayer?.interaction).toBe('static');
     expect(hazardLayer?.panel).toBe('hidden');
 
@@ -44,7 +47,8 @@ describe('Layer Descriptor Policies', () => {
     expect(markers).toHaveLength(0);
 
     const panelElement = document.querySelector('[data-polydraw="layer-panel"]');
-    expect(panelElement).toBeNull();
+    expect(panelElement).toBeTruthy();
+    expect(panelElement?.querySelector('[data-layer-id="Hazard"]')).toBeNull();
   });
 
   it('keeps readonly layer polygons non-editable and keeps layer visible in panel', async () => {
@@ -58,6 +62,7 @@ describe('Layer Descriptor Policies', () => {
 
     const layerManager = polydraw.getLayerManager();
     const readonlyLayer = layerManager.getLayer('Readonly Layer');
+    expect(readonlyLayer?.role).toBe('reference');
     expect(readonlyLayer?.interaction).toBe('readonly');
     expect(readonlyLayer?.panel).toBe('visible');
 

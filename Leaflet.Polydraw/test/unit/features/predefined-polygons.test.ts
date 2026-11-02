@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as L from 'leaflet';
+import { defaultConfig } from '../../../src/config';
 import { MockFactory } from '../mocks/factory';
 import { createPolydrawHarness } from '../helpers/polydraw-harness';
 
@@ -45,6 +46,25 @@ describe('Predefined Polygons', () => {
         ? (latLngs as L.LatLng[][][])[0]
         : (latLngs as L.LatLng[][]);
     expect(rings).toHaveLength(2);
+  });
+
+  it('closes the styled helper line around every hole', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole());
+
+    const featureGroup = polydraw.getFeatureGroups()[0];
+    const holeHelper = featureGroup.getLayers().find((layer) => {
+      return (
+        layer instanceof L.Polyline &&
+        !(layer instanceof L.Polygon) &&
+        (layer as L.Polyline & { _polydrawAuxiliaryLayer?: true })._polydrawAuxiliaryLayer === true
+      );
+    }) as L.Polyline | undefined;
+
+    expect(holeHelper).toBeDefined();
+    const points = holeHelper!.getLatLngs() as L.LatLng[];
+    expect(points.length).toBeGreaterThanOrEqual(4);
+    expect(points[points.length - 1].equals(points[0])).toBe(true);
+    expect(holeHelper!.options.color).toBe(defaultConfig.styles.hole.color);
   });
 
   it('stores visual optimization metadata on the polygon', async () => {

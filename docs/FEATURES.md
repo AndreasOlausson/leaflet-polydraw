@@ -94,7 +94,7 @@ Press Esc to abort the clone. If history capture is enabled (`config.history.cap
 Step backward or forward through edits:
 
 - Undo/redo polygon drawing, subtraction, vertex edits, and transforms
-- Undo/redo polygon menu operations (simplify, bbox, double elbows, bezier, donut, custom menu actions)
+- Undo/redo polygon menu operations (simplify, bbox, add vertices, bezier, donut, custom menu actions)
 - Accessible via toolbar buttons or keyboard shortcuts
 - History is capped to keep memory under control (`config.history.maxSize`)
 - You can opt out of specific action types via `config.history.capture` (snapshots still store full state)
@@ -147,12 +147,13 @@ Click and drag any vertex (elbow) to reshape your polygons. To add a new vertex,
 Access operations through the menu marker:
 
 - **Simplify**: Reduce polygon complexity using Douglas-Peucker algorithm
-- **Double Elbows**: Add intermediate vertices for higher resolution
+- **Add Vertices** (`doubleElbows`): Add intermediate vertices for higher resolution
 - **Bounding Box**: Convert to rectangular bounds
 - **Bezier Curves**: Apply smooth curve interpolation (alpha)
 - **Scale**: Use the transform handles to resize the polygon without redrawing it.
 - **Rotate**: Use the transform handles to rotate the polygon without redrawing it.
 - **Donut**: Convert a simple polygon into an inward hole or outward donut-style geometry, with configurable direction.
+- **Move to Layer**: Move the polygon to an existing draw layer or create a new draw layer for it in one undoable action.
 - **Custom Actions**: Add application-owned menu buttons through `polygonTools.menuActions`. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md).
 - **Visual Optimization Toggle**: Quickly show or hide the pruned “elbow” markers on predefined polygons, so you can inspect every
   vertex or keep the view uncluttered. (see [API.md](API.md))
@@ -161,14 +162,30 @@ Access operations through the menu marker:
 
 Organize polygons into named layers for larger applications and imported datasets:
 
-- Set an active layer for new drawing/import operations
+The layer APIs are always available. The built-in panel and Move to Layer polygon action are opt-in, preserving the existing single-layer interface unless an application enables the new workflow.
+
+- Create multiple editable draw layers and select the active target for new polygons
+- Keep imported or contextual geometry in separate reference layers, which may still be editable
 - Toggle layer visibility and reorder layers from the layer panel
+- Rename layers and change their colors from the layer settings dialog
+- Merge one complete draw layer into another from the layer settings dialog
+- Erase draw-layer polygons without removing reference geometry
+- Remove all reference layers as one undoable panel action
+- Enable the optional panel in expanded or collapsed state
 - Apply layer colors to polygons while still allowing per-feature style overrides
 - Mark layers as editable, readonly, or static
 - Attach metadata to layers and individual feature groups
-- Move existing feature groups between layers through the public API
+- Move polygons between draw layers from the polygon action menu, merging target-layer overlaps when `mergePolygons` is enabled, or move feature groups through the public API
+- Merge complete draw layers through `mergeLayerInto(sourceLayerId, targetLayerId)` as one undoable operation
+- Optionally allow complete reference layers as merge sources with `layerPanel.merge.allowReferenceSources`; merge targets remain draw layers
+- Choose per merge whether individual polygon styles are preserved or replaced with the target layer style
+- Keep automatic merges isolated within each layer
 
 Layer APIs are useful for GIS-style workflows where imported polygons, user-drawn polygons, and reference geometries need different visibility and interaction policies.
+
+Whole-layer merge is transactional: if any polygon cannot be moved, Polydraw restores the complete pre-merge state without adding a partial operation to history. When only one valid destination exists, it is selected automatically in the merge dialog.
+
+See [LAYERS.md](LAYERS.md) for the layer model, configuration, panel behavior, and complete API examples.
 
 ## Custom Polygon Menu Actions
 

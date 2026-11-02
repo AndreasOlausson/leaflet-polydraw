@@ -48,6 +48,13 @@ const config = {
       addMidPointMarkers: true,
     },
   },
+  layerPanel: {
+    enabled: false,
+    initialState: "expanded",
+    merge: {
+      allowReferenceSources: false,
+    },
+  },
   history: {
     ...defaultConfig.history,
     maxSize: 50,
@@ -82,6 +89,28 @@ const polydraw = L.control.polydraw({
 - **No Runtime Errors**: All properties are guaranteed to exist
 - **Better IDE Support**: Full autocomplete and validation
 
+## Enable Layer Workflows
+
+Multiple layers are available through the public API without changing the existing interface. The built-in panel and the polygon action for moving features between layers are disabled by default and can be enabled together:
+
+```typescript
+const polydraw = L.control.polydraw({
+  config: {
+    layerPanel: {
+      enabled: true,
+      initialState: "expanded",
+    },
+    polygonTools: {
+      moveToLayer: {
+        enabled: true,
+      },
+    },
+  },
+}).addTo(map);
+```
+
+This opt-in keeps the standard single-layer UI unchanged for applications upgrading from 2.0. See [LAYERS.md](LAYERS.md) for layer roles, reference geometry, and merge workflows.
+
 ## Configuration Options
 
 | Key                                                                | Type    | Default                           | Description                                                                                                                                              |
@@ -92,7 +121,7 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;draw                                                   | boolean | `true`                            | Enable draw mode button                                                                                                                                  |
 | &nbsp;&nbsp;subtract                                               | boolean | `true`                            | Enable subtract mode button                                                                                                                              |
 | &nbsp;&nbsp;erase                                              | boolean | `true`                            | Enable erase button                                                                                                                                      |
-| &nbsp;&nbsp;eraseScope                                         | `"all"` / `"defaultLayer"` | `"all"`             | Controls whether the erase button removes all polygons or only polygons assigned to the default layer                                                     |
+| &nbsp;&nbsp;eraseScope                                         | `"all"` / `"drawLayers"` / `"defaultLayer"` | `"all"`             | Controls whether erase removes every polygon, polygons in draw-role layers, or only polygons assigned to the default layer                                |
 | &nbsp;&nbsp;p2p                                                    | boolean | `true`                            | Enable point-to-point drawing mode                                                                                                                       |
 | &nbsp;&nbsp;p2pSubtract                                            | boolean | `true`                            | Enable point-to-point subtract mode                                                                                                                      |
 | &nbsp;&nbsp;clone                                          | boolean | `false`                           | Enable clone mode button for drag-duplicating polygons                                                                                                   |
@@ -139,6 +168,13 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;usePerimeterMinValue                       | boolean | `false`                           | Use minimum value for small perimeters                                                                                                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;areaLabel                                  | string  | `"Area"`                          | Label for area display                                                                                                                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;perimeterLabel                             | string  | `"Perimeter"`                     | Label for perimeter display                                                                                                                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;showLayer                                  | boolean | `true`                            | Display the owning layer name, role, and interaction policy                                                                                              |
+| &nbsp;&nbsp;&nbsp;&nbsp;showGeometry                               | boolean | `true`                            | Display vertex, hole, and multipolygon-part counts                                                                                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;holeAreaLabel                              | string  | `"holes"`                         | Label shown beside excluded hole area                                                                                                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;verticesLabel                              | string  | `"Vertices"`                      | Label for the vertex count                                                                                                                               |
+| &nbsp;&nbsp;&nbsp;&nbsp;holesLabel                                 | string  | `"Holes"`                         | Label for the hole count                                                                                                                                 |
+| &nbsp;&nbsp;&nbsp;&nbsp;partsLabel                                 | string  | `"Parts"`                         | Label for the multipolygon part count                                                                                                                    |
+| &nbsp;&nbsp;&nbsp;&nbsp;metadata.fields                            | array   | `[]`                              | Feature metadata keys to display; only string, finite number, and boolean values are rendered                                                            |
 | &nbsp;&nbsp;&nbsp;&nbsp;**values**                                 | object  |                                   | Default values configuration                                                                                                                             |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**min**                        | object  |                                   | Minimum value settings                                                                                                                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;metric             | string  | `"50"`                            | Minimum metric value                                                                                                                                     |
@@ -245,10 +281,12 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;&nbsp;&nbsp;deletePolygon                              | boolean | `true`                            | Save history when deleting polygons                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;batch                                      | boolean | `true`                            | Save history for grouped/batched operations                                                                                                               |
 | &nbsp;&nbsp;&nbsp;&nbsp;layerDelete                                | boolean | `true`                            | Save history when deleting layers                                                                                                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;layerUpdate                                | boolean | `true`                            | Save history when changing a layer name or color                                                                                                         |
+| &nbsp;&nbsp;&nbsp;&nbsp;layerMove                                  | boolean | `true`                            | Save history when moving a polygon or merging a complete layer into another draw layer                                                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;layerReorder                               | boolean | `true`                            | Save history when reordering layers                                                                                                                      |
 | &nbsp;&nbsp;&nbsp;&nbsp;**polygonActions**                         | object  |                                   | History toggles for polygon menu actions                                                                                                                 |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;simplify                        | boolean | `true`                            | Save history for simplify                                                                                                                                |
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doubleElbows                    | boolean | `true`                            | Save history for double elbows                                                                                                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;doubleElbows                    | boolean | `true`                            | Save history for the Add vertices action                                                                                                                 |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bbox                            | boolean | `true`                            | Save history for bounding box                                                                                                                            |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;bezier                          | boolean | `true`                            | Save history for bezier                                                                                                                                    |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;scale                           | boolean | `true`                            | Save history for scale                                                                                                                                    |
@@ -261,9 +299,9 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;**simplify**                                           | object  |                                   | Simplify operation configuration                                                                                                                         |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable simplify operation                                                                                                                                |
 | &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                            | Process holes during simplify                                                                                                                            |
-| &nbsp;&nbsp;**doubleElbows**                                       | object  |                                   | Double elbows operation configuration                                                                                                                    |
-| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable double elbows operation                                                                                                                           |
-| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                            | Process holes during double elbows                                                                                                                       |
+| &nbsp;&nbsp;**doubleElbows**                                       | object  |                                   | Add-vertices operation configuration (internal key retained for compatibility)                                                                           |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable the Add vertices operation                                                                                                                        |
+| &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                            | Add intermediate vertices to hole rings                                                                                                                  |
 | &nbsp;&nbsp;**bbox**                                               | object  |                                   | Bounding box operation configuration                                                                                                                     |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable bounding box operation                                                                                                                            |
 | &nbsp;&nbsp;&nbsp;&nbsp;processHoles                               | boolean | `true`                            | Process holes during bounding box                                                                                                                        |
@@ -276,12 +314,19 @@ const polydraw = L.control.polydraw({
 | &nbsp;&nbsp;**donut**                                              | object  |                                   | Donut operation configuration                                                                                                                            |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable donut operation                                                                                                                                   |
 | &nbsp;&nbsp;&nbsp;&nbsp;direction                                  | string  | `"both"`                          | Donut direction: `"inward"` or `"both"`                                                                                                                  |
+| &nbsp;&nbsp;**moveToLayer**                                       | object  |                                   | Move-to-layer action configuration                                                                                                                       |
+| &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `false`                           | Allow polygons to be moved to an existing or newly created draw layer from the polygon menu                                                             |
 | &nbsp;&nbsp;**visualOptimizationToggle**                           | object  |                                   | Visual optimization toggle in marker menu                                                                                                                |
 | &nbsp;&nbsp;&nbsp;&nbsp;enabled                                    | boolean | `true`                            | Enable the visual optimization toggle button in the polygon menu                                                                                         |
 | &nbsp;&nbsp;menuActions                                            | array   | `undefined`                       | Custom polygon menu actions. See [CUSTOM_ACTIONS.md](CUSTOM_ACTIONS.md)                                                                                  |
-| **tooltips**                                                       | object  |                                   | Toolbar tooltip configuration                                                                                                                            |
-| &nbsp;&nbsp;enabled                                                | boolean | `true`                            | Enable custom toolbar tooltips                                                                                                                           |
-| &nbsp;&nbsp;delayMs                                                | number  | `500`                             | Delay before showing toolbar tooltips                                                                                                                    |
+| **layerPanel**                                                     | object  |                                   | Built-in draw/reference layer panel                                                                                                                       |
+| &nbsp;&nbsp;enabled                                                | boolean | `false`                           | Show the built-in panel. The panel is opt-in so existing single-layer applications retain their 2.0 interface.                                            |
+| &nbsp;&nbsp;initialState                                           | `"expanded"` / `"collapsed"` | `"expanded"` | Initial panel state when enabled. Users can still expand or collapse it at runtime.                                                                        |
+| &nbsp;&nbsp;**merge**                                              | object  |                                   | Whole-layer merge policy                                                                                                                                  |
+| &nbsp;&nbsp;&nbsp;&nbsp;allowReferenceSources                       | boolean | `false`                           | Allow reference layers to be merged into draw layers. Reference layers can never be merge targets.                                                       |
+| **tooltips**                                                       | object  |                                   | Toolbar and polygon-action tooltip configuration                                                                                                         |
+| &nbsp;&nbsp;enabled                                                | boolean | `true`                            | Enable custom toolbar and polygon-action tooltips                                                                                                        |
+| &nbsp;&nbsp;delayMs                                                | number  | `500`                             | Delay before showing custom tooltips                                                                                                                     |
 | &nbsp;&nbsp;direction                                              | string  | `"left"`                          | Tooltip direction: `"left"` or `"right"`                                                                                                                |
 | &nbsp;&nbsp;backgroundColor                                        | string  | `"#645d5d"`                       | Tooltip background color                                                                                                                                 |
 | &nbsp;&nbsp;color                                                  | string  | `"#ffffff"`                       | Tooltip text color                                                                                                                                       |

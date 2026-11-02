@@ -137,7 +137,7 @@ This section is the runtime contract for import/layer option objects.
 | Property | Type | Behavior |
 | --- | --- | --- |
 | `visualOptimizationLevel` | `number` | Optimization level stored on created polygons. Default: `0`. |
-| `layer` | `string | PolygonLayerDescriptorInput` | Selects (or creates) target layer. String is treated as layer id. Descriptor can create/update layer fields (`label`, `color`, `visibility`, `interaction`, `panel`, `metadata`) before polygon add. Empty/blank id throws. |
+| `layer` | `string | PolygonLayerDescriptorInput` | Selects (or creates) target layer. String is treated as layer id. Descriptor can create/update layer fields (`label`, `color`, `visibility`, `role`, `interaction`, `panel`, `metadata`) before polygon add. Empty/blank id throws. |
 | `layerColor` | `string` | Color precedence: if `layer` is provided, this overrides descriptor color and updates that layer color; if `layer` is omitted, it only colors polygons being added (no layer creation/update). Invalid hex values fall back to layer/default color normalization. |
 | `metadata` | `Record<string, unknown>` | Feature metadata payload for each added polygon feature group (stored as a shallow clone). |
 | `overrides` | `{ interaction?: 'inherit' \| 'editable' \| 'readonly' \| 'static'; merge?: 'inherit' \| 'allow' \| 'block'; style?: { color?; fillColor?; fillOpacity?; weight? } }` | Runtime per-feature overrides for interaction, merge, and style; also forwarded through group imports. |
@@ -158,6 +158,7 @@ This section is the runtime contract for import/layer option objects.
 | `label` | `string` | Optional display label in panel. Empty/whitespace is normalized to unset. |
 | `color` | `string` | Layer stroke color. Applied to existing layer polygons when changed. Hex normalization supports `#rgb` / `#rrggbb` forms. |
 | `visibility` | `boolean` | Layer visibility policy (`true` by default for new layers). |
+| `role` | `'draw' \| 'reference'` | Draw layers can become the active target for new polygons. Reference layers are never drawing targets, but may still be editable through `interaction: 'editable'`. |
 | `interaction` | `'editable' \| 'readonly' \| 'static'` | `editable`: full edit interactions. `readonly`: visible/selectable but no edit handles/drag. `static`: non-editable and defaults panel to hidden unless `panel` is explicitly set. |
 | `panel` | `'visible' \| 'hidden'` | Controls layer panel visibility for this layer. |
 | `metadata` | `Record<string, unknown>` | Replaces layer metadata object (shallow clone). |
@@ -169,6 +170,7 @@ This section is the runtime contract for import/layer option objects.
 | `label` | `string` | Updates/clears label (`""` or whitespace clears). |
 | `color` | `string` | Updates layer color and restyles polygons in that layer. |
 | `visibility` | `boolean` | Shows/hides layer. Active layer cannot be hidden if no visible fallback layer exists. |
+| `role` | `'draw' \| 'reference'` | Changes the layer role. The active draw layer cannot be converted to a reference layer until another draw layer is active. |
 | `interaction` | `'editable' \| 'readonly' \| 'static'` | Updates interaction policy. If set to `static` and `panel` omitted, panel is auto-set to `hidden`. |
 | `panel` | `'visible' \| 'hidden'` | Explicit panel policy override. |
 | `metadata` | `Record<string, unknown>` | Replaces layer metadata object. |
@@ -178,6 +180,11 @@ This section is the runtime contract for import/layer option objects.
 - If both `layer.color` and top-level `layerColor` are set in `addPredefinedPolygon`, `layerColor` wins.
 - For `addPredefinedGeoJSONs`, metadata precedence is: `options.metadata` first, otherwise GeoJSON `feature.properties`.
 - Adding to non-editable target layers (`readonly` or `static`) disables merge-on-add by default (`merge: inherit`).
+- Automatic drawing, dragging, and marker-drag merges only consider polygons in the source polygon's own layer.
+- `createDrawLayer()` creates and activates an editable draw layer. Generated names start at `Layer 1`, and generated colors use a deterministic 21-color palette before cycling.
+- The built-in `polygonTools.moveToLayer` action moves a polygon to an existing draw layer or creates a new draw layer for it. Existing targets do not change the active drawing layer; newly created targets become active.
+- `mergeLayerInto(sourceLayerId, targetLayerId, options?)` moves every source polygon into the target draw layer as one undoable operation. Overlaps are unioned when `mergePolygons` is enabled. A non-default source layer is removed after a successful merge. Reference sources require `layerPanel.merge.allowReferenceSources: true`; reference layers can never be targets. Pass `{ useTargetStyle: true }` to replace individual polygon colors, opacity, and weight with the target layer's normal style.
+- Reference layers cannot become active drawing targets. Their features may still be edited when the layer interaction policy is `editable`.
 - `overrides.merge: block` always disables merge-on-add for the incoming polygon.
 - `overrides.merge: allow` forces merge attempts for the incoming polygon, including against non-editable polygons in the target layer.
 - `overrides.interaction` applies per-feature editability, independent of the layer interaction policy.
@@ -303,7 +310,7 @@ polydraw.updateLayer("Hazard", {
 Use these methods when an application needs to control layers outside the built-in panel:
 
 - Read layers: `getLayerManager()`, `getAllLayers()`, `getLayerById(layerId)`, `getLayerForFeatureGroup(featureGroup)`
-- Create/update/delete layers: `createLayer(input)`, `ensureLayer(input)`, `updateLayer(layerId, patch)`, `deleteLayer(layerId)`
-- Set layer state: `setActiveLayer(layerId)`, `setLayerVisibility(layerId, visible)`, `showLayer(layerId)`, `hideLayer(layerId)`, `setLayerColor(layerId, color)`, `setLayerInteraction(layerId, interaction)`, `setLayerPanelVisibility(layerId, panel)`, `setLayerMetadata(layerId, metadata)`
-- Assign feature groups: `assignFeatureGroupToLayer(featureGroup, layerId)`, `moveFeatureGroupToLayer(featureGroup, layerId)`, `removeFeatureGroupFromLayer(featureGroup)`
+- Create/update/delete layers: `createDrawLayer(input?)`, `createLayer(input)`, `ensureLayer(input)`, `updateLayer(layerId, patch)`, `deleteLayer(layerId)`
+- Set layer state: `setActiveLayer(layerId)`, `setLayerRole(layerId, role)`, `setLayerVisibility(layerId, visible)`, `showLayer(layerId)`, `hideLayer(layerId)`, `setLayerColor(layerId, color)`, `setLayerInteraction(layerId, interaction)`, `setLayerPanelVisibility(layerId, panel)`, `setLayerMetadata(layerId, metadata)`
+- Assign and merge: `assignFeatureGroupToLayer(featureGroup, layerId)`, `moveFeatureGroupToLayer(featureGroup, layerId)`, `removeFeatureGroupFromLayer(featureGroup)`, `mergeLayerInto(sourceLayerId, targetLayerId)`
 - Reorder layers: `reorderLayer(layerId, targetLayerId)`, `moveLayerToIndex(layerId, index)`, `setLayerOrder(layerIds)`

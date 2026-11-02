@@ -67,6 +67,15 @@ export interface MarkerOptions {
     usePerimeterMinValue: boolean;
     areaLabel: string;
     perimeterLabel: string;
+    showLayer: boolean;
+    showGeometry: boolean;
+    holeAreaLabel: string;
+    verticesLabel: string;
+    holesLabel: string;
+    partsLabel: string;
+    metadata: {
+      fields: string[];
+    };
     values: {
       min: {
         metric: string;
@@ -224,7 +233,7 @@ export interface StylesConfig {
 export type PolygonCreationAlgorithm = 'concaveman' | 'convex' | 'direct';
 export type SimplificationStrategy = 'simple' | 'dynamic' | 'none';
 export type ModifierKey = 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey';
-export type EraseScope = 'all' | 'defaultLayer';
+export type EraseScope = 'all' | 'drawLayers' | 'defaultLayer';
 
 export interface SimplificationSimpleOptions {
   tolerance: number;
@@ -386,6 +395,9 @@ export interface PolygonToolsConfig {
     defaultFillOpacity: number;
     mergeStrategy: 'source' | 'target' | 'blend';
   };
+  moveToLayer: {
+    enabled: boolean;
+  };
   visualOptimizationToggle: {
     enabled: boolean;
   };
@@ -419,6 +431,8 @@ export type HistoryAction =
   | 'modifierSubtract'
   | 'deletePolygon'
   | 'layerDelete'
+  | 'layerUpdate'
+  | 'layerMove'
   | 'layerReorder'
   | PolygonActionHistory;
 
@@ -450,6 +464,8 @@ export interface HistoryCaptureConfig {
   modifierSubtract: boolean;
   deletePolygon: boolean;
   layerDelete?: boolean;
+  layerUpdate?: boolean;
+  layerMove?: boolean;
   layerReorder?: boolean;
   polygonActions?: PolygonActionsHistoryCaptureConfig;
 }
@@ -465,6 +481,18 @@ export interface TooltipConfig {
   direction: 'left' | 'right';
   backgroundColor: string;
   color: string;
+}
+
+export type LayerPanelInitialState = 'expanded' | 'collapsed';
+
+export interface LayerPanelMergeConfig {
+  allowReferenceSources: boolean;
+}
+
+export interface LayerPanelConfig {
+  enabled: boolean;
+  initialState: LayerPanelInitialState;
+  merge?: LayerPanelMergeConfig;
 }
 
 /**
@@ -484,6 +512,7 @@ export interface PolydrawConfig {
   };
   simplification: SimplificationConfig;
   polygonTools: PolygonToolsConfig;
+  layerPanel: LayerPanelConfig;
   tooltips: TooltipConfig;
   history: HistoryConfig;
 }
@@ -751,6 +780,7 @@ export interface LayerSnapshotEntry {
   label?: string;
   color: string;
   visible: boolean;
+  role?: LayerRole;
   interaction?: LayerInteraction;
   panel?: LayerPanelVisibility;
   metadata?: Record<string, unknown>;
@@ -781,7 +811,11 @@ export interface FeatureMetadataSnapshotEntry {
 
 export type LayerInteraction = 'editable' | 'readonly' | 'static';
 export type LayerPanelVisibility = 'visible' | 'hidden';
+export type LayerRole = 'draw' | 'reference';
 export type PolydrawMetadata = Record<string, unknown>;
+export interface LayerMergeOptions {
+  useTargetStyle?: boolean;
+}
 export type PolygonOverrideInteraction = 'inherit' | LayerInteraction;
 export type PolygonOverrideMerge = 'inherit' | 'allow' | 'block';
 
@@ -812,6 +846,7 @@ export interface PolygonLayerDescriptorInput {
   label?: string;
   color?: string;
   visibility?: boolean;
+  role?: LayerRole;
   panel?: LayerPanelVisibility;
   interaction?: LayerInteraction;
   metadata?: PolydrawMetadata;
@@ -821,6 +856,7 @@ export interface LayerUpdateInput {
   label?: string;
   color?: string;
   visibility?: boolean;
+  role?: LayerRole;
   panel?: LayerPanelVisibility;
   interaction?: LayerInteraction;
   metadata?: PolydrawMetadata;

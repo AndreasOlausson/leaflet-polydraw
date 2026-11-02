@@ -85,7 +85,30 @@ export class HistoryManager {
       return;
     }
 
-    const snapshot = this.createSnapshot(featureGroups, action, layerManager);
+    const snapshot = this.captureState(featureGroups, action, layerManager);
+    this.saveSnapshot(snapshot);
+  }
+
+  /**
+   * Capture state without changing either history stack.
+   * Useful for operations that must finish before becoming undoable.
+   */
+  captureState(
+    featureGroups: L.FeatureGroup[],
+    action?: string,
+    layerManager?: LayerManager,
+  ): HistorySnapshot {
+    return this.createSnapshot(featureGroups, action, layerManager);
+  }
+
+  /**
+   * Commit a previously captured snapshot to the undo stack.
+   */
+  saveSnapshot(snapshot: HistorySnapshot): void {
+    if (this.isRestoring) {
+      return;
+    }
+
     const snapshotSize = this.calculateSnapshotSize(snapshot);
     snapshot.size = snapshotSize;
 

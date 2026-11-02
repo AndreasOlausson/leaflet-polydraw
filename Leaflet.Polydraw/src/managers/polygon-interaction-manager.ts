@@ -29,6 +29,15 @@ import { isTestEnvironment } from '../utils';
 import { PolygonTransformController } from '../transform/polygon-transform-controller';
 import { PopupFactory } from '../popup-factory';
 import type { LayerManager } from './layer-manager';
+import {
+  createMarkerColorTheme,
+  createPolygonColorTheme,
+  darkenHexColor,
+  normalizeHexColor,
+  parseHexColor,
+  type RgbColor,
+} from '../utils/color-style.util';
+import { createColorMap, DEFAULT_COLOR_MAP_PALETTE } from '../ui/color-map';
 
 export interface InteractionResult {
   success: boolean;
@@ -61,7 +70,6 @@ type PolygonTransformMode = 'scale' | 'rotate' | 'donut';
 type PolygonColorSelection = Required<
   Pick<PolygonStyleOverrides, 'color' | 'fillColor' | 'fillOpacity'>
 >;
-type RgbColor = [number, number, number];
 type PolydrawAuxiliaryPolyline = L.Polyline & { _polydrawAuxiliaryLayer?: true };
 type PolygonNativeStartListeners = {
   mousedown: (event: MouseEvent) => void;
@@ -76,6 +84,13 @@ interface BuiltInMenuButtonConfig {
   classNames: string[];
 }
 
+interface PolygonGeometrySummary {
+  vertexCount: number;
+  holeCount: number;
+  partCount: number;
+  holeArea: number;
+}
+
 const BUILT_IN_POLYGON_MENU_ACTION_IDS = new Set([
   'simplify',
   'doubleElbows',
@@ -85,143 +100,9 @@ const BUILT_IN_POLYGON_MENU_ACTION_IDS = new Set([
   'rotate',
   'donut',
   'color',
+  'moveToLayer',
   'toggleOptimization',
 ]);
-
-const DEFAULT_COLOR_MAP_PALETTE = [
-  '#003366',
-  '#336699',
-  '#3366CC',
-  '#003399',
-  '#000099',
-  '#0000CC',
-  '#000066',
-  '#006666',
-  '#006699',
-  '#0099CC',
-  '#0066CC',
-  '#0033CC',
-  '#0000FF',
-  '#3333FF',
-  '#333399',
-  '#669999',
-  '#009999',
-  '#33CCCC',
-  '#00CCFF',
-  '#0099FF',
-  '#0066FF',
-  '#3366FF',
-  '#3333CC',
-  '#666699',
-  '#339966',
-  '#00CC99',
-  '#00FFCC',
-  '#00FFFF',
-  '#33CCFF',
-  '#3399FF',
-  '#6699FF',
-  '#6666FF',
-  '#6600FF',
-  '#6600CC',
-  '#339933',
-  '#00CC66',
-  '#00FF99',
-  '#66FFCC',
-  '#66FFFF',
-  '#66CCFF',
-  '#99CCFF',
-  '#9999FF',
-  '#9966FF',
-  '#9933FF',
-  '#9900FF',
-  '#006600',
-  '#00CC00',
-  '#00FF00',
-  '#66FF99',
-  '#99FFCC',
-  '#CCFFFF',
-  '#CCCCFF',
-  '#CC99FF',
-  '#CC66FF',
-  '#CC33FF',
-  '#CC00FF',
-  '#9900CC',
-  '#003300',
-  '#009933',
-  '#33CC33',
-  '#66FF66',
-  '#99FF99',
-  '#CCFFCC',
-  '#FFFFFF',
-  '#FFCCFF',
-  '#FF99FF',
-  '#FF66FF',
-  '#FF00FF',
-  '#CC00CC',
-  '#660066',
-  '#336600',
-  '#009900',
-  '#66FF33',
-  '#99FF66',
-  '#CCFF99',
-  '#FFFFCC',
-  '#FFCCCC',
-  '#FF99CC',
-  '#FF66CC',
-  '#FF33CC',
-  '#CC0099',
-  '#993399',
-  '#333300',
-  '#669900',
-  '#99FF33',
-  '#CCFF66',
-  '#FFFF99',
-  '#FFCC99',
-  '#FF9999',
-  '#FF6699',
-  '#FF3399',
-  '#CC3399',
-  '#990099',
-  '#666633',
-  '#99CC00',
-  '#CCFF33',
-  '#FFFF66',
-  '#FFCC66',
-  '#FF9966',
-  '#FF6666',
-  '#FF0066',
-  '#CC6699',
-  '#993366',
-  '#999966',
-  '#CCCC00',
-  '#FFFF00',
-  '#FFCC00',
-  '#FF9933',
-  '#FF6600',
-  '#FF5050',
-  '#CC0066',
-  '#660033',
-  '#996633',
-  '#CC9900',
-  '#FF9900',
-  '#CC6600',
-  '#FF3300',
-  '#FF0000',
-  '#CC0000',
-  '#990033',
-  '#663300',
-  '#996600',
-  '#CC3300',
-  '#993300',
-  '#990000',
-  '#800000',
-  '#993333',
-];
-
-const COLOR_MAP_ROWS = [7, 8, 9, 10, 11, 12, 13, 12, 11, 10, 9, 8, 7];
-const COLOR_MAP_CELL_WIDTH = 18;
-const COLOR_MAP_ROW_HEIGHT = 15;
-const COLOR_MAP_WIDTH = 234;
 
 /**
  * PolygonInteractionManager handles all interactions with existing polygons.
@@ -512,10 +393,10 @@ export class PolygonInteractionManager {
       });
       // Replace dragend binding to use _polydrawFeatureGroup and allow correct logic
       marker.on('dragstart', () => {
-        // Layer guard: skip if not in active layer
+        // Layer guard: skip if the feature's own layer is not editable.
         const fg = this.markerFeatureGroupMap.get(marker);
         if (fg && !this.isFeatureGroupInActiveLayer(fg)) {
-          // Force-readonly for inactive layers if a stale draggable state slipped through.
+          // Force-readonly if a stale draggable state slipped through.
           if (marker.dragging) {
             marker.dragging.disable();
           }
@@ -604,7 +485,7 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerMenuIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
-          // Layer guard
+          // Layer guard: only show polygon actions for editable features.
           if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
           const polygonGeoJSON = this.getPolygonGeoJSONFromFeatureGroup(featureGroup);
           const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
@@ -667,9 +548,14 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
-          // Layer guard: only allow info popup for active layer
+          // Layer guard: only allow info popup for editable layers
           if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
-          const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
+          const infoPopup = this.generateInfoMarkerPopup(
+            area,
+            perimeter,
+            featureGroup,
+            polygonGeoJSON,
+          );
           const centerOfMass = PolygonUtil.getCenterOfPolygonByIndexWithOffsetFromCenterOfMass(
             polygonGeoJSON,
             infoMarkerIdx,
@@ -720,7 +606,7 @@ export class PolygonInteractionManager {
 
       // Generic click handler for all markers
       marker.on('click', (e) => {
-        // Layer guard: only allow interactions for active layer
+        // Layer guard: only allow interactions for editable layers
         if (!this.isFeatureGroupInActiveLayer(featureGroup)) {
           return;
         }
@@ -755,7 +641,7 @@ export class PolygonInteractionManager {
         }
       });
 
-      // Add hover listeners for edge deletion feedback (guarded by active layer)
+      // Add hover listeners for edge deletion feedback (guarded by editable layer)
       marker.on('mouseover', () => {
         if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
         this.onMarkerHoverForEdgeDeletion(marker, true);
@@ -1003,9 +889,14 @@ export class PolygonInteractionManager {
         marker.options.zIndexOffset =
           this.config.markers.markerInfoIcon.zIndexOffset ?? this.config.markers.zIndexOffset;
         marker.on('click', () => {
-          // Layer guard: only allow info popup for active layer
+          // Layer guard: only allow info popup for editable layers
           if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
-          const infoPopup = this.generateInfoMarkerPopup(area, perimeter);
+          const infoPopup = this.generateInfoMarkerPopup(
+            area,
+            perimeter,
+            featureGroup,
+            holePolygon,
+          );
           infoPopup.setLatLng(latlng).openOn(this.map);
         });
       }
@@ -1019,7 +910,7 @@ export class PolygonInteractionManager {
       });
 
       marker.on('click', (e) => {
-        // Layer guard: only allow interactions for active layer
+        // Layer guard: only allow interactions for editable layers
         if (!this.isFeatureGroupInActiveLayer(featureGroup)) return;
         if (this.modeManager.isInOffMode()) {
           if (this.isEdgeDeletionModifierKeyPressed(e.originalEvent)) {
@@ -1223,37 +1114,31 @@ export class PolygonInteractionManager {
   }
 
   /**
-   * Check if a polygon belongs to the active layer.
-   * Returns true if no layer manager exists (backward compat) or if in active editable layer.
+   * Check if a polygon belongs to an editable layer.
+   * Returns true if no layer manager exists for backward compatibility.
    */
   private isPolygonInActiveLayer(polygon: L.Polygon): boolean {
     if (!this.layerManager) return true;
     const mappedFeatureGroup = this.polygonFeatureGroupMap.get(polygon);
     if (mappedFeatureGroup) {
-      return (
-        this.layerManager.isInActiveLayer(mappedFeatureGroup) &&
-        this.layerManager.isFeatureGroupEditable(mappedFeatureGroup)
-      );
+      return this.layerManager.isFeatureGroupEditable(mappedFeatureGroup);
     }
 
     const resolvedFeatureGroup = this.findFeatureGroupForPolygon(polygon);
     if (resolvedFeatureGroup) {
       this.polygonFeatureGroupMap.set(polygon, resolvedFeatureGroup);
-      return (
-        this.layerManager.isInActiveLayer(resolvedFeatureGroup) &&
-        this.layerManager.isFeatureGroupEditable(resolvedFeatureGroup)
-      );
+      return this.layerManager.isFeatureGroupEditable(resolvedFeatureGroup);
     }
     return true; // If not found, allow interaction
   }
 
   /**
-   * Check if a feature group belongs to the active layer.
+   * Check if a feature group belongs to an editable layer.
    * Returns true if no layer manager exists (backward compat).
    */
   private isFeatureGroupInActiveLayer(fg: L.FeatureGroup): boolean {
     if (!this.layerManager) return true;
-    return this.layerManager.isInActiveLayer(fg) && this.layerManager.isFeatureGroupEditable(fg);
+    return this.layerManager.isFeatureGroupEditable(fg);
   }
 
   private beginPolygonDrag(
@@ -1476,9 +1361,9 @@ export class PolygonInteractionManager {
     const markersShouldCapturePointer = this.modeManager.getCurrentMode() !== DrawMode.Clone;
 
     this.getFeatureGroups().forEach((featureGroup) => {
-      // Layer guard: only allow drag for active layer markers
-      const isActiveLayer = this.isFeatureGroupInActiveLayer(featureGroup);
-      const effectiveDraggable = shouldBeDraggable && isActiveLayer;
+      // Editing is controlled by layer interaction, not by the active draw target.
+      const isEditableLayer = this.isFeatureGroupInActiveLayer(featureGroup);
+      const effectiveDraggable = shouldBeDraggable && isEditableLayer;
 
       featureGroup.eachLayer((layer) => {
         if (layer instanceof L.Marker) {
@@ -1528,24 +1413,46 @@ export class PolygonInteractionManager {
     if (!element) return;
 
     if (showFeedback) {
-      // Add hover listeners for edge deletion feedback
-      element.addEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
-      element.addEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
+      if (this.markerEdgeDeletionListeners.has(marker)) {
+        return;
+      }
 
-      // Store handlers for cleanup
-      this.markerEdgeDeletionListeners.set(marker, {
-        mouseenter: this.onMarkerHoverForEdgeDeletionEvent,
-        mouseleave: this.onMarkerLeaveForEdgeDeletionEvent,
-      });
+      const mouseenter = () => {
+        if (!this.isModifierKeyHeld) return;
+        element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
+        element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
+        element.classList.add('edge-deletion-hover');
+      };
+      const mouseleave = () => {
+        this.restoreMarkerColor(marker);
+      };
+
+      element.addEventListener('mouseenter', mouseenter);
+      element.addEventListener('mouseleave', mouseleave);
+      this.markerEdgeDeletionListeners.set(marker, { mouseenter, mouseleave });
     } else {
-      // Remove hover listeners and reset style
-      element.removeEventListener('mouseenter', this.onMarkerHoverForEdgeDeletionEvent);
-      element.removeEventListener('mouseleave', this.onMarkerLeaveForEdgeDeletionEvent);
-      element.style.backgroundColor = '';
-      element.style.borderColor = '';
+      const listeners = this.markerEdgeDeletionListeners.get(marker);
+      if (listeners) {
+        element.removeEventListener('mouseenter', listeners.mouseenter);
+        element.removeEventListener('mouseleave', listeners.mouseleave);
+        this.markerEdgeDeletionListeners.delete(marker);
+      }
+      this.restoreMarkerColor(marker);
+    }
+  }
 
-      // Clean up stored handlers
-      this.markerEdgeDeletionListeners.delete(marker);
+  private restoreMarkerColor(marker: L.Marker): void {
+    const element = marker.getElement();
+    if (!element) return;
+
+    element.style.backgroundColor = '';
+    element.style.borderColor = '';
+    element.style.boxShadow = '';
+    element.classList.remove('edge-deletion-hover');
+
+    const featureGroup = this.markerFeatureGroupMap.get(marker);
+    if (featureGroup) {
+      this.applyFeatureGroupColorToMarkerElement(featureGroup, element);
     }
   }
 
@@ -1638,7 +1545,7 @@ export class PolygonInteractionManager {
     }
     const edgeInfo = (edgePolyline as PolydrawEdgePolyline)._polydrawEdgeInfo;
     if (!edgeInfo) return;
-    // Layer guard: only allow edge interactions for active layer
+    // Layer guard: only allow edge interactions for editable layers
     if (
       edgeInfo.parentFeatureGroup &&
       !this.isFeatureGroupInActiveLayer(edgeInfo.parentFeatureGroup)
@@ -2713,6 +2620,7 @@ export class PolygonInteractionManager {
       const { level: optimizationLevel, original: originalOptimizationLevel } =
         this.getOptimizationMetadataFromFeatureGroup(featureGroup);
       const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+      const targetLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
       this.cleanupFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
 
@@ -2728,6 +2636,7 @@ export class PolygonInteractionManager {
         sourceFeatureIds: featureMetadataState.sourceFeatureIds,
         featureInteractionOverride: featureMetadataState.interactionOverride,
         featureStyleOverrides: featureMetadataState.styleOverrides,
+        targetLayerId,
         featureCreatedAt: featureMetadataState.createdAt,
       });
 
@@ -2766,6 +2675,7 @@ export class PolygonInteractionManager {
       const { level: optimizationLevel, original: originalOptimizationLevel } =
         this.getOptimizationMetadataFromFeatureGroup(featureGroup);
       const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+      const targetLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
 
       this.cleanupFeatureGroup(featureGroup);
       this.removeFeatureGroup(featureGroup);
@@ -2782,6 +2692,7 @@ export class PolygonInteractionManager {
         sourceFeatureIds: featureMetadataState.sourceFeatureIds,
         featureInteractionOverride: featureMetadataState.interactionOverride,
         featureStyleOverrides: featureMetadataState.styleOverrides,
+        targetLayerId,
         featureCreatedAt: featureMetadataState.createdAt,
       });
 
@@ -2798,6 +2709,7 @@ export class PolygonInteractionManager {
           sourceFeatureIds: featureMetadataState.sourceFeatureIds,
           featureInteractionOverride: featureMetadataState.interactionOverride,
           featureStyleOverrides: featureMetadataState.styleOverrides,
+          targetLayerId,
           featureCreatedAt: featureMetadataState.createdAt,
         });
       }
@@ -2939,9 +2851,8 @@ export class PolygonInteractionManager {
                 element.style.display = '';
                 element.classList.remove('subtract-mode-hidden');
               } else {
-                element.style.backgroundColor = '';
-                element.style.borderColor = '';
                 element.classList.remove('subtract-mode');
+                this.restoreMarkerColor(marker);
               }
             }
           }
@@ -3178,9 +3089,7 @@ export class PolygonInteractionManager {
             // Handle DOM errors
           }
         } else {
-          element.style.backgroundColor = '';
-          element.style.borderColor = '';
-          element.classList.remove('edge-deletion-hover');
+          this.restoreMarkerColor(marker);
           // Reset cursor when no modifier key
           try {
             const container = this.map.getContainer();
@@ -3204,9 +3113,7 @@ export class PolygonInteractionManager {
       element.addEventListener('mousemove', checkModifierAndUpdate);
     } else {
       // Clean up when not hovering
-      element.style.backgroundColor = '';
-      element.style.borderColor = '';
-      element.classList.remove('edge-deletion-hover');
+      this.restoreMarkerColor(marker);
 
       // Reset cursor
       try {
@@ -3226,26 +3133,6 @@ export class PolygonInteractionManager {
       }
     }
   }
-
-  private onMarkerHoverForEdgeDeletionEvent = (e: Event) => {
-    if (!this.isModifierKeyHeld) return;
-
-    const element = e.target as HTMLElement;
-    if (element) {
-      element.style.backgroundColor = this.config.styles.ui.edgeDeletion.color;
-      element.style.borderColor = this.config.styles.ui.edgeDeletion.color;
-      element.classList.add('edge-deletion-hover');
-    }
-  };
-
-  private onMarkerLeaveForEdgeDeletionEvent = (e: Event) => {
-    const element = e.target as HTMLElement;
-    if (element) {
-      element.style.backgroundColor = '';
-      element.style.borderColor = '';
-      element.classList.remove('edge-deletion-hover');
-    }
-  };
 
   // Helper methods
   private getMarkerIndex(latlngs: L.LatLngLiteral[], position: MarkerPosition): number {
@@ -3449,7 +3336,7 @@ export class PolygonInteractionManager {
       {
         enabled: menuOps.doubleElbows.enabled,
         id: 'doubleElbows',
-        label: 'DoubleElbows',
+        label: 'Add vertices',
         classNames: ['double-elbows'],
       },
       {
@@ -3481,6 +3368,12 @@ export class PolygonInteractionManager {
         id: 'color',
         label: 'Color',
         classNames: ['polygon-color'],
+      },
+      {
+        enabled: menuOps.moveToLayer.enabled,
+        id: 'moveToLayer',
+        label: 'Move to layer',
+        classNames: ['polygon-move-to-layer'],
       },
     ];
   }
@@ -3584,20 +3477,7 @@ export class PolygonInteractionManager {
   }
 
   private normalizeHexColor(value: string | undefined, fallback: string): string {
-    if (!value) {
-      return fallback;
-    }
-
-    const trimmed = value.trim();
-    if (/^#[0-9a-f]{6}$/i.test(trimmed)) {
-      return trimmed.toLowerCase();
-    }
-    if (/^#[0-9a-f]{3}$/i.test(trimmed)) {
-      const [, r, g, b] = trimmed.toLowerCase();
-      return `#${r}${r}${g}${g}${b}${b}`;
-    }
-
-    return fallback;
+    return normalizeHexColor(value, fallback);
   }
 
   private clampFillOpacity(value: number | undefined): number {
@@ -3607,23 +3487,11 @@ export class PolygonInteractionManager {
   }
 
   private parseHexColor(value: string): RgbColor {
-    const normalized = this.normalizeHexColor(value, '#50622b');
-    return [
-      Number.parseInt(normalized.slice(1, 3), 16),
-      Number.parseInt(normalized.slice(3, 5), 16),
-      Number.parseInt(normalized.slice(5, 7), 16),
-    ];
-  }
-
-  private toHexColor([red, green, blue]: RgbColor): string {
-    return `#${[red, green, blue]
-      .map((channel) => Math.min(255, Math.max(0, channel)).toString(16).padStart(2, '0'))
-      .join('')}`;
+    return parseHexColor(value);
   }
 
   private darkenColor(color: string, factor: number): string {
-    const rgb = this.parseHexColor(color);
-    return this.toHexColor(rgb.map((channel) => Math.round(channel * factor)) as RgbColor);
+    return darkenHexColor(color, factor);
   }
 
   private toRgbaColor(color: string, alpha: number): string {
@@ -3671,9 +3539,10 @@ export class PolygonInteractionManager {
     fillOpacity: number,
   ): PolygonColorSelection {
     const normalizedFillColor = this.normalizeHexColor(fillColor, '#50622b');
+    const theme = createPolygonColorTheme(normalizedFillColor);
     return {
-      color: this.darkenColor(normalizedFillColor, 0.55),
-      fillColor: normalizedFillColor,
+      color: theme.color,
+      fillColor: theme.fillColor,
       fillOpacity: this.clampFillOpacity(fillOpacity),
     };
   }
@@ -3682,29 +3551,6 @@ export class PolygonInteractionManager {
     const configuredPalette = this.config.polygonTools.color.palette;
     const palette = configuredPalette.length > 0 ? configuredPalette : DEFAULT_COLOR_MAP_PALETTE;
     return palette.map((color) => this.normalizeHexColor(color, '#50622b'));
-  }
-
-  private getColorMapCellPosition(index: number): { left: number; top: number } {
-    let remaining = index;
-    for (let rowIndex = 0; rowIndex < COLOR_MAP_ROWS.length; rowIndex += 1) {
-      const rowCount = COLOR_MAP_ROWS[rowIndex];
-      if (remaining < rowCount) {
-        const rowWidth = rowCount * COLOR_MAP_CELL_WIDTH;
-        return {
-          left: Math.round((COLOR_MAP_WIDTH - rowWidth) / 2 + remaining * COLOR_MAP_CELL_WIDTH),
-          top: rowIndex * COLOR_MAP_ROW_HEIGHT,
-        };
-      }
-      remaining -= rowCount;
-    }
-
-    const fallbackIndex = index - DEFAULT_COLOR_MAP_PALETTE.length;
-    return {
-      left: (fallbackIndex % 13) * COLOR_MAP_CELL_WIDTH,
-      top:
-        COLOR_MAP_ROWS.length * COLOR_MAP_ROW_HEIGHT +
-        Math.floor(fallbackIndex / 13) * COLOR_MAP_ROW_HEIGHT,
-    };
   }
 
   private styleMarkerElement(element: HTMLElement, selection: PolygonColorSelection): void {
@@ -3716,8 +3562,9 @@ export class PolygonInteractionManager {
       return;
     }
 
-    element.style.backgroundColor = selection.fillColor;
-    element.style.boxShadow = `0 0 0 2px ${this.darkenColor(selection.fillColor, 0.55)}, 0 0 10px rgba(0, 0, 0, 0.35)`;
+    const markerTheme = createMarkerColorTheme(selection.fillColor, selection.color);
+    element.style.backgroundColor = markerTheme.backgroundColor;
+    element.style.boxShadow = `0 0 0 2px ${markerTheme.borderColor}, 0 0 10px rgba(0, 0, 0, 0.35)`;
   }
 
   private applyPolygonThemeToMarkers(
@@ -3739,20 +3586,57 @@ export class PolygonInteractionManager {
     featureGroup: L.FeatureGroup,
   ): PolygonColorSelection | undefined {
     const styleOverrides = this.getFeatureMetadataState(featureGroup).styleOverrides;
+    const defaultSelection = this.getDefaultPolygonColorSelection();
+    let layerSelection: PolygonColorSelection | undefined;
+    const layerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
+    const layer = layerId ? this.layerManager?.getLayer(layerId) : undefined;
+    if (layer) {
+      const normalizedLayerColor = this.normalizeHexColor(layer.color, defaultSelection.color);
+      if (layerId === 'default' && normalizedLayerColor === defaultSelection.color) {
+        layerSelection = defaultSelection;
+      } else {
+        const layerTheme = createPolygonColorTheme(normalizedLayerColor);
+        layerSelection = {
+          color: layerTheme.color,
+          fillColor: layerTheme.fillColor,
+          fillOpacity: defaultSelection.fillOpacity,
+        };
+      }
+    }
+
     if (
       !styleOverrides?.color &&
       !styleOverrides?.fillColor &&
       styleOverrides?.fillOpacity === undefined
     ) {
-      return undefined;
+      return layerSelection;
     }
-    const defaultSelection = this.getDefaultPolygonColorSelection();
-    const color = this.normalizeHexColor(styleOverrides?.color, defaultSelection.color);
+    const color = this.normalizeHexColor(
+      styleOverrides?.color,
+      layerSelection?.color ?? defaultSelection.color,
+    );
     return {
       color,
-      fillColor: this.normalizeHexColor(styleOverrides?.fillColor, color),
-      fillOpacity: this.clampFillOpacity(styleOverrides?.fillOpacity),
+      fillColor: this.normalizeHexColor(
+        styleOverrides?.fillColor,
+        layerSelection?.fillColor ?? color,
+      ),
+      fillOpacity: this.clampFillOpacity(
+        styleOverrides?.fillOpacity ?? layerSelection?.fillOpacity,
+      ),
     };
+  }
+
+  refreshFeatureGroupMarkerColors(featureGroup: L.FeatureGroup): void {
+    featureGroup.eachLayer((layer) => {
+      if (!(layer instanceof L.Marker)) {
+        return;
+      }
+      const element = layer.getElement();
+      if (element instanceof HTMLElement) {
+        this.applyFeatureGroupColorToMarkerElement(featureGroup, element);
+      }
+    });
   }
 
   private applyFeatureGroupColorToMarkerElement(
@@ -3790,6 +3674,7 @@ export class PolygonInteractionManager {
 
     const colorInput = document.createElement('input');
     colorInput.type = 'color';
+    colorInput.className = 'polydraw-color-input';
     colorInput.value = current.fillColor;
     colorInput.setAttribute('aria-label', 'Custom polygon color');
 
@@ -3845,35 +3730,14 @@ export class PolygonInteractionManager {
       closeEditor(true, false);
     });
 
-    const colorMap = document.createElement('div');
-    colorMap.className = 'polygon-color-map';
-    const updateSelectedSwatch = (selectedColor: string) => {
-      colorMap.querySelectorAll('.polygon-color-swatch').forEach((swatch) => {
-        swatch.classList.toggle(
-          'selected',
-          swatch.getAttribute('data-color')?.toLowerCase() === selectedColor.toLowerCase(),
-        );
-      });
-    };
-    this.getPaletteColors().forEach((paletteColor, index) => {
-      const color = this.normalizeHexColor(paletteColor, current.color);
-      const swatch = document.createElement('button');
-      swatch.type = 'button';
-      swatch.className = 'polygon-color-swatch';
-      swatch.style.backgroundColor = color;
-      swatch.setAttribute('data-color', color);
-      swatch.setAttribute('aria-label', `Set polygon color ${color}`);
-      const position = this.getColorMapCellPosition(index);
-      swatch.style.left = `${position.left}px`;
-      swatch.style.top = `${position.top}px`;
-      swatch.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+    const colorMap = createColorMap({
+      colors: this.getPaletteColors(),
+      selectedColor: current.fillColor,
+      ariaLabelPrefix: 'Set polygon color',
+      onSelect: (color) => {
         colorInput.value = color;
-        updateSelectedSwatch(color);
         renderPreview(this.createPolygonColorSelection(color, Number(opacityInput.value)));
-      });
-      colorMap.appendChild(swatch);
+      },
     });
 
     const toolbar = document.createElement('div');
@@ -3902,7 +3766,8 @@ export class PolygonInteractionManager {
 
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
-    cancelButton.className = 'polygon-color-cancel';
+    cancelButton.className =
+      'polygon-color-cancel polydraw-dialog-button polydraw-dialog-button-secondary';
     cancelButton.textContent = 'Cancel';
     cancelButton.addEventListener('click', (event) => {
       event.preventDefault();
@@ -3912,7 +3777,8 @@ export class PolygonInteractionManager {
 
     const applyButton = document.createElement('button');
     applyButton.type = 'button';
-    applyButton.className = 'polygon-color-apply';
+    applyButton.className =
+      'polygon-color-apply polydraw-dialog-button polydraw-dialog-button-primary';
     applyButton.textContent = 'Apply';
     applyButton.addEventListener('click', (event) => {
       event.preventDefault();
@@ -3925,14 +3791,14 @@ export class PolygonInteractionManager {
 
     const updateFromInputs = () => renderPreview(readDraft());
     colorInput.addEventListener('input', () => {
-      updateSelectedSwatch(colorInput.value);
+      colorMap.setSelectedColor(colorInput.value);
       updateFromInputs();
     });
     opacityInput.addEventListener('input', updateFromInputs);
 
-    panel.append(toolbar, colorMap, preview, customRow, actions);
+    panel.append(toolbar, colorMap.element, preview, customRow, actions);
     renderPreviewUi(current);
-    updateSelectedSwatch(current.fillColor);
+    colorMap.setSelectedColor(current.fillColor);
     return panel;
   }
 
@@ -3948,12 +3814,188 @@ export class PolygonInteractionManager {
       return;
     }
 
+    outerWrapper.querySelector('.polygon-layer-picker')?.remove();
+    outerWrapper.classList.remove('polygon-layer-mode');
     outerWrapper.querySelector('.polygon-color-picker')?.remove();
     const panel = this.createColorPickerPanel(featureGroup);
     wrapper.appendChild(panel);
     L.DomEvent.disableClickPropagation(panel);
     actionContent.hidden = true;
     outerWrapper.classList.add('polygon-color-mode');
+    button.classList.remove('active');
+  }
+
+  private createLayerPickerPanel(featureGroup: L.FeatureGroup): HTMLDivElement {
+    const currentLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
+    const targetLayers =
+      this.layerManager
+        ?.getAllLayers()
+        .filter((layer) => layer.role === 'draw' && layer.id !== currentLayerId) ?? [];
+    let selectedTarget: string | 'new' | null = null;
+
+    const panel = document.createElement('div');
+    panel.className = 'polygon-layer-picker';
+
+    const closeEditor = (closePopup: boolean) => {
+      const outerWrapper = panel.closest('.alter-marker-outer-wrapper');
+      const actionContent = outerWrapper?.querySelector<HTMLElement>('.content');
+      outerWrapper?.classList.remove('polygon-layer-mode');
+      if (actionContent) {
+        actionContent.hidden = false;
+      }
+      panel.remove();
+      if (closePopup) {
+        this.closeOpenMenuPopup();
+      }
+    };
+
+    panel.addEventListener('polydraw:layer-picker:restore', () => closeEditor(false));
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'polygon-layer-toolbar';
+    const backButton = document.createElement('button');
+    backButton.type = 'button';
+    backButton.className = 'polygon-color-back';
+    backButton.setAttribute('aria-label', 'Back to polygon actions');
+    backButton.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18 9 12l6-6"/></svg>';
+    backButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEditor(false);
+    });
+    const heading = document.createElement('strong');
+    heading.textContent = 'Move to layer';
+    toolbar.append(backButton, heading);
+
+    const options = document.createElement('div');
+    options.className = 'polygon-layer-options';
+    const optionButtons: HTMLButtonElement[] = [];
+
+    const applyButton = document.createElement('button');
+    applyButton.type = 'button';
+    applyButton.className =
+      'polygon-layer-apply polydraw-dialog-button polydraw-dialog-button-primary';
+    applyButton.textContent = 'Apply';
+    applyButton.disabled = true;
+
+    const newLayerNameField = document.createElement('label');
+    newLayerNameField.className = 'polygon-layer-new-name';
+    newLayerNameField.hidden = true;
+    const newLayerNameLabel = document.createElement('span');
+    newLayerNameLabel.textContent = 'Layer name';
+    const newLayerNameInput = document.createElement('input');
+    newLayerNameInput.type = 'text';
+    newLayerNameInput.className = 'polygon-layer-new-name-input';
+    newLayerNameInput.maxLength = 80;
+    newLayerNameInput.placeholder = 'Optional';
+    newLayerNameField.append(newLayerNameLabel, newLayerNameInput);
+
+    const selectTarget = (target: string | 'new', selectedButton: HTMLButtonElement) => {
+      selectedTarget = target;
+      optionButtons.forEach((optionButton) => {
+        const selected = optionButton === selectedButton;
+        optionButton.classList.toggle('selected', selected);
+        optionButton.setAttribute('aria-checked', String(selected));
+      });
+      newLayerNameField.hidden = target !== 'new';
+      applyButton.disabled = false;
+      if (target === 'new') {
+        newLayerNameInput.focus();
+      }
+    };
+
+    targetLayers.forEach((layer) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'polygon-layer-option';
+      option.setAttribute('role', 'radio');
+      option.setAttribute('aria-checked', 'false');
+      option.dataset.layerId = layer.id;
+
+      const color = document.createElement('span');
+      color.className = 'polygon-layer-option-color';
+      color.style.backgroundColor = layer.color;
+      const label = document.createElement('span');
+      label.className = 'polygon-layer-option-label';
+      label.textContent = layer.label?.trim() || layer.id;
+      option.append(color, label);
+      if (!layer.visible) {
+        const hidden = document.createElement('span');
+        hidden.className = 'polygon-layer-option-state';
+        hidden.textContent = 'Hidden';
+        option.appendChild(hidden);
+      }
+      option.addEventListener('click', () => selectTarget(layer.id, option));
+      optionButtons.push(option);
+      options.appendChild(option);
+    });
+
+    const newLayerOption = document.createElement('button');
+    newLayerOption.type = 'button';
+    newLayerOption.className = 'polygon-layer-option polygon-layer-option-new';
+    newLayerOption.setAttribute('role', 'radio');
+    newLayerOption.setAttribute('aria-checked', 'false');
+    newLayerOption.dataset.layerTarget = 'new';
+    newLayerOption.textContent = '+ New layer';
+    newLayerOption.addEventListener('click', () => selectTarget('new', newLayerOption));
+    optionButtons.push(newLayerOption);
+    options.appendChild(newLayerOption);
+
+    newLayerNameInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+      event.stopPropagation();
+      applyButton.click();
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'polygon-layer-actions';
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className =
+      'polygon-layer-cancel polydraw-dialog-button polydraw-dialog-button-secondary';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      closeEditor(true);
+    });
+    applyButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!selectedTarget) return;
+      this.eventManager.emit('polydraw:layer:move-feature-requested', {
+        featureGroup,
+        targetLayerId: selectedTarget === 'new' ? undefined : selectedTarget,
+        createNewLayer: selectedTarget === 'new',
+        newLayerLabel:
+          selectedTarget === 'new' ? newLayerNameInput.value.trim() || undefined : undefined,
+      });
+      closeEditor(true);
+    });
+    actions.append(cancelButton, applyButton);
+    panel.append(toolbar, options, newLayerNameField, actions);
+    return panel;
+  }
+
+  private toggleLayerPickerPanel(button: HTMLDivElement, featureGroup: L.FeatureGroup): void {
+    const outerWrapper = button.closest('.alter-marker-outer-wrapper');
+    if (!(outerWrapper instanceof HTMLElement)) return;
+
+    const wrapper = outerWrapper.querySelector<HTMLElement>('.alter-marker-wrapper');
+    const actionContent = outerWrapper.querySelector<HTMLElement>('.content');
+    if (!wrapper || !actionContent) return;
+
+    outerWrapper
+      .querySelector<HTMLElement>('.polygon-color-picker')
+      ?.dispatchEvent(new Event('polydraw:color-picker:restore'));
+    outerWrapper.querySelector('.polygon-layer-picker')?.remove();
+    const panel = this.createLayerPickerPanel(featureGroup);
+    wrapper.appendChild(panel);
+    L.DomEvent.disableClickPropagation(panel);
+    actionContent.hidden = true;
+    outerWrapper.classList.add('polygon-layer-mode');
     button.classList.remove('active');
   }
 
@@ -4104,6 +4146,17 @@ export class PolygonInteractionManager {
     button.onclick = handler;
   }
 
+  private attachLayerPickerHandler(button: HTMLDivElement, featureGroup: L.FeatureGroup): void {
+    const handler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.toggleLayerPickerPanel(button, featureGroup);
+    };
+
+    button.addEventListener('touchend', handler, { passive: false });
+    button.onclick = handler;
+  }
+
   private attachCustomPolygonMenuActionHandler(
     button: HTMLDivElement,
     actionId: string,
@@ -4157,6 +4210,9 @@ export class PolygonInteractionManager {
         return;
       case 'color':
         this.attachColorPickerHandler(button, featureGroup);
+        return;
+      case 'moveToLayer':
+        this.attachLayerPickerHandler(button, featureGroup);
         return;
       default:
         if (actionId) {
@@ -4279,7 +4335,7 @@ export class PolygonInteractionManager {
       ...this.getPolygonMenuActionButtons(featureGroup),
     ];
 
-    const outerWrapper = PopupFactory.buildMenuPopup(buttons);
+    const outerWrapper = PopupFactory.buildMenuPopup(buttons, this.config.tooltips);
     this.attachMenuPopupCloseHandler(outerWrapper);
     this.attachMenuButtonHandlers(buttons, latLngs, featureGroup);
 
@@ -4301,6 +4357,9 @@ export class PolygonInteractionManager {
       outerWrapper
         .querySelector<HTMLElement>('.polygon-color-picker')
         ?.dispatchEvent(new Event('polydraw:color-picker:restore'));
+      outerWrapper
+        .querySelector<HTMLElement>('.polygon-layer-picker')
+        ?.dispatchEvent(new Event('polydraw:layer-picker:restore'));
       if (this._openMenuPopup === popup) {
         this._openMenuPopup = null;
       }
@@ -4463,11 +4522,58 @@ export class PolygonInteractionManager {
     }
   }
 
-  private generateInfoMarkerPopup(area: number, perimeter: number): L.Popup {
+  private getPolygonGeometrySummary(
+    polygonGeoJSON: Feature<Polygon | MultiPolygon>,
+  ): PolygonGeometrySummary {
+    const polygons =
+      polygonGeoJSON.geometry.type === 'Polygon'
+        ? [polygonGeoJSON.geometry.coordinates]
+        : polygonGeoJSON.geometry.coordinates;
+    let vertexCount = 0;
+    let holeCount = 0;
+    let holeArea = 0;
+
+    polygons.forEach((rings) => {
+      rings.forEach((ring, ringIndex) => {
+        const first = ring[0];
+        const last = ring[ring.length - 1];
+        const isClosed = ring.length > 1 && first?.[0] === last?.[0] && first?.[1] === last?.[1];
+        vertexCount += Math.max(0, ring.length - (isClosed ? 1 : 0));
+
+        if (ringIndex === 0) return;
+        holeCount += 1;
+        if (ring.length < 4) return;
+        const holePolygon: Feature<Polygon> = {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Polygon', coordinates: [ring] },
+        };
+        holeArea += this.turfHelper.getPolygonArea(holePolygon);
+      });
+    });
+
+    return { vertexCount, holeCount, partCount: polygons.length, holeArea };
+  }
+
+  private formatInfoMetadataValue(value: unknown): string | undefined {
+    if (typeof value === 'string') return value;
+    if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+    if (typeof value === 'boolean') return value ? 'true' : 'false';
+    return undefined;
+  }
+
+  private generateInfoMarkerPopup(
+    area: number,
+    perimeter: number,
+    featureGroup: L.FeatureGroup,
+    polygonGeoJSON: Feature<Polygon | MultiPolygon>,
+  ): L.Popup {
     type PerimeterConfig = ConstructorParameters<typeof Perimeter>[1];
     type AreaConfig = ConstructorParameters<typeof Area>[1];
     const _perimeter = new Perimeter(perimeter, this.config as unknown as PerimeterConfig);
     const _area = new Area(area, this.config as unknown as AreaConfig);
+    const geometry = this.getPolygonGeometrySummary(polygonGeoJSON);
+    const _holeArea = new Area(geometry.holeArea, this.config as unknown as AreaConfig);
     const infoConfig = this.config.markers.markerInfoIcon ?? {};
     const showArea = infoConfig.showArea !== false;
     const showPerimeter = infoConfig.showPerimeter !== false;
@@ -4485,16 +4591,60 @@ export class PolygonInteractionManager {
     const infoContentWrapper: HTMLDivElement = document.createElement('div');
     infoContentWrapper.classList.add('info-marker-content');
 
+    const createInfoRow = (label: string, value: string): HTMLDivElement => {
+      const row = document.createElement('div');
+      row.className = 'info-marker-row';
+      const rowLabel = document.createElement('span');
+      rowLabel.className = 'info-marker-label';
+      rowLabel.textContent = label;
+      const rowValue = document.createElement('span');
+      rowValue.className = 'info-marker-value';
+      const primaryValue = document.createElement('span');
+      primaryValue.className = 'info-marker-primary-value';
+      primaryValue.textContent = value;
+      rowValue.appendChild(primaryValue);
+      row.append(rowLabel, rowValue);
+      return row;
+    };
+
+    if (infoConfig.showLayer !== false) {
+      const layerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
+      const layer = layerId ? this.layerManager?.getLayer(layerId) : undefined;
+      if (layer) {
+        const header = document.createElement('div');
+        header.className = 'info-marker-layer';
+        const swatch = document.createElement('span');
+        swatch.className = 'info-marker-layer-color';
+        swatch.style.backgroundColor = layer.color;
+        const heading = document.createElement('div');
+        heading.className = 'info-marker-layer-heading';
+        const name = document.createElement('strong');
+        name.textContent = layer.label?.trim() || layer.id;
+        const policy = document.createElement('span');
+        policy.textContent = `${layer.role === 'draw' ? 'Draw layer' : 'Reference layer'} · ${
+          layer.interaction.charAt(0).toUpperCase() + layer.interaction.slice(1)
+        }`;
+        heading.append(name, policy);
+        header.append(swatch, heading);
+        infoContentWrapper.appendChild(header);
+      }
+    }
+
     if (showArea) {
       const areaValue = useMetricUnits
         ? `${_area.metricArea} ${_area.metricUnit}`
         : `${_area.imperialArea} ${_area.imperialUnit}`;
-      const areaDiv: HTMLDivElement = document.createElement('div');
+      const areaDiv = createInfoRow(areaLabel || 'Area', areaValue);
       areaDiv.classList.add('info-item', 'area');
-      areaDiv.innerHTML =
-        areaLabel && areaLabel.length > 0
-          ? `<strong>${areaLabel}:</strong> ${areaValue}`
-          : areaValue;
+      if (geometry.holeArea > 0) {
+        const holeAreaValue = useMetricUnits
+          ? `${_holeArea.metricArea} ${_holeArea.metricUnit}`
+          : `${_holeArea.imperialArea} ${_holeArea.imperialUnit}`;
+        const holeArea = document.createElement('small');
+        holeArea.className = 'info-marker-secondary-value';
+        holeArea.textContent = `${holeAreaValue} ${infoConfig.holeAreaLabel || 'holes'}`;
+        areaDiv.querySelector('.info-marker-value')?.appendChild(holeArea);
+      }
       infoContentWrapper.appendChild(areaDiv);
     }
 
@@ -4502,13 +4652,37 @@ export class PolygonInteractionManager {
       const perimeterValue = useMetricUnits
         ? `${_perimeter.metricLength} ${_perimeter.metricUnit}`
         : `${_perimeter.imperialLength} ${_perimeter.imperialUnit}`;
-      const perimeterDiv: HTMLDivElement = document.createElement('div');
+      const perimeterDiv = createInfoRow(perimeterLabel || 'Perimeter', perimeterValue);
       perimeterDiv.classList.add('info-item', 'perimeter');
-      perimeterDiv.innerHTML =
-        perimeterLabel && perimeterLabel.length > 0
-          ? `<strong>${perimeterLabel}:</strong> ${perimeterValue}`
-          : perimeterValue;
       infoContentWrapper.appendChild(perimeterDiv);
+    }
+
+    if (infoConfig.showGeometry !== false) {
+      infoContentWrapper.appendChild(
+        createInfoRow(infoConfig.verticesLabel || 'Vertices', String(geometry.vertexCount)),
+      );
+      infoContentWrapper.appendChild(
+        createInfoRow(infoConfig.holesLabel || 'Holes', String(geometry.holeCount)),
+      );
+      if (geometry.partCount > 1) {
+        infoContentWrapper.appendChild(
+          createInfoRow(infoConfig.partsLabel || 'Parts', String(geometry.partCount)),
+        );
+      }
+    }
+
+    const featureMetadata = (featureGroup as PolydrawFeatureGroup)._polydrawMetadata?.metadata;
+    const metadataFields = infoConfig.metadata?.fields ?? [];
+    const metadataRows = metadataFields.flatMap((field) => {
+      const key = field.trim();
+      const value = key ? this.formatInfoMetadataValue(featureMetadata?.[key]) : undefined;
+      return value === undefined ? [] : [createInfoRow(key, value)];
+    });
+    if (metadataRows.length > 0) {
+      const metadataSection = document.createElement('div');
+      metadataSection.className = 'info-marker-metadata';
+      metadataSection.append(...metadataRows);
+      infoContentWrapper.appendChild(metadataSection);
     }
 
     markerContent.appendChild(infoContentWrapper);
