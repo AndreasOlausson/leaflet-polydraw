@@ -19,7 +19,7 @@ describe('Layer Marker Readonly', () => {
     cleanup();
   });
 
-  it('keeps markers non-draggable in inactive layers', async () => {
+  it('keeps markers draggable in editable layers regardless of active draw target', async () => {
     await polydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Layer A' });
     await polydraw.addPredefinedPolygon(fixtures.octagon(), { layer: 'Layer B' });
 
@@ -43,10 +43,67 @@ describe('Layer Marker Readonly', () => {
 
     layerManager.setActiveLayer('Layer A');
     expect(markersA.every((marker) => marker.options.draggable === true)).toBe(true);
-    expect(markersB.every((marker) => marker.options.draggable === false)).toBe(true);
+    expect(markersB.every((marker) => marker.options.draggable === true)).toBe(true);
 
     layerManager.setActiveLayer('Layer B');
-    expect(markersA.every((marker) => marker.options.draggable === false)).toBe(true);
+    expect(markersA.every((marker) => marker.options.draggable === true)).toBe(true);
     expect(markersB.every((marker) => marker.options.draggable === true)).toBe(true);
+  });
+
+  it('allows editable reference layers but keeps readonly reference layers non-draggable', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), {
+      layer: { id: 'Editable Reference', role: 'reference', interaction: 'editable' },
+    });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), {
+      layer: { id: 'Readonly Reference', role: 'reference' },
+    });
+
+    const layerManager = polydraw.getLayerManager();
+    expect(layerManager.setActiveLayer('Editable Reference')).toBe(false);
+    expect(layerManager.getActiveLayerId()).toBe('default');
+
+    const groups = polydraw.getFeatureGroups();
+    const editableReferenceGroup = groups.find(
+      (fg) => layerManager.getLayerForFeatureGroup(fg) === 'Editable Reference',
+    );
+    const readonlyReferenceGroup = groups.find(
+      (fg) => layerManager.getLayerForFeatureGroup(fg) === 'Readonly Reference',
+    );
+
+    expect(editableReferenceGroup).toBeDefined();
+    expect(readonlyReferenceGroup).toBeDefined();
+
+    const getMarkers = (featureGroup: L.FeatureGroup): L.Marker[] =>
+      featureGroup.getLayers().filter((layer) => layer instanceof L.Marker) as L.Marker[];
+
+    expect(
+      getMarkers(editableReferenceGroup!).every((marker) => marker.options.draggable === true),
+    ).toBe(true);
+    expect(getMarkers(readonlyReferenceGroup!)).toHaveLength(0);
+  });
+
+  it('does not create editable markers for readonly reference layers after undo and redo', async () => {
+    polydraw.beginBatch();
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), {
+      layer: { id: 'Reference A', role: 'reference', interaction: 'readonly' },
+    });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), {
+      layer: { id: 'Reference B', role: 'reference', interaction: 'readonly' },
+    });
+    polydraw.endBatch();
+
+    await polydraw.undo();
+    expect(polydraw.getFeatureGroups()).toHaveLength(0);
+
+    await polydraw.redo();
+
+    const layerManager = polydraw.getLayerManager();
+    const restoredGroups = polydraw.getFeatureGroups();
+    expect(restoredGroups).toHaveLength(2);
+    expect(layerManager.getLayer('Reference A')?.interaction).toBe('readonly');
+    expect(layerManager.getLayer('Reference B')?.interaction).toBe('readonly');
+    restoredGroups.forEach((featureGroup) => {
+      expect(featureGroup.getLayers().filter((layer) => layer instanceof L.Marker)).toHaveLength(0);
+    });
   });
 });

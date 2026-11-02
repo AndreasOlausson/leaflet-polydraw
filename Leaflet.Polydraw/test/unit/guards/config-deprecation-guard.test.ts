@@ -3,7 +3,6 @@ import { warnIfUsingDeprecatedConfiguration } from '../../../src/guards/config-d
 import { DrawMode } from '../../../src/enums';
 import type { PolydrawConfig } from '../../../src/types/polydraw-interfaces';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 describe('warnIfUsingDeprecatedConfiguration', () => {
   beforeEach(() => {
     vi.restoreAllMocks();

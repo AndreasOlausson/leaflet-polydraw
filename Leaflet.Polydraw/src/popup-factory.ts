@@ -1,3 +1,5 @@
+import type { TooltipConfig } from './types/polydraw-interfaces';
+
 /**
  * Factory for creating popup UI structures.
  * Provides reusable methods for building popup DOM elements.
@@ -13,9 +15,15 @@ export class PopupFactory {
   static createMenuButton(id: string, title: string, cssClasses: string[]): HTMLDivElement {
     const button = document.createElement('div');
     button.classList.add('marker-menu-button', ...cssClasses);
-    button.title = title;
+    button.setAttribute('data-tooltip', title);
     button.setAttribute('aria-label', title);
     button.setAttribute('data-action-id', id);
+
+    const tooltip = document.createElement('span');
+    tooltip.className = 'marker-menu-tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.textContent = title;
+    button.appendChild(tooltip);
 
     return button;
   }
@@ -25,9 +33,18 @@ export class PopupFactory {
    * @param buttons Array of button elements to include.
    * @returns HTMLDivElement containing the complete menu structure.
    */
-  static buildMenuPopup(buttons: HTMLDivElement[]): HTMLDivElement {
+  static buildMenuPopup(buttons: HTMLDivElement[], tooltipConfig?: TooltipConfig): HTMLDivElement {
     const outerWrapper = document.createElement('div');
     outerWrapper.classList.add('alter-marker-outer-wrapper');
+    if (tooltipConfig) {
+      outerWrapper.setAttribute('data-tooltip-enabled', tooltipConfig.enabled ? 'true' : 'false');
+      outerWrapper.style.setProperty('--polydraw-tooltip-bg', tooltipConfig.backgroundColor);
+      outerWrapper.style.setProperty('--polydraw-tooltip-color', tooltipConfig.color);
+      outerWrapper.style.setProperty(
+        '--polydraw-tooltip-delay',
+        `${Math.max(0, tooltipConfig.delayMs)}ms`,
+      );
+    }
 
     const wrapper = document.createElement('div');
     wrapper.classList.add('alter-marker-wrapper');

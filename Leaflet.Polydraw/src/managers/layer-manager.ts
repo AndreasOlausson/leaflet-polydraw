@@ -4,14 +4,18 @@ import type {
   LayerSnapshot,
   LayerInteraction,
   LayerPanelVisibility,
+  LayerRole,
+  PolygonStyleOverrides,
 } from '../types/polydraw-interfaces';
 import { cloneMetadataValue } from '../utils/metadata-clone.util';
+import { createMarkerColorTheme, createPolygonColorTheme } from '../utils/color-style.util';
 
 export interface LayerState {
   id: string;
   label?: string;
   color: string;
   visible: boolean;
+  role: LayerRole;
   interaction: LayerInteraction;
   panel: LayerPanelVisibility;
   metadata: Record<string, unknown>;
@@ -22,12 +26,18 @@ export interface LayerCreateOptions {
   label?: string;
   color?: string;
   visible?: boolean;
+  role?: LayerRole;
   interaction?: LayerInteraction;
   panel?: LayerPanelVisibility;
   metadata?: Record<string, unknown>;
 }
 
-export type SetActiveLayerResult = 'activated' | 'already-active' | 'not-found' | 'not-visible';
+export type SetActiveLayerResult =
+  | 'activated'
+  | 'already-active'
+  | 'not-found'
+  | 'not-visible'
+  | 'not-draw-layer';
 
 /**
  * Manages polygon layers and feature-group assignments.
@@ -98,7 +108,10 @@ export class LayerManager {
         ? LayerManager.normalizeColor(options.color, this.defaultColor)
         : this.defaultColor,
       visible: options.visible !== false,
-      interaction: this.normalizeInteraction(options.interaction),
+      role: this.normalizeRole(options.role),
+      interaction: this.normalizeInteraction(
+        options.interaction ?? (options.role === 'reference' ? 'readonly' : undefined),
+      ),
       panel: this.normalizePanel(options.panel),
       metadata: this.cloneMetadata(options.metadata),
       featureGroups: [],
@@ -107,6 +120,7 @@ export class LayerManager {
     this.eventManager.emit('polydraw:layer:created', {
       layerId: layer.id,
       color: layer.color,
+      role: layer.role,
     });
     return this.cloneLayerState(layer);
   }
@@ -127,6 +141,9 @@ export class LayerManager {
     if (!targetLayer.visible) {
       return 'not-visible';
     }
+    if (targetLayer.role !== 'draw') {
+      return 'not-draw-layer';
+    }
 
     const previousLayerId = this.activeLayerId;
     this.activeLayerId = normalizedId;
@@ -145,7 +162,7 @@ export class LayerManager {
 
     // Keep at least one visible active layer.
     if (!visible && layer.id === this.activeLayerId) {
-      const fallbackLayerId = this.getFirstVisibleLayerId(layer.id);
+      const fallbackLayerId = this.getFirstVisibleDrawLayerId(layer.id);
       if (!fallbackLayerId) {
         return false;
       }
@@ -169,16 +186,7 @@ export class LayerManager {
 
     layer.color = normalizedColor;
     layer.featureGroups.forEach((featureGroup) => {
-      const styleColorOverride = (
-        featureGroup as unknown as {
-          _polydrawMetadata?: { styleOverrides?: { color?: string } };
-        }
-      )._polydrawMetadata?.styleOverrides?.color;
-      featureGroup.eachLayer((layerItem: L.Layer) => {
-        if (layerItem instanceof L.Polygon && !(layerItem instanceof L.Rectangle)) {
-          layerItem.setStyle({ color: styleColorOverride ?? normalizedColor });
-        }
-      });
+      this.applyLayerStyle(layer, featureGroup);
     });
 
     this.eventManager.emit('polydraw:layer:colorChanged', {
@@ -186,6 +194,14 @@ export class LayerManager {
       color: layer.color,
     });
     return true;
+  }
+
+  private isInternalMenuMarkerElement(element: HTMLElement): boolean {
+    return (
+      element.classList.contains('menu') ||
+      element.classList.contains('delete') ||
+      element.classList.contains('info')
+    );
   }
 
   setLayerLabel(layerId: string, label?: string): boolean {
@@ -214,6 +230,22 @@ export class LayerManager {
       return false;
     }
     layer.interaction = normalized;
+    return true;
+  }
+
+  setLayerRole(layerId: string, role: LayerRole): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+    const normalized = this.normalizeRole(role);
+    if (layer.role === normalized) {
+      return false;
+    }
+    if (layer.id === this.activeLayerId && normalized !== 'draw') {
+      return false;
+    }
+    layer.role = normalized;
     return true;
   }
 
@@ -338,6 +370,45 @@ export class LayerManager {
     return true;
   }
 
+  applyFeatureGroupStyle(featureGroup: L.FeatureGroup, layerId: string): boolean {
+    const layer = this.layers.get(this.normalizeLayerId(layerId));
+    if (!layer) {
+      return false;
+    }
+    this.applyLayerStyle(layer, featureGroup);
+    return true;
+  }
+
+  private applyLayerStyle(layer: LayerState, featureGroup: L.FeatureGroup): void {
+    const layerTheme = createPolygonColorTheme(layer.color);
+    const styleOverrides = (
+      featureGroup as unknown as {
+        _polydrawMetadata?: { styleOverrides?: PolygonStyleOverrides };
+      }
+    )._polydrawMetadata?.styleOverrides;
+
+    featureGroup.eachLayer((layerItem: L.Layer) => {
+      if (layerItem instanceof L.Polygon && !(layerItem instanceof L.Rectangle)) {
+        layerItem.setStyle({
+          color: styleOverrides?.color ?? layerTheme.color,
+          fillColor: styleOverrides?.fillColor ?? layerTheme.fillColor,
+        });
+      }
+      if (layerItem instanceof L.Marker) {
+        const element = layerItem.getElement();
+        if (element instanceof HTMLElement && !this.isInternalMenuMarkerElement(element)) {
+          const fillColor = styleOverrides?.fillColor ?? layerTheme.fillColor;
+          const markerTheme = createMarkerColorTheme(
+            fillColor,
+            styleOverrides?.color ?? layerTheme.color,
+          );
+          element.style.backgroundColor = markerTheme.backgroundColor;
+          element.style.boxShadow = `0 0 0 2px ${markerTheme.borderColor}, 0 0 10px rgba(0, 0, 0, 0.35)`;
+        }
+      }
+    });
+  }
+
   removeFeatureGroupFromLayer(featureGroup: L.FeatureGroup): void {
     const layerId = this.getLayerForFeatureGroup(featureGroup);
     if (!layerId) {
@@ -403,7 +474,7 @@ export class LayerManager {
     this.layers.delete(normalizedId);
 
     if (this.activeLayerId === normalizedId) {
-      const fallbackLayerId = this.getFirstVisibleLayerId(normalizedId);
+      const fallbackLayerId = this.getFirstVisibleDrawLayerId(normalizedId);
       if (fallbackLayerId) {
         this.setActiveLayer(fallbackLayerId);
       } else {
@@ -532,6 +603,7 @@ export class LayerManager {
         label: layer.label,
         color: layer.color,
         visible: layer.visible,
+        role: layer.role,
         interaction: layer.interaction,
         panel: layer.panel,
         metadata: this.cloneMetadata(layer.metadata),
@@ -557,6 +629,7 @@ export class LayerManager {
         existing.label = typeof entry.label === 'string' ? entry.label : undefined;
         existing.color = entry.color ? LayerManager.normalizeColor(entry.color) : existing.color;
         existing.visible = entry.visible !== false;
+        existing.role = this.normalizeSnapshotRole(entry.role, entry.interaction);
         existing.interaction = this.normalizeInteraction(entry.interaction);
         existing.panel = this.normalizePanel(entry.panel);
         existing.metadata = this.cloneMetadata(entry.metadata);
@@ -566,6 +639,7 @@ export class LayerManager {
           label: typeof entry.label === 'string' ? entry.label : undefined,
           color: entry.color ? LayerManager.normalizeColor(entry.color) : this.defaultColor,
           visible: entry.visible !== false,
+          role: this.normalizeSnapshotRole(entry.role, entry.interaction),
           interaction: this.normalizeInteraction(entry.interaction),
           panel: this.normalizePanel(entry.panel),
           metadata: this.cloneMetadata(entry.metadata),
@@ -596,12 +670,12 @@ export class LayerManager {
 
     const desiredActive = this.normalizeLayerId(snapshot.activeLayerId || 'default');
     const desiredLayer = this.layers.get(desiredActive);
-    if (desiredLayer?.visible) {
+    if (desiredLayer?.visible && desiredLayer.role === 'draw') {
       this.activeLayerId = desiredActive;
       return;
     }
 
-    const fallbackLayerId = this.getFirstVisibleLayerId();
+    const fallbackLayerId = this.getFirstVisibleDrawLayerId();
     if (fallbackLayerId) {
       this.activeLayerId = fallbackLayerId;
       return;
@@ -621,6 +695,7 @@ export class LayerManager {
         id: 'default',
         color: this.defaultColor,
         visible: true,
+        role: 'draw',
         interaction: 'editable',
         panel: 'visible',
         metadata: {},
@@ -629,12 +704,12 @@ export class LayerManager {
     }
   }
 
-  private getFirstVisibleLayerId(excludeLayerId?: string): string | undefined {
+  private getFirstVisibleDrawLayerId(excludeLayerId?: string): string | undefined {
     for (const layer of this.layers.values()) {
       if (layer.id === excludeLayerId) {
         continue;
       }
-      if (layer.visible) {
+      if (layer.visible && layer.role === 'draw') {
         return layer.id;
       }
     }
@@ -652,6 +727,7 @@ export class LayerManager {
       label: layer.label,
       color: layer.color,
       visible: layer.visible,
+      role: layer.role,
       interaction: layer.interaction,
       panel: layer.panel,
       metadata: this.cloneMetadata(layer.metadata),
@@ -664,6 +740,17 @@ export class LayerManager {
       return interaction;
     }
     return 'editable';
+  }
+
+  private normalizeRole(role?: LayerRole): LayerRole {
+    return role === 'reference' ? 'reference' : 'draw';
+  }
+
+  private normalizeSnapshotRole(role?: LayerRole, interaction?: LayerInteraction): LayerRole {
+    if (role) {
+      return this.normalizeRole(role);
+    }
+    return interaction === 'readonly' || interaction === 'static' ? 'reference' : 'draw';
   }
 
   private normalizePanel(panel?: LayerPanelVisibility): LayerPanelVisibility {

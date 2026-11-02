@@ -46,6 +46,8 @@ get_installed_leaflet_version() {
 ensure_leaflet_major() {
   local prefix="$1"
   local current_version
+  local package_file
+  local temp_dir
   current_version="$(get_installed_leaflet_version "$prefix")"
 
   if [[ "$current_version" == "$TARGET_MAJOR".* ]]; then
@@ -53,7 +55,14 @@ ensure_leaflet_major() {
     return
   fi
 
-  npm --prefix "$prefix" install --no-save --package-lock=false --prefer-offline --no-audit --no-fund "leaflet@${LEAFLET_VERSION}"
+  # Leaflet has no runtime dependencies. Extracting its package directly avoids
+  # re-resolving the project's unrelated devDependencies during matrix runs.
+  temp_dir="$(mktemp -d)"
+  package_file="$(npm pack --silent --pack-destination "$temp_dir" "leaflet@${LEAFLET_VERSION}")"
+  rm -rf "$prefix/node_modules/leaflet"
+  mkdir -p "$prefix/node_modules/leaflet"
+  tar -xzf "$temp_dir/$package_file" -C "$prefix/node_modules/leaflet" --strip-components=1
+  rm -rf "$temp_dir"
 }
 
 ensure_leaflet_major "$ROOT_DIR"

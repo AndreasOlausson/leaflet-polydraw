@@ -11,17 +11,17 @@
 ## Info Marker (Default: East)
 
 - **Purpose**: Display polygon metrics
-- **Features**: Area, perimeter, metric/imperial units
-- **Popup**: Shows detailed measurements
+- **Features**: Layer context, area, excluded hole area, perimeter, vertices, holes, parts, and allowlisted feature metadata
+- **Popup**: Shows detailed geometry information using metric or imperial units
 
-[![Info Marker Popup](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/info-marker-popup.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/info-marker-popup.png)
+[![Info Marker Details](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/info-marker-details.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/info-marker-details.png)
 
 ## Menu Marker (Default: West)
 
 - **Purpose**: Access advanced polygon editing operations
 - **Popup**: Interactive operation menu with the following tools:
   - **Simplify**: Reduce polygon complexity by removing unnecessary vertices using Douglas-Peucker algorithm
-  - **Double Elbows**: Add intermediate vertices between existing points for higher resolution editing
+  - **Add Vertices**: Add intermediate vertices between existing points for higher resolution editing
   - **Bounding Box**: Convert polygon to its rectangular bounding box
   - **Bezier**: Apply smooth curve interpolation to polygon edges _(alpha feature)_
 
@@ -44,6 +44,11 @@ const polyDrawControl = L.control.polydraw({
         useMetrics: true,
         areaLabel: "Area",
         perimeterLabel: "Perimeter",
+        showLayer: true,
+        showGeometry: true,
+        metadata: {
+          fields: ["name", "category"],
+        },
       },
       markerMenuIcon: {
         position: MarkerPosition.West,

@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as L from 'leaflet';
+import { defaultConfig } from '../../../src/config';
 import { createPolydrawHarness } from '../helpers/polydraw-harness';
 import { MockFactory } from '../mocks/factory';
 
@@ -181,6 +183,273 @@ describe('Layer Public API', () => {
 
     await polydraw.redo();
     expect(getFeatureLayerIds()).toEqual(['Layer A', 'Layer A']);
+  });
+
+  it('merges an entire draw layer into another as one undoable action', async () => {
+    const [targetPolygon, sourcePolygon] = fixtures.overlappingSquares();
+    await polydraw.addPredefinedPolygon([targetPolygon], { layer: 'Target' });
+    await polydraw.addPredefinedPolygon([sourcePolygon], { layer: 'Source' });
+    polydraw.setActiveLayer('Source');
+
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveSnapshot: (...args: unknown[]) => void;
+      };
+    };
+    const saveSnapshotSpy = vi.spyOn(internal.historyManager, 'saveSnapshot');
+    saveSnapshotSpy.mockClear();
+
+    await expect(polydraw.mergeLayerInto('Source', 'Target')).resolves.toBe(true);
+    expect(saveSnapshotSpy).toHaveBeenCalledTimes(1);
+    expect(polydraw.hasLayer('Source')).toBe(false);
+    expect(polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+    expect(polydraw.getActiveLayerId()).toBe('Target');
+
+    await polydraw.undo();
+    expect(polydraw.getFeatureGroupsByLayer('Source')).toHaveLength(1);
+    expect(polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+    expect(polydraw.getActiveLayerId()).toBe('Source');
+
+    await polydraw.redo();
+    expect(polydraw.hasLayer('Source')).toBe(false);
+    expect(polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+  });
+
+  it('moves every polygon without unioning when whole-layer merge is disabled', async () => {
+    const harness = createPolydrawHarness({ mergePolygons: false });
+    try {
+      const isolatedPolydraw = harness.polydraw;
+      const [first, second] = fixtures.overlappingSquares();
+      await isolatedPolydraw.addPredefinedPolygon([first], { layer: 'Target' });
+      await isolatedPolydraw.addPredefinedPolygon([second], { layer: 'Source' });
+      await isolatedPolydraw.addPredefinedPolygon(fixtures.triangle(), {
+        layer: 'Source',
+        overrides: { merge: 'block' },
+      });
+
+      await expect(isolatedPolydraw.mergeLayerInto('Source', 'Target')).resolves.toBe(true);
+      expect(isolatedPolydraw.hasLayer('Source')).toBe(false);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Target')).toHaveLength(3);
+    } finally {
+      harness.cleanup();
+    }
+  });
+
+  it('merges a reference source into a draw layer only when explicitly enabled', async () => {
+    const harness = createPolydrawHarness({
+      layerPanel: {
+        enabled: true,
+        initialState: 'expanded',
+        merge: { allowReferenceSources: true },
+      },
+    });
+    try {
+      const isolatedPolydraw = harness.polydraw;
+      const [targetPolygon, referencePolygon] = fixtures.overlappingSquares();
+      await isolatedPolydraw.addPredefinedPolygon([targetPolygon], { layer: 'Target' });
+      await isolatedPolydraw.addPredefinedPolygon([referencePolygon], {
+        layer: {
+          id: 'Reference',
+          role: 'reference',
+          interaction: 'readonly',
+          color: '#ef4444',
+        },
+        overrides: {
+          style: { color: '#991b1b', fillColor: '#ef4444', fillOpacity: 0.2 },
+        },
+      });
+
+      await expect(isolatedPolydraw.mergeLayerInto('Reference', 'Target')).resolves.toBe(true);
+      expect(isolatedPolydraw.hasLayer('Reference')).toBe(false);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+      expect(
+        (
+          isolatedPolydraw.getFeatureGroupsByLayer('Target')[0] as L.FeatureGroup & {
+            _polydrawMetadata?: { styleOverrides?: { fillColor?: string } };
+          }
+        )._polydrawMetadata?.styleOverrides?.fillColor,
+      ).toBe('#ef4444');
+
+      await isolatedPolydraw.undo();
+      expect(isolatedPolydraw.getLayerById('Reference')?.role).toBe('reference');
+      expect(isolatedPolydraw.getLayerById('Reference')?.interaction).toBe('readonly');
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Reference')).toHaveLength(1);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+
+      await isolatedPolydraw.redo();
+      expect(isolatedPolydraw.hasLayer('Reference')).toBe(false);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+    } finally {
+      harness.cleanup();
+    }
+  });
+
+  it('can replace moved polygon overrides with the target layer style', async () => {
+    const harness = createPolydrawHarness({ mergePolygons: false });
+    try {
+      const isolatedPolydraw = harness.polydraw;
+      isolatedPolydraw.createDrawLayer({ id: 'Target', color: '#3366cc' });
+      await isolatedPolydraw.addPredefinedPolygon(fixtures.triangle(), {
+        layer: { id: 'Source', role: 'draw', color: '#ef4444' },
+        overrides: {
+          style: {
+            color: '#991b1b',
+            fillColor: '#ef4444',
+            fillOpacity: 0.15,
+            opacity: 0.4,
+            weight: 6,
+          },
+        },
+      });
+
+      await expect(
+        isolatedPolydraw.mergeLayerInto('Source', 'Target', { useTargetStyle: true }),
+      ).resolves.toBe(true);
+
+      const featureGroup = isolatedPolydraw.getFeatureGroupsByLayer(
+        'Target',
+      )[0] as L.FeatureGroup & {
+        _polydrawMetadata?: { styleOverrides?: unknown };
+      };
+      const polygon = featureGroup
+        .getLayers()
+        .find(
+          (layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle),
+        ) as L.Polygon;
+
+      expect(featureGroup._polydrawMetadata?.styleOverrides).toBeUndefined();
+      expect((polygon.options.fillColor as string).toLowerCase()).toBe('#3366cc');
+      expect(polygon.options.fillOpacity).toBe(defaultConfig.styles.polygon.fillOpacity);
+      expect(polygon.options.opacity).toBe(defaultConfig.styles.polygon.opacity);
+      expect(polygon.options.weight).toBe(defaultConfig.styles.polygon.weight);
+    } finally {
+      harness.cleanup();
+    }
+  });
+
+  it('rebuilds every readonly MultiPolygon part when merging into an empty editable layer', async () => {
+    const harness = createPolydrawHarness({
+      layerPanel: {
+        enabled: true,
+        initialState: 'expanded',
+        merge: { allowReferenceSources: true },
+      },
+    });
+    try {
+      const isolatedPolydraw = harness.polydraw;
+      const geoJsonFixtures = MockFactory.createGeoJSONFixtures();
+      await isolatedPolydraw.addPredefinedGeoJSONs([geoJsonFixtures.multipolygon()], {
+        layer: {
+          id: 'Flood reference',
+          role: 'reference',
+          interaction: 'readonly',
+          color: '#581c87',
+        },
+        overrides: {
+          style: { color: '#581c87', fillColor: '#c084fc', fillOpacity: 0.38 },
+        },
+      });
+
+      const referenceGroups = isolatedPolydraw.getFeatureGroupsByLayer('Flood reference');
+      expect(referenceGroups).toHaveLength(2);
+      referenceGroups.forEach((featureGroup) => {
+        expect(featureGroup.getLayers().filter((layer) => layer instanceof L.Marker)).toHaveLength(
+          0,
+        );
+      });
+
+      await expect(
+        isolatedPolydraw.mergeLayerInto('Flood reference', 'default', {
+          useTargetStyle: true,
+        }),
+      ).resolves.toBe(true);
+
+      const movedGroups = isolatedPolydraw.getFeatureGroupsByLayer('default');
+      expect(movedGroups).toHaveLength(2);
+      movedGroups.forEach((featureGroup) => {
+        const polygon = featureGroup
+          .getLayers()
+          .find(
+            (layer) => layer instanceof L.Polygon && !(layer instanceof L.Rectangle),
+          ) as L.Polygon & { _polydrawDragData?: { originalOpacity?: number } };
+        const markers = featureGroup
+          .getLayers()
+          .filter((layer) => layer instanceof L.Marker) as L.Marker[];
+        expect((polygon.options.color as string).toLowerCase()).toBe(
+          defaultConfig.styles.polygon.color.toLowerCase(),
+        );
+        expect((polygon.options.fillColor as string).toLowerCase()).toBe(
+          defaultConfig.styles.polygon.fillColor.toLowerCase(),
+        );
+        expect(polygon._polydrawDragData?.originalOpacity).toBe(
+          defaultConfig.styles.polygon.fillOpacity,
+        );
+        expect(markers.length).toBeGreaterThan(0);
+        expect(markers.every((marker) => marker.options.draggable === true)).toBe(true);
+      });
+    } finally {
+      harness.cleanup();
+    }
+  });
+
+  it('rejects invalid whole-layer merge requests without saving history', async () => {
+    polydraw.createDrawLayer({ id: 'Target' });
+    polydraw.createLayer({ id: 'Reference', role: 'reference' });
+    const internal = polydraw as unknown as {
+      historyManager: {
+        saveState: (...args: unknown[]) => void;
+      };
+    };
+    const saveStateSpy = vi.spyOn(internal.historyManager, 'saveState');
+    saveStateSpy.mockClear();
+
+    await expect(polydraw.mergeLayerInto('missing', 'Target')).resolves.toBe(false);
+    await expect(polydraw.mergeLayerInto('Target', 'Target')).resolves.toBe(false);
+    await expect(polydraw.mergeLayerInto('Reference', 'Target')).resolves.toBe(false);
+    await expect(polydraw.mergeLayerInto('Target', 'Reference')).resolves.toBe(false);
+    await expect(polydraw.mergeLayerInto('Target', 'default')).resolves.toBe(false);
+    expect(saveStateSpy).not.toHaveBeenCalled();
+  });
+
+  it('restores every layer and history stack when a whole-layer merge fails partway', async () => {
+    const harness = createPolydrawHarness({ mergePolygons: false });
+    try {
+      const isolatedPolydraw = harness.polydraw;
+      isolatedPolydraw.createDrawLayer({ id: 'Target' });
+      await isolatedPolydraw.addPredefinedPolygon(fixtures.triangle(), { layer: 'Source' });
+      await isolatedPolydraw.addPredefinedPolygon(fixtures.octagon(), {
+        layer: 'Source',
+        overrides: { merge: 'block' },
+      });
+
+      const internal = isolatedPolydraw as unknown as {
+        moveFeatureGroupToDrawLayer: (
+          featureGroup: L.FeatureGroup,
+          targetLayerId: string,
+          options?: unknown,
+        ) => Promise<boolean>;
+        historyManager: {
+          undoStack: unknown[];
+          redoStack: unknown[];
+        };
+      };
+      const originalMove = internal.moveFeatureGroupToDrawLayer.bind(isolatedPolydraw);
+      const moveSpy = vi.spyOn(internal, 'moveFeatureGroupToDrawLayer');
+      moveSpy.mockImplementationOnce(originalMove).mockResolvedValueOnce(false);
+      const undoCountBefore = internal.historyManager.undoStack.length;
+      const redoCountBefore = internal.historyManager.redoStack.length;
+
+      await expect(isolatedPolydraw.mergeLayerInto('Source', 'Target')).resolves.toBe(false);
+
+      expect(moveSpy).toHaveBeenCalledTimes(2);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Source')).toHaveLength(2);
+      expect(isolatedPolydraw.getFeatureGroupsByLayer('Target')).toHaveLength(0);
+      expect(isolatedPolydraw.hasLayer('Source')).toBe(true);
+      expect(internal.historyManager.undoStack).toHaveLength(undoCountBefore);
+      expect(internal.historyManager.redoStack).toHaveLength(redoCountBefore);
+    } finally {
+      harness.cleanup();
+    }
   });
 
   it('removes layer assignments cleanly and preserves unassigned state through redo', async () => {

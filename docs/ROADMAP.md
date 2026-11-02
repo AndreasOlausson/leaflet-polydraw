@@ -14,8 +14,17 @@ Contributions, ideas, and discussions are always welcome.
 - **Layered Polygon Sets**: Organize polygons into layers with visibility, ordering, color, interaction policy, panel state, and metadata.
 - **Extensible Menu System**: Add custom polygon menu actions through `polygonTools.menuActions`.
 
+## Planned for 2.1
+
+- **Multiple Draw Layers**: Create independent editable drawing targets with deterministic colors, visibility, ordering, naming, and per-layer styling.
+- **Layer Workflows**: Move individual polygons or merge complete draw/reference layers into a draw layer with optional target-style adoption and undo/redo support.
+- **Layer-Aware Polygon UI**: Show layer context and geometry metadata in polygon panels while keeping automatic polygon merges isolated to their assigned layer.
+- **Polygon Color Action**: Change feature fill color and opacity with live preview and configurable merge behavior.
+
 ## Planned New Features
 
+- **Custom Toolbox Tools**: Add a public API for registering application-specific toolbar tools with their own icon, activation lifecycle, map pointer handlers, feature handlers, cursor state, history integration, and optional exclusive-mode behavior.
+- **Freehand Drawing Preview**: Explore an optional live drawing preview that stays stable during tracing and does not misrepresent the final topology-cleaned polygon, especially for self-intersecting traces.
 - **Magnetic Trace / Auto-Follow Edges**: Allow drawing that automatically snaps and follows existing polygon edges for seamless alignment.
 - **Polygon Splitting Tool**: Enable splitting polygons by drawing a cross-cutting line.
 - **Measurement Tool**: Add an optional measuring tool for temporary distance and area visualization.

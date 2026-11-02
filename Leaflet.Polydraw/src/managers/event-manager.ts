@@ -91,7 +91,9 @@ export type PolydrawEventPayloads = {
   'polydraw:layer:created': {
     layerId: string;
     color: string;
+    role: 'draw' | 'reference';
   };
+  'polydraw:layer:create-draw-requested': Record<string, never>;
   'polydraw:layer:deleted': {
     layerId: string;
     removedFeatureGroups: FeatureGroup[];
@@ -110,6 +112,25 @@ export type PolydrawEventPayloads = {
   };
   'polydraw:layer:delete-requested': {
     layerId: string;
+  };
+  'polydraw:layer:delete-role-requested': {
+    role: 'draw' | 'reference';
+  };
+  'polydraw:layer:update-requested': {
+    layerId: string;
+    label?: string;
+    color: string;
+  };
+  'polydraw:layer:move-feature-requested': {
+    featureGroup: FeatureGroup;
+    targetLayerId?: string;
+    createNewLayer?: boolean;
+    newLayerLabel?: string;
+  };
+  'polydraw:layer:merge-requested': {
+    sourceLayerId: string;
+    targetLayerId: string;
+    useTargetStyle: boolean;
   };
   'polydraw:layer:reorder-requested': {
     layerId: string;

@@ -7,19 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.1.0] - Unreleased
+## [2.1.0] - 2026-11-02
 
 ### Added
 
 - Added a built-in polygon color action, controlled by `polygonTools.color`, for changing a feature's fill color and fill opacity from the polygon action menu.
 - Added a compact color picker with a hex color map, native color input, opacity slider, live preview, cancel/back flow, and apply confirmation.
 - Added `polygonTools.color.mergeStrategy` (`source`, `target`, `blend`) to control how feature-level style overrides are resolved during polygon merges.
+- Added multiple editable draw layers through the layer panel and the new `createDrawLayer()` API.
+- Added explicit `draw` and `reference` layer roles. Reference layers can remain editable but cannot become the active drawing target.
+- Added `layerPanel.enabled` and `layerPanel.initialState` configuration for hiding the panel or starting it expanded/collapsed.
+- Added a deterministic 21-color draw-layer palette with lighter and darker ROYGBIV variants.
+- Added layer settings for changing a layer's display name and color from the layer panel.
+- Added whole-layer merge from the layer settings dialog and the `mergeLayerInto()` API. The operation moves every source polygon into a target draw layer as one undoable action and unions overlaps when `mergePolygons` is enabled.
+- Added opt-in `layerPanel.merge.allowReferenceSources` support for merging a complete reference layer into a draw layer while keeping reference layers unavailable as merge targets.
+- Added a per-operation "Use target layer style" choice for whole-layer merges, also available as `mergeLayerInto(source, target, { useTargetStyle: true })`.
+- Added a configurable polygon action for moving a polygon to an existing or newly created draw layer as one undoable operation. New target layers can be named directly in the move dialog.
+- Added a richer info-marker panel with layer context, geometry statistics, excluded hole area, and an allowlist for displaying feature metadata.
+- Added `tools.eraseScope: "drawLayers"` for erasing polygons from draw-role layers without touching reference layers.
 
 ### Changed
 
+- The built-in layer panel and Move to Layer polygon action are opt-in by default, preserving the existing single-layer interface for 2.0 applications. The demos enable the complete layer workflow explicitly.
 - Feature-level color changes are stored as style overrides and are preserved through undo/redo snapshots.
+- Moving the last polygon out of a non-default layer now removes the empty source layer as part of the same undoable action.
+- Moving a polygon into a draw layer now merges intersecting target polygons when `mergePolygons` is enabled.
 - Polygon color previews now keep edit marker styling in sync with the selected fill color while deriving darker borders for the polygon and markers.
 - Opacity changes affect polygon fill only; edit markers remain opaque for readability.
+- The wider layer panel separates draw and reference layers and scrolls both sections inside one map-bounded content area.
+- Whole-layer merge dialogs now preselect the destination when only one target layer is available.
+- Polygon action and info popups now share a compact softly tinted panel design with restrained borders, shadows, and accent colors. Polygon actions use the configured Polydraw tooltip theme instead of native browser titles.
+- Polygon editing remains available on every editable layer, while automatic merge operations are isolated to the polygon's own layer.
+- Layer-colored polygons now use matching softened vertex markers with darker borders.
+- Reference layers can be removed together from their section header in one undoable action.
+
+### Fixed
+
+- Empty draw layers are no longer removed when a polygon is added, merged, or deleted in another layer.
+- Marker colors are restored to their layer theme after modifier-key feedback and modifier-assisted dragging.
+- Hole helper lines now include the closing segment so every hole edge uses the configured hole color.
+- Whole-layer merges are now atomic: a failure after one or more polygons have moved restores the complete pre-merge geometry, layers, and history state.
+- Whole-layer merges into empty draw layers now rebuild readonly reference polygons, including every part of a MultiPolygon, with editable markers and drag behavior.
+- Target-style merges now apply Default Layer polygon and marker colors, opacity, and cached drag style immediately without requiring a subsequent edit.
 
 ## [2.0.2] - 2026-06-22
 

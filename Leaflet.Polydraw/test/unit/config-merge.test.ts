@@ -3,7 +3,6 @@ import { deepMerge } from '../../src/utils/config-merge.util';
 import type { PolydrawConfig } from '../../src/types/polydraw-interfaces';
 import { defaultConfig } from '../../src/config';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 describe('deepMerge', () => {
   describe('Basic primitives', () => {
     it('should merge boolean values', () => {
@@ -122,6 +121,15 @@ describe('deepMerge', () => {
   });
 
   describe('Real PolydrawConfig scenarios', () => {
+    it('keeps the new layer UI opt-in by default', () => {
+      expect(defaultConfig.layerPanel.enabled).toBe(false);
+      expect(defaultConfig.polygonTools.moveToLayer.enabled).toBe(false);
+    });
+
+    it('disables reference-layer merge sources by default', () => {
+      expect(defaultConfig.layerPanel.merge?.allowReferenceSources).toBe(false);
+    });
+
     it('should merge tools configuration correctly', () => {
       const target: any = {
         tools: {
@@ -338,6 +346,9 @@ describe('deepMerge', () => {
       expect(result.markers.deleteMarker).toBe(true);
       expect(result.markers.coordsTitle).toBe(true);
       expect(result.markers.markerInfoIcon.showPerimeter).toBe(true);
+      expect(result.markers.markerInfoIcon.showLayer).toBe(true);
+      expect(result.markers.markerInfoIcon.showGeometry).toBe(true);
+      expect(result.markers.markerInfoIcon.metadata.fields).toEqual([]);
       expect(result.markers.markerInfoIcon.position).toBe(3);
     });
 

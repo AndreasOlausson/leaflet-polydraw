@@ -133,9 +133,18 @@ const polydrawConfig = {
   },
   polygonTools: {
     menuActions: demoMenuActions,
+    moveToLayer: {
+      enabled: true,
+    },
   },
   tools: {
-    eraseScope: 'defaultLayer',
+    eraseScope: 'drawLayers',
+  },
+  layerPanel: {
+    enabled: true,
+    merge: {
+      allowReferenceSources: true,
+    },
   },
 };
 

@@ -25,7 +25,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 
 - **Freehand Drawing**: Draw polygons naturally by sketching directly on the map — click and drag to create shapes in real time.
 - **Smart Polygon Merging**: Automatically detects and merges overlapping polygons (including smooth C-to-O shape completion).
-- **Layer Management**: Organize polygons into named layers with visibility, color, ordering, read-only/static policies, and metadata.
+- **Layer Management**: Draw into multiple independent layers, keep separate reference layers, and control visibility, color, ordering, interaction policies, and metadata.
 - **Drag & Drop Editing**: Intuitive polygon repositioning with intelligent spatial interactions.
 - **Clone Drag Mode**: Duplicate polygons instantly by dragging a copy while the original remains in its starting position (preserves holes and metadata).
 - **Advanced Vertex Editing**: Drag vertices, add or remove points, and reshape polygons seamlessly.
@@ -45,6 +45,26 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 
 ---
 
+## Layer Workflows
+
+Polydraw can keep user drawings and application-provided geometry in separate, independently styled layers:
+
+Layer APIs are always available, while the built-in panel and Move to Layer action are opt-in. Existing single-layer applications therefore retain their current interface when upgrading.
+
+- **Draw layers** are selectable targets for freehand and point-to-point drawing. Create them from the layer panel or with `createDrawLayer()`.
+- **Reference layers** hold contextual or imported geometry. They can be editable, readonly, or static, but never become the active drawing target.
+- Polygon creation and automatic merging stay inside the owning layer, so overlapping geometry in different layers remains independent.
+- Move one polygon from its action menu, or merge an entire layer into a draw layer as a single undoable operation.
+- Whole-layer merges may preserve per-polygon styles or adopt the target layer style. Reference-layer sources are opt-in.
+
+When enabled, the built-in panel provides naming, colors, visibility, ordering, deletion, and whole-layer merge controls. It can start expanded or collapsed, or be replaced by an application-owned UI using the public layer API.
+
+[![Layer Workflows](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/layer-workflows-overview.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/layer-workflows-overview.png)
+
+See the **[Layer Management Guide](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/LAYERS.md)** for configuration, import, move, and merge examples.
+
+---
+
 **[Live Demo](https://polydraw.ao-tech.se)** · **[Quick Start](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/QUICK_START.md)** · **[Custom Actions](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CUSTOM_ACTIONS.md)** · **[Full Documentation](https://github.com/AndreasOlausson/leaflet-polydraw/tree/main/docs)**
 
 ---
@@ -57,6 +77,7 @@ Full documentation and examples are available on GitHub:
 - [Quick Start](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/QUICK_START.md)
 - [Configuration](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CONFIGURATION.md)
 - [Features](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/FEATURES.md)
+- [Layer Management](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/LAYERS.md)
 - [Custom Polygon Menu Actions](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/CUSTOM_ACTIONS.md)
 - [API Reference](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/API.md)
 - [Markers](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/MARKERS.md)

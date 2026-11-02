@@ -414,6 +414,182 @@ describe('Menu Operations Config', () => {
     });
   });
 
+  describe('moveToLayer', () => {
+    const createMoveToLayerHarness = (config: Partial<PolydrawConfig> = {}) =>
+      createPolydrawHarness({
+        ...config,
+        polygonTools: {
+          ...defaultConfig.polygonTools,
+          ...config.polygonTools,
+          moveToLayer: { enabled: true },
+        },
+      });
+
+    it('should show the move-to-layer button when enabled', async () => {
+      const harness = createMoveToLayerHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const actions = openMenuAndGetActionIds(harness.map, fg);
+        expect(actions.has('moveToLayer')).toBe(true);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should hide the move-to-layer button when disabled', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const fg = harness.polydraw.getFeatureGroups()[0];
+        const actions = openMenuAndGetActionIds(harness.map, fg);
+        expect(actions.has('moveToLayer')).toBe(false);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should move a polygon to an existing draw layer with undo and redo support', async () => {
+      const harness = createMoveToLayerHarness();
+      try {
+        harness.polydraw.createDrawLayer({ id: 'Source', color: '#ef4444' });
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const source = harness.polydraw.getFeatureGroups()[0];
+        harness.polydraw.createDrawLayer({ id: 'Survey', color: '#3b82f6' });
+        harness.polydraw.setActiveLayer('Source');
+
+        clickMenuButton(harness.map, source, 'moveToLayer');
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-layer-picker');
+        const target = panel?.querySelector('[data-layer-id="Survey"]') as HTMLElement | null;
+        const apply = panel?.querySelector('.polygon-layer-apply') as HTMLButtonElement | null;
+
+        expect(target).not.toBeNull();
+        expect(apply?.disabled).toBe(true);
+        target!.click();
+        expect(apply?.disabled).toBe(false);
+        apply!.click();
+        await flushAsync();
+
+        expect(harness.polydraw.getLayerById('Source')).toBeUndefined();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Survey')).toHaveLength(1);
+        expect(harness.polydraw.getActiveLayerId()).toBe('Survey');
+        expect(findPolygonLayer(source)?.options.fillColor).toBe('#3b82f6');
+
+        await harness.polydraw.undo();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Source')).toHaveLength(1);
+        expect(harness.polydraw.getFeatureGroupsByLayer('Survey')).toHaveLength(0);
+        expect(harness.polydraw.getActiveLayerId()).toBe('Source');
+
+        await harness.polydraw.redo();
+        expect(harness.polydraw.getLayerById('Source')).toBeUndefined();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Survey')).toHaveLength(1);
+        expect(harness.polydraw.getActiveLayerId()).toBe('Survey');
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should create a new draw layer for the polygon as one undoable action', async () => {
+      const harness = createMoveToLayerHarness();
+      try {
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const source = harness.polydraw.getFeatureGroups()[0];
+
+        clickMenuButton(harness.map, source, 'moveToLayer');
+        const container = harness.map.getContainer();
+        const panel = container.querySelector('.polygon-layer-picker');
+        const target = panel?.querySelector('[data-layer-target="new"]') as HTMLElement | null;
+        const apply = panel?.querySelector('.polygon-layer-apply') as HTMLButtonElement | null;
+
+        target!.click();
+        const nameInput = panel?.querySelector(
+          '.polygon-layer-new-name-input',
+        ) as HTMLInputElement | null;
+        expect(nameInput).not.toBeNull();
+        expect(nameInput?.closest<HTMLElement>('.polygon-layer-new-name')?.hidden).toBe(false);
+        nameInput!.value = 'Survey output';
+        apply!.click();
+        await flushAsync();
+
+        expect(harness.polydraw.getAllLayers().map((layer) => layer.id)).toEqual([
+          'default',
+          'Layer 1',
+        ]);
+        expect(harness.polydraw.getLayerById('Layer 1')?.label).toBe('Survey output');
+        expect(harness.polydraw.getActiveLayerId()).toBe('Layer 1');
+        expect(harness.polydraw.getFeatureGroupsByLayer('Layer 1')).toHaveLength(1);
+
+        await harness.polydraw.undo();
+        expect(harness.polydraw.getAllLayers().map((layer) => layer.id)).toEqual(['default']);
+        expect(harness.polydraw.getFeatureGroupsByLayer('default')).toHaveLength(1);
+
+        await harness.polydraw.redo();
+        expect(harness.polydraw.getAllLayers().map((layer) => layer.id)).toEqual([
+          'default',
+          'Layer 1',
+        ]);
+        expect(harness.polydraw.getLayerById('Layer 1')?.label).toBe('Survey output');
+        expect(harness.polydraw.getFeatureGroupsByLayer('Layer 1')).toHaveLength(1);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should merge overlapping polygons after moving into another layer', async () => {
+      const harness = createMoveToLayerHarness();
+      try {
+        const [targetPolygon, sourcePolygon] = fixtures.overlappingSquares();
+        harness.polydraw.createDrawLayer({ id: 'Target' });
+        await harness.polydraw.addPredefinedPolygon([targetPolygon]);
+        harness.polydraw.createDrawLayer({ id: 'Source' });
+        await harness.polydraw.addPredefinedPolygon([sourcePolygon]);
+        const source = harness.polydraw.getFeatureGroupsByLayer('Source')[0];
+
+        clickMenuButton(harness.map, source, 'moveToLayer');
+        const panel = harness.map.getContainer().querySelector('.polygon-layer-picker');
+        (panel?.querySelector('[data-layer-id="Target"]') as HTMLElement).click();
+        (panel?.querySelector('.polygon-layer-apply') as HTMLButtonElement).click();
+        await flushAsync();
+        await flushAsync();
+
+        expect(harness.polydraw.getLayerById('Source')).toBeUndefined();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+        expect(harness.polydraw.getFeatureGroups()).toHaveLength(1);
+
+        await harness.polydraw.undo();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(1);
+        expect(harness.polydraw.getFeatureGroupsByLayer('Source')).toHaveLength(1);
+      } finally {
+        harness.cleanup();
+      }
+    });
+
+    it('should keep overlapping polygons separate after moving when merging is disabled', async () => {
+      const harness = createMoveToLayerHarness({ mergePolygons: false });
+      try {
+        const [targetPolygon, sourcePolygon] = fixtures.overlappingSquares();
+        harness.polydraw.createDrawLayer({ id: 'Target' });
+        await harness.polydraw.addPredefinedPolygon([targetPolygon]);
+        harness.polydraw.createDrawLayer({ id: 'Source' });
+        await harness.polydraw.addPredefinedPolygon([sourcePolygon]);
+        const source = harness.polydraw.getFeatureGroupsByLayer('Source')[0];
+
+        clickMenuButton(harness.map, source, 'moveToLayer');
+        const panel = harness.map.getContainer().querySelector('.polygon-layer-picker');
+        (panel?.querySelector('[data-layer-id="Target"]') as HTMLElement).click();
+        (panel?.querySelector('.polygon-layer-apply') as HTMLButtonElement).click();
+        await flushAsync();
+
+        expect(harness.polydraw.getLayerById('Source')).toBeUndefined();
+        expect(harness.polydraw.getFeatureGroupsByLayer('Target')).toHaveLength(2);
+        expect(harness.polydraw.getFeatureGroups()).toHaveLength(2);
+      } finally {
+        harness.cleanup();
+      }
+    });
+  });
+
   describe('bezier', () => {
     it('should show the bezier button when enabled', async () => {
       const harness = createPolydrawHarness();
@@ -901,6 +1077,7 @@ describe('Menu Operations Config', () => {
           rotate: { enabled: false },
           donut: { enabled: false, direction: DonutDirection.Both },
           color: { ...defaultConfig.polygonTools.color, enabled: false },
+          moveToLayer: { enabled: false },
           visualOptimizationToggle: { enabled: false },
         }),
       );
@@ -916,7 +1093,7 @@ describe('Menu Operations Config', () => {
   });
 
   describe('default config shows all standard buttons', () => {
-    it('should show simplify, doubleElbows, bbox, bezier, scale, rotate, donut, and color with defaults', async () => {
+    it('should show all standard polygon actions with defaults', async () => {
       const harness = createPolydrawHarness();
       try {
         await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
@@ -930,6 +1107,7 @@ describe('Menu Operations Config', () => {
         expect(actions.has('rotate')).toBe(true);
         expect(actions.has('donut')).toBe(true);
         expect(actions.has('color')).toBe(true);
+        expect(actions.has('moveToLayer')).toBe(false);
         // toggleOptimization only shows when polygon has VO metadata
         expect(actions.has('toggleOptimization')).toBe(false);
       } finally {

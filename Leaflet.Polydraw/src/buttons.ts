@@ -37,6 +37,20 @@ const setButtonTooltip = (button: HTMLAnchorElement, text: string): void => {
   button.setAttribute('aria-label', text);
 };
 
+export const setToolbarButtonEnabled = (
+  button: HTMLAnchorElement | null,
+  enabled: boolean,
+): void => {
+  if (!button) return;
+
+  // Keep the anchor fully opaque so its tooltip can remain above adjacent controls.
+  button.style.removeProperty('opacity');
+  button.style.removeProperty('pointer-events');
+  button.classList.toggle('polydraw-toolbar-button-disabled', !enabled);
+  button.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+  button.tabIndex = enabled ? 0 : -1;
+};
+
 /**
  * Creates the button elements for the Polydraw control.
  * @param container The main container element.
@@ -164,7 +178,13 @@ export function createButtons(
       subContainer,
     ) as HTMLAnchorElement;
     erase.href = '#';
-    setButtonTooltip(erase, 'Erase All');
+    const eraseTooltip =
+      config.tools.eraseScope === 'defaultLayer'
+        ? 'Erase default layer polygons'
+        : config.tools.eraseScope === 'drawLayers'
+          ? 'Erase draw layer polygons'
+          : 'Erase all polygons';
+    setButtonTooltip(erase, eraseTooltip);
     erase.setAttribute('data-polydraw', 'erase-button');
     setButtonIcon(erase, icons.erase);
     L.DomEvent.on(erase, 'mousedown', L.DomEvent.stopPropagation);
@@ -198,21 +218,8 @@ export function createButtons(
 
   // Update button states based on history state
   const updateHistoryButtonStates = (canUndo: boolean, canRedo: boolean) => {
-    if (canUndo) {
-      undo.style.opacity = '1';
-      undo.style.pointerEvents = 'auto';
-    } else {
-      undo.style.opacity = '0.3';
-      undo.style.pointerEvents = 'none';
-    }
-
-    if (canRedo) {
-      redo.style.opacity = '1';
-      redo.style.pointerEvents = 'auto';
-    } else {
-      redo.style.opacity = '0.3';
-      redo.style.pointerEvents = 'none';
-    }
+    setToolbarButtonEnabled(undo, canUndo);
+    setToolbarButtonEnabled(redo, canRedo);
   };
 
   // Listen to history changes and update button states automatically

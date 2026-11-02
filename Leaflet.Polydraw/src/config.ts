@@ -68,6 +68,15 @@ export const defaultConfig: PolydrawConfig = {
       usePerimeterMinValue: false,
       areaLabel: 'Area',
       perimeterLabel: 'Perimeter',
+      showLayer: true,
+      showGeometry: true,
+      holeAreaLabel: 'holes',
+      verticesLabel: 'Vertices',
+      holesLabel: 'Holes',
+      partsLabel: 'Parts',
+      metadata: {
+        fields: [],
+      },
       values: {
         min: {
           metric: '50',
@@ -217,8 +226,18 @@ export const defaultConfig: PolydrawConfig = {
       defaultFillOpacity: 0.35,
       mergeStrategy: 'source',
     },
+    moveToLayer: {
+      enabled: false,
+    },
     visualOptimizationToggle: {
       enabled: true,
+    },
+  },
+  layerPanel: {
+    enabled: false,
+    initialState: 'expanded',
+    merge: {
+      allowReferenceSources: false,
     },
   },
   tooltips: {
@@ -244,6 +263,8 @@ export const defaultConfig: PolydrawConfig = {
       modifierSubtract: true,
       deletePolygon: true,
       layerDelete: true,
+      layerUpdate: true,
+      layerMove: true,
       layerReorder: true,
       polygonActions: {
         simplify: true,

@@ -82,7 +82,11 @@ export default [
       },
     },
     plugins: basePlugins,
-    rules: baseRules,
+    rules: {
+      ...baseRules,
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    },
   },
   {
     ignores: [
