@@ -256,6 +256,7 @@ export class PolygonMutationManager {
     const { level: optimizationLevel, original: originalOptimizationLevel } =
       this.getOptimizationMetadataFromFeatureGroup(data.featureGroup);
     const sourceMetadata = this.getFeatureMetadataStateFromFeatureGroup(data.featureGroup);
+    const sourceLayerId = this.layerManager?.getLayerForFeatureGroup(data.featureGroup);
 
     let result: GeometryOperationResult;
     let shouldSaveHistory = true;
@@ -329,6 +330,7 @@ export class PolygonMutationManager {
         sourceFeatureIds: sourceMetadata.sourceFeatureIds,
         featureInteractionOverride: sourceMetadata.interactionOverride,
         featureStyleOverrides: sourceMetadata.styleOverrides,
+        targetLayerId: sourceLayerId,
         featureCreatedAt: sourceMetadata.createdAt,
       });
       if (data.action === 'bezier' && this.config.polygonTools.bezier?.ghostMarkers) {

@@ -72,7 +72,6 @@ type PolygonColorSelection = Required<
 >;
 type PolydrawAuxiliaryPolyline = L.Polyline & { _polydrawAuxiliaryLayer?: true };
 type PolygonNativeStartListeners = {
-  mousedown: (event: MouseEvent) => void;
   pointerdown: (event: PointerEvent) => void;
   touchstart: (event: TouchEvent) => void;
 };
@@ -145,6 +144,7 @@ export class PolygonInteractionManager {
   private dragUsesPointerEvents: boolean = false;
   private polygonTouchStartListeners = new WeakMap<L.Polygon, (e: TouchEvent) => void>();
   private polygonNativeStartListeners = new WeakMap<L.Polygon, PolygonNativeStartListeners>();
+  private polygonTouchActionValues = new WeakMap<L.Polygon, string>();
   private _openMenuPopup: L.Popup | null = null;
   private transformModeActive: boolean = false;
   private transformControllers = new WeakMap<L.FeatureGroup, PolygonTransformController>();
@@ -238,6 +238,8 @@ export class PolygonInteractionManager {
       this.saveHistoryState('donut');
     }
 
+    const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+    const targetLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
     this.cleanupFeatureGroup(featureGroup);
     this.removeFeatureGroup(featureGroup);
     this.emitPolygonUpdated({
@@ -246,6 +248,13 @@ export class PolygonInteractionManager {
       allowMerge: donutValidation.allowMerge,
       optimizationLevel,
       originalOptimizationLevel,
+      featureId: featureMetadataState.featureId,
+      featureMetadata: featureMetadataState.metadata,
+      sourceFeatureIds: featureMetadataState.sourceFeatureIds,
+      featureInteractionOverride: featureMetadataState.interactionOverride,
+      featureStyleOverrides: featureMetadataState.styleOverrides,
+      targetLayerId,
+      featureCreatedAt: featureMetadataState.createdAt,
     });
   }
 
@@ -1160,6 +1169,9 @@ export class PolygonInteractionManager {
 
     const existingDragData = polygon._polydrawDragData;
     if (this.currentDragPolygon === polygon && existingDragData?.isDragging) {
+      if (options.attachTouchListeners) {
+        this.attachDragTouchListeners();
+      }
       return true;
     }
 
@@ -1231,8 +1243,10 @@ export class PolygonInteractionManager {
     };
 
     const listeners: PolygonNativeStartListeners = {
-      mousedown: (event) => startFromNativeEvent(event),
-      pointerdown: (event) => startFromNativeEvent(event),
+      pointerdown: (event) => {
+        if (LeafletVersionDetector.isV1() && event.pointerType === 'mouse') return;
+        startFromNativeEvent(event);
+      },
       touchstart: (event) => startFromNativeEvent(event),
     };
 
@@ -1241,7 +1255,10 @@ export class PolygonInteractionManager {
     const attach = () => {
       const el = (polygon as unknown as { _path?: SVGElement })._path;
       if (!el) return;
-      el.addEventListener('mousedown', listeners.mousedown, { capture: true });
+      if (!this.polygonTouchActionValues.has(polygon)) {
+        this.polygonTouchActionValues.set(polygon, el.style.touchAction);
+      }
+      el.style.touchAction = 'none';
       el.addEventListener('pointerdown', listeners.pointerdown, { capture: true });
       el.addEventListener('touchstart', listeners.touchstart, { capture: true, passive: false });
     };
@@ -1249,7 +1266,7 @@ export class PolygonInteractionManager {
     if ((polygon as unknown as { _path?: SVGElement })._path) {
       attach();
     } else {
-      polygon.once('add', attach);
+      polygon.once('add', () => requestAnimationFrame(attach));
     }
   }
 
@@ -1323,7 +1340,7 @@ export class PolygonInteractionManager {
       if ((polygon as unknown as { _path?: SVGElement })._path) {
         attachTouch();
       } else {
-        polygon.once('add', attachTouch);
+        polygon.once('add', () => requestAnimationFrame(attachTouch));
       }
     }
 
@@ -2369,10 +2386,11 @@ export class PolygonInteractionManager {
     if (!listeners) return;
     const el = (polygon as unknown as { _path?: SVGElement })._path;
     if (el) {
-      el.removeEventListener('mousedown', listeners.mousedown, { capture: true });
       el.removeEventListener('pointerdown', listeners.pointerdown, { capture: true });
       el.removeEventListener('touchstart', listeners.touchstart, { capture: true });
+      el.style.touchAction = this.polygonTouchActionValues.get(polygon) ?? '';
     }
+    this.polygonTouchActionValues.delete(polygon);
     this.polygonNativeStartListeners.delete(polygon);
   }
 
@@ -4290,6 +4308,7 @@ export class PolygonInteractionManager {
     }
     const newGeoJSON = polygonLayer.toGeoJSON();
     const featureMetadataState = this.getFeatureMetadataState(featureGroup);
+    const targetLayerId = this.layerManager?.getLayerForFeatureGroup(featureGroup);
     this.cleanupFeatureGroup(featureGroup);
     this.removeFeatureGroup(featureGroup);
     this.emitPolygonUpdated({
@@ -4303,6 +4322,7 @@ export class PolygonInteractionManager {
       sourceFeatureIds: featureMetadataState.sourceFeatureIds,
       featureInteractionOverride: featureMetadataState.interactionOverride,
       featureStyleOverrides: featureMetadataState.styleOverrides,
+      targetLayerId,
       featureCreatedAt: featureMetadataState.createdAt,
     });
   }

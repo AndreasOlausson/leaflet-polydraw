@@ -150,6 +150,54 @@ test.describe('Polygon transforms', () => {
     await expect.poll(() => demo.getPrimaryPolygonRingCount()).toBe(2);
   });
 
+  test('donut keeps a default-layer polygon styled by its owning layer', async ({ page }) => {
+    const demo = new DemoFactory(page);
+    await demo.addPredefined([latlngPolys.square]);
+    const originalFillColor = await page.evaluate(() => {
+      const control = (window as any).polydrawControl;
+      const polygon = control
+        .getFeatureGroupsByLayer('default')[0]
+        ?.getLayers()
+        .find((layer: any) => typeof layer.getLatLngs === 'function');
+      return polygon?.options.fillColor;
+    });
+    await page.evaluate(() => {
+      const control = (window as any).polydrawControl;
+      control.createDrawLayer({ id: 'Layer 2', color: '#3b82f6' });
+    });
+
+    await demo.startTransform('donut');
+    await demo.dragTransformHandle('top-right', 120, -120);
+    await demo.confirmTransform();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const control = (window as any).polydrawControl;
+          const defaultGroups = control.getFeatureGroupsByLayer('default');
+          const layerTwoGroups = control.getFeatureGroupsByLayer('Layer 2');
+          const polygon = defaultGroups[0]
+            ?.getLayers()
+            .find((layer: any) => typeof layer.getLatLngs === 'function');
+          const rings = polygon?.getLatLngs() ?? [];
+          return {
+            activeLayerId: control.getActiveLayerId(),
+            defaultCount: defaultGroups.length,
+            layerTwoCount: layerTwoGroups.length,
+            fillColor: polygon?.options.fillColor,
+            ringCount: rings.length,
+          };
+        }),
+      )
+      .toEqual({
+        activeLayerId: 'Layer 2',
+        defaultCount: 1,
+        layerTwoCount: 0,
+        fillColor: originalFillColor,
+        ringCount: 2,
+      });
+  });
+
   test('undo after deleting a donut hole restores the polygon with its hole', async ({ page }) => {
     const demo = new DemoFactory(page);
     await demo.addPredefined([latlngPolys.square]);
