@@ -17,6 +17,8 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
+This project is tested with BrowserStack.
+
 ---
 
 ## Key Features
@@ -42,26 +44,6 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 - **Coordinate Auto-Detection**: Accepts multiple coordinate formats automatically (lat/lng, DMS, DDM, N/E, etc.).
 - **Leaflet 1.x & 2.x Compatible**: Fully compatible with both generations of the Leaflet API.
 - **TypeScript Ready**: Includes complete type definitions for modern development workflows.
-
----
-
-## Layer Workflows
-
-Polydraw can keep user drawings and application-provided geometry in separate, independently styled layers:
-
-Layer APIs are always available, while the built-in panel and Move to Layer action are opt-in. Existing single-layer applications therefore retain their current interface when upgrading.
-
-- **Draw layers** are selectable targets for freehand and point-to-point drawing. Create them from the layer panel or with `createDrawLayer()`.
-- **Reference layers** hold contextual or imported geometry. They can be editable, readonly, or static, but never become the active drawing target.
-- Polygon creation and automatic merging stay inside the owning layer, so overlapping geometry in different layers remains independent.
-- Move one polygon from its action menu, or merge an entire layer into a draw layer as a single undoable operation.
-- Whole-layer merges may preserve per-polygon styles or adopt the target layer style. Reference-layer sources are opt-in.
-
-When enabled, the built-in panel provides naming, colors, visibility, ordering, deletion, and whole-layer merge controls. It can start expanded or collapsed, or be replaced by an application-owned UI using the public layer API.
-
-[![Layer Workflows](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/layer-workflows-overview.png)](https://raw.githubusercontent.com/AndreasOlausson/leaflet-polydraw/main/Leaflet.Polydraw/docs/images/layer-workflows-overview.png)
-
-See the **[Layer Management Guide](https://github.com/AndreasOlausson/leaflet-polydraw/blob/main/docs/LAYERS.md)** for configuration, import, move, and merge examples.
 
 ---
 

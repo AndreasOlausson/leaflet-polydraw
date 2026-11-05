@@ -132,6 +132,32 @@ describe('Menu Operations Config', () => {
         harness.cleanup();
       }
     });
+
+    it('keeps the simplified polygon in its owning layer when another layer is active', async () => {
+      const harness = createPolydrawHarness();
+      try {
+        harness.polydraw.createDrawLayer({ id: 'Layer 1', color: '#ef4444' });
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+        const layerOneFeature = harness.polydraw.getFeatureGroupsByLayer('Layer 1')[0];
+
+        harness.polydraw.createDrawLayer({ id: 'Layer 2', color: '#3b82f6' });
+        await harness.polydraw.addPredefinedPolygon(fixtures.octagon());
+
+        expect(harness.polydraw.getActiveLayerId()).toBe('Layer 2');
+        clickMenuButton(harness.map, layerOneFeature, 'simplify');
+        await flushAsync();
+
+        const layerOneGroups = harness.polydraw.getFeatureGroupsByLayer('Layer 1');
+        const layerTwoGroups = harness.polydraw.getFeatureGroupsByLayer('Layer 2');
+        expect(layerOneGroups).toHaveLength(1);
+        expect(layerTwoGroups).toHaveLength(1);
+        expect(harness.polydraw.getFeatureGroups()).toHaveLength(2);
+        expect(findPolygonLayer(layerOneGroups[0])?.options.fillColor).toBe('#ef4444');
+        expect(findPolygonLayer(layerTwoGroups[0])?.options.fillColor).toBe('#3b82f6');
+      } finally {
+        harness.cleanup();
+      }
+    });
   });
 
   describe('doubleElbows', () => {

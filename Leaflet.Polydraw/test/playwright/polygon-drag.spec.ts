@@ -29,6 +29,32 @@ test.describe('Polygon dragging', () => {
     expect(boundsAfter.minLng).toBeGreaterThan(boundsBefore.minLng + 0.003);
   });
 
+  test('touch drag keeps control of the polygon over a long move', async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.name.endsWith('-touch'), 'Touch regression only');
+
+    const demo = new DemoFactory(page);
+    const boundsBefore = await demo.firstPolygonBounds();
+    const mapCenterBefore = await demo.mapCenter();
+    const touchAction = await page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      const polygon = (ctrl?.getFeatureGroups?.() ?? [])
+        .flatMap((group: any) => group.getLayers?.() ?? [])
+        .find(
+          (layer: any) =>
+            typeof layer?.getBounds === 'function' && typeof layer?.getLatLngs === 'function',
+        );
+      return polygon?._path?.style?.touchAction;
+    });
+
+    expect(touchAction).toBe('none');
+    await demo.dragFirstPolygonByOffsetWithTouch(0, 0.02);
+
+    const boundsAfter = await demo.firstPolygonBounds();
+    const mapCenterAfter = await demo.mapCenter();
+    expect(boundsAfter.minLng).toBeGreaterThan(boundsBefore.minLng + 0.015);
+    expectMapStayedPut(mapCenterBefore, mapCenterAfter);
+  });
+
   test('real mouse clone drag creates a copy instead of panning the map', async ({
     page,
   }, testInfo) => {

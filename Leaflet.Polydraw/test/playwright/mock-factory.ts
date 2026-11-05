@@ -208,6 +208,89 @@ export class DemoFactory {
     await this.page.waitForTimeout(250);
   }
 
+  /** Drag the first polygon using the pointer/touch sequence emitted by mobile Safari. */
+  async dragFirstPolygonByOffsetWithTouch(offsetLat: number, offsetLng: number) {
+    await this.page.evaluate(
+      async ({ offsetLat: latOffset, offsetLng: lngOffset }) => {
+        const ctrl = (window as any).polydrawControl;
+        ctrl?.setDrawMode?.(0);
+
+        const map = ctrl?.map ?? ctrl?._map;
+        const groups = ctrl?.getFeatureGroups?.() ?? [];
+        const polygon = groups
+          .flatMap((group: any) => group.getLayers?.() ?? [])
+          .find(
+            (layer: any) =>
+              typeof layer?.getBounds === 'function' && typeof layer?.getLatLngs === 'function',
+          );
+        const path = polygon?._path as SVGElement | undefined;
+        if (!map || !polygon || !path) {
+          throw new Error('Map or target polygon not found for touch drag');
+        }
+
+        const startLatLng = polygon.getBounds().getCenter();
+        const endLatLng = {
+          lat: startLatLng.lat + latOffset,
+          lng: startLatLng.lng + lngOffset,
+        };
+        const mapRect = map.getContainer().getBoundingClientRect();
+        const startPoint = map.latLngToContainerPoint(startLatLng);
+        const endPoint = map.latLngToContainerPoint(endLatLng);
+        const start = { x: mapRect.left + startPoint.x, y: mapRect.top + startPoint.y };
+        const end = { x: mapRect.left + endPoint.x, y: mapRect.top + endPoint.y };
+        const pointerId = 1;
+
+        path.dispatchEvent(
+          new PointerEvent('pointerdown', {
+            bubbles: true,
+            cancelable: true,
+            clientX: start.x,
+            clientY: start.y,
+            pointerId,
+            pointerType: 'touch',
+            isPrimary: true,
+            button: 0,
+            buttons: 1,
+          }),
+        );
+
+        const createTouchEvent = (type: string, x: number, y: number, active: boolean) => {
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          const touch = {
+            identifier: pointerId,
+            target: path,
+            clientX: x,
+            clientY: y,
+            pageX: x,
+            pageY: y,
+            screenX: x,
+            screenY: y,
+          };
+          Object.defineProperties(event, {
+            touches: { value: active ? [touch] : [] },
+            targetTouches: { value: active ? [touch] : [] },
+            changedTouches: { value: [touch] },
+          });
+          return event;
+        };
+
+        path.dispatchEvent(createTouchEvent('touchstart', start.x, start.y, true));
+        const steps = 12;
+        for (let i = 1; i <= steps; i += 1) {
+          const progress = i / steps;
+          const x = start.x + (end.x - start.x) * progress;
+          const y = start.y + (end.y - start.y) * progress;
+          path.dispatchEvent(createTouchEvent('touchmove', x, y, true));
+          await new Promise((resolve) => setTimeout(resolve, 16));
+        }
+        path.dispatchEvent(createTouchEvent('touchend', end.x, end.y, false));
+      },
+      { offsetLat, offsetLng },
+    );
+
+    await this.page.waitForTimeout(250);
+  }
+
   /** Drag a polygon by a lat/lng offset (optionally target polygons with holes). */
   async dragPolygonByOffset(
     offsetLat: number,

@@ -107,4 +107,64 @@ test.describe('Polygon menu actions', () => {
     await expect.poll(() => demo.polygonCount()).toBe(1);
     await expect.poll(() => demo.getPrimaryPolygonVertexCount()).toBe(beforeCount);
   });
+
+  test('simplify keeps an inactive-layer polygon in its owning layer', async ({ page }) => {
+    await page.evaluate(async (polygon) => {
+      const control = (window as any).polydrawControl;
+      control.createDrawLayer({ id: 'Layer 1', color: '#ef4444' });
+      await control.addPredefinedPolygon([[polygon]]);
+      const layerOneFeature = control.getFeatureGroupsByLayer('Layer 1')[0];
+
+      control.createDrawLayer({ id: 'Layer 2', color: '#3b82f6' });
+      await control.addPredefinedPolygon([[polygon]]);
+      control.setDrawMode(0);
+
+      const menuMarker = layerOneFeature.getLayers().find((layer: any) => {
+        const className = layer.options?.icon?.options?.className ?? '';
+        return typeof layer.fire === 'function' && className.includes('menu');
+      });
+      if (!menuMarker) {
+        throw new Error('Layer 1 menu marker not found');
+      }
+      const menuElement = menuMarker.getElement?.();
+      if (!menuElement) {
+        throw new Error('Layer 1 menu marker element not found');
+      }
+      menuElement.dataset.testLayerMenu = 'layer-1';
+    }, latlngPolys.bigSquareDense);
+
+    await page.locator('[data-test-layer-menu="layer-1"]').click();
+    const simplify = page.locator('.menu-popup .marker-menu-button[data-action-id="simplify"]');
+    await simplify.waitFor({ state: 'visible' });
+    await simplify.click();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const control = (window as any).polydrawControl;
+          const inspectLayer = (layerId: string) => {
+            const groups = control.getFeatureGroupsByLayer(layerId);
+            const polygon = groups[0]
+              ?.getLayers()
+              .find((layer: any) => typeof layer.getLatLngs === 'function');
+            return {
+              count: groups.length,
+              fillColor: polygon?.options.fillColor,
+            };
+          };
+          return {
+            activeLayerId: control.getActiveLayerId(),
+            total: control.getFeatureGroups().length,
+            layerOne: inspectLayer('Layer 1'),
+            layerTwo: inspectLayer('Layer 2'),
+          };
+        }),
+      )
+      .toEqual({
+        activeLayerId: 'Layer 2',
+        total: 2,
+        layerOne: { count: 1, fillColor: '#ef4444' },
+        layerTwo: { count: 1, fillColor: '#3b82f6' },
+      });
+  });
 });
