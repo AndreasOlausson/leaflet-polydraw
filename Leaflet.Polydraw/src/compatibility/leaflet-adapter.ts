@@ -10,6 +10,50 @@ import { LeafletVersion } from '../enums';
 type UnknownRecord = Record<string, unknown>;
 type UnknownFn = (...args: unknown[]) => unknown;
 type AnimationFrameCallback = (time: number) => void;
+type LegacyBrowser = Partial<
+  Record<
+    | 'ie'
+    | 'ielt9'
+    | 'edge'
+    | 'webkit'
+    | 'android'
+    | 'android23'
+    | 'androidStock'
+    | 'opera'
+    | 'chrome'
+    | 'gecko'
+    | 'safari'
+    | 'phantom'
+    | 'opera12'
+    | 'win'
+    | 'ie3d'
+    | 'webkit3d'
+    | 'gecko3d'
+    | 'any3d'
+    | 'mobile'
+    | 'mobileWebkit'
+    | 'mobileWebkit3d'
+    | 'msPointer'
+    | 'pointer'
+    | 'touch'
+    | 'touchNative'
+    | 'mobileOpera'
+    | 'mobileGecko'
+    | 'retina'
+    | 'passiveEvents'
+    | 'canvas'
+    | 'svg'
+    | 'vml'
+    | 'inlineSvg',
+    boolean
+  >
+>;
+
+const getLegacyBrowser = (): LegacyBrowser =>
+  (Reflect.get(L, 'Browser') as LegacyBrowser | undefined) ?? {};
+
+const getNavigator = (): Navigator | undefined =>
+  typeof navigator === 'undefined' ? undefined : navigator;
 
 export class LeafletAdapter {
   private get version(): LeafletVersion {
@@ -130,30 +174,15 @@ export class LeafletAdapter {
     },
 
     addClass: (el: HTMLElement, name: string): void => {
-      if (this.version === LeafletVersion.V1) {
-        L.DomUtil.addClass(el, name);
-      } else {
-        // In v2, use native classList
-        el.classList.add(name);
-      }
+      el.classList.add(name);
     },
 
     removeClass: (el: HTMLElement, name: string): void => {
-      if (this.version === LeafletVersion.V1) {
-        L.DomUtil.removeClass(el, name);
-      } else {
-        // In v2, use native classList
-        el.classList.remove(name);
-      }
+      el.classList.remove(name);
     },
 
     hasClass: (el: HTMLElement, name: string): boolean => {
-      if (this.version === LeafletVersion.V1) {
-        return L.DomUtil.hasClass(el, name);
-      } else {
-        // In v2, use native classList
-        return el.classList.contains(name);
-      }
+      return el.classList.contains(name);
     },
 
     setPosition: (el: HTMLElement, point: L.Point): void => {
@@ -189,8 +218,9 @@ export class LeafletAdapter {
       return this;
     },
 
-    stopPropagation: (e: Event): typeof this => {
-      L.DomEvent.stopPropagation(e);
+    stopPropagation: (e: unknown): typeof this => {
+      const stopPropagation = L.DomEvent.stopPropagation as unknown as (event: unknown) => void;
+      stopPropagation(e);
       return this;
     },
 
@@ -215,17 +245,8 @@ export class LeafletAdapter {
     },
 
     getMousePosition: (e: MouseEvent, container?: HTMLElement): L.Point => {
-      if (this.version === LeafletVersion.V1) {
-        return L.DomEvent.getMousePosition(e, container);
-      } else {
-        // In v2, this might be renamed to getPointerPosition
-        const domEvent = L.DomEvent as typeof L.DomEvent & {
-          getPointerPosition?: (event: MouseEvent, container?: HTMLElement) => L.Point;
-        };
-        return domEvent.getPointerPosition
-          ? domEvent.getPointerPosition(e, container)
-          : L.DomEvent.getMousePosition(e, container);
-      }
+      const rect = container?.getBoundingClientRect();
+      return new L.Point(e.clientX - (rect?.left ?? 0), e.clientY - (rect?.top ?? 0));
     },
   };
 
@@ -234,28 +255,18 @@ export class LeafletAdapter {
    */
   util = {
     extend: (dest: UnknownRecord, ...sources: UnknownRecord[]): UnknownRecord => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.extend(dest, ...sources) as UnknownRecord;
-      } else {
-        // In v2, use native Object.assign
-        return Object.assign(dest, ...sources);
-      }
+      return Object.assign(dest, ...sources);
     },
 
     bind: <T extends UnknownFn>(fn: T, obj: unknown): T => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.bind(fn, obj) as T;
-      } else {
-        // In v2, use native bind
-        return fn.bind(obj) as T;
-      }
+      return fn.bind(obj) as T;
     },
 
     stamp: (obj: object): number => {
       return L.Util.stamp(obj);
     },
 
-    throttle: (fn: UnknownFn, time: number, context: unknown): UnknownFn => {
+    throttle: (fn: UnknownFn, time: number, context?: object): UnknownFn => {
       return L.Util.throttle(fn, time, context) as UnknownFn;
     },
 
@@ -272,12 +283,7 @@ export class LeafletAdapter {
     },
 
     trim: (str: string): string => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.trim(str);
-      } else {
-        // In v2, use native trim
-        return str.trim();
-      }
+      return str.trim();
     },
 
     splitWords: (str: string): string[] => {
@@ -293,24 +299,19 @@ export class LeafletAdapter {
       existingUrl?: string,
       uppercase?: boolean,
     ): string => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.getParamString(obj, existingUrl, uppercase);
-      } else {
-        // In v2, use URLSearchParams
-        const params = new URLSearchParams();
-        for (const key in obj) {
-          if (Object.prototype.hasOwnProperty.call(obj, key)) {
-            const paramKey = uppercase ? key.toUpperCase() : key;
-            params.set(paramKey, String(obj[key]));
-          }
+      const params = new URLSearchParams();
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          const paramKey = uppercase ? key.toUpperCase() : key;
+          params.set(paramKey, String(obj[key]));
         }
-        const paramString = params.toString();
-        if (existingUrl) {
-          const separator = existingUrl.indexOf('?') === -1 ? '?' : '&';
-          return existingUrl + separator + paramString;
-        }
-        return paramString ? '?' + paramString : '';
       }
+      const paramString = params.toString();
+      if (existingUrl) {
+        const separator = existingUrl.indexOf('?') === -1 ? '?' : '&';
+        return existingUrl + separator + paramString;
+      }
+      return paramString ? '?' + paramString : '';
     },
 
     template: (str: string, data: UnknownRecord): string => {
@@ -318,16 +319,11 @@ export class LeafletAdapter {
     },
 
     isArray: (obj: unknown): boolean => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.isArray(obj);
-      } else {
-        // In v2, use native Array.isArray
-        return Array.isArray(obj);
-      }
+      return Array.isArray(obj);
     },
 
     indexOf: (array: unknown[], item: unknown): number => {
-      return L.Util.indexOf(array, item);
+      return array.indexOf(item);
     },
 
     requestAnimFrame: (
@@ -335,21 +331,12 @@ export class LeafletAdapter {
       context?: unknown,
       immediate?: boolean,
     ): number => {
-      if (this.version === LeafletVersion.V1) {
-        return L.Util.requestAnimFrame(fn, context, immediate);
-      } else {
-        // In v2, use native requestAnimationFrame
-        return requestAnimationFrame((context ? fn.bind(context) : fn) as AnimationFrameCallback);
-      }
+      void immediate;
+      return requestAnimationFrame((context ? fn.bind(context) : fn) as AnimationFrameCallback);
     },
 
     cancelAnimFrame: (id: number): void => {
-      if (this.version === LeafletVersion.V1) {
-        L.Util.cancelAnimFrame(id);
-      } else {
-        // In v2, use native cancelAnimationFrame
-        cancelAnimationFrame(id);
-      }
+      cancelAnimationFrame(id);
     },
   };
 
@@ -358,151 +345,143 @@ export class LeafletAdapter {
    */
 
   getBrowser() {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
-    const browser = L.Browser as typeof L.Browser & {
-      phantom?: boolean;
-      touchNative?: boolean;
-      passiveEvents?: boolean;
-      inlineSvg?: boolean;
-    };
+    const browser = getLegacyBrowser();
+    const currentNavigator = getNavigator();
+    const userAgent = currentNavigator?.userAgent ?? '';
+    const platform = currentNavigator?.platform ?? '';
+    const coarsePointer =
+      typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
     return {
       get ie(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ie : false; // Removed in v2
+        return browser.ie ?? false;
       },
 
       get ielt9(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ielt9 : false; // Removed in v2
+        return browser.ielt9 ?? false;
       },
 
       get edge(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.edge : false; // Removed in v2
+        return browser.edge ?? false;
       },
 
       get webkit(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.webkit : false; // Removed in v2
+        return browser.webkit ?? /AppleWebKit/.test(userAgent);
       },
 
       get android(): boolean {
-        return self.version === LeafletVersion.V1
-          ? L.Browser.android
-          : /Android/.test(navigator.userAgent);
+        return browser.android ?? /Android/.test(userAgent);
       },
 
       get android23(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.android23 : false; // Removed in v2
+        return browser.android23 ?? false;
       },
 
       get androidStock(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.androidStock : false; // Removed in v2
+        return browser.androidStock ?? false;
       },
 
       get opera(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.opera : false; // Removed in v2
+        return browser.opera ?? false;
       },
 
       get chrome(): boolean {
-        return self.version === LeafletVersion.V1
-          ? L.Browser.chrome
-          : /Chrome/.test(navigator.userAgent);
+        return browser.chrome ?? /(?:Chrome|CriOS)/.test(userAgent);
       },
 
       get gecko(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.gecko : false; // Removed in v2
+        return browser.gecko ?? /Gecko\//.test(userAgent);
       },
 
       get safari(): boolean {
-        return self.version === LeafletVersion.V1
-          ? L.Browser.safari
-          : /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        return browser.safari ?? (/Safari/.test(userAgent) && !/(?:Chrome|CriOS)/.test(userAgent));
       },
 
       get phantom(): boolean {
-        return self.version === LeafletVersion.V1 ? (browser.phantom ?? false) : false; // Removed in v2
+        return browser.phantom ?? false;
       },
 
       get opera12(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.opera12 : false; // Removed in v2
+        return browser.opera12 ?? false;
       },
 
       get win(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.win : /Win/.test(navigator.platform);
+        return browser.win ?? /Win/.test(platform);
       },
 
       get ie3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.ie3d : false; // Removed in v2
+        return browser.ie3d ?? false;
       },
 
       get webkit3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.webkit3d : false; // Removed in v2
+        return browser.webkit3d ?? false;
       },
 
       get gecko3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.gecko3d : false; // Removed in v2
+        return browser.gecko3d ?? false;
       },
 
       get any3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.any3d : true; // Assume true in v2
+        return browser.any3d ?? true;
       },
 
       get mobile(): boolean {
-        return L.Browser.mobile;
+        return browser.mobile ?? coarsePointer;
       },
 
       get mobileWebkit(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileWebkit : false; // Removed in v2
+        return browser.mobileWebkit ?? false;
       },
 
       get mobileWebkit3d(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileWebkit3d : false; // Removed in v2
+        return browser.mobileWebkit3d ?? false;
       },
 
       get msPointer(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.msPointer : false; // Removed in v2
+        return browser.msPointer ?? false;
       },
 
       get pointer(): boolean {
-        return L.Browser.pointer || true; // Assume true in v2 (pointer events are standard)
+        return browser.pointer ?? typeof PointerEvent !== 'undefined';
       },
 
       get touch(): boolean {
-        return L.Browser.touch;
+        return browser.touch ?? coarsePointer;
       },
 
       get touchNative(): boolean {
-        return self.version === LeafletVersion.V1 ? (browser.touchNative ?? false) : false; // Removed in v2
+        return browser.touchNative ?? coarsePointer;
       },
 
       get mobileOpera(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileOpera : false; // Removed in v2
+        return browser.mobileOpera ?? false;
       },
 
       get mobileGecko(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.mobileGecko : false; // Removed in v2
+        return browser.mobileGecko ?? false;
       },
 
       get retina(): boolean {
-        return L.Browser.retina;
+        return browser.retina ?? (typeof devicePixelRatio !== 'undefined' && devicePixelRatio > 1);
       },
 
       get passiveEvents(): boolean {
-        return self.version === LeafletVersion.V1 ? (browser.passiveEvents ?? true) : true; // Assume true in v2
+        return browser.passiveEvents ?? true;
       },
 
       get canvas(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.canvas : true; // Assume true in v2
+        return browser.canvas ?? true;
       },
 
       get svg(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.svg : true; // Assume true in v2
+        return browser.svg ?? true;
       },
 
       get vml(): boolean {
-        return self.version === LeafletVersion.V1 ? L.Browser.vml : false; // Removed in v2
+        return browser.vml ?? false;
       },
 
       get inlineSvg(): boolean {
-        return self.version === LeafletVersion.V1 ? (browser.inlineSvg ?? true) : true; // Assume true in v2
+        return browser.inlineSvg ?? true;
       },
     };
   }

@@ -9,6 +9,14 @@ import type {
 
 export type { Position };
 
+/** Pointer event shape shared by Leaflet 1 mouse events and Leaflet 2 pointer events. */
+export type LeafletInputEvent = L.LeafletEvent & {
+  latlng: L.LatLng;
+  layerPoint?: L.Point;
+  containerPoint?: L.Point;
+  originalEvent: MouseEvent | PointerEvent;
+};
+
 /**
  * Bounding box data structure compatible with Leaflet's LatLngBounds
  * Uses Leaflet's naming convention: south/north for latitude, west/east for longitude
@@ -521,7 +529,7 @@ export interface PolydrawConfig {
  * Event handler function types
  */
 export type DrawModeChangeHandler = (mode: DrawMode) => void;
-export type MouseEventHandler = (event: L.LeafletMouseEvent) => void;
+export type MouseEventHandler = (event: LeafletInputEvent) => void;
 export type TouchEventHandler = (event: TouchEvent) => void;
 export type MarkerEventHandler = (event: L.LeafletEvent) => void;
 export type PolygonEventHandler = (event: L.LeafletEvent) => void;

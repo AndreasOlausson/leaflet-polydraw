@@ -30,7 +30,7 @@ npm install leaflet-polydraw
 <script type="importmap">
   {
     "imports": {
-      "leaflet": "https://unpkg.com/leaflet@2.0.0-alpha.1/dist/leaflet.js",
+      "leaflet": "https://unpkg.com/leaflet@2.0.0-beta.2/dist/leaflet.js",
       "leaflet-polydraw": "https://unpkg.com/leaflet-polydraw/dist/polydraw.es.js"
     }
   }
@@ -104,7 +104,7 @@ The plugin includes a comprehensive compatibility layer that handles:
 ```json
 {
   "peerDependencies": {
-    "leaflet": "^1.9.4 || ^2.0.0-alpha"
+    "leaflet": "^1.9.4 || ^2.0.0-beta.1"
   }
 }
 ```

@@ -21,7 +21,7 @@ To run the local demo and test the plugin with different Leaflet versions:
    ```bash
    # From the project root
    ./switch-version.sh v1    # For Leaflet 1.9.4
-   ./switch-version.sh v2    # For Leaflet 2.0.0-alpha.1 (default)
+   ./switch-version.sh v2    # For Leaflet 2.0.0-beta.2 (default)
    ```
 
    This automatically installs the correct Leaflet version inside the demo project.

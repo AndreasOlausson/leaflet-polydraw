@@ -15,7 +15,7 @@ case "$TARGET" in
     TARGET_MAJOR="1"
     ;;
   v2)
-    LEAFLET_VERSION="2.0.0-alpha.1"
+    LEAFLET_VERSION="2.0.0-beta.2"
     TARGET_MAJOR="2"
     ;;
   *)
@@ -50,7 +50,7 @@ ensure_leaflet_major() {
   local temp_dir
   current_version="$(get_installed_leaflet_version "$prefix")"
 
-  if [[ "$current_version" == "$TARGET_MAJOR".* ]]; then
+  if [[ "$current_version" == "$LEAFLET_VERSION" ]]; then
     echo "Leaflet ${current_version} already installed in ${prefix}; skipping install."
     return
   fi

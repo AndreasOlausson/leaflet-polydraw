@@ -63,6 +63,7 @@
     "test:playwright:v1": "./scripts/test-leaflet-version.sh v1 -- npm run test:playwright",
     "test:playwright:v2": "./scripts/test-leaflet-version.sh v2 -- npm run test:playwright",
     "test:playwright:matrix": "npm run test:playwright:v1 && npm run test:playwright:v2",
+    "test:browserstack": "npm run build && npm --prefix demo --ignore-scripts run build && playwright test --config playwright.browserstack.config.ts",
     "test:e2e": "npm run test:playwright",
     "test:types": "tsc --noEmit --project tsconfig.json",
     "lint": "eslint ./src --ext .ts",
@@ -87,7 +88,7 @@
     "eslint-plugin-prettier": "^5.2.1",
     "globals": "^15.12.0",
     "jsdom": "^25.0.1",
-    "leaflet": "^2.0.0-alpha.1",
+    "leaflet": "2.0.0-beta.2",
     "prettier": "^3.6.2",
     "terser": "^5.36.0",
     "typescript": "~5.8.3",
@@ -118,7 +119,7 @@
     "concaveman": "^2.0.0"
   },
   "peerDependencies": {
-    "leaflet": "^1.9.4 || ^2.0.0-alpha"
+    "leaflet": "^1.9.4 || ^2.0.0-beta.1"
   },
   "peerDependenciesMeta": {
     "leaflet": {

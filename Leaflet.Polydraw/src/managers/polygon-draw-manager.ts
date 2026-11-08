@@ -4,7 +4,7 @@ import { isTouchDevice } from '../utils';
 import { DrawMode } from '../enums';
 import { leafletAdapter } from '../compatibility/leaflet-adapter';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
-import type { PolydrawConfig } from '../types/polydraw-interfaces';
+import type { LeafletInputEvent, PolydrawConfig } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
 import { isTestEnvironment } from '../utils';
@@ -54,7 +54,7 @@ export class PolygonDrawManager {
   /**
    * Handle mouse move during freehand drawing
    */
-  mouseMove(event: L.LeafletMouseEvent | TouchEvent): void {
+  mouseMove(event: LeafletInputEvent | TouchEvent): void {
     // console.log('PolygonDrawManager mouseMove');
     if ('latlng' in event && event.latlng) {
       this.tracer.addLatLng(event.latlng);
@@ -71,7 +71,7 @@ export class PolygonDrawManager {
   /**
    * Handle mouse up/leave to complete freehand drawing
    */
-  async mouseUpLeave(event: L.LeafletMouseEvent | TouchEvent): Promise<DrawResult> {
+  async mouseUpLeave(event: LeafletInputEvent | TouchEvent): Promise<DrawResult> {
     // console.log('PolygonDrawManager mouseUpLeave');
     // Get tracer coordinates and validate before processing
     const tracerGeoJSON = this.tracer.toGeoJSON() as ReturnType<L.Polyline['toGeoJSON']>;
@@ -232,7 +232,7 @@ export class PolygonDrawManager {
 
       // Stop propagation on mousedown for all p2p markers to prevent adding new points on top of them
       pointMarker.on('mousedown', (e) => {
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
       });
 
       // Handle marker dragging
@@ -245,7 +245,7 @@ export class PolygonDrawManager {
         // console.log('p2p marker click');
         if (this.shouldAllowP2PMarkerDeletion()) {
           this.deleteP2PMarker(pointMarker);
-          L.DomEvent.stopPropagation(e);
+          leafletAdapter.domEvent.stopPropagation(e);
         }
       });
 
@@ -286,12 +286,12 @@ export class PolygonDrawManager {
           // console.log('p2p first marker click');
           if (this.shouldAllowP2PMarkerDeletion()) {
             this.deleteP2PMarker(pointMarker);
-            L.DomEvent.stopPropagation(e);
+            leafletAdapter.domEvent.stopPropagation(e);
             return;
           }
 
           if (this.p2pMarkers.length >= 3) {
-            L.DomEvent.stopPropagation(e);
+            leafletAdapter.domEvent.stopPropagation(e);
             this.completePointToPointPolygon();
           }
         });
@@ -309,7 +309,7 @@ export class PolygonDrawManager {
   /**
    * Handle double-click to complete point-to-point polygon
    */
-  handleDoubleClick(e: L.LeafletMouseEvent): void {
+  handleDoubleClick(e: LeafletInputEvent): void {
     // Save the input variable but, make lint happy...
     void e;
 
@@ -632,12 +632,12 @@ export class PolygonDrawManager {
     firstMarker.on('click', (e) => {
       if (this.shouldAllowP2PMarkerDeletion()) {
         this.deleteP2PMarker(firstMarker);
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
         return;
       }
 
       if (this.p2pMarkers.length >= 3) {
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
         this.completePointToPointPolygon();
       }
     });

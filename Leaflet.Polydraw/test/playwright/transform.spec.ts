@@ -4,6 +4,7 @@ import { latlngPolys } from './fixtures/polygons';
 
 type BrowserLayer = {
   getElement?: () => Element | undefined;
+  _polydrawAuxiliaryLayer?: true;
 };
 
 type BrowserFeatureGroup = {
@@ -14,15 +15,9 @@ type BrowserPolydrawControl = {
   getFeatureGroups?: () => BrowserFeatureGroup[];
 };
 
-type BrowserLeaflet = {
-  Polyline: new (...args: never[]) => unknown;
-  Polygon: new (...args: never[]) => unknown;
-};
-
 type PolydrawBrowserWindow = Window &
   typeof globalThis & {
     polydrawControl?: BrowserPolydrawControl;
-    L?: BrowserLeaflet;
   };
 
 test.describe('Polygon transforms', () => {
@@ -87,12 +82,15 @@ test.describe('Polygon transforms', () => {
     await expect
       .poll(async () =>
         page.evaluate(() => {
-          const { polydrawControl: ctrl, L } = window as PolydrawBrowserWindow;
+          const { polydrawControl: ctrl } = window as PolydrawBrowserWindow;
           const featureGroup = ctrl?.getFeatureGroups?.()[0];
-          if (!featureGroup || !L) return 0;
+          if (!featureGroup) return 0;
           const helperLines = featureGroup
             .getLayers()
-            .filter((layer) => layer instanceof L.Polyline && !(layer instanceof L.Polygon));
+            .filter(
+              (layer): layer is BrowserLayer =>
+                (layer as BrowserLayer)._polydrawAuxiliaryLayer === true,
+            );
           return helperLines.length;
         }),
       )
@@ -104,14 +102,14 @@ test.describe('Polygon transforms', () => {
     await expect
       .poll(async () =>
         page.evaluate(() => {
-          const { polydrawControl: ctrl, L } = window as PolydrawBrowserWindow;
+          const { polydrawControl: ctrl } = window as PolydrawBrowserWindow;
           const featureGroup = ctrl?.getFeatureGroups?.()[0];
-          if (!featureGroup || !L) return false;
+          if (!featureGroup) return false;
           const helperLines = featureGroup
             .getLayers()
             .filter(
               (layer): layer is BrowserLayer =>
-                layer instanceof L.Polyline && !(layer instanceof L.Polygon),
+                (layer as BrowserLayer)._polydrawAuxiliaryLayer === true,
             );
           return (
             helperLines.length > 0 &&

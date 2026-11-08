@@ -2,6 +2,7 @@
  * GeometryUtils - Simple geometric calculation utilities
  * This is a small, focused module with no external dependencies
  */
+import type * as L from 'leaflet';
 import { PolygonUtil } from './polygon.util';
 
 export class GeometryUtils {

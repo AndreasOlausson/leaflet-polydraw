@@ -55,18 +55,12 @@ import type {
   PolydrawPolygon,
   PolygonLayerDescriptorInput,
   PolygonGroupInput,
+  LeafletInputEvent,
 } from './types/polydraw-interfaces';
 
-// Create a local interface that extends L.Map for our specific needs
-interface ExtendedMap extends L.Map {
+type ExtendedMap = L.Map & {
   _onResize?: () => void;
   tap?: boolean;
-}
-
-// Create a type for the extended browser object
-type ExtendedBrowser = typeof L.Browser & {
-  touch: boolean;
-  mobile: boolean;
 };
 
 type PolydrawOptions = L.ControlOptions & {
@@ -123,6 +117,18 @@ class Polydraw extends L.Control {
   private _boundPointerUp?: (e: PointerEvent) => void;
   private _boundPointerCancel?: (e: PointerEvent) => void;
   private _boundContextMenu?: (e: MouseEvent) => void;
+  private readonly _mapMouseDown = (event: L.LeafletEvent): void => {
+    this.mouseDown(event as LeafletInputEvent);
+  };
+  private readonly _mapMouseMove = (event: L.LeafletEvent): void => {
+    this.mouseMove(event as LeafletInputEvent);
+  };
+  private readonly _mapMouseUp = (event: L.LeafletEvent): void => {
+    void this.mouseUpLeave(event as LeafletInputEvent);
+  };
+  private readonly _mapDoubleClick = (event: L.LeafletEvent): void => {
+    this.handleDoubleClick(event as LeafletInputEvent);
+  };
   private _lastTapTime: number = 0;
   private _lastTapLatLng: L.LatLng | null = null;
   private _tapTimeout: number | null = null;
@@ -171,7 +177,7 @@ class Polydraw extends L.Control {
   public onAdd(_map: L.Map): HTMLElement {
     void _map; // make lint happy
     const extendedMap = _map as ExtendedMap;
-    const browser = L.Browser as ExtendedBrowser;
+    const browser = leafletAdapter.getBrowser();
 
     // Prevent iOS click hijack behavior
     extendedMap._onResize = () => {};
@@ -2751,6 +2757,18 @@ class Polydraw extends L.Control {
     this.tracer?.setLatLngs([]);
   }
 
+  private toggleMapEvent(
+    type: string,
+    handler: (event: L.LeafletEvent) => void,
+    enabled: boolean,
+  ): void {
+    const evented = this.map as unknown as {
+      on: (eventType: string, listener: (event: L.LeafletEvent) => void) => void;
+      off: (eventType: string, listener: (event: L.LeafletEvent) => void) => void;
+    };
+    evented[enabled ? 'on' : 'off'](type, handler);
+  }
+
   /**
    * Attaches or detaches the mouse move and mouse up event listeners for drawing.
    * @param onoff - A boolean indicating whether to attach or detach the events.
@@ -2761,12 +2779,10 @@ class Polydraw extends L.Control {
     }
     this.drawEventsAttached = onoff;
     const usePointerEvents = this.pointerEventsHandled;
-    const onoroff = onoff ? 'on' : 'off';
-
     // Bind move and end events - use specific Leaflet event types
     if (!usePointerEvents) {
-      this.map[onoroff]('mousemove', this.mouseMove, this);
-      this.map[onoroff]('mouseup', this.mouseUpLeave, this);
+      this.toggleMapEvent('mousemove', this._mapMouseMove, onoff);
+      this.toggleMapEvent('mouseup', this._mapMouseUp, onoff);
     }
 
     if (onoff) {
@@ -2849,15 +2865,13 @@ class Polydraw extends L.Control {
     }
     this.mapEventsAttached = onoff;
     const usePointerEvents = this.pointerEventsHandled;
-    const onoroff = onoff ? 'on' : 'off';
-
     // Bind start events - use specific Leaflet event types
     if (!usePointerEvents) {
-      this.map[onoroff]('mousedown', this.mouseDown, this);
+      this.toggleMapEvent('mousedown', this._mapMouseDown, onoff);
     }
 
     // Add double-click event for Point-to-Point mode
-    this.map[onoroff]('dblclick', this.handleDoubleClick, this);
+    this.toggleMapEvent('dblclick', this._mapDoubleClick, onoff);
 
     // Handle touch and pointer events separately for backward compatibility
     if (onoff) {
@@ -2977,7 +2991,7 @@ class Polydraw extends L.Control {
    * Handles the mouse down event to start a drawing operation.
    * @param event - The mouse, touch, or pointer event.
    */
-  private mouseDown(event: L.LeafletMouseEvent | TouchEvent | PointerEvent) {
+  private mouseDown(event: LeafletInputEvent | TouchEvent | PointerEvent) {
     // Normalize event for v1/v2 compatibility
     const normalizedEvent = EventAdapter.normalizeEvent(event);
     if (this.isEventFromControl(normalizedEvent)) {
@@ -3158,7 +3172,7 @@ class Polydraw extends L.Control {
    * Handles the mouse move event to draw the tracer polyline.
    * @param event - The mouse, touch, or pointer event.
    */
-  private mouseMove(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
+  private mouseMove(event: LeafletInputEvent | MouseEvent | TouchEvent | PointerEvent) {
     if (!this.map || !this.isDrawingInProgress) {
       return;
     }
@@ -3181,7 +3195,7 @@ class Polydraw extends L.Control {
    * Handles the mouse up event to complete a drawing operation.
    * @param event - The mouse, touch, or pointer event.
    */
-  private async mouseUpLeave(event: L.LeafletMouseEvent | MouseEvent | TouchEvent | PointerEvent) {
+  private async mouseUpLeave(event: LeafletInputEvent | MouseEvent | TouchEvent | PointerEvent) {
     if (!this.map || !this.isDrawingInProgress) {
       return;
     }
@@ -3431,7 +3445,7 @@ class Polydraw extends L.Control {
    * Handles the double-click event for point-to-point drawing.
    * @param e - The mouse event.
    */
-  private handleDoubleClick(e: L.LeafletMouseEvent) {
+  private handleDoubleClick(e: LeafletInputEvent) {
     // Only handle double-click in Point-to-Point modes
     if (
       this.modeManager.getCurrentMode() !== DrawMode.PointToPoint &&

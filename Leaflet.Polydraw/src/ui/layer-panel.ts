@@ -660,10 +660,10 @@ export function createLayerPanel(
     }
   };
 
-  const LayerPanelControlClass = L.Control.extend({
-    options: {
-      position: 'topright' as L.ControlPosition,
-    },
+  class LayerPanelControlClass extends L.Control implements LayerPanelControl {
+    constructor() {
+      super({ position: 'topright' });
+    }
 
     onAdd(leafletMap: L.Map): HTMLElement {
       map = leafletMap;
@@ -681,7 +681,7 @@ export function createLayerPanel(
       map.on('resize', updateAvailableHeight);
 
       return container;
-    },
+    }
 
     onRemove(): void {
       if (!container) {
@@ -699,12 +699,12 @@ export function createLayerPanel(
       map = null;
       draggedLayerId = null;
       pendingRenderWhileDragging = false;
-    },
-  });
+    }
 
-  const panel = new LayerPanelControlClass() as unknown as LayerPanelControl;
-  panel.refresh = (options?: LayerPanelRefreshOptions) => {
-    renderPanel(options);
-  };
-  return panel;
+    refresh(options?: LayerPanelRefreshOptions): void {
+      renderPanel(options);
+    }
+  }
+
+  return new LayerPanelControlClass();
 }
