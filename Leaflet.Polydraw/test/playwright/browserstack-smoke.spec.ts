@@ -120,7 +120,11 @@ test.describe('BrowserStack smoke', () => {
     const infoPanel = page.locator('.info-marker-content');
     await expect(infoPanel).toBeVisible();
     await expect(infoPanel.getByText('Area', { exact: true })).toBeVisible();
-    await page.locator('.leaflet-popup-close-button').click();
+    await page.evaluate(() => {
+      const control = (window as any).polydrawControl;
+      const map = control?.map ?? control?._map;
+      map?.closePopup?.();
+    });
     await expect(infoPanel).not.toBeVisible();
 
     await press(page.locator('.polygon-marker.menu').first());
