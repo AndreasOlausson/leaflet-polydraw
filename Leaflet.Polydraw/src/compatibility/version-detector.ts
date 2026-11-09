@@ -3,6 +3,7 @@
  * Detects whether we're running with Leaflet v1.x or v2.x
  */
 
+import * as L from 'leaflet';
 import { LeafletVersion } from '../enums';
 
 type LeafletGlobal = {
@@ -19,6 +20,15 @@ const getGlobalLeaflet = (): LeafletGlobal | undefined => {
   return (globalThis as { L?: LeafletGlobal }).L;
 };
 
+const getModuleLeaflet = (): LeafletGlobal => ({
+  version: Reflect.get(L, 'version') as string | undefined,
+  marker: Reflect.get(L, 'marker'),
+  polyline: Reflect.get(L, 'polyline'),
+  polygon: Reflect.get(L, 'polygon'),
+  Marker: Reflect.get(L, 'Marker'),
+  Polyline: Reflect.get(L, 'Polyline'),
+});
+
 export class LeafletVersionDetector {
   private static _detectedVersion: LeafletVersion | null = null;
 
@@ -31,14 +41,7 @@ export class LeafletVersionDetector {
       return this._detectedVersion;
     }
 
-    const globalL = getGlobalLeaflet();
-    if (!globalL) {
-      // Default to v2 when Leaflet isn't on the global scope.
-      // Avoid caching so we can re-detect if L appears later.
-      return LeafletVersion.V2;
-    }
-
-    this._detectedVersion = this.detectVersion(globalL);
+    this._detectedVersion = this.detectVersion(getGlobalLeaflet() ?? getModuleLeaflet());
     return this._detectedVersion;
   }
 
@@ -47,11 +50,7 @@ export class LeafletVersionDetector {
    * @returns The detected Leaflet version
    */
   private static detectVersion(globalL?: LeafletGlobal): LeafletVersion {
-    const resolvedGlobal = globalL ?? getGlobalLeaflet();
-    if (!resolvedGlobal) {
-      // If L is not available, assume v2 (ESM import scenario)
-      return LeafletVersion.V2;
-    }
+    const resolvedGlobal = globalL ?? getGlobalLeaflet() ?? getModuleLeaflet();
 
     // Check for explicit version string (most reliable)
     if (resolvedGlobal.version) {
@@ -128,11 +127,12 @@ export class LeafletVersionDetector {
     const version = this.getVersion();
 
     const globalL = getGlobalLeaflet();
+    const resolvedLeaflet = globalL ?? getModuleLeaflet();
     return {
       version,
-      leafletVersion: globalL?.version,
-      hasFactoryMethods: typeof globalL?.marker === 'function',
-      hasConstructors: !!globalL?.Marker && typeof globalL.Marker === 'function',
+      leafletVersion: resolvedLeaflet.version,
+      hasFactoryMethods: typeof resolvedLeaflet.marker === 'function',
+      hasConstructors: !!resolvedLeaflet.Marker && typeof resolvedLeaflet.Marker === 'function',
       globalLAvailable: !!globalL,
     };
   }

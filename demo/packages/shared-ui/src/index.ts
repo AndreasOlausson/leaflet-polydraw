@@ -2584,7 +2584,7 @@ export const renderWrapperPage = (options: {
             </section>
             <section class="demo-wrapper-note">
               <h2 class="demo-wrapper-note-label">Use this split to decide</h2>
-              <p class="demo-wrapper-note-copy">Use Leaflet 1.9.x to confirm the stable line and Leaflet 2.x to evaluate the forward path.</p>
+              <p class="demo-wrapper-note-copy">The Leaflet 2 route targets one explicit prerelease version; alpha and beta releases are not interchangeable.</p>
             </section>
           </div>
         </div>

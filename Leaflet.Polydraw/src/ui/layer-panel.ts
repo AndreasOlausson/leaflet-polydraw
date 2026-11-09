@@ -65,6 +65,8 @@ export function createLayerPanel(
     let selectedColor = initialColor;
     let mergeMode = false;
     let selectedTargetLayerId: string | null = null;
+    let createNewMergeTarget = false;
+    const canCreateMergeTarget = layer.role === 'reference';
     const targetLayers = layerManager
       .getAllLayers()
       .filter((candidate) => candidate.role === 'draw' && candidate.id !== layer.id);
@@ -147,7 +149,11 @@ export function createLayerPanel(
     const sourceFeatureCount = layerManager.getFeatureGroupsForLayer(layer.id).length;
     const canMergeSource =
       layer.role === 'draw' || (layer.role === 'reference' && allowReferenceMergeSources);
-    if (canMergeSource && sourceFeatureCount > 0 && targetLayers.length > 0) {
+    if (
+      canMergeSource &&
+      sourceFeatureCount > 0 &&
+      (targetLayers.length > 0 || canCreateMergeTarget)
+    ) {
       const mergeButton = document.createElement('button');
       mergeButton.type = 'button';
       mergeButton.className = 'polydraw-layer-dialog-merge';
@@ -193,6 +199,35 @@ export function createLayerPanel(
       mergeOptions.appendChild(option);
       return option;
     });
+    if (canCreateMergeTarget) {
+      const newLayerOption = document.createElement('button');
+      newLayerOption.type = 'button';
+      newLayerOption.className =
+        'polygon-layer-option polygon-layer-option-new polydraw-layer-merge-option polydraw-layer-merge-option-new';
+      newLayerOption.setAttribute('role', 'radio');
+      newLayerOption.setAttribute('aria-checked', 'false');
+      newLayerOption.dataset.createNewLayer = 'true';
+      const label = document.createElement('span');
+      label.className = 'polygon-layer-option-label';
+      label.textContent = '+ New editable layer';
+      newLayerOption.appendChild(label);
+      mergeOptions.appendChild(newLayerOption);
+      mergeOptionButtons.push(newLayerOption);
+    }
+
+    const newLayerNameField = document.createElement('label');
+    newLayerNameField.className = 'polygon-layer-new-name polydraw-layer-merge-new-name';
+    newLayerNameField.hidden = true;
+    const newLayerNameLabel = document.createElement('span');
+    newLayerNameLabel.textContent = 'Layer name';
+    const newLayerNameInput = document.createElement('input');
+    newLayerNameInput.type = 'text';
+    newLayerNameInput.className = 'polygon-layer-new-name-input polydraw-layer-new-name-input';
+    newLayerNameInput.value = layer.label?.trim() || layer.id;
+    newLayerNameInput.placeholder = 'Optional';
+    newLayerNameInput.maxLength = 80;
+    newLayerNameInput.autocomplete = 'off';
+    newLayerNameField.append(newLayerNameLabel, newLayerNameInput);
     const targetStyleChoice = document.createElement('label');
     targetStyleChoice.className = 'polydraw-layer-merge-style-choice';
     const targetStyleCheckbox = document.createElement('input');
@@ -205,7 +240,11 @@ export function createLayerPanel(
     targetStyleDescription.textContent = 'Otherwise individual colors and opacity are preserved.';
     targetStyleText.append(targetStyleLabel, targetStyleDescription);
     targetStyleChoice.append(targetStyleCheckbox, targetStyleText);
-    mergePanel.append(mergeOptions, targetStyleChoice);
+    mergePanel.appendChild(mergeOptions);
+    if (canCreateMergeTarget) {
+      mergePanel.appendChild(newLayerNameField);
+    }
+    mergePanel.appendChild(targetStyleChoice);
 
     const actions = document.createElement('div');
     actions.className = 'polydraw-layer-dialog-actions';
@@ -268,13 +307,19 @@ export function createLayerPanel(
       ?.addEventListener('click', showMergeTargets);
     mergeOptionButtons.forEach((option) => {
       option.addEventListener('click', () => {
-        selectedTargetLayerId = option.dataset.layerId || null;
+        createNewMergeTarget = option.dataset.createNewLayer === 'true';
+        selectedTargetLayerId = createNewMergeTarget ? null : option.dataset.layerId || null;
         mergeOptionButtons.forEach((candidate) => {
           const selected = candidate === option;
           candidate.classList.toggle('selected', selected);
           candidate.setAttribute('aria-checked', String(selected));
         });
-        mergeApplyButton.disabled = selectedTargetLayerId === null;
+        newLayerNameField.hidden = !createNewMergeTarget;
+        targetStyleChoice.hidden = createNewMergeTarget;
+        mergeApplyButton.disabled = !createNewMergeTarget && selectedTargetLayerId === null;
+        if (createNewMergeTarget) {
+          newLayerNameInput.focus();
+        }
       });
     });
     if (mergeOptionButtons.length === 1) {
@@ -285,11 +330,15 @@ export function createLayerPanel(
       mergeApplyButton.disabled = selectedTargetLayerId === null;
     }
     mergeApplyButton.addEventListener('click', () => {
-      if (!selectedTargetLayerId) return;
+      if (!createNewMergeTarget && !selectedTargetLayerId) return;
       eventManager.emit('polydraw:layer:merge-requested', {
         sourceLayerId: layer.id,
-        targetLayerId: selectedTargetLayerId,
-        useTargetStyle: targetStyleCheckbox.checked,
+        targetLayerId: selectedTargetLayerId ?? undefined,
+        createNewLayer: createNewMergeTarget,
+        newLayerLabel: createNewMergeTarget
+          ? newLayerNameInput.value.trim() || undefined
+          : undefined,
+        useTargetStyle: createNewMergeTarget ? false : targetStyleCheckbox.checked,
       });
       closeLayerEditor();
     });
@@ -660,10 +709,10 @@ export function createLayerPanel(
     }
   };
 
-  const LayerPanelControlClass = L.Control.extend({
-    options: {
-      position: 'topright' as L.ControlPosition,
-    },
+  class LayerPanelControlClass extends L.Control implements LayerPanelControl {
+    constructor() {
+      super({ position: 'topright' });
+    }
 
     onAdd(leafletMap: L.Map): HTMLElement {
       map = leafletMap;
@@ -681,7 +730,7 @@ export function createLayerPanel(
       map.on('resize', updateAvailableHeight);
 
       return container;
-    },
+    }
 
     onRemove(): void {
       if (!container) {
@@ -699,12 +748,12 @@ export function createLayerPanel(
       map = null;
       draggedLayerId = null;
       pendingRenderWhileDragging = false;
-    },
-  });
+    }
 
-  const panel = new LayerPanelControlClass() as unknown as LayerPanelControl;
-  panel.refresh = (options?: LayerPanelRefreshOptions) => {
-    renderPanel(options);
-  };
-  return panel;
+    refresh(options?: LayerPanelRefreshOptions): void {
+      renderPanel(options);
+    }
+  }
+
+  return new LayerPanelControlClass();
 }

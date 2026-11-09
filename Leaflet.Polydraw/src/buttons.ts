@@ -92,7 +92,8 @@ export function createButtons(
 
   L.DomEvent.on(activate, 'mousedown', L.DomEvent.stopPropagation);
   L.DomEvent.on(activate, 'touchstart', L.DomEvent.stopPropagation);
-  L.DomEvent.on(activate, 'click', L.DomEvent.stop).on(activate, 'click', onActivateToggle);
+  L.DomEvent.on(activate, 'click', L.DomEvent.stop);
+  L.DomEvent.on(activate, 'click', onActivateToggle);
 
   if (config.tools.draw) {
     const draw = leafletAdapter.domUtil.create('a', 'icon-draw', subContainer) as HTMLAnchorElement;

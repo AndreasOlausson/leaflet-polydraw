@@ -6,29 +6,29 @@ import * as L from 'leaflet';
 import { GeometryUtils } from './geometry-utils';
 import type { TurfHelper } from './turf-helper';
 import { leafletAdapter } from './compatibility/leaflet-adapter';
+import type { Position } from 'geojson';
 
 export class CoordinateUtils {
   /**
    * Convert coordinate arrays to proper format for polygon creation
    */
   static convertToCoords(latlngs: L.LatLngLiteral[][], turfHelper: TurfHelper): number[][][] {
-    const coords: number[][][] = [];
+    const coords: Position[][][] = [];
+    const toRing = (ring: L.LatLngLiteral[]): Position[] =>
+      L.GeoJSON.latLngsToCoords(ring) as Position[];
 
     // latlngs length
     if (latlngs.length > 1 && latlngs.length < 3) {
-      const coordinates: number[][] = [];
+      const coordinates: Position[][] = [];
       // Coords of last polygon
-      const within = turfHelper.isWithin(
-        L.GeoJSON.latLngsToCoords(latlngs[latlngs.length - 1]),
-        L.GeoJSON.latLngsToCoords(latlngs[0]),
-      );
+      const within = turfHelper.isWithin(toRing(latlngs[latlngs.length - 1]), toRing(latlngs[0]));
       if (within) {
         latlngs.forEach((polygon) => {
-          coordinates.push(L.GeoJSON.latLngsToCoords(polygon));
+          coordinates.push(toRing(polygon));
         });
       } else {
         latlngs.forEach((polygon) => {
-          coords.push([L.GeoJSON.latLngsToCoords(polygon)]);
+          coords.push([toRing(polygon)]);
         });
       }
       if (coordinates.length >= 1) {
@@ -36,28 +36,25 @@ export class CoordinateUtils {
       }
       // Within result
     } else if (latlngs.length > 2) {
-      const coordinates: number[][] = [];
+      const coordinates: Position[][] = [];
       for (let index = 1; index < latlngs.length - 1; index++) {
-        const within = turfHelper.isWithin(
-          L.GeoJSON.latLngsToCoords(latlngs[index]),
-          L.GeoJSON.latLngsToCoords(latlngs[0]),
-        );
+        const within = turfHelper.isWithin(toRing(latlngs[index]), toRing(latlngs[0]));
         if (within) {
           latlngs.forEach((polygon) => {
-            coordinates.push(L.GeoJSON.latLngsToCoords(polygon));
+            coordinates.push(toRing(polygon));
           });
           coords.push(coordinates);
         } else {
           latlngs.forEach((polygon) => {
-            coords.push([L.GeoJSON.latLngsToCoords(polygon)]);
+            coords.push([toRing(polygon)]);
           });
         }
       }
     } else {
-      coords.push([L.GeoJSON.latLngsToCoords(latlngs[0])]);
+      coords.push([toRing(latlngs[0])]);
     }
 
-    return coords;
+    return coords as unknown as number[][][];
   }
 
   /**

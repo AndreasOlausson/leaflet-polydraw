@@ -147,11 +147,14 @@ describe('Layer Panel Lifecycle', () => {
     const dialog = document.querySelector('.polydraw-layer-dialog') as HTMLFormElement;
     (dialog.querySelector('.polydraw-layer-dialog-merge') as HTMLButtonElement).click();
     const targets = Array.from(
-      dialog.querySelectorAll<HTMLElement>('.polydraw-layer-merge-option'),
+      dialog.querySelectorAll<HTMLElement>('.polydraw-layer-merge-option[data-layer-id]'),
     ).map((target) => target.dataset.layerId);
 
     expect(targets).toEqual(['default', 'Work layer']);
     expect(targets).not.toContain('Reference B');
+    expect(dialog.querySelector<HTMLElement>('.polydraw-layer-merge-option-new')?.textContent).toBe(
+      '+ New editable layer',
+    );
   });
 
   it('preselects the target when only one merge destination is available', async () => {

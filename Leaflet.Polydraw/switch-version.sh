@@ -17,10 +17,10 @@ case $VERSION in
     echo "Run 'npm run dev' to test with Leaflet v1"
     ;;
   v2)
-    echo "Installing Leaflet v2.0.0-alpha.1..."
+    echo "Installing Leaflet v2.0.0-beta.2..."
     cd "$DEMO_DIR"
-    npm install leaflet@^2.0.0-alpha.1
-    echo "Switched to Leaflet v2.0.0-alpha.1"
+    npm install leaflet@2.0.0-beta.2
+    echo "Switched to Leaflet v2.0.0-beta.2"
     echo "Run 'npm run dev' to test with Leaflet v2"
     ;;
   *)

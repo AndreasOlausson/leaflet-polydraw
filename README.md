@@ -2,7 +2,7 @@
 
 # Leaflet Polydraw
 
-_A modern Leaflet plugin for intuitive freehand polygon drawing and advanced spatial editing — fully compatible with Leaflet 1.x and 2.x._
+_A modern Leaflet plugin for intuitive freehand polygon drawing and advanced spatial editing — supporting Leaflet 1.9.4 and Leaflet 2.0.0-beta.2._
 
 **Live Demo**: [https://polydraw.ao-tech.se](https://polydraw.ao-tech.se)
 
@@ -16,6 +16,9 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
+
+> [!IMPORTANT]
+> Leaflet 2 support currently targets `2.0.0-beta.2`. Leaflet 2 prereleases include breaking API changes, so earlier alpha builds are not interchangeable with this version. Pin `leaflet@2.0.0-beta.2` when testing the Leaflet 2 track, or use stable Leaflet `1.9.4`.
 
 This project is tested with BrowserStack.
 
@@ -42,7 +45,7 @@ This project is tested with BrowserStack.
 - **Performance Optimized**: Efficient rendering and event handling even for large datasets.
 - **GeoJSON Import**: Add Polygon and MultiPolygon features directly from RFC 7946 GeoJSON
 - **Coordinate Auto-Detection**: Accepts multiple coordinate formats automatically (lat/lng, DMS, DDM, N/E, etc.).
-- **Leaflet 1.x & 2.x Compatible**: Fully compatible with both generations of the Leaflet API.
+- **Leaflet 1 and 2 Support**: Tested with stable Leaflet 1.9.4 and the Leaflet 2.0.0-beta.2 prerelease.
 - **TypeScript Ready**: Includes complete type definitions for modern development workflows.
 
 ---

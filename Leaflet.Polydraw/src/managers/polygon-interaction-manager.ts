@@ -21,6 +21,7 @@ import type {
   PolygonStyleOverrides,
   PolygonMenuAction,
   PolygonMenuActionContext,
+  LeafletInputEvent,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import { EventManager } from './event-manager';
@@ -397,7 +398,7 @@ export class PolygonInteractionManager {
       marker.on('click', (e) => {
         if (this.isDraggingMarker) {
           e.originalEvent?.stopPropagation?.();
-          L.DomEvent.stopPropagation(e);
+          leafletAdapter.domEvent.stopPropagation(e);
         }
       });
       // Replace dragend binding to use _polydrawFeatureGroup and allow correct logic
@@ -430,7 +431,7 @@ export class PolygonInteractionManager {
           this.markerDragEnd(fg);
         }
         this._activeMarker = null;
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
         setTimeout(() => {
           this.isDraggingMarker = false;
         }, 10);
@@ -607,7 +608,7 @@ export class PolygonInteractionManager {
       // Forward mousedown events to the map when in drawing mode
       marker.on('mousedown', (e) => {
         if (!this.modeManager.isInOffMode()) {
-          L.DomEvent.stopPropagation(e);
+          leafletAdapter.domEvent.stopPropagation(e);
           this.map.fire('mousedown', e);
         }
         this._activeMarker = marker;
@@ -739,7 +740,7 @@ export class PolygonInteractionManager {
       marker.on('click', (e) => {
         if (this.isDraggingMarker) {
           e.originalEvent?.stopPropagation?.();
-          L.DomEvent.stopPropagation(e);
+          leafletAdapter.domEvent.stopPropagation(e);
         }
       });
 
@@ -769,7 +770,7 @@ export class PolygonInteractionManager {
           this.markerDragEnd(fg);
         }
         this._activeMarker = null;
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
         setTimeout(() => {
           this.isDraggingMarker = false;
         }, 10);
@@ -912,7 +913,7 @@ export class PolygonInteractionManager {
 
       marker.on('mousedown', (e) => {
         if (!this.modeManager.isInOffMode()) {
-          L.DomEvent.stopPropagation(e);
+          leafletAdapter.domEvent.stopPropagation(e);
           this.map.fire('mousedown', e);
         }
         this._activeMarker = marker;
@@ -1089,7 +1090,7 @@ export class PolygonInteractionManager {
           parentFeatureGroup: featureGroup,
         };
 
-        edgePolyline.on('click', (e: L.LeafletMouseEvent) => {
+        edgePolyline.on('click', (e: LeafletInputEvent) => {
           this.onEdgeClick(e, edgePolyline);
         });
 
@@ -1284,10 +1285,11 @@ export class PolygonInteractionManager {
       originalOpacity: polygon.options.fillOpacity,
     };
 
-    polygon.on('mousedown', (e: L.LeafletMouseEvent) => {
+    (polygon as L.Evented).on('mousedown', (event: L.LeafletEvent) => {
+      const e = event as LeafletInputEvent;
       if (!this.isPolygonDragModeActive()) {
         // Stop this event from becoming a drag, but fire it on the map for drawing.
-        L.DomEvent.stopPropagation(e);
+        leafletAdapter.domEvent.stopPropagation(e);
         this.map.fire('mousedown', e);
         return;
       }
@@ -1297,7 +1299,7 @@ export class PolygonInteractionManager {
 
     // Support pointer events (Leaflet v2) in addition to mousedown
     (polygon as L.Evented).on('pointerdown', ((event: L.LeafletEvent) => {
-      const e = event as L.LeafletMouseEvent;
+      const e = event as LeafletInputEvent;
       // If not in off mode, it's a drawing click. Forward to map and stop.
       if (!this.isPolygonDragModeActive()) {
         const originalEvent = (e.originalEvent ?? e) as Event;
@@ -1553,7 +1555,7 @@ export class PolygonInteractionManager {
     this.transformModeActive = false;
   }
 
-  private onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+  private onEdgeClick(e: LeafletInputEvent, edgePolyline: L.Polyline): void {
     if (!this.config.modes.attachElbow) {
       return;
     }
@@ -1610,7 +1612,7 @@ export class PolygonInteractionManager {
         // Handle errors
       }
     }
-    L.DomEvent.stopPropagation(e);
+    leafletAdapter.domEvent.stopPropagation(e);
   }
 
   private highlightEdgeOnHover(edgePolyline: L.Polyline, isHovering: boolean): void {
@@ -1929,7 +1931,7 @@ export class PolygonInteractionManager {
   }
 
   private elbowClicked(
-    e: L.LeafletMouseEvent,
+    e: LeafletInputEvent,
     polygonLayer: L.Polygon,
     forcedLatLng: L.LatLng,
   ): void {
@@ -2180,7 +2182,7 @@ export class PolygonInteractionManager {
   }
 
   // Polygon dragging methods
-  private onPolygonMouseMove = (e: L.LeafletMouseEvent) => {
+  private onPolygonMouseMove = (e: LeafletInputEvent) => {
     if (
       !this.currentDragPolygon ||
       !this.currentDragPolygon._polydrawDragData ||
@@ -2210,7 +2212,7 @@ export class PolygonInteractionManager {
     this.updateMarkersAndHoleLinesDuringDrag(polygon, offsetLat, offsetLng);
   };
 
-  private onPolygonMouseUp = (e: L.LeafletMouseEvent) => {
+  private onPolygonMouseUp = (e: LeafletInputEvent) => {
     void e; // mark parameter as used to satisfy ESLint while keeping the name
     if (
       !this.currentDragPolygon ||
@@ -2286,12 +2288,12 @@ export class PolygonInteractionManager {
       this.map,
     );
     if (!latlng) return;
-    this.onPolygonMouseMove({ latlng } as L.LeafletMouseEvent);
+    this.onPolygonMouseMove({ latlng } as LeafletInputEvent);
   };
 
   private onDragTouchEnd = (e: TouchEvent) => {
     e.preventDefault();
-    this.onPolygonMouseUp({ latlng: null } as unknown as L.LeafletMouseEvent);
+    this.onPolygonMouseUp({ latlng: null } as unknown as LeafletInputEvent);
   };
 
   private readonly onDragDocumentMove = (event: MouseEvent | PointerEvent) => {
@@ -2303,7 +2305,7 @@ export class PolygonInteractionManager {
       return;
     }
 
-    this.onPolygonMouseMove({ latlng, originalEvent: event } as unknown as L.LeafletMouseEvent);
+    this.onPolygonMouseMove({ latlng, originalEvent: event } as unknown as LeafletInputEvent);
   };
 
   private readonly onDragDocumentEnd = (event: MouseEvent | PointerEvent) => {
@@ -2311,7 +2313,7 @@ export class PolygonInteractionManager {
       EventAdapter.extractCoordinates(event as unknown as Record<string, unknown>, this.map) ??
       null;
 
-    this.onPolygonMouseUp({ latlng, originalEvent: event } as unknown as L.LeafletMouseEvent);
+    this.onPolygonMouseUp({ latlng, originalEvent: event } as unknown as LeafletInputEvent);
   };
 
   private attachDragDocumentListeners(): void {

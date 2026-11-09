@@ -129,7 +129,9 @@ export type PolydrawEventPayloads = {
   };
   'polydraw:layer:merge-requested': {
     sourceLayerId: string;
-    targetLayerId: string;
+    targetLayerId?: string;
+    createNewLayer?: boolean;
+    newLayerLabel?: string;
     useTargetStyle: boolean;
   };
   'polydraw:layer:reorder-requested': {

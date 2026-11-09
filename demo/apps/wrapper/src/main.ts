@@ -1,4 +1,4 @@
-import { demoTargets } from '@polydraw-demo/shared-content';
+import { demoTargets, leafletV1Version, leafletV2Version } from '@polydraw-demo/shared-content';
 import { mountSharedStyles, renderWrapperPage } from '@polydraw-demo/shared-ui';
 
 const app = document.getElementById('app');
@@ -30,8 +30,7 @@ app.innerHTML = renderWrapperPage({
   sourceMode: sourceLabel,
   sourceSummary,
   title: 'Choose a Leaflet runtime',
-  subtitle:
-    'Both routes run the same scenarios. Use Leaflet 1.9.x to validate the current stable line, or Leaflet 2.x to evaluate the forward path.',
+  subtitle: `Both routes run the same scenarios. Use Leaflet ${leafletV1Version} for the stable line, or Leaflet ${leafletV2Version} to evaluate the current Leaflet 2 prerelease.`,
   targets: demoTargets.map((target) => ({
     ...target,
     href: hrefFor(target.id)

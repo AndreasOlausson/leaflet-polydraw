@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- Added a BrowserStack Playwright smoke workflow for remote Chrome, WebKit, and touch-emulation coverage.
+- Reference layers can now be merged directly into a newly created editable draw layer whose name defaults to the source layer name.
+
+### Changed
+
+- Updated Leaflet 2 development, demo, and compatibility testing from `2.0.0-alpha.1` to `2.0.0-beta.2` while retaining Leaflet 1.9.4 support.
+- Reworked compatibility boundaries for Leaflet 2's pointer event types, removed browser and DOM utility exports, non-chainable DOM events, and class-based controls.
+- Leaflet version detection now reads the imported ESM module when no global `L` namespace is available.
+
+### Fixed
+
+- Updated the transform browser test to identify Polydraw's tagged auxiliary lines without relying on the removed Leaflet 2 global namespace.
+- Newly created draw layers now render above existing reference layers instead of being obscured by them.
+
 ## [2.1.0] - 2026-11-02
 
 ### Added

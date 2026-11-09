@@ -15,6 +15,7 @@ import type {
   PolygonStyleOverrides,
   PolygonMenuActionContext,
   PolygonMenuActionResult,
+  LeafletInputEvent,
 } from '../types/polydraw-interfaces';
 import { ModeManager } from './mode-manager';
 import {
@@ -2090,7 +2091,7 @@ export class PolygonMutationManager {
   }
 
   // Additional methods for backward compatibility with tests
-  onEdgeClick(e: L.LeafletMouseEvent, edgePolyline: L.Polyline): void {
+  onEdgeClick(e: LeafletInputEvent, edgePolyline: L.Polyline): void {
     void e;
     void edgePolyline;
   }
@@ -2111,11 +2112,11 @@ export class PolygonMutationManager {
     this.interactionManager.cleanupFeatureGroup(featureGroup);
   }
 
-  onPolygonMouseMove(e: L.LeafletMouseEvent): void {
+  onPolygonMouseMove(e: LeafletInputEvent): void {
     void e;
   }
 
-  onPolygonMouseUp(e: L.LeafletMouseEvent): void {
+  onPolygonMouseUp(e: LeafletInputEvent): void {
     void e;
   }
 
