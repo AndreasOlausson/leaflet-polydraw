@@ -21,6 +21,13 @@ export const polys = {
     [0.2, 0.7],
     [0.2, 0.2],
   ] as [number, number][],
+  bottomRightSquare: [
+    [0.55, 0.65],
+    [0.75, 0.65],
+    [0.75, 0.85],
+    [0.55, 0.85],
+    [0.55, 0.65],
+  ] as [number, number][],
   overlapA: [
     [0.3, 0.3],
     [0.55, 0.3],
