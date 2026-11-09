@@ -89,17 +89,6 @@ test.describe('BrowserStack smoke', () => {
         await target.click();
       }
     };
-    const closeLeafletPopup = async (target: Locator) => {
-      if (!useTouch) {
-        await target.click();
-        return;
-      }
-      const box = await target.boundingBox();
-      if (!box) {
-        throw new Error('Popup close target has no bounding box');
-      }
-      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
-    };
 
     const toolbarToggle = page.locator('[data-polydraw="activate-button"]');
     const toolbarTools = page.locator('[data-polydraw="sub-buttons"]');
@@ -131,7 +120,7 @@ test.describe('BrowserStack smoke', () => {
     const infoPanel = page.locator('.info-marker-content');
     await expect(infoPanel).toBeVisible();
     await expect(infoPanel.getByText('Area', { exact: true })).toBeVisible();
-    await closeLeafletPopup(page.locator('.leaflet-popup-close-button'));
+    await page.locator('.leaflet-popup-close-button').click();
     await expect(infoPanel).not.toBeVisible();
 
     await press(page.locator('.polygon-marker.menu').first());
