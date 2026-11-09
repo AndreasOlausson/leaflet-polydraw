@@ -17,6 +17,9 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
 
+> [!IMPORTANT]
+> Leaflet 2 support currently targets `2.0.0-beta.2`. Leaflet 2 prereleases include breaking API changes, so earlier alpha builds are not interchangeable with this version. Pin `leaflet@2.0.0-beta.2` when testing the Leaflet 2 track, or use stable Leaflet `1.9.4`.
+
 This project is tested with BrowserStack.
 
 ---
