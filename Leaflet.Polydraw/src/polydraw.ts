@@ -896,6 +896,9 @@ class Polydraw extends L.Control {
    */
   public createDrawLayer(input: Partial<PolygonLayerDescriptorInput> = {}): LayerState {
     const id = (input.id || this.getNextDrawLayerName()).trim();
+    const firstReferenceIndex = this.layerManager
+      .getAllLayers()
+      .findIndex((candidate) => candidate.role === 'reference');
     const layer = this.createLayer({
       ...input,
       id,
@@ -906,6 +909,9 @@ class Polydraw extends L.Control {
       panel: input.panel ?? 'visible',
       visibility: input.visibility ?? true,
     });
+    if (firstReferenceIndex >= 0) {
+      this.layerManager.moveLayerToIndex(layer.id, firstReferenceIndex);
+    }
     this.layerManager.setActiveLayer(layer.id);
     this.updateLayerPanel();
     this.updateMarkerDraggableState();
@@ -1319,6 +1325,56 @@ class Polydraw extends L.Control {
       'layerMove',
       this.layerManager,
     );
+    return this.mergeLayerIntoWithSnapshot(
+      normalizedSourceId,
+      normalizedTargetId,
+      options,
+      historySnapshot,
+    );
+  }
+
+  private async mergeLayerIntoNewDrawLayer(
+    sourceLayerId: string,
+    label?: string,
+  ): Promise<boolean> {
+    const normalizedSourceId = (sourceLayerId || '').trim();
+    const sourceLayer = this.layerManager.getLayer(normalizedSourceId);
+    if (
+      !sourceLayer ||
+      sourceLayer.role !== 'reference' ||
+      this.config.layerPanel.merge?.allowReferenceSources !== true ||
+      this.layerManager.getFeatureGroupsForLayer(normalizedSourceId).length === 0
+    ) {
+      return false;
+    }
+
+    const historySnapshot = this.historyManager.captureState(
+      this.arrayOfFeatureGroups,
+      'layerMove',
+      this.layerManager,
+    );
+    try {
+      const targetLayer = this.createDrawLayer({ label: label?.trim() || undefined });
+      return await this.mergeLayerIntoWithSnapshot(
+        normalizedSourceId,
+        targetLayer.id,
+        { useTargetStyle: false },
+        historySnapshot,
+      );
+    } catch (error) {
+      await this.restoreFromSnapshot(historySnapshot);
+      console.warn('Failed to create a draw layer for merge; restored the previous state.', error);
+      return false;
+    }
+  }
+
+  private async mergeLayerIntoWithSnapshot(
+    normalizedSourceId: string,
+    normalizedTargetId: string,
+    options: LayerMergeOptions,
+    historySnapshot: HistorySnapshot,
+  ): Promise<boolean> {
+    const sourceFeatureGroups = this.layerManager.getFeatureGroupsForLayer(normalizedSourceId);
     const sourceWasActive = this.layerManager.getActiveLayerId() === normalizedSourceId;
     try {
       for (const featureGroup of sourceFeatureGroups) {
@@ -1970,6 +2026,11 @@ class Polydraw extends L.Control {
     });
 
     this.addCoreEventListener('polydraw:layer:merge-requested', (data) => {
+      if (data.createNewLayer) {
+        void this.mergeLayerIntoNewDrawLayer(data.sourceLayerId, data.newLayerLabel);
+        return;
+      }
+      if (!data.targetLayerId) return;
       void this.mergeLayerInto(data.sourceLayerId, data.targetLayerId, {
         useTargetStyle: data.useTargetStyle,
       });

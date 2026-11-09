@@ -212,6 +212,95 @@ test.describe('Layer panel', () => {
       });
   });
 
+  test('promotes a reference source into a new named draw layer', async ({ page }) => {
+    const panel = page.locator('[data-polydraw="layer-panel"]');
+
+    await page.evaluate(async (ring) => {
+      await (window as any).polydrawControl.addPredefinedGeoJSONs(
+        [
+          {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'Polygon',
+              coordinates: [ring.map(({ lat, lng }) => [lng, lat])],
+            },
+          },
+        ],
+        {
+          layer: {
+            id: 'Flood reference',
+            role: 'reference',
+            interaction: 'readonly',
+          },
+          overrides: {
+            style: { color: '#991b1b', fillColor: '#ef4444', fillOpacity: 0.18 },
+          },
+        },
+      );
+    }, latlngPolys.square);
+
+    await panel.locator('[data-layer-id="Flood reference"] .polydraw-layer-edit').click();
+    const dialog = page.locator('.polydraw-layer-dialog');
+    await dialog.locator('.polydraw-layer-dialog-merge').click();
+    await dialog.locator('.polydraw-layer-merge-option-new').click();
+    await expect(dialog.locator('.polydraw-layer-merge-style-choice')).toBeHidden();
+    await expect(dialog.locator('.polydraw-layer-new-name-input')).toHaveValue('Flood reference');
+    await dialog.locator('.polydraw-layer-new-name-input').fill('Flood edits');
+    await dialog.locator('.polydraw-layer-merge-apply').click();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const control = (window as any).polydrawControl;
+          const target = control
+            .getAllLayers()
+            .find((candidate: any) => candidate.label === 'Flood edits');
+          const featureGroups = target ? control.getFeatureGroupsByLayer(target.id) : [];
+          return {
+            sourceExists: control.hasLayer('Flood reference'),
+            targetId: target?.id,
+            targetRole: target?.role,
+            targetFeatures: featureGroups.length,
+            editable:
+              featureGroups.length === 1 &&
+              control.getLayerManager().isFeatureGroupEditable(featureGroups[0]),
+            activeLayerId: control.getActiveLayerId(),
+            fillColor: featureGroups[0]?._polydrawMetadata?.styleOverrides?.fillColor,
+          };
+        }),
+      )
+      .toEqual({
+        sourceExists: false,
+        targetId: 'Layer 1',
+        targetRole: 'draw',
+        targetFeatures: 1,
+        editable: true,
+        activeLayerId: 'Layer 1',
+        fillColor: '#ef4444',
+      });
+
+    await page.evaluate(async () => {
+      await (window as any).polydrawControl.undo();
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const control = (window as any).polydrawControl;
+          return {
+            sourceRole: control.getLayerById('Flood reference')?.role,
+            sourceFeatures: control.getFeatureGroupsByLayer('Flood reference').length,
+            promotedLayerExists: control.hasLayer('Layer 1'),
+          };
+        }),
+      )
+      .toEqual({
+        sourceRole: 'reference',
+        sourceFeatures: 1,
+        promotedLayerExists: false,
+      });
+  });
+
   test('moves a polygon to another draw layer from its action menu', async ({ page }) => {
     const demo = new DemoFactory(page);
     await page.evaluate(() => {

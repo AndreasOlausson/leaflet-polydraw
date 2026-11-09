@@ -97,4 +97,29 @@ describe('Layer Reordering', () => {
     ]);
     expect(renderedLayerIds).toEqual(['Reference', 'Background', 'default']);
   });
+
+  it('places newly created draw layers above existing reference layers', async () => {
+    await polydraw.addPredefinedPolygon(fixtures.triangle(), {
+      layer: { id: 'Reference A', role: 'reference', interaction: 'readonly' },
+    });
+    await polydraw.addPredefinedPolygon(fixtures.octagon(), {
+      layer: { id: 'Reference B', role: 'reference', interaction: 'readonly' },
+    });
+    polydraw.createDrawLayer({ id: 'Layer 1' });
+    await polydraw.addPredefinedPolygon(fixtures.squareWithHole(), { layer: 'Layer 1' });
+
+    const layerManager = polydraw.getLayerManager();
+    expect(layerManager.getAllLayers().map((layer) => layer.id)).toEqual([
+      'default',
+      'Layer 1',
+      'Reference A',
+      'Reference B',
+    ]);
+
+    const internal = polydraw as unknown as { _lastAppliedVisibleMapOrder: unknown[] };
+    const renderedLayerIds = internal._lastAppliedVisibleMapOrder.map((featureGroup) =>
+      layerManager.getLayerForFeatureGroup(featureGroup as never),
+    );
+    expect(renderedLayerIds).toEqual(['Reference B', 'Reference A', 'Layer 1']);
+  });
 });

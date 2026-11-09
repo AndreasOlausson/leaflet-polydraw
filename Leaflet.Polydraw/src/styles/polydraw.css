@@ -1745,6 +1745,10 @@ body {
   cursor: pointer;
 }
 
+.polydraw-layer-merge-style-choice[hidden] {
+  display: none;
+}
+
 .polydraw-layer-merge-style-choice input {
   appearance: none;
   width: 15px;

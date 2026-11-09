@@ -1,4 +1,6 @@
 export type DemoRouteId = 'leaflet-v1' | 'leaflet-v2';
+export const leafletV1Version = '1.9.4';
+export const leafletV2Version = '2.0.0-beta.2';
 export type Coordinate = [number, number];
 export type PolygonRings = Coordinate[][];
 export type MapScenarioId =
@@ -31,7 +33,7 @@ export const demoTargets: DemoTarget[] = [
   {
     id: 'leaflet-v1',
     title: 'Leaflet 1 Demo',
-    badge: '1.9.x runtime',
+    badge: `${leafletV1Version} runtime`,
     compatibility: 'For teams shipping the stable Leaflet 1 line.',
     summary: 'Shows the latest Polydraw package running against the classic Leaflet runtime.',
     bullets: [
@@ -42,9 +44,9 @@ export const demoTargets: DemoTarget[] = [
   },
   {
     id: 'leaflet-v2',
-    title: 'Leaflet 2 Demo',
-    badge: '2.x runtime',
-    compatibility: 'For teams already evaluating or adopting Leaflet 2.',
+    title: 'Leaflet 2 Beta Demo',
+    badge: `${leafletV2Version} runtime`,
+    compatibility: `For teams evaluating Leaflet ${leafletV2Version}.`,
     summary: 'Shows the same public demo scenarios on the newer Leaflet runtime.',
     bullets: [
       'Same plugin package, different Leaflet runtime',
