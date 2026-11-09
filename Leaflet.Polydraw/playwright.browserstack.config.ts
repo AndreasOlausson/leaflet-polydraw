@@ -49,7 +49,11 @@ export default defineConfig({
   testMatch: 'browserstack-smoke.spec.ts',
   fullyParallel: false,
   workers: 3,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report/browserstack' }]],
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: 'playwright-report/browserstack' }],
+    ['junit', { outputFile: 'test-results/browserstack-junit.xml' }],
+  ],
   use: {
     baseURL: e2eBaseURL,
     headless: true,

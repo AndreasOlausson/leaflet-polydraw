@@ -69,6 +69,21 @@ jobs:
         run: npm run test:browserstack
         working-directory: ./Leaflet.Polydraw
 
+      - name: Upload BrowserStack test report
+        if: always() && hashFiles('Leaflet.Polydraw/test-results/browserstack-junit.xml') != ''
+        continue-on-error: true
+        run: |
+          curl --fail-with-body --retry 3 --retry-all-errors \
+            -u "${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}" \
+            -F "data=@test-results/browserstack-junit.xml" \
+            -F "projectName=Leaflet.Polydraw" \
+            -F "buildName=BrowserStack smoke" \
+            -F "buildIdentifier=${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            -F "ci=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            -F "frameworkVersion=playwright, 1.56.1" \
+            https://upload-automation.browserstack.com/upload
+        working-directory: ./Leaflet.Polydraw
+
       - name: Stop BrowserStack Local
         if: always()
         uses: browserstack/github-actions/setup-local@93aebce225b754566349151c0676b26b005e591b # v1.0.4
