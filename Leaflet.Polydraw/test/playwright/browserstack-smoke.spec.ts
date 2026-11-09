@@ -10,11 +10,34 @@ const expectMapStayedPut = (
   expect(Math.abs(after.lng - before.lng)).toBeLessThan(0.0001);
 };
 
+let browserStackSessionFailed = false;
+
 test.describe('BrowserStack smoke', () => {
   test.beforeEach(async ({ page }) => {
     const demo = new DemoFactory(page);
     await demo.goto();
     await demo.clearPolygons();
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (!process.env.BROWSERSTACK_USERNAME || testInfo.status === 'skipped') {
+      return;
+    }
+
+    const currentTestFailed = testInfo.status !== testInfo.expectedStatus;
+    browserStackSessionFailed ||= currentTestFailed;
+    const status = browserStackSessionFailed ? 'failed' : 'passed';
+    const reason = currentTestFailed
+      ? (testInfo.error?.message ?? 'BrowserStack smoke test failed').slice(0, 255)
+      : 'BrowserStack smoke tests passed';
+    const result = {
+      action: 'setSessionStatus',
+      arguments: { status, reason },
+    };
+
+    await page
+      .evaluate((_command) => undefined, `browserstack_executor: ${JSON.stringify(result)}`)
+      .catch(() => undefined);
   });
 
   test('loads Polydraw and performs an overlapping merge', async ({ page }) => {
