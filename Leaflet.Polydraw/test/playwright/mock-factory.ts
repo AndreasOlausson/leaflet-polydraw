@@ -110,6 +110,16 @@ export class DemoFactory {
 
   /** Draw via pointer moves (normalized viewport points 0-1). Adjust speedMs for slower/faster paths. */
   async drawFreehand(points: NormalizedPoint[], speedMs = 10) {
+    const usePointerEvents = await this.page.evaluate(
+      () =>
+        !String((window as any).L?.version ?? '').startsWith('1.') &&
+        typeof window.PointerEvent === 'function',
+    );
+    if (usePointerEvents) {
+      await this.drawFreehandWithPointer(points, speedMs, 'mouse');
+      return;
+    }
+
     const hasControl = await this.page.evaluate(() => !!(window as any).polydrawControl);
     if (!hasControl) {
       throw new Error('polydrawControl not ready');
@@ -141,6 +151,128 @@ export class DemoFactory {
       await this.page.waitForTimeout(speedMs);
     }
     await this.page.mouse.up();
+    await this.page.waitForTimeout(200);
+  }
+
+  private async drawFreehandWithPointer(
+    points: NormalizedPoint[],
+    speedMs: number,
+    pointerType: 'mouse' | 'touch',
+  ) {
+    await this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      ctrl?.setDrawMode?.(1);
+    });
+    await this.page.waitForTimeout(50);
+
+    const map = this.page.locator('#map');
+    const box = await map.boundingBox();
+    if (!box) throw new Error('Map bounds not found');
+    const screenPoints = points.map(([nx, ny]) => ({
+      x: box.x + nx * box.width,
+      y: box.y + ny * box.height,
+    }));
+
+    await this.page.evaluate(
+      async ({ path, delayMs, inputType }) => {
+        const mapElement = document.querySelector('#map');
+        if (!mapElement || path.length < 3) {
+          throw new Error('Map or freehand path unavailable');
+        }
+
+        const dispatch = (type: string, point: { x: number; y: number }) => {
+          const target = type === 'pointerdown' ? mapElement : document;
+          target.dispatchEvent(
+            new PointerEvent(type, {
+              bubbles: true,
+              cancelable: true,
+              clientX: point.x,
+              clientY: point.y,
+              pointerId: 1,
+              pointerType: inputType,
+              isPrimary: true,
+              button: 0,
+              buttons: type === 'pointerup' ? 0 : 1,
+            }),
+          );
+        };
+
+        dispatch('pointerdown', path[0]);
+        for (const point of path.slice(1)) {
+          dispatch('pointermove', point);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+        dispatch('pointerup', path[path.length - 1]);
+      },
+      { path: screenPoints, delayMs: speedMs, inputType: pointerType },
+    );
+    await this.page.waitForTimeout(200);
+  }
+
+  /** Draw freehand using the pointer/touch sequence emitted by touch browsers. */
+  async drawFreehandWithTouch(points: NormalizedPoint[], speedMs = 10) {
+    const usePointerEvents = await this.page.evaluate(
+      () =>
+        !String((window as any).L?.version ?? '').startsWith('1.') &&
+        typeof window.PointerEvent === 'function',
+    );
+    if (usePointerEvents) {
+      await this.drawFreehandWithPointer(points, speedMs, 'touch');
+      return;
+    }
+
+    await this.page.evaluate(() => {
+      const ctrl = (window as any).polydrawControl;
+      ctrl?.setDrawMode?.(1);
+    });
+    await this.page.waitForTimeout(50);
+
+    const map = this.page.locator('#map');
+    const box = await map.boundingBox();
+    if (!box) throw new Error('Map bounds not found');
+    const screenPoints = points.map(([nx, ny]) => ({
+      x: box.x + nx * box.width,
+      y: box.y + ny * box.height,
+    }));
+
+    await this.page.evaluate(
+      async ({ path, delayMs }) => {
+        const mapElement = document.querySelector('#map');
+        if (!mapElement || path.length < 3) {
+          throw new Error('Map or freehand path unavailable');
+        }
+
+        const pointerId = 1;
+        const dispatchTouch = (type: string, point: { x: number; y: number }) => {
+          const active = type !== 'touchend';
+          const target = type === 'touchstart' ? mapElement : document;
+          const event = new Event(type, { bubbles: true, cancelable: true });
+          const touch = {
+            identifier: pointerId,
+            target: mapElement,
+            clientX: point.x,
+            clientY: point.y,
+            pageX: point.x,
+            pageY: point.y,
+            screenX: point.x,
+            screenY: point.y,
+          };
+          Object.defineProperties(event, {
+            touches: { value: active ? [touch] : [] },
+            targetTouches: { value: active ? [touch] : [] },
+            changedTouches: { value: [touch] },
+          });
+          target.dispatchEvent(event);
+        };
+        dispatchTouch('touchstart', path[0]);
+        for (const point of path.slice(1)) {
+          dispatchTouch('touchmove', point);
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
+        dispatchTouch('touchend', path[path.length - 1]);
+      },
+      { path: screenPoints, delayMs: speedMs },
+    );
     await this.page.waitForTimeout(200);
   }
 
