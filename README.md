@@ -16,6 +16,7 @@ This makes it ideal for GIS platforms, mapping applications, and spatial data wo
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![CI](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreasOlausson/leaflet-polydraw/actions/workflows/ci.yml)
+[![BrowserStack Status](https://api-automation.browserstack.com/ext/v1/badge.svg?badge_key=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiIxMTQ4MjMzMCIsImdyb3VwSWQiOiIxMTM5NDk3NyIsInByb2plY3ROYW1lIjoiTGVhZmxldC5Qb2x5ZHJhdyIsImJ1aWxkTmFtZSI6IkJyb3dzZXJTdGFjayBzbW9rZSIsInBsYW5UeXBlIjoicGFpZCIsImlhdCI6MTc5NDI1MTQyOCwianRpIjoiODgwM2M0ZDktZDA0MC00ZTc2LTkxZmYtNWM5N2M1OTJkNDJkIn0.lxPGuw1eYZLBYdxHs-Zqr-lzyUILOFGyqOw57m550_k&type=status)](https://api-automation.browserstack.com/ext/v1/badge/build?badge_key=eyJhbGciOiJIUzI1NiJ9.eyJ1c2VySWQiOiIxMTQ4MjMzMCIsImdyb3VwSWQiOiIxMTM5NDk3NyIsInByb2plY3ROYW1lIjoiTGVhZmxldC5Qb2x5ZHJhdyIsImJ1aWxkTmFtZSI6IkJyb3dzZXJTdGFjayBzbW9rZSIsInBsYW5UeXBlIjoicGFpZCIsImlhdCI6MTc5NDI1MTQyOCwianRpIjoiODgwM2M0ZDktZDA0MC00ZTc2LTkxZmYtNWM5N2M1OTJkNDJkIn0.lxPGuw1eYZLBYdxHs-Zqr-lzyUILOFGyqOw57m550_k)
 
 > [!IMPORTANT]
 > Leaflet 2 support currently targets `2.0.0-beta.2`. Leaflet 2 prereleases include breaking API changes, so earlier alpha builds are not interchangeable with this version. Pin `leaflet@2.0.0-beta.2` when testing the Leaflet 2 track, or use stable Leaflet `1.9.4`.
