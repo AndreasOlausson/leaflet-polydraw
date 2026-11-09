@@ -68,7 +68,6 @@ export default defineConfig({
       browser: 'playwright-webkit',
       os: 'OS X',
       os_version: 'Sonoma',
-      resolution: '1440x900',
     }),
     remote(
       'Chrome touch / Windows 11',
