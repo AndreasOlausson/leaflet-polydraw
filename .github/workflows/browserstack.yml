@@ -2,6 +2,16 @@ name: BrowserStack smoke
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Leaflet.Polydraw/src/**"
+      - "Leaflet.Polydraw/demo/**"
+      - "Leaflet.Polydraw/test/playwright/**"
+      - "Leaflet.Polydraw/package.json"
+      - "Leaflet.Polydraw/package-lock.json"
+      - "Leaflet.Polydraw/playwright.browserstack.config.ts"
+      - ".github/workflows/browserstack.yml"
   pull_request:
     branches: [main]
     paths:
@@ -19,7 +29,7 @@ concurrency:
 
 jobs:
   smoke:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -47,7 +57,7 @@ jobs:
           username: ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
           project-name: Leaflet.Polydraw
-          build-name: BUILD_INFO
+          build-name: ${{ github.event_name == 'push' && 'BrowserStack smoke' || 'BUILD_INFO' }}
 
       - name: Start BrowserStack Local
         uses: browserstack/github-actions/setup-local@93aebce225b754566349151c0676b26b005e591b # v1.0.4
