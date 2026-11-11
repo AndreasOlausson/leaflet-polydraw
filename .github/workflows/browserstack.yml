@@ -34,10 +34,10 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Use Node.js 20.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20.x
           cache: npm
@@ -52,7 +52,7 @@ jobs:
         working-directory: ./Leaflet.Polydraw/demo
 
       - name: Configure BrowserStack environment
-        uses: browserstack/github-actions/setup-env@93aebce225b754566349151c0676b26b005e591b # v1.0.4
+        uses: browserstack/github-actions/setup-env@1fad39ae4755588f7fc6854da6c3efba2bf5d08f # Node 24
         with:
           username: ${{ secrets.BROWSERSTACK_USERNAME }}
           access-key: ${{ secrets.BROWSERSTACK_ACCESS_KEY }}
@@ -60,7 +60,7 @@ jobs:
           build-name: ${{ github.event_name == 'push' && 'BrowserStack smoke' || 'BUILD_INFO' }}
 
       - name: Start BrowserStack Local
-        uses: browserstack/github-actions/setup-local@93aebce225b754566349151c0676b26b005e591b # v1.0.4
+        uses: browserstack/github-actions/setup-local@1fad39ae4755588f7fc6854da6c3efba2bf5d08f # Node 24
         with:
           local-testing: start
           local-identifier: random
@@ -86,13 +86,13 @@ jobs:
 
       - name: Stop BrowserStack Local
         if: always()
-        uses: browserstack/github-actions/setup-local@93aebce225b754566349151c0676b26b005e591b # v1.0.4
+        uses: browserstack/github-actions/setup-local@1fad39ae4755588f7fc6854da6c3efba2bf5d08f # Node 24
         with:
           local-testing: stop
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: browserstack-playwright-report
           path: Leaflet.Polydraw/playwright-report/browserstack

@@ -4,110 +4,44 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   ai-review:
     if: >
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
-    
     permissions:
       contents: read
       pull-requests: write
 
-    # Move secret to job-level env to satisfy linter/security checks
     env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_PR_REVIEW }}
+      OPENROUTER_MODELS: qwen/qwen3-coder-next
 
     steps:
       - name: Checkout PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Query AI for review
-        # Use env context here to avoid linter errors with secrets in 'if'
-        if: env.OPENAI_API_KEY != ''
-        run: |
-          set -e
-          BASE_BRANCH="${{ github.base_ref }}"
-
-          # 1. Diff against base branch, excluding lock files and assets to save tokens
-          git diff "origin/${BASE_BRANCH}...HEAD" -- . ':(exclude)package-lock.json' ':(exclude)yarn.lock' ':(exclude)*.svg' > pr.diff
-
-          # Exit if no relevant changes found
-          if [ ! -s pr.diff ]; then
-            echo "No relevant changes to review."
-            exit 0
-          fi
-
-          # 2. Size check: Truncate if diff is too large to prevent payload errors
-          DIFF_SIZE=$(wc -c < pr.diff)
-          if [ "$DIFF_SIZE" -gt 100000 ]; then
-             echo "Diff is too large ($DIFF_SIZE bytes). Truncating..."
-             head -c 100000 pr.diff > pr.diff.tmp && mv pr.diff.tmp pr.diff
-             echo -e "\n... (Diff truncated due to size) ..." >> pr.diff
-          fi
-
-          SYSTEM_PROMPT="You are a senior TypeScript / Leaflet / GIS code reviewer. Always write the entire PR review in clear, professional English regardless of the author's language. Provide concise, helpful, actionable feedback."
-          USER_PROMPT_INTRO="Review this diff and comment on potential issues, improvements, and risks:\n\n"
-
-          # 3. Build JSON payload safely using jq
-          build_payload() {
-            local model="$1"
-            # Using --rawfile reads the file content directly into a jq variable,
-            # avoiding "Argument list too long" errors in bash.
-            jq -n \
-              --arg model "$model" \
-              --arg system "$SYSTEM_PROMPT" \
-              --arg intro "$USER_PROMPT_INTRO" \
-              --rawfile diff_content pr.diff \
-              '{
-                model: $model,
-                messages: [
-                  { role: "system", content: $system },
-                  { role: "user", content: ($intro + $diff_content) }
-                ]
-              }'
-          }
-
-          call_api() {
-            local payload="$1"
-            curl -s https://api.openai.com/v1/chat/completions \
-              -H "Content-Type: application/json" \
-              -H "Authorization: Bearer ${OPENAI_API_KEY}" \
-              -d "$payload"
-          }
-
-          # 4. Model selection with fallback logic
-          # gpt-5.1 has a lower TPM limit (30k), so we fallback to mini if needed.
-          PRIMARY_MODEL="gpt-5.1"
-          FALLBACK_MODEL="gpt-5-mini"
-
-          echo "Attempting review with $PRIMARY_MODEL..."
-          PRIMARY_PAYLOAD=$(build_payload "$PRIMARY_MODEL")
-          RESPONSE=$(call_api "$PRIMARY_PAYLOAD")
-
-          # If primary model fails (e.g. rate limit or not found), switch to fallback
-          if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
-            echo "Primary model failed. Switching to fallback: $FALLBACK_MODEL"
-            FALLBACK_PAYLOAD=$(build_payload "$FALLBACK_MODEL")
-            RESPONSE=$(call_api "$FALLBACK_PAYLOAD")
-          fi
-
-          # Final error check
-          if echo "$RESPONSE" | jq -e '.error' >/dev/null 2>&1; then
-            echo "Error from OpenAI API:"
-            echo "$RESPONSE" | jq '.'
-            exit 1
-          fi
-
-          # Save success response
-          echo "$RESPONSE" | jq -r '.choices[0].message.content' > review.md
+      - name: Review PR with OpenRouter
+        if: env.OPENROUTER_API_KEY != ''
+        continue-on-error: true
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/openrouter-pr-review.mjs
 
       - name: Post review as PR comment
-        if: env.OPENAI_API_KEY != '' && hashFiles('review.md') != ''
-        uses: marocchino/sticky-pull-request-comment@v2
+        if: env.OPENROUTER_API_KEY != '' && hashFiles('review.md') != ''
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: ai-review
           path: review.md
